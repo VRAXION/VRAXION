@@ -3,6 +3,11 @@ import { buildRenderMetadata, diffGraphs, validateGraphSnapshot } from './schema
 import realRunCheckpoint000 from '../../../../docs/research/visual_samples/053_real_run_ingest/visual/graph/checkpoint_000.json';
 import realRunCheckpoint050 from '../../../../docs/research/visual_samples/053_real_run_ingest/visual/graph/checkpoint_050.json';
 import realRunCheckpoint100 from '../../../../docs/research/visual_samples/053_real_run_ingest/visual/graph/checkpoint_100.json';
+import closureCheckpoint000 from '../../../../docs/research/visual_samples/055_real_run_replay_closure/visual/graph/checkpoint_000.json';
+import closureCheckpoint050 from '../../../../docs/research/visual_samples/055_real_run_replay_closure/visual/graph/checkpoint_050.json';
+import closureCheckpoint100 from '../../../../docs/research/visual_samples/055_real_run_replay_closure/visual/graph/checkpoint_100.json';
+import closureTick100000 from '../../../../docs/research/visual_samples/055_real_run_replay_closure/visual/ticks/checkpoint_100_tick_000.json';
+import closureTick100001 from '../../../../docs/research/visual_samples/055_real_run_replay_closure/visual/ticks/checkpoint_100_tick_001.json';
 import playbackCheckpoint000 from '../../../../docs/research/visual_samples/054_larger_playback_smoke/visual/graph/checkpoint_000.json';
 import playbackCheckpoint010 from '../../../../docs/research/visual_samples/054_larger_playback_smoke/visual/graph/checkpoint_010.json';
 import playbackCheckpoint020 from '../../../../docs/research/visual_samples/054_larger_playback_smoke/visual/graph/checkpoint_020.json';
@@ -206,6 +211,140 @@ export const realRunIngestBundle: VisualSampleBundle = {
   events: realRunIngestEvents
 };
 
+export const closureReplayGraphs: GraphSnapshot[] = [
+  validateGraphSnapshot(closureCheckpoint000),
+  validateGraphSnapshot(closureCheckpoint050),
+  validateGraphSnapshot(closureCheckpoint100)
+];
+
+export const closureReplayTicks: GraphSnapshot[] = [
+  validateGraphSnapshot(closureTick100000),
+  validateGraphSnapshot(closureTick100001)
+];
+
+export const closureReplayMetrics: MetricRow[] = [
+  {
+    schema_version: 'visual_snapshot_v1',
+    run_id: 'stable_loop_phase_lock_055_real_run_replay_closure',
+    checkpoint: 0,
+    source_arm: 'NO_ROUTE_GRAMMAR_ADVERSARIAL_FROZEN_BASELINE',
+    heldout_score: 0.060546875,
+    ood_score: 0.048828125,
+    family_min_accuracy: 0,
+    hard_distractor_accuracy: 0,
+    long_ood_accuracy: 0.1953125,
+    route_order_accuracy: 0,
+    missing_successor_count: 6,
+    output_entropy: 0,
+    unique_output_count: 1,
+    expected_output_class_count: 75,
+    top_output_rate: 1,
+    majority_output_rate: 1,
+    non_route_regression_delta: -1,
+    route_api_overuse_rate: 0,
+    collapse_detected: true
+  },
+  {
+    schema_version: 'visual_snapshot_v1',
+    run_id: 'stable_loop_phase_lock_055_real_run_replay_closure',
+    checkpoint: 50,
+    source_arm: 'FROZEN_EVAL_048_REFERENCE',
+    heldout_score: 0.166015625,
+    ood_score: 0.15625,
+    family_min_accuracy: 0,
+    hard_distractor_accuracy: 0,
+    long_ood_accuracy: 0.625,
+    route_order_accuracy: 0,
+    missing_successor_count: 6,
+    output_entropy: 0.6467100819075322,
+    unique_output_count: 4,
+    expected_output_class_count: 75,
+    top_output_rate: 0.8935546875,
+    majority_output_rate: 0.8935546875,
+    non_route_regression_delta: -1,
+    route_api_overuse_rate: 0,
+    collapse_detected: true
+  },
+  {
+    schema_version: 'visual_snapshot_v1',
+    run_id: 'stable_loop_phase_lock_055_real_run_replay_closure',
+    checkpoint: 100,
+    source_arm: 'ADVERSARIAL_FROZEN_ROUTE_GRAMMAR_TRAIN_AND_INFER',
+    heldout_score: 1,
+    ood_score: 1,
+    family_min_accuracy: 1,
+    hard_distractor_accuracy: 1,
+    long_ood_accuracy: 1,
+    route_order_accuracy: 1,
+    missing_successor_count: 0,
+    output_entropy: 5.40437231483324,
+    unique_output_count: 75,
+    expected_output_class_count: 75,
+    top_output_rate: 0.0732421875,
+    majority_output_rate: 0.0546875,
+    non_route_regression_delta: 0,
+    route_api_overuse_rate: 0.04,
+    collapse_detected: false
+  }
+];
+
+export const closureReplayEvents: MutationEvent[] = [
+  {
+    id: 'ev_055_mutation_from_reference',
+    schema_version: 'visual_snapshot_v1',
+    run_id: 'stable_loop_phase_lock_055_real_run_replay_closure',
+    checkpoint: 50,
+    tick: 0,
+    kind: 'mutation',
+    node_ids: ['n_diag'],
+    edge_ids: ['e_diag_candidate'],
+    label: 'diagnostic route candidate exposed from 049/050 source metrics'
+  },
+  {
+    id: 'ev_055_prune_control_shortcut',
+    schema_version: 'visual_snapshot_v1',
+    run_id: 'stable_loop_phase_lock_055_real_run_replay_closure',
+    checkpoint: 100,
+    tick: 0,
+    kind: 'prune',
+    node_ids: ['n_ctrl_majority'],
+    edge_ids: ['e_majority_shortcut_pruned'],
+    label: 'majority/static shortcut control failed and is shown as pruned'
+  },
+  {
+    id: 'ev_055_repair_successor_chain',
+    schema_version: 'visual_snapshot_v1',
+    run_id: 'stable_loop_phase_lock_055_real_run_replay_closure',
+    checkpoint: 100,
+    tick: 1,
+    kind: 'repair',
+    node_ids: ['n_h2', 'n_h3'],
+    edge_ids: ['e_h2_h3', 'e_h3_tgt'],
+    label: 'successor chain completed by route-grammar positive arm'
+  },
+  {
+    id: 'ev_055_crystallize_closure_gate',
+    schema_version: 'visual_snapshot_v1',
+    run_id: 'stable_loop_phase_lock_055_real_run_replay_closure',
+    checkpoint: 100,
+    tick: 1,
+    kind: 'crystallize',
+    node_ids: ['n_h2', 'n_h3', 'n_tgt'],
+    edge_ids: ['e_h2_h3', 'e_h3_tgt'],
+    label:
+      'VISUAL_SECTION_V1_CLOSED marker: passing route metric projection crystallized; collapse controls remain failed'
+  }
+];
+
+export const closureReplayBundle: VisualSampleBundle = {
+  id: '055_real_run_replay_closure',
+  label: '055 real-run replay closure',
+  graphs: closureReplayGraphs,
+  ticks: closureReplayTicks,
+  metrics: closureReplayMetrics,
+  events: closureReplayEvents
+};
+
 export const largerPlaybackGraphs: GraphSnapshot[] = [
   playbackCheckpoint000,
   playbackCheckpoint010,
@@ -305,12 +444,13 @@ export const largerPlaybackBundle: VisualSampleBundle = {
 };
 
 export const visualSampleBundles: VisualSampleBundle[] = [
+  closureReplayBundle,
   largerPlaybackBundle,
   realRunIngestBundle,
   smokeSampleBundle
 ];
 
-export const activeSampleBundle = largerPlaybackBundle;
+export const activeSampleBundle = closureReplayBundle;
 
 export type DiffMode = 'first' | 'previous';
 

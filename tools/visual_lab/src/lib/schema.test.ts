@@ -4,6 +4,8 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { diffGraphs, parseJsonl, validateGraphSnapshot } from './schema';
 import {
+  activeSampleBundle,
+  closureReplayBundle,
   diffForCheckpoint,
   largerPlaybackBundle,
   renderMetadataFor,
@@ -15,6 +17,7 @@ const repoRoot = resolve(here, '../../../..');
 const sampleRoot = resolve(repoRoot, 'docs/research/visual_samples/052_smoke_minimal');
 const realRunRoot = resolve(repoRoot, 'docs/research/visual_samples/053_real_run_ingest');
 const largerPlaybackRoot = resolve(repoRoot, 'docs/research/visual_samples/054_larger_playback_smoke');
+const closureReplayRoot = resolve(repoRoot, 'docs/research/visual_samples/055_real_run_replay_closure');
 
 function readJson(path: string): unknown {
   return JSON.parse(readFileSync(resolve(sampleRoot, path), 'utf8'));
@@ -30,6 +33,10 @@ function readRealRunText(path: string): string {
 
 function readLargerPlaybackText(path: string): string {
   return readFileSync(resolve(largerPlaybackRoot, path), 'utf8');
+}
+
+function readClosureReplayText(path: string): string {
+  return readFileSync(resolve(closureReplayRoot, path), 'utf8');
 }
 
 function directorySize(path: string): number {
@@ -109,10 +116,12 @@ describe('visual schema fixtures', () => {
 
   it('exposes all committed sample bundles through the bundle selector', () => {
     expect(visualSampleBundles.map((bundle) => bundle.id)).toEqual([
+      '055_real_run_replay_closure',
       '054_larger_playback_smoke',
       '053_real_run_ingest',
       '052_smoke_minimal'
     ]);
+    expect(activeSampleBundle.id).toBe('055_real_run_replay_closure');
   });
 
   it('loads the 054 larger playback bundle with checkpoints and ticks', () => {
@@ -157,5 +166,60 @@ describe('visual schema fixtures', () => {
     expect(metadata.checkpoint_count).toBe(12);
     expect(metadata.tick_count).toBe(6);
     expect(metadata.event_count).toBeGreaterThan(0);
+  });
+
+  it('loads the 055 real-run replay closure bundle with ticks', () => {
+    expect(closureReplayBundle.graphs).toHaveLength(3);
+    expect(closureReplayBundle.ticks).toHaveLength(2);
+    expect(closureReplayBundle.graphs[2].run_id).toBe('stable_loop_phase_lock_055_real_run_replay_closure');
+  });
+
+  it('keeps 055 event coverage complete for closure', () => {
+    const events = parseJsonl<{ kind: string }>(readClosureReplayText('visual/mutation_events.jsonl'));
+    expect(new Set(events.map((event) => event.kind))).toEqual(
+      new Set(['mutation', 'prune', 'repair', 'crystallize'])
+    );
+  });
+
+  it('aligns 055 visual metrics with exact 049 source metrics', () => {
+    const metrics = parseJsonl<{
+      checkpoint: number;
+      source_arm: string;
+      heldout_score: number;
+      ood_score: number;
+      family_min_accuracy: number;
+      unique_output_count: number;
+      expected_output_class_count: number;
+      top_output_rate: number;
+      majority_output_rate?: number;
+      output_entropy: number;
+      collapse_detected: boolean;
+    }>(readClosureReplayText('visual/metrics.jsonl'));
+    const baseline = metrics.find((row) => row.checkpoint === 0);
+    const reference = metrics.find((row) => row.checkpoint === 50);
+    const passing = metrics.find((row) => row.checkpoint === 100);
+
+    expect(baseline?.source_arm).toBe('NO_ROUTE_GRAMMAR_ADVERSARIAL_FROZEN_BASELINE');
+    expect(baseline?.heldout_score).toBe(0.060546875);
+    expect(baseline?.ood_score).toBe(0.048828125);
+    expect(baseline?.top_output_rate).toBe(1);
+    expect(baseline?.collapse_detected).toBe(true);
+
+    expect(reference?.source_arm).toBe('FROZEN_EVAL_048_REFERENCE');
+    expect(reference?.heldout_score).toBe(0.166015625);
+    expect(reference?.ood_score).toBe(0.15625);
+    expect(reference?.top_output_rate).toBe(0.8935546875);
+    expect(reference?.collapse_detected).toBe(true);
+
+    expect(passing?.source_arm).toBe('ADVERSARIAL_FROZEN_ROUTE_GRAMMAR_TRAIN_AND_INFER');
+    expect(passing?.heldout_score).toBe(1);
+    expect(passing?.ood_score).toBe(1);
+    expect(passing?.family_min_accuracy).toBe(1);
+    expect(passing?.unique_output_count).toBe(75);
+    expect(passing?.expected_output_class_count).toBe(75);
+    expect(passing?.top_output_rate).toBe(0.0732421875);
+    expect(passing?.majority_output_rate).toBe(0.0546875);
+    expect(passing?.output_entropy).toBe(5.40437231483324);
+    expect(passing?.collapse_detected).toBe(false);
   });
 });

@@ -46,6 +46,24 @@
         <dt>collapse</dt>
         <dd>{row.collapse_detected ? 'true' : 'false'}</dd>
       </div>
+      {#if row.top_output_rate !== undefined || row.majority_output_rate !== undefined}
+        <div class="subrow">
+          <dt>output concentration</dt>
+          <dd>
+            top {row.top_output_rate?.toFixed(3) ?? 'n/a'} / majority
+            {row.majority_output_rate?.toFixed(3) ?? 'n/a'}
+          </dd>
+        </div>
+      {/if}
+      {#if row.non_route_regression_delta !== undefined || row.route_api_overuse_rate !== undefined}
+        <div class="subrow">
+          <dt>side effects</dt>
+          <dd>
+            non-route {row.non_route_regression_delta?.toFixed(3) ?? 'n/a'} / overuse
+            {row.route_api_overuse_rate?.toFixed(3) ?? 'n/a'}
+          </dd>
+        </div>
+      {/if}
     {/each}
   </dl>
 </section>

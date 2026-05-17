@@ -44,13 +44,62 @@ struct AdversarialFrozenMetric {
 /// the renderer-agnostic `visual_snapshot_v1` graph shape. It does not rerun
 /// training and does not claim that 049 emitted internal topology snapshots.
 pub fn bundle_from_049_adversarial_run(source: &Path) -> Result<VisualBundle, VisualExportError> {
+    bundle_from_049_adversarial_run_with_config(source, IngestConfig::real_run_053())
+}
+
+/// Build the 055 Visual V1 closure bundle from a completed 049 run.
+///
+/// This is still a real-metric visual projection, not a raw internal topology
+/// capture. It adds closure-oriented labels and complete event-kind coverage.
+pub fn closure_bundle_from_049_adversarial_run(
+    source: &Path,
+) -> Result<VisualBundle, VisualExportError> {
+    bundle_from_049_adversarial_run_with_config(source, IngestConfig::closure_055())
+}
+
+#[derive(Clone, Copy)]
+struct IngestConfig {
+    run_id: &'static str,
+    label: &'static str,
+    claim_boundary: &'static str,
+    event_prefix: &'static str,
+    include_crystallize: bool,
+}
+
+impl IngestConfig {
+    fn real_run_053() -> Self {
+        Self {
+            run_id: "stable_loop_phase_lock_053_real_run_ingest",
+            label: "053 visual ingest projection of 049 adversarial frozen eval",
+            claim_boundary:
+                "visual infrastructure only; ingests 049 metrics without new training claim",
+            event_prefix: "053",
+            include_crystallize: false,
+        }
+    }
+
+    fn closure_055() -> Self {
+        Self {
+            run_id: "stable_loop_phase_lock_055_real_run_replay_closure",
+            label: "055 Visual V1 closure replay of 049/050 adversarial frozen eval evidence",
+            claim_boundary: "Visual V1 closure real-metric projection only; not raw internal topology, not a new training result, not production dashboard/API",
+            event_prefix: "055",
+            include_crystallize: true,
+        }
+    }
+}
+
+fn bundle_from_049_adversarial_run_with_config(
+    source: &Path,
+    cfg: IngestConfig,
+) -> Result<VisualBundle, VisualExportError> {
     let rows = read_metrics(&source.join("metrics.jsonl"))?;
     let baseline = find_arm(&rows, BASELINE_ARM)?;
     let reference = find_arm(&rows, REFERENCE_ARM)?;
     let main = find_arm(&rows, MAIN_ARM)?;
     let rollback = find_arm(&rows, ROLLBACK_ARM)?;
 
-    let run_id = "stable_loop_phase_lock_053_real_run_ingest".to_string();
+    let run_id = cfg.run_id.to_string();
     let route = route_trace();
     let pockets = pocket_summaries();
     let schema = SchemaVersion {
@@ -60,11 +109,10 @@ pub fn bundle_from_049_adversarial_run(source: &Path) -> Result<VisualBundle, Vi
     let manifest = RunManifest {
         schema_version: VISUAL_SCHEMA_VERSION.to_string(),
         run_id: run_id.clone(),
-        label: "053 visual ingest projection of 049 adversarial frozen eval".to_string(),
+        label: cfg.label.to_string(),
         checkpoints: vec![0, 50, 100],
         has_ticks: true,
-        claim_boundary:
-            "visual infrastructure only; ingests 049 metrics without new training claim".to_string(),
+        claim_boundary: cfg.claim_boundary.to_string(),
     };
 
     let graphs = vec![
@@ -138,43 +186,60 @@ pub fn bundle_from_049_adversarial_run(source: &Path) -> Result<VisualBundle, Vi
             metric_row(&run_id, 50, reference),
             metric_row(&run_id, 100, main),
         ],
-        events: vec![
-            event(
-                &run_id,
-                "ev_053_mutation_from_reference",
-                50,
-                Some(0),
-                EventKind::Mutation,
-                vec!["n_diag".to_string()],
-                vec!["e_diag_candidate".to_string()],
-                "diagnostic route candidate exposed from 049 reference metrics",
-            ),
-            event(
-                &run_id,
-                "ev_053_prune_control_shortcut",
-                100,
-                Some(0),
-                EventKind::Prune,
-                vec!["n_ctrl_majority".to_string()],
-                vec!["e_majority_shortcut_pruned".to_string()],
-                "majority/static shortcut control pruned in passing ingest view",
-            ),
-            event(
-                &run_id,
-                "ev_053_repair_successor_chain",
-                100,
-                Some(1),
-                EventKind::Repair,
-                vec!["n_h2".to_string(), "n_h3".to_string()],
-                vec!["e_h2_h3".to_string(), "e_h3_tgt".to_string()],
-                "successor chain completed by route-grammar positive arm",
-            ),
-        ],
+        events: events_for_config(&run_id, cfg),
         route_traces: vec![route],
         pocket_summaries: pockets,
         graphs,
         ticks,
     })
+}
+
+fn events_for_config(run_id: &str, cfg: IngestConfig) -> Vec<MutationEvent> {
+    let mut events = vec![
+        event(
+            run_id,
+            &format!("ev_{}_mutation_from_reference", cfg.event_prefix),
+            50,
+            Some(0),
+            EventKind::Mutation,
+            vec!["n_diag".to_string()],
+            vec!["e_diag_candidate".to_string()],
+            "diagnostic route candidate exposed from 049/050 source metrics",
+        ),
+        event(
+            run_id,
+            &format!("ev_{}_prune_control_shortcut", cfg.event_prefix),
+            100,
+            Some(0),
+            EventKind::Prune,
+            vec!["n_ctrl_majority".to_string()],
+            vec!["e_majority_shortcut_pruned".to_string()],
+            "majority/static shortcut control failed and is shown as pruned",
+        ),
+        event(
+            run_id,
+            &format!("ev_{}_repair_successor_chain", cfg.event_prefix),
+            100,
+            Some(1),
+            EventKind::Repair,
+            vec!["n_h2".to_string(), "n_h3".to_string()],
+            vec!["e_h2_h3".to_string(), "e_h3_tgt".to_string()],
+            "successor chain completed by route-grammar positive arm",
+        ),
+    ];
+    if cfg.include_crystallize {
+        events.push(event(
+            run_id,
+            &format!("ev_{}_crystallize_closure_gate", cfg.event_prefix),
+            100,
+            Some(1),
+            EventKind::Crystallize,
+            vec!["n_h2".to_string(), "n_h3".to_string(), "n_tgt".to_string()],
+            vec!["e_h2_h3".to_string(), "e_h3_tgt".to_string()],
+            "VISUAL_SECTION_V1_CLOSED marker: passing route metric projection crystallized; collapse controls remain failed",
+        ));
+    }
+    events
 }
 
 fn read_metrics(path: &Path) -> Result<Vec<AdversarialFrozenMetric>, VisualExportError> {
@@ -237,6 +302,10 @@ fn metric_row(run_id: &str, checkpoint: u32, row: &AdversarialFrozenMetric) -> M
         output_entropy: row.output_entropy,
         unique_output_count: Some(row.unique_output_count),
         expected_output_class_count: Some(row.expected_output_class_count),
+        top_output_rate: Some(row.top_output_rate),
+        majority_output_rate: Some(row.majority_output_rate),
+        non_route_regression_delta: Some(row.non_route_regression_delta),
+        route_api_overuse_rate: Some(row.route_api_overuse_rate),
         collapse_detected: row.collapse_detected,
     }
 }

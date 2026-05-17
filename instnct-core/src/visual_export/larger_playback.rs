@@ -399,6 +399,10 @@ fn metric_row(checkpoint: u32, index: usize) -> MetricRow {
         output_entropy: 2.2 + progress * 3.0,
         unique_output_count: Some(12 + index * 5),
         expected_output_class_count: Some(75),
+        top_output_rate: None,
+        majority_output_rate: None,
+        non_route_regression_delta: None,
+        route_api_overuse_rate: None,
         collapse_detected: false,
     }
 }

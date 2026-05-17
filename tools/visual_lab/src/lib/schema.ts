@@ -77,6 +77,10 @@ export interface MetricRow {
   output_entropy: number;
   unique_output_count?: number;
   expected_output_class_count?: number;
+  top_output_rate?: number;
+  majority_output_rate?: number;
+  non_route_regression_delta?: number;
+  route_api_overuse_rate?: number;
   collapse_detected: boolean;
 }
 

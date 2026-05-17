@@ -255,6 +255,18 @@ pub struct MetricRow {
     /// Optional expected output class count.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub expected_output_class_count: Option<usize>,
+    /// Optional top-output rate from concrete inference/collapse metrics.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub top_output_rate: Option<f64>,
+    /// Optional majority-output rate from concrete inference/collapse metrics.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub majority_output_rate: Option<f64>,
+    /// Optional non-route regression delta.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub non_route_regression_delta: Option<f64>,
+    /// Optional route API overuse rate.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub route_api_overuse_rate: Option<f64>,
     /// Collapse flag.
     pub collapse_detected: bool,
 }
@@ -433,6 +445,10 @@ pub fn sample_visual_bundle() -> VisualBundle {
                 output_entropy: 3.1,
                 unique_output_count: None,
                 expected_output_class_count: None,
+                top_output_rate: None,
+                majority_output_rate: None,
+                non_route_regression_delta: None,
+                route_api_overuse_rate: None,
                 collapse_detected: false,
             },
             MetricRow {
@@ -450,6 +466,10 @@ pub fn sample_visual_bundle() -> VisualBundle {
                 output_entropy: 4.2,
                 unique_output_count: None,
                 expected_output_class_count: None,
+                top_output_rate: None,
+                majority_output_rate: None,
+                non_route_regression_delta: None,
+                route_api_overuse_rate: None,
                 collapse_detected: false,
             },
         ],
