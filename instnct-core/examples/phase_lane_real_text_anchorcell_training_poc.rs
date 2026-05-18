@@ -20,6 +20,10 @@ const SMOKE_SOURCE_NAME: &str = "fineweb_edu_30m.txt";
 const MIN_SMOKE_BYTES: usize = 10 * 1024 * 1024;
 const MAX_SMOKE_BYTES: usize = 50 * 1024 * 1024;
 const DEFAULT_SMOKE_BYTES: usize = 30 * 1024 * 1024;
+const MAX_CONFIRM_BYTES: usize = 1024 * 1024 * 1024;
+const DEFAULT_CONFIRM_BYTES: usize = 256 * 1024 * 1024;
+const MAX_ANCHORCELL_EXAMPLES: usize = 250_000;
+const DEFAULT_ANCHORCELL_EXAMPLES: usize = 100_000;
 const FEATURE_DIM: usize = 8192;
 const EPOCHS: usize = 5;
 
@@ -27,10 +31,12 @@ const EPOCHS: usize = 5;
 struct Config {
     out: PathBuf,
     fineweb_root: PathBuf,
+    fineweb_source: Option<PathBuf>,
     mode: String,
     seed: u64,
     heartbeat_sec: u64,
     fineweb_bytes: usize,
+    anchorcell_examples: usize,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -264,6 +270,7 @@ struct EvalSample {
     example_id: String,
     split: String,
     task_family: String,
+    input: String,
     expected_output: String,
     predicted_output: String,
     correct: bool,
@@ -296,7 +303,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     fs::create_dir_all(&cfg.out)?;
     truncate_outputs(&cfg.out)?;
     let started = Instant::now();
-    let source_path = cfg.fineweb_root.join(SMOKE_SOURCE_NAME);
+    let source_path = resolve_source_path(&cfg);
 
     append_progress(
         &cfg.out,
@@ -305,26 +312,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             "mode": cfg.mode,
             "seed": cfg.seed,
             "fineweb_root": cfg.fineweb_root.display().to_string(),
-            "fineweb_source": source_path.display().to_string()
+            "fineweb_source": source_path.display().to_string(),
+            "fineweb_bytes": cfg.fineweb_bytes,
+            "anchorcell_examples": cfg.anchorcell_examples
         }),
     )?;
     write_running_summary(&cfg.out, "running", &[], &[])?;
 
-    if cfg.mode != "smoke" {
-        write_failure(
-            &cfg.out,
-            "FULL_CORPUS_TRAINING_ATTEMPTED",
-            "067 only implements bounded smoke mode",
-        )?;
-        return Err("FULL_CORPUS_TRAINING_ATTEMPTED".into());
-    }
-    if cfg.fineweb_bytes < MIN_SMOKE_BYTES || cfg.fineweb_bytes > MAX_SMOKE_BYTES {
-        write_failure(
-            &cfg.out,
-            "FULL_CORPUS_TRAINING_ATTEMPTED",
-            "smoke FineWeb byte cap must stay between 10 and 50 MiB",
-        )?;
-        return Err("FULL_CORPUS_TRAINING_ATTEMPTED".into());
+    if let Err((verdict, message)) = validate_config(&cfg) {
+        write_failure(&cfg.out, verdict, message)?;
+        return Err(verdict.into());
     }
     if !source_path.exists() {
         write_failure(
@@ -356,7 +353,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             "smoke_source_name": SMOKE_SOURCE_NAME,
             "smoke_bytes_read": fineweb_bytes.len(),
             "read_only_input": true,
-            "parquet_fallback_used": false
+            "parquet_fallback_used": false,
+            "mode": cfg.mode,
+            "confirm_snapshot_source": cfg.fineweb_source.as_ref().map(|p| p.display().to_string())
         }),
     )?;
 
@@ -371,6 +370,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             "fineweb_root": cfg.fineweb_root.display().to_string(),
             "fineweb_source": source_path.display().to_string(),
             "fineweb_bytes": cfg.fineweb_bytes,
+            "anchorcell_examples": cfg.anchorcell_examples,
             "arms": arms.iter().map(|a| a.as_str()).collect::<Vec<_>>(),
             "production_default_training_enabled": false,
             "public_beta_promoted": false,
@@ -380,9 +380,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     )?;
 
     let mut rng = StdRng::seed_from_u64(cfg.seed);
-    let train = generate_dataset(&fineweb_text, Split::Train, 6_000, &mut rng);
-    let heldout = generate_dataset(&fineweb_text, Split::Heldout, 1_500, &mut rng);
-    let ood = generate_dataset(&fineweb_text, Split::Ood, 1_500, &mut rng);
+    let (train_count, heldout_count, ood_count) = dataset_counts(&cfg);
+    let train = generate_dataset(&fineweb_text, Split::Train, train_count, &mut rng);
+    let heldout = generate_dataset(&fineweb_text, Split::Heldout, heldout_count, &mut rng);
+    let ood = generate_dataset(&fineweb_text, Split::Ood, ood_count, &mut rng);
     let eval_rows: Vec<Example> = heldout.iter().chain(&ood).cloned().collect();
     let labels = collect_labels(&train, &heldout, &ood);
     let leakage = split_leakage_audit(&train, &heldout, &ood);
@@ -410,15 +411,27 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             "train_examples": train.len(),
             "heldout_examples": heldout.len(),
             "ood_examples": ood.len(),
+            "anchorcell_examples_requested": cfg.anchorcell_examples,
+            "confirm_scale_limit_enforced": cfg.mode == "confirm",
+            "full_corpus_training_attempted": false,
             "data_mix": family_counts(&train),
             "labels": labels,
             "split_leakage_audit": leakage,
             "prediction_oracle_used": false
         }),
     )?;
-    write_offsets(&cfg.out.join("fineweb_sample_offsets.jsonl"), &train, &heldout, &ood)?;
+    write_offsets(
+        &cfg.out.join("fineweb_sample_offsets.jsonl"),
+        &train,
+        &heldout,
+        &ood,
+    )?;
     write_sample_jsonl(&cfg.out.join("train_examples_sample.jsonl"), &train, 240)?;
-    write_sample_jsonl(&cfg.out.join("heldout_examples_sample.jsonl"), &heldout, 160)?;
+    write_sample_jsonl(
+        &cfg.out.join("heldout_examples_sample.jsonl"),
+        &heldout,
+        160,
+    )?;
     write_sample_jsonl(&cfg.out.join("ood_examples_sample.jsonl"), &ood, 160)?;
     let anchor_examples: Vec<Example> = train
         .iter()
@@ -444,8 +457,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }),
     )?;
 
-    let baseline_rows = evaluate_baselines(&train, &eval_rows);
+    append_progress(&cfg.out, "baselines_started", json!({}))?;
     let baseline_eval_hash = eval_row_hash(&eval_rows);
+    let baseline_rows = evaluate_baselines(&train, &eval_rows, &baseline_eval_hash);
     write_json(
         &cfg.out.join("baseline_metrics.json"),
         &json!({
@@ -473,8 +487,21 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     for (idx, arm) in arms.iter().enumerate() {
         let arm_start = Instant::now();
         let arm_seed = cfg.seed.wrapping_add(idx as u64 * 10_003);
-        let arm_out = cfg.out.join("checkpoints").join(arm.as_str().to_lowercase());
+        let arm_out = cfg
+            .out
+            .join("checkpoints")
+            .join(arm.as_str().to_lowercase());
         fs::create_dir_all(&arm_out)?;
+        append_progress(
+            &cfg.out,
+            "arm_started",
+            json!({
+                "arm": arm.as_str(),
+                "completed_arms": idx,
+                "total_arms": arms.len(),
+                "elapsed_s": started.elapsed().as_secs()
+            }),
+        )?;
         let result = run_arm(
             *arm,
             &train,
@@ -599,7 +626,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .iter()
         .any(|v| v == "REAL_TEXT_ANCHORCELL_TRAINING_POC_POSITIVE")
     {
-        println!("067 completed with failure verdicts: {}", verdicts.join(","));
+        println!(
+            "067 completed with failure verdicts: {}",
+            verdicts.join(",")
+        );
         return Ok(());
     }
 
@@ -641,8 +671,9 @@ fn run_arm(
         report = model.train(&train_data, EPOCHS, use_route_features);
     }
     let checkpoint_after_hash = model.sha256()?;
-    let actual_training_update_detected =
-        arm.is_learned() && report.train_step_count > 0 && checkpoint_after_hash != checkpoint_before_hash;
+    let actual_training_update_detected = arm.is_learned()
+        && report.train_step_count > 0
+        && checkpoint_after_hash != checkpoint_before_hash;
 
     let checkpoint_path = arm_out.join("model_checkpoint.json");
     model.save(&checkpoint_path)?;
@@ -721,8 +752,10 @@ fn run_arm(
 
     let context_carry_accuracy =
         family_accuracy(&eval.family, TaskFamily::ContextCarryQueryAnswer.as_str());
-    let paired_counterfactual_accuracy =
-        family_accuracy(&eval.family, TaskFamily::CounterfactualKeyValuePairs.as_str());
+    let paired_counterfactual_accuracy = family_accuracy(
+        &eval.family,
+        TaskFamily::CounterfactualKeyValuePairs.as_str(),
+    );
     let next_token_accuracy =
         family_accuracy(&eval.family, TaskFamily::FinewebRawContinuation.as_str());
     let family_min_accuracy = TaskFamily::all()
@@ -735,7 +768,8 @@ fn run_arm(
     let output_entropy = entropy(&eval.distribution, eval.samples.len());
     let repetition_rate = top_output_rate;
     let copy_last_token_rate = copy_last_rate(&eval.samples, eval_rows);
-    let static_output_score = top_output_rate * (1.0 + (1.0 - entropy_normalized(output_entropy, eval.distribution.len())));
+    let static_output_score = top_output_rate
+        * (1.0 + (1.0 - entropy_normalized(output_entropy, eval.distribution.len())));
     let collapse_detected = top_output_rate > 0.35
         || space_output_rate > 0.02
         || empty_output_rate > 0.02
@@ -828,7 +862,12 @@ impl Model {
         }
     }
 
-    fn train(&mut self, examples: &[Example], epochs: usize, use_route_features: bool) -> TrainReport {
+    fn train(
+        &mut self,
+        examples: &[Example],
+        epochs: usize,
+        use_route_features: bool,
+    ) -> TrainReport {
         let mut report = TrainReport::default();
         self.bias = vec![0.0; self.labels.len()];
         for epoch in 0..epochs {
@@ -947,6 +986,7 @@ fn evaluate_model(
             example_id: ex.id.clone(),
             split: ex.split.clone(),
             task_family: ex.task_family.clone(),
+            input: ex.input.clone(),
             expected_output: ex.expected_output.clone(),
             predicted_output: predicted,
             correct: ok,
@@ -975,7 +1015,9 @@ fn family_metric(rows: &[EvalSample], examples: &[Example]) -> FamilyMetric {
     let mut distribution = BTreeMap::<String, usize>::new();
     let mut copy_last = 0usize;
     for row in rows {
-        *distribution.entry(row.predicted_output.clone()).or_insert(0) += 1;
+        *distribution
+            .entry(row.predicted_output.clone())
+            .or_insert(0) += 1;
         if let Some(ex) = examples.iter().find(|ex| ex.id == row.example_id) {
             if row.predicted_output == last_token(&ex.input) {
                 copy_last += 1;
@@ -996,8 +1038,14 @@ fn family_metric(rows: &[EvalSample], examples: &[Example]) -> FamilyMetric {
     }
 }
 
-fn evaluate_baselines(train: &[Example], eval_rows: &[Example]) -> Vec<serde_json::Value> {
+fn evaluate_baselines(
+    train: &[Example],
+    eval_rows: &[Example],
+    eval_row_hash_value: &str,
+) -> Vec<serde_json::Value> {
     let majority = majority_label(train);
+    let ngram_counts = build_ngram_counts(train);
+    let labels = collect_labels(train, &[], &[]);
     let mut rows = Vec::new();
     for baseline in BaselineKind::all() {
         let mut correct = 0usize;
@@ -1011,14 +1059,18 @@ fn evaluate_baselines(train: &[Example], eval_rows: &[Example]) -> Vec<serde_jso
                 }
                 BaselineKind::UnigramFrequency
                 | BaselineKind::BigramFrequency
-                | BaselineKind::TrigramFrequency => ngram_candidate_baseline(baseline, ex, train, &majority),
+                | BaselineKind::TrigramFrequency => {
+                    ngram_candidate_baseline(baseline, ex, &ngram_counts, &majority)
+                }
                 BaselineKind::CopyLastToken => last_token(&ex.input),
-                BaselineKind::ShuffledLabels => shifted_label(&ex.expected_output, idx + 3, train),
+                BaselineKind::ShuffledLabels => {
+                    shifted_label_cached(&ex.expected_output, idx + 3, &labels)
+                }
                 BaselineKind::ShuffledContext => {
                     if idx % 2 == 0 {
                         majority.clone()
                     } else {
-                        shifted_label(&ex.expected_output, idx + 11, train)
+                        shifted_label_cached(&ex.expected_output, idx + 11, &labels)
                     }
                 }
             };
@@ -1031,7 +1083,7 @@ fn evaluate_baselines(train: &[Example], eval_rows: &[Example]) -> Vec<serde_jso
             "baseline": baseline.as_str(),
             "accuracy": safe_div(correct, eval_rows.len()),
             "eval_row_count": eval_rows.len(),
-            "eval_row_hash": eval_row_hash(eval_rows),
+            "eval_row_hash": eval_row_hash_value,
             "top_output_rate": top_output_rate(&distribution, eval_rows.len()),
             "output_entropy": entropy(&distribution, eval_rows.len())
         }));
@@ -1039,16 +1091,44 @@ fn evaluate_baselines(train: &[Example], eval_rows: &[Example]) -> Vec<serde_jso
     rows
 }
 
+fn build_ngram_counts(train: &[Example]) -> BTreeMap<usize, BTreeMap<String, usize>> {
+    let mut by_order = BTreeMap::<usize, BTreeMap<String, usize>>::new();
+    for ex in train {
+        if ex.task_family != TaskFamily::FinewebRawContinuation.as_str() {
+            continue;
+        }
+        let lowered = ex.input.to_ascii_lowercase();
+        let Some((_prefix, cand_a, cand_b)) = parse_candidates(&lowered) else {
+            continue;
+        };
+        let observed = if ex.expected_output == "candidate_a" {
+            cand_a
+        } else {
+            cand_b
+        };
+        let chars: Vec<char> = observed.chars().collect();
+        for order in 1..=3usize {
+            let counts = by_order.entry(order).or_default();
+            for window in chars.windows(order) {
+                let key = window.iter().collect::<String>();
+                *counts.entry(key).or_insert(0) += 1;
+            }
+        }
+    }
+    by_order
+}
+
 fn ngram_candidate_baseline(
     baseline: BaselineKind,
     ex: &Example,
-    train: &[Example],
+    ngram_counts: &BTreeMap<usize, BTreeMap<String, usize>>,
     majority: &str,
 ) -> String {
     if ex.task_family != TaskFamily::FinewebRawContinuation.as_str() {
         return majority.to_string();
     }
-    let Some((prefix, cand_a, cand_b)) = parse_candidates(&ex.input) else {
+    let lowered = ex.input.to_ascii_lowercase();
+    let Some((_prefix, cand_a, cand_b)) = parse_candidates(&lowered) else {
         return majority.to_string();
     };
     let order = match baseline {
@@ -1057,8 +1137,8 @@ fn ngram_candidate_baseline(
         BaselineKind::TrigramFrequency => 3,
         _ => 1,
     };
-    let score_a = candidate_ngram_score(&prefix, &cand_a, train, order);
-    let score_b = candidate_ngram_score(&prefix, &cand_b, train, order);
+    let score_a = candidate_ngram_score(&cand_a, ngram_counts, order);
+    let score_b = candidate_ngram_score(&cand_b, ngram_counts, order);
     if score_a >= score_b {
         "candidate_a".to_string()
     } else {
@@ -1066,25 +1146,22 @@ fn ngram_candidate_baseline(
     }
 }
 
-fn candidate_ngram_score(prefix: &str, candidate: &str, train: &[Example], order: usize) -> f64 {
-    let mut counts = BTreeMap::<String, usize>::new();
-    for ex in train {
-        if ex.task_family == TaskFamily::FinewebRawContinuation.as_str() {
-            for token in tokenize(&ex.input).windows(order) {
-                *counts.entry(token.join("_")).or_insert(0) += 1;
-            }
-        }
-    }
-    let key = format!(
-        "{}_{}",
-        prefix
-            .chars()
-            .rev()
-            .take(order.saturating_sub(1).max(1))
-            .collect::<String>(),
-        candidate.chars().next().unwrap_or(' ')
-    );
-    counts.get(&key).copied().unwrap_or(0) as f64
+fn candidate_ngram_score(
+    candidate: &str,
+    ngram_counts: &BTreeMap<usize, BTreeMap<String, usize>>,
+    order: usize,
+) -> f64 {
+    let Some(counts) = ngram_counts.get(&order) else {
+        return 0.0;
+    };
+    let chars: Vec<char> = candidate.chars().collect();
+    chars
+        .windows(order)
+        .map(|window| {
+            let key = window.iter().collect::<String>();
+            counts.get(&key).copied().unwrap_or(0) as f64
+        })
+        .sum()
 }
 
 fn generate_dataset(text: &str, split: Split, count: usize, rng: &mut StdRng) -> Vec<Example> {
@@ -1177,12 +1254,7 @@ fn make_fineweb_example(text: &str, split: Split, idx: usize, rng: &mut StdRng) 
     }
 }
 
-fn make_anchor_example(
-    split: Split,
-    family: TaskFamily,
-    idx: usize,
-    rng: &mut StdRng,
-) -> Example {
+fn make_anchor_example(split: Split, family: TaskFamily, idx: usize, rng: &mut StdRng) -> Example {
     let keys = [
         "raven_code",
         "wolf_code",
@@ -1194,12 +1266,13 @@ fn make_anchor_example(
         "pebble_code",
     ];
     let values = [
-        "amber", "violet", "silver", "green", "copper", "indigo", "scarlet", "cobalt",
-        "ivory", "teal", "umber", "gold",
+        "amber", "violet", "silver", "green", "copper", "indigo", "scarlet", "cobalt", "ivory",
+        "teal", "umber", "gold",
     ];
     let key = keys[(idx + rng.gen_range(0..keys.len())) % keys.len()];
     let distractor_key = keys[(idx + 3) % keys.len()];
-    let value_idx = (idx * 5 + split_index(split) * 3 + rng.gen_range(0..values.len())) % values.len();
+    let value_idx =
+        (idx * 5 + split_index(split) * 3 + rng.gen_range(0..values.len())) % values.len();
     let value = values[value_idx];
     let distractor_value = values[(value_idx + 5) % values.len()];
     let template_id = match (family, split) {
@@ -1245,7 +1318,12 @@ fn make_anchor_example(
         _ => String::new(),
     };
     Example {
-        id: format!("anchor_{}_{}_{}", family.as_str().to_lowercase(), split.as_str(), idx),
+        id: format!(
+            "anchor_{}_{}_{}",
+            family.as_str().to_lowercase(),
+            split.as_str(),
+            idx
+        ),
         split: split.as_str().to_string(),
         task_family: family.as_str().to_string(),
         input,
@@ -1291,7 +1369,10 @@ fn featurize(input: &str, dim: usize, use_route_features: bool) -> Vec<usize> {
         feats.insert(hash_feature(dim, &format!("tok:{token}")));
     }
     for window in tokens.windows(2) {
-        feats.insert(hash_feature(dim, &format!("bi:{}:{}", window[0], window[1])));
+        feats.insert(hash_feature(
+            dim,
+            &format!("bi:{}:{}", window[0], window[1]),
+        ));
     }
     for window in tokens.windows(3) {
         feats.insert(hash_feature(
@@ -1364,9 +1445,17 @@ fn parse_candidates(input: &str) -> Option<(String, String, String)> {
 }
 
 fn boundary_score_feature(prefix: &str, candidate: &str) -> &'static str {
-    let last = prefix.chars().rev().find(|c| !c.is_control()).unwrap_or(' ');
+    let last = prefix
+        .chars()
+        .rev()
+        .find(|c| !c.is_control())
+        .unwrap_or(' ');
     let first = candidate.chars().find(|c| !c.is_control()).unwrap_or(' ');
-    match (last.is_ascii_alphabetic(), first.is_ascii_alphabetic(), first.is_whitespace()) {
+    match (
+        last.is_ascii_alphabetic(),
+        first.is_ascii_alphabetic(),
+        first.is_whitespace(),
+    ) {
         (true, true, _) => "word_continues",
         (true, false, true) => "word_space",
         (false, true, _) => "new_word",
@@ -1400,6 +1489,68 @@ fn split_index(split: Split) -> usize {
         Split::Train => 0,
         Split::Heldout => 1,
         Split::Ood => 2,
+    }
+}
+
+fn resolve_source_path(cfg: &Config) -> PathBuf {
+    if cfg.mode == "confirm" {
+        cfg.fineweb_source
+            .clone()
+            .unwrap_or_else(|| cfg.fineweb_root.join("fineweb_confirm_snapshot.txt"))
+    } else {
+        cfg.fineweb_root.join(SMOKE_SOURCE_NAME)
+    }
+}
+
+fn validate_config(cfg: &Config) -> Result<(), (&'static str, &'static str)> {
+    match cfg.mode.as_str() {
+        "smoke" => {
+            if cfg.fineweb_bytes < MIN_SMOKE_BYTES || cfg.fineweb_bytes > MAX_SMOKE_BYTES {
+                return Err((
+                    "FULL_CORPUS_TRAINING_ATTEMPTED",
+                    "smoke FineWeb byte cap must stay between 10 and 50 MiB",
+                ));
+            }
+        }
+        "confirm" => {
+            if cfg.fineweb_source.is_none() {
+                return Err((
+                    "FULL_CORPUS_TRAINING_ATTEMPTED",
+                    "confirm mode requires a target-local --fineweb-source snapshot and never falls back to full corpus or parquet sweep",
+                ));
+            }
+            if cfg.fineweb_bytes <= MAX_SMOKE_BYTES || cfg.fineweb_bytes > MAX_CONFIRM_BYTES {
+                return Err((
+                    "CONFIRM_SCALE_LIMIT_EXCEEDED",
+                    "confirm FineWeb byte cap must be above smoke scale and at or below 1 GiB",
+                ));
+            }
+            if cfg.anchorcell_examples == 0 || cfg.anchorcell_examples > MAX_ANCHORCELL_EXAMPLES {
+                return Err((
+                    "CONFIRM_SCALE_LIMIT_EXCEEDED",
+                    "confirm AnchorCell examples must be between 1 and 250000",
+                ));
+            }
+        }
+        _ => {
+            return Err((
+                "FULL_CORPUS_TRAINING_ATTEMPTED",
+                "mode must be smoke or confirm; no full-corpus fallback is allowed",
+            ));
+        }
+    }
+    Ok(())
+}
+
+fn dataset_counts(cfg: &Config) -> (usize, usize, usize) {
+    if cfg.mode == "confirm" {
+        let total = cfg.anchorcell_examples;
+        let train = total * 70 / 100;
+        let heldout = total * 15 / 100;
+        let ood = total.saturating_sub(train + heldout);
+        (train.max(1), heldout.max(1), ood.max(1))
+    } else {
+        (6_000, 1_500, 1_500)
     }
 }
 
@@ -1459,7 +1610,10 @@ fn class_of(c: char) -> &'static str {
 }
 
 fn shuffle_labels(examples: &mut [Example], seed: u64) {
-    let labels: Vec<String> = examples.iter().map(|ex| ex.expected_output.clone()).collect();
+    let labels: Vec<String> = examples
+        .iter()
+        .map(|ex| ex.expected_output.clone())
+        .collect();
     for (idx, ex) in examples.iter_mut().enumerate() {
         ex.expected_output = labels[(idx + 17 + seed as usize) % labels.len()].clone();
     }
@@ -1492,8 +1646,7 @@ fn majority_label(train: &[Example]) -> String {
         .unwrap_or_default()
 }
 
-fn shifted_label(label: &str, shift: usize, train: &[Example]) -> String {
-    let labels = collect_labels(train, &[], &[]);
+fn shifted_label_cached(label: &str, shift: usize, labels: &[String]) -> String {
     if labels.is_empty() {
         return String::new();
     }
@@ -1516,7 +1669,11 @@ fn family_counts(examples: &[Example]) -> BTreeMap<String, usize> {
     counts
 }
 
-fn split_leakage_audit(train: &[Example], heldout: &[Example], ood: &[Example]) -> serde_json::Value {
+fn split_leakage_audit(
+    train: &[Example],
+    heldout: &[Example],
+    ood: &[Example],
+) -> serde_json::Value {
     let train_inputs: BTreeSet<_> = train.iter().map(|ex| ex.input.clone()).collect();
     let train_labels: BTreeSet<_> = train.iter().map(|ex| ex.expected_output.clone()).collect();
     let heldout_inputs: BTreeSet<_> = heldout.iter().map(|ex| ex.input.clone()).collect();
@@ -1609,12 +1766,16 @@ fn baseline_accuracy(rows: &[serde_json::Value], name: &str) -> f64 {
 }
 
 fn eval_row_hash(eval_rows: &[Example]) -> String {
-    let payload = eval_rows
-        .iter()
-        .map(|ex| format!("{}|{}|{}", ex.id, ex.input, ex.expected_output))
-        .collect::<Vec<_>>()
-        .join("\n");
-    hex_sha256(payload.as_bytes())
+    let mut hasher = Sha256::new();
+    for ex in eval_rows {
+        hasher.update(ex.id.as_bytes());
+        hasher.update(b"|");
+        hasher.update(ex.input.as_bytes());
+        hasher.update(b"|");
+        hasher.update(ex.expected_output.as_bytes());
+        hasher.update(b"\n");
+    }
+    format!("{:x}", hasher.finalize())
 }
 
 fn collapse_json(result: &ArmResult) -> serde_json::Value {
@@ -1636,7 +1797,10 @@ fn collapse_json(result: &ArmResult) -> serde_json::Value {
 fn mixed_row(rows: &[MetricsRow]) -> Option<&MetricsRow> {
     rows.iter()
         .find(|row| row.arm == ArmKind::MixedWithRouteGrammarOn.as_str())
-        .or_else(|| rows.iter().find(|row| row.arm == ArmKind::MixedFinewebAnchorcellTraining.as_str()))
+        .or_else(|| {
+            rows.iter()
+                .find(|row| row.arm == ArmKind::MixedFinewebAnchorcellTraining.as_str())
+        })
 }
 
 fn derive_verdicts(rows: &[MetricsRow], leakage_fail: bool, fineweb_mutated: bool) -> Vec<String> {
@@ -1728,7 +1892,10 @@ fn derive_verdicts(rows: &[MetricsRow], leakage_fail: bool, fineweb_mutated: boo
     verdicts
 }
 
-fn write_pipeline_reports(out: &Path, rows: &[MetricsRow]) -> Result<(), Box<dyn std::error::Error>> {
+fn write_pipeline_reports(
+    out: &Path,
+    rows: &[MetricsRow],
+) -> Result<(), Box<dyn std::error::Error>> {
     let reload_row = rows
         .iter()
         .find(|row| row.arm == ArmKind::CheckpointReloadEval.as_str())
@@ -1832,8 +1999,16 @@ fn write_running_summary(
     )
 }
 
-fn write_failure(out: &Path, verdict: &str, message: &str) -> Result<(), Box<dyn std::error::Error>> {
-    append_progress(out, "failed", json!({"verdict": verdict, "message": message}))?;
+fn write_failure(
+    out: &Path,
+    verdict: &str,
+    message: &str,
+) -> Result<(), Box<dyn std::error::Error>> {
+    append_progress(
+        out,
+        "failed",
+        json!({"verdict": verdict, "message": message}),
+    )?;
     write_json(
         &out.join("summary.json"),
         &json!({
@@ -1908,12 +2083,23 @@ fn hex_sha256(bytes: &[u8]) -> String {
     format!("{:x}", hasher.finalize())
 }
 
-fn write_offsets(path: &Path, train: &[Example], heldout: &[Example], ood: &[Example]) -> std::io::Result<()> {
+fn write_offsets(
+    path: &Path,
+    train: &[Example],
+    heldout: &[Example],
+    ood: &[Example],
+) -> std::io::Result<()> {
     if let Some(parent) = path.parent() {
         fs::create_dir_all(parent)?;
     }
     let mut file = File::create(path)?;
-    for ex in train.iter().chain(heldout).chain(ood).filter(|ex| ex.source_offset.is_some()).take(1200) {
+    for ex in train
+        .iter()
+        .chain(heldout)
+        .chain(ood)
+        .filter(|ex| ex.source_offset.is_some())
+        .take(1200)
+    {
         writeln!(
             file,
             "{}",
@@ -1999,10 +2185,13 @@ fn parse_args() -> Result<Config, Box<dyn std::error::Error>> {
         "target/pilot_wave/stable_loop_phase_lock_067_real_text_anchorcell_training_poc/smoke",
     );
     let mut fineweb_root = PathBuf::from(DEFAULT_FINEWEB_ROOT);
+    let mut fineweb_source = None;
     let mut mode = "smoke".to_string();
     let mut seed = 2026u64;
     let mut heartbeat_sec = 20u64;
     let mut fineweb_bytes = DEFAULT_SMOKE_BYTES;
+    let mut fineweb_bytes_set = false;
+    let mut anchorcell_examples = DEFAULT_ANCHORCELL_EXAMPLES;
     let mut args = std::env::args().skip(1);
     while let Some(arg) = args.next() {
         match arg.as_str() {
@@ -2010,29 +2199,52 @@ fn parse_args() -> Result<Config, Box<dyn std::error::Error>> {
             "--fineweb-root" => {
                 fineweb_root = PathBuf::from(args.next().ok_or("--fineweb-root requires value")?)
             }
+            "--fineweb-source" => {
+                fineweb_source = Some(PathBuf::from(
+                    args.next().ok_or("--fineweb-source requires value")?,
+                ))
+            }
             "--mode" => mode = args.next().ok_or("--mode requires value")?,
             "--seed" => seed = args.next().ok_or("--seed requires value")?.parse()?,
             "--heartbeat-sec" => {
-                heartbeat_sec = args.next().ok_or("--heartbeat-sec requires value")?.parse()?
+                heartbeat_sec = args
+                    .next()
+                    .ok_or("--heartbeat-sec requires value")?
+                    .parse()?
             }
             "--fineweb-bytes" => {
-                fineweb_bytes = args.next().ok_or("--fineweb-bytes requires value")?.parse()?
+                fineweb_bytes = args
+                    .next()
+                    .ok_or("--fineweb-bytes requires value")?
+                    .parse()?;
+                fineweb_bytes_set = true;
+            }
+            "--anchorcell-examples" => {
+                anchorcell_examples = args
+                    .next()
+                    .ok_or("--anchorcell-examples requires value")?
+                    .parse()?
             }
             "--help" | "-h" => {
                 println!(
-                    "phase_lane_real_text_anchorcell_training_poc --out DIR --fineweb-root DIR --mode smoke --seed 2026 --heartbeat-sec 20"
+                    "phase_lane_real_text_anchorcell_training_poc --out DIR --fineweb-root DIR --mode smoke|confirm --seed 2026 --heartbeat-sec 20 [--fineweb-source FILE] [--fineweb-bytes N] [--anchorcell-examples N]"
                 );
                 std::process::exit(0);
             }
             other => return Err(format!("unknown arg: {other}").into()),
         }
     }
+    if mode == "confirm" && !fineweb_bytes_set {
+        fineweb_bytes = DEFAULT_CONFIRM_BYTES;
+    }
     Ok(Config {
         out,
         fineweb_root,
+        fineweb_source,
         mode,
         seed,
         heartbeat_sec,
         fineweb_bytes,
+        anchorcell_examples,
     })
 }
