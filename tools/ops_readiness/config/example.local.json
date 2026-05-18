@@ -1,0 +1,11 @@
+{
+  "schema_version": "instnct_ops_readiness_gate_config_v1",
+  "service_config_path": "tools/instnct_service_alpha/config/example.local.json",
+  "out_dir": "target/pilot_wave/stable_loop_phase_lock_064_observability_incident_backup_gate/example_local",
+  "heartbeat_sec": 20,
+  "production_deployment": false,
+  "hosted_saas": false,
+  "public_beta": false,
+  "production_sre_ready": false,
+  "disaster_recovery_guaranteed": false
+}
