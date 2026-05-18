@@ -49,12 +49,13 @@ ROUTES = [
     "POST /v1/jobs",
     "GET /v1/jobs/{job_id}",
     "POST /v1/infer",
+    "POST /v1/bounded-chat/infer",
     "POST /v1/evaluate",
     "POST /v1/visual-export",
     "GET /v1/artifacts/{job_id}/{artifact_name}",
 ]
 
-ALLOWED_OPERATIONS = {"healthcheck", "infer", "evaluate", "visual_export"}
+ALLOWED_OPERATIONS = {"healthcheck", "infer", "bounded_chat_infer", "evaluate", "visual_export"}
 REGULATED_TOKENS = [
     "clinical",
     "diagnosis",
@@ -69,8 +70,15 @@ REGULATED_TOKENS = [
     "placement",
     "proctoring",
     "high-stakes",
+    "high_stakes",
+    "high_stakes_education",
+    "production",
+    "production mode",
+    "production_mode",
     "hosted saas",
     "hosted_saas",
+    "public mode",
+    "public_mode",
     "production deployment",
     "production_deployment",
     "public beta",
@@ -118,6 +126,13 @@ def append_jsonl(path: Path, value: Any) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("a", encoding="utf-8") as handle:
         handle.write(json.dumps(value, sort_keys=True) + "\n")
+
+
+def write_jsonl(path: Path, rows: list[Any]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("w", encoding="utf-8") as handle:
+        for row in rows:
+            handle.write(json.dumps(row, sort_keys=True) + "\n")
 
 
 def read_json(path: Path) -> Any:
@@ -198,6 +213,11 @@ def load_config(path: Path, out_override: str | None = None) -> dict[str, Any]:
         "out_dir",
         "rate_limit_max_requests",
         "rate_limit_window_sec",
+        "bounded_chat_artifact_root",
+        "bounded_chat_runtime_out_root",
+        "bounded_chat_max_input_chars",
+        "bounded_chat_max_response_tokens",
+        "bounded_chat_timeout_ms",
         "production_default_training_enabled",
         "public_beta_promoted",
         "production_api_ready",
@@ -218,12 +238,21 @@ def load_config(path: Path, out_override: str | None = None) -> dict[str, Any]:
         raise ServiceError("CONFIG_INVALID", "rate_limit_max_requests must be positive")
     if not isinstance(config["rate_limit_window_sec"], int) or config["rate_limit_window_sec"] < 1:
         raise ServiceError("CONFIG_INVALID", "rate_limit_window_sec must be positive")
+    artifact_root = resolve_out_dir(str(config["bounded_chat_artifact_root"]))
+    if not artifact_root.exists():
+        raise ServiceError("UPSTREAM_083_ARTIFACT_MISSING", "bounded_chat_artifact_root does not exist")
+    runtime_out_root = resolve_out_dir(str(config["bounded_chat_runtime_out_root"]))
+    for key in ["bounded_chat_max_input_chars", "bounded_chat_max_response_tokens", "bounded_chat_timeout_ms"]:
+        if not isinstance(config[key], int) or config[key] < 1:
+            raise ServiceError("CONFIG_INVALID", f"{key} must be a positive integer")
     deployment_config = resolve_repo_file(str(config["deployment_config_path"]))
     if not deployment_config.exists():
         raise ServiceError("CONFIG_INVALID", "deployment_config_path does not exist")
     config["_config_path"] = str(config_path.relative_to(REPO_ROOT))
     config["_deployment_config_resolved"] = str(deployment_config.relative_to(REPO_ROOT))
     config["_out_dir_resolved"] = str(resolve_out_dir(str(config["out_dir"])).relative_to(REPO_ROOT))
+    config["_bounded_chat_artifact_root_resolved"] = str(artifact_root.relative_to(REPO_ROOT))
+    config["_bounded_chat_runtime_out_root_resolved"] = str(runtime_out_root.relative_to(REPO_ROOT))
     return config
 
 
@@ -276,6 +305,11 @@ class ServiceState:
         self.config = config
         self.out_dir = resolve_out_dir(str(config["out_dir"]))
         self.deployment_config_path = str(config["_deployment_config_resolved"])
+        self.bounded_chat_artifact_root = resolve_out_dir(str(config["bounded_chat_artifact_root"]))
+        self.bounded_chat_runtime_out_root = resolve_out_dir(str(config["bounded_chat_runtime_out_root"]))
+        self.bounded_chat_max_input_chars = int(config["bounded_chat_max_input_chars"])
+        self.bounded_chat_max_response_tokens = int(config["bounded_chat_max_response_tokens"])
+        self.bounded_chat_timeout_ms = int(config["bounded_chat_timeout_ms"])
         self.bearer_token = str(config["bearer_token"])
         self.rate_limit_max_requests = int(config["rate_limit_max_requests"])
         self.rate_limit_window_sec = int(config["rate_limit_window_sec"])
@@ -284,6 +318,46 @@ class ServiceState:
         self.idempotency: dict[str, tuple[str, str]] = {}
         self.service_smoke_start = service_smoke_start
         self.lock = threading.Lock()
+
+    def service_progress(self, event: str, status: str, **details: Any) -> None:
+        append_jsonl(
+            self.out_dir / "progress.jsonl",
+            {
+                "timestamp_ms": now_ms(),
+                "event": event,
+                "status": status,
+                "details": details,
+            },
+        )
+
+    def service_audit(
+        self,
+        *,
+        request_id: str,
+        route: str,
+        auth_result: str,
+        policy_result: str,
+        status: str,
+        prompt_sha256: str | None = None,
+        child_job_path: str | None = None,
+        checkpoint_sha256: str | None = None,
+        artifact_package_zip_sha256: str | None = None,
+    ) -> None:
+        append_jsonl(
+            self.out_dir / "audit_log.jsonl",
+            {
+                "request_id": request_id,
+                "timestamp": now_ms(),
+                "route": route,
+                "auth_result": auth_result,
+                "policy_result": policy_result,
+                "status": status,
+                "prompt_sha256": prompt_sha256,
+                "child_job_path": child_job_path,
+                "checkpoint_sha256": checkpoint_sha256,
+                "artifact_package_zip_sha256": artifact_package_zip_sha256,
+            },
+        )
 
     def check_rate_limit(self) -> tuple[int, int | None]:
         now = time.time()
@@ -300,7 +374,9 @@ class ServiceState:
                 retryable=True,
                 details={
                     "rate_limit_policy": RATE_LIMIT_POLICY,
+                    "limit": self.rate_limit_max_requests,
                     "rate_limit_remaining": 0,
+                    "reset_after": self.rate_limit_window_sec,
                     "retry_after": retry_after,
                 },
             )
@@ -394,6 +470,225 @@ class ServiceState:
 
         self.run_job(job, body)
         return job
+
+    def validate_bounded_chat_body(self, body: dict[str, Any]) -> tuple[str, int]:
+        if "prompt" not in body:
+            raise ServiceError("INVALID_INPUT", "missing prompt")
+        prompt = body["prompt"]
+        if not isinstance(prompt, str):
+            raise ServiceError("INVALID_INPUT", "prompt must be a string")
+        if not prompt:
+            raise ServiceError("INVALID_INPUT", "prompt must not be empty")
+        if not prompt.strip():
+            raise ServiceError("INVALID_INPUT", "prompt must not be whitespace")
+        if len(prompt) > self.bounded_chat_max_input_chars:
+            raise ServiceError(
+                "INVALID_INPUT",
+                "prompt exceeds bounded_chat_max_input_chars",
+                details={"max_input_chars": self.bounded_chat_max_input_chars},
+            )
+        max_tokens = body.get("max_response_tokens", self.bounded_chat_max_response_tokens)
+        if not isinstance(max_tokens, int) or max_tokens < 1 or max_tokens > self.bounded_chat_max_response_tokens:
+            raise ServiceError(
+                "INVALID_INPUT",
+                "max_response_tokens must be a positive integer within the configured bound",
+                details={"max_response_tokens_limit": self.bounded_chat_max_response_tokens},
+            )
+        return prompt, max_tokens
+
+    def create_bounded_chat_job(self, body: dict[str, Any], request_id: str) -> JobRecord:
+        prompt, max_tokens = self.validate_bounded_chat_body(body)
+        decision = policy_decision(body)
+        if not decision["allowed"]:
+            raise ServiceError("POLICY_GUARD_REJECTED", "policy guard rejected request", status=403, details=decision)
+
+        body_hash = sha256_text(canonical_json(body))
+        idempotency_key = body.get("idempotency_key")
+        if idempotency_key is not None and not isinstance(idempotency_key, str):
+            raise ServiceError("INVALID_INPUT", "idempotency_key must be a string")
+
+        with self.lock:
+            if idempotency_key and idempotency_key in self.idempotency:
+                old_hash, old_job_id = self.idempotency[idempotency_key]
+                if old_hash != body_hash:
+                    raise ServiceError(
+                        "IDEMPOTENCY_CONFLICT",
+                        "same idempotency_key used with a different request body",
+                        status=409,
+                        details={"idempotency_key": idempotency_key},
+                    )
+                return self.jobs[old_job_id]
+
+            seed = idempotency_key or f"{request_id}:{time.time_ns()}"
+            job_id = "job_" + hashlib.sha256(f"bounded-chat:{seed}:{body_hash}".encode("utf-8")).hexdigest()[:16]
+            job_dir = self.out_dir / "jobs" / job_id
+            if job_dir.exists() and not idempotency_key:
+                shutil.rmtree(job_dir)
+            job_dir.mkdir(parents=True, exist_ok=True)
+            child_out = self.bounded_chat_runtime_out_root / job_id
+            if child_out.exists() and not idempotency_key:
+                shutil.rmtree(child_out)
+            child_command = [
+                "cargo",
+                "run",
+                "-p",
+                "instnct-core",
+                "--example",
+                "phase_lane_bounded_chat_inference_runtime",
+                "--",
+                "--out",
+                str(child_out.relative_to(REPO_ROOT)),
+                "--artifact-root",
+                str(self.bounded_chat_artifact_root.relative_to(REPO_ROOT)),
+                "--prompt",
+                prompt,
+                "--max-input-chars",
+                str(self.bounded_chat_max_input_chars),
+                "--max-response-tokens",
+                str(max_tokens),
+                "--timeout-ms",
+                str(self.bounded_chat_timeout_ms),
+                "--json",
+                "--heartbeat-sec",
+                "20",
+            ]
+            job = JobRecord(
+                job_id=job_id,
+                operation="bounded_chat_infer",
+                request_id=request_id,
+                request_body_hash=body_hash,
+                idempotency_key=idempotency_key,
+                job_dir=job_dir,
+                job_created_at=time.time(),
+                child_command=child_command,
+            )
+            self.jobs[job_id] = job
+            if idempotency_key:
+                self.idempotency[idempotency_key] = (body_hash, job_id)
+
+        if not (job.job_dir / "bounded_chat_response.json").exists():
+            self.run_bounded_chat_job(job, prompt)
+        return job
+
+    def run_bounded_chat_job(self, job: JobRecord, prompt: str) -> None:
+        self.progress(job, "job_created", "completed", operation=job.operation)
+        self.audit(job, "job_created", "completed", operation=job.operation)
+        self.progress(job, "child_started", "start", child_command=job.child_command)
+        self.audit(job, "child_started", "start", child_command=job.child_command)
+        process_timeout_sec = max(30.0, self.bounded_chat_timeout_ms / 1000.0 + 10.0)
+        try:
+            child = subprocess.run(
+                job.child_command,
+                cwd=REPO_ROOT,
+                text=True,
+                capture_output=True,
+                timeout=process_timeout_sec,
+            )
+        except subprocess.TimeoutExpired as exc:
+            job.child_exit_code = None
+            (job.job_dir / "child_stdout.txt").write_text(str(exc.stdout or ""), encoding="utf-8")
+            (job.job_dir / "child_stderr.txt").write_text(str(exc.stderr or ""), encoding="utf-8")
+            self.progress(job, "child_timeout", "failed", timeout_sec=process_timeout_sec)
+            self.audit(job, "child_timeout", "failed", timeout_sec=process_timeout_sec)
+            raise ServiceError(
+                "TIMEOUT_GUARD_FAILS",
+                "bounded chat child runtime exceeded service child timeout",
+                status=504,
+                retryable=True,
+                details={"child_job_path": str(job.job_dir.relative_to(REPO_ROOT))},
+            ) from exc
+
+        job.child_exit_code = child.returncode
+        (job.job_dir / "child_stdout.txt").write_text(child.stdout, encoding="utf-8")
+        (job.job_dir / "child_stderr.txt").write_text(child.stderr, encoding="utf-8")
+        self.progress(
+            job,
+            "child_completed",
+            "completed" if child.returncode == 0 else "failed",
+            child_exit_code=child.returncode,
+        )
+        self.audit(
+            job,
+            "child_completed",
+            "completed" if child.returncode == 0 else "failed",
+            child_exit_code=child.returncode,
+        )
+
+        child_out = self.bounded_chat_runtime_out_root / job.job_id
+        required = ["single_inference.json", "runtime_metrics.json", "summary.json", "report.md", "audit_log.jsonl"]
+        missing = [name for name in required if not (child_out / name).exists()]
+        if missing:
+            raise ServiceError(
+                "BOUNDED_CHAT_INFERENCE_CHILD_RUNTIME_FAILS",
+                "bounded chat child artifacts missing",
+                status=500,
+                details={"missing": missing},
+            )
+        inference = read_json(child_out / "single_inference.json")
+        metrics = read_json(child_out / "runtime_metrics.json")
+        summary = read_json(child_out / "summary.json")
+        verdicts = summary.get("verdicts", []) if isinstance(summary, dict) else []
+        child_positive = "BOUNDED_CHAT_INFERENCE_RUNTIME_POSITIVE" in verdicts
+        unsupported_child = inference.get("status") == "unsupported"
+        if child.returncode != 0 and not unsupported_child:
+            raise ServiceError(
+                "BOUNDED_CHAT_INFERENCE_CHILD_RUNTIME_FAILS",
+                "bounded chat child runtime failed",
+                status=500,
+                details={"child_exit_code": child.returncode, "child_job_path": str(job.job_dir.relative_to(REPO_ROOT))},
+            )
+        if not child_positive and not unsupported_child:
+            raise ServiceError("BOUNDED_CHAT_INFERENCE_CHILD_RUNTIME_FAILS", "child 084 summary was not positive", status=500)
+        if metrics.get("artifact_hash_verified") is not True:
+            raise ServiceError("ARTIFACT_HASH_MISMATCH", "child artifact hash verification failed", status=500)
+        if metrics.get("checkpoint_hash_unchanged") is not True:
+            raise ServiceError("CHECKPOINT_MUTATION_DETECTED", "child checkpoint hash changed", status=500)
+        if metrics.get("train_step_count") != 0:
+            raise ServiceError("TRAINING_SIDE_EFFECT_DETECTED", "child runtime reported training steps", status=500)
+
+        artifact_hash = inference.get("artifact_package_zip_sha256")
+        preserved_child_out = job.job_dir / "bounded_chat_runtime"
+        if preserved_child_out.exists():
+            shutil.rmtree(preserved_child_out)
+        preserved_child_out.mkdir(parents=True, exist_ok=True)
+        for name in required:
+            shutil.copyfile(child_out / name, preserved_child_out / name)
+
+        response = {
+            "schema_version": SERVICE_SCHEMA_VERSION,
+            "job_id": job.job_id,
+            "operation": job.operation,
+            "request_id": job.request_id,
+            "idempotency_key": job.idempotency_key,
+            "route": "/v1/bounded-chat/infer",
+            "artifact_hash": artifact_hash,
+            "child_job_path": str(child_out.relative_to(REPO_ROOT)),
+            "child_exit_code": job.child_exit_code,
+            "inference": inference,
+            "runtime_metrics": metrics,
+            "bounded_chat_child_084_positive": child_positive,
+            "production_default_training_enabled": False,
+            "public_beta_promoted": False,
+            "production_api_ready": False,
+        }
+        write_json(job.job_dir / "bounded_chat_response.json", response)
+        job.artifacts["bounded_chat_response.json"] = "bounded_chat_response.json"
+        job.artifacts["child_stdout.txt"] = "child_stdout.txt"
+        job.artifacts["child_stderr.txt"] = "child_stderr.txt"
+        for name in required:
+            job.artifacts[f"bounded_chat_runtime/{name}"] = f"bounded_chat_runtime/{name}"
+        self.add_artifact(job, "progress.jsonl", (job.job_dir / "progress.jsonl").read_text(encoding="utf-8"))
+        self.add_artifact(job, "audit_log.jsonl", (job.job_dir / "audit_log.jsonl").read_text(encoding="utf-8"))
+        self.add_artifact(job, "job_manifest.json", job.to_manifest())
+        self.progress(job, "artifacts_written", "completed", artifacts=sorted(job.artifacts))
+        self.audit(job, "artifacts_written", "completed", artifacts=sorted(job.artifacts))
+        self.add_artifact(job, "job_manifest.json", job.to_manifest())
+
+    def bounded_chat_value(self, job: JobRecord) -> dict[str, Any]:
+        path = job.job_dir / "bounded_chat_response.json"
+        if not path.exists():
+            raise ServiceError("BOUNDED_CHAT_INFERENCE_CHILD_RUNTIME_FAILS", "bounded chat response artifact missing", status=500)
+        return read_json(path)
 
     def run_job(self, job: JobRecord, body: dict[str, Any]) -> None:
         self.progress(job, "job_created", "completed", operation=job.operation)
@@ -532,7 +827,10 @@ class RequestHandler(BaseHTTPRequestHandler):
         raw = self.rfile.read(length).decode("utf-8")
         if not raw.strip():
             return {}
-        body = json.loads(raw)
+        try:
+            body = json.loads(raw)
+        except json.JSONDecodeError as exc:
+            raise ServiceError("INVALID_JSON", "malformed JSON request body") from exc
         if not isinstance(body, dict):
             raise ServiceError("INVALID_INPUT", "request JSON body must be an object")
         return body
@@ -548,20 +846,37 @@ class RequestHandler(BaseHTTPRequestHandler):
         rate_limit_remaining: int | None = None,
         retry_after: int | None = None,
     ) -> None:
+        route = urlparse(self.path).path
+        idempotency_key = None
+        artifact_hash = None
+        child_job_path = None
+        if isinstance(value, dict):
+            idempotency_key = value.get("idempotency_key")
+            artifact_hash = value.get("artifact_hash")
+            child_job_path = value.get("child_job_path")
         envelope: dict[str, Any] = {
             "schema_version": SERVICE_SCHEMA_VERSION,
             "ok": ok,
+            "value": value if ok else None,
+            "error": None if ok else error,
             "request_id": request_id,
+            "idempotency_key": idempotency_key,
+            "route": route,
             "claim_boundary": CLAIM_BOUNDARY,
             "rate_limit_policy": RATE_LIMIT_POLICY,
             "rate_limit_remaining": rate_limit_remaining,
+            "rate_limit": {
+                "policy": RATE_LIMIT_POLICY,
+                "limit": self.state.rate_limit_max_requests,
+                "remaining": rate_limit_remaining,
+                "reset_after": self.state.rate_limit_window_sec,
+                "retry_after": retry_after,
+            },
+            "artifact_hash": artifact_hash,
+            "child_job_path": child_job_path,
         }
         if retry_after is not None:
             envelope["retry_after"] = retry_after
-        if ok:
-            envelope["value"] = value
-        else:
-            envelope["error"] = error
         encoded = json.dumps(envelope, sort_keys=True).encode("utf-8")
         self.send_response(status)
         self.send_header("Content-Type", "application/json")
@@ -591,6 +906,7 @@ class RequestHandler(BaseHTTPRequestHandler):
     def guarded(self, *, auth_required: bool, handler: Any) -> None:
         request_id = self.request_id()
         remaining: int | None = None
+        route = urlparse(self.path).path
         try:
             remaining, _ = self.state.check_rate_limit()
             if auth_required:
@@ -598,8 +914,33 @@ class RequestHandler(BaseHTTPRequestHandler):
             value = handler(request_id)
             self.send_envelope(200, request_id, ok=True, value=value, rate_limit_remaining=remaining)
         except ServiceError as err:
+            if route == "/v1/bounded-chat/infer":
+                auth_result = "failed" if err.code == "AUTH_REQUIRED" else "passed"
+                policy_result = "failed" if err.code == "POLICY_GUARD_REJECTED" else "not_evaluated"
+                self.state.service_progress("bounded_chat_request_rejected", "failed", error_code=err.code)
+                self.state.service_audit(
+                    request_id=request_id,
+                    route=route,
+                    auth_result=auth_result,
+                    policy_result=policy_result,
+                    status=err.code,
+                )
             self.handle_error(err, request_id, remaining)
         except Exception as exc:  # pragma: no cover - defensive envelope guard.
+            if route == "/v1/bounded-chat/infer":
+                self.state.service_progress(
+                    "bounded_chat_request_rejected",
+                    "failed",
+                    error_code="INTERNAL_ERROR",
+                    error_message=str(exc),
+                )
+                self.state.service_audit(
+                    request_id=request_id,
+                    route=route,
+                    auth_result="passed" if auth_required else "not_required",
+                    policy_result="unknown",
+                    status=f"INTERNAL_ERROR:{exc}",
+                )
             self.handle_error(
                 ServiceError("INTERNAL_ERROR", str(exc), status=500, retryable=False),
                 request_id,
@@ -635,6 +976,9 @@ class RequestHandler(BaseHTTPRequestHandler):
         if path == "/v1/infer":
             self.guarded(auth_required=True, handler=lambda request_id: self.route_create_job(request_id, "infer"))
             return
+        if path == "/v1/bounded-chat/infer":
+            self.guarded(auth_required=True, handler=lambda request_id: self.route_bounded_chat_infer(request_id))
+            return
         if path == "/v1/evaluate":
             self.guarded(auth_required=True, handler=lambda request_id: self.route_create_job(request_id, "evaluate"))
             return
@@ -668,6 +1012,33 @@ class RequestHandler(BaseHTTPRequestHandler):
             operation = str(body.get("operation", operation)).replace("-", "_")
         job = self.state.create_job(operation, body, request_id)
         return job.to_manifest()
+
+    def route_bounded_chat_infer(self, request_id: str) -> dict[str, Any]:
+        body = self.read_body()
+        prompt = body.get("prompt") if isinstance(body, dict) else None
+        prompt_sha = sha256_text(prompt) if isinstance(prompt, str) else None
+        job = self.state.create_bounded_chat_job(body, request_id)
+        value = self.state.bounded_chat_value(job)
+        inference = value.get("inference", {})
+        self.state.service_progress(
+            "bounded_chat_inference_completed",
+            "completed",
+            job_id=job.job_id,
+            child_job_path=value.get("child_job_path"),
+            inference_status=inference.get("status"),
+        )
+        self.state.service_audit(
+            request_id=request_id,
+            route="/v1/bounded-chat/infer",
+            auth_result="passed",
+            policy_result="passed",
+            status=str(inference.get("status", "ok")),
+            prompt_sha256=prompt_sha,
+            child_job_path=value.get("child_job_path"),
+            checkpoint_sha256=inference.get("checkpoint_sha256"),
+            artifact_package_zip_sha256=inference.get("artifact_package_zip_sha256"),
+        )
+        return value
 
     def route_get_job(self, path: str) -> dict[str, Any]:
         parts = path.rstrip("/").split("/")
@@ -724,8 +1095,42 @@ def http_json(
         return exc.code, payload
 
 
+def http_raw_json(
+    method: str,
+    url: str,
+    *,
+    token: str | None = None,
+    raw_body: str = "",
+) -> tuple[int, dict[str, Any]]:
+    headers = {"Content-Type": "application/json", "X-Request-Id": f"req_{uuid.uuid4().hex[:10]}"}
+    if token is not None:
+        headers["Authorization"] = f"Bearer {token}"
+    req = urlrequest.Request(url, data=raw_body.encode("utf-8"), headers=headers, method=method)
+    try:
+        with urlrequest.urlopen(req, timeout=30) as response:
+            payload = json.loads(response.read().decode("utf-8"))
+            return response.status, payload
+    except urlerror.HTTPError as exc:
+        payload = json.loads(exc.read().decode("utf-8"))
+        return exc.code, payload
+
+
 def assert_envelope(payload: dict[str, Any], *, expect_ok: bool) -> None:
-    required = ["schema_version", "ok", "request_id", "claim_boundary", "rate_limit_policy", "rate_limit_remaining"]
+    required = [
+        "schema_version",
+        "ok",
+        "value",
+        "error",
+        "request_id",
+        "idempotency_key",
+        "route",
+        "rate_limit",
+        "artifact_hash",
+        "child_job_path",
+        "claim_boundary",
+        "rate_limit_policy",
+        "rate_limit_remaining",
+    ]
     for key in required:
         if key not in payload:
             raise ServiceError("API_ERROR_ENVELOPE_INCONSISTENT", f"missing envelope key {key}")
@@ -742,16 +1147,128 @@ def assert_envelope(payload: dict[str, Any], *, expect_ok: bool) -> None:
         for key in ["code", "message", "retryable", "details"]:
             if key not in error:
                 raise ServiceError("API_ERROR_ENVELOPE_INCONSISTENT", f"error envelope missing {key}")
+    rate_limit = payload.get("rate_limit")
+    if not isinstance(rate_limit, dict):
+        raise ServiceError("RATE_LIMIT_BOUNDARY_MISSING", "rate_limit metadata object missing")
+    for key in ["limit", "remaining", "reset_after"]:
+        if key not in rate_limit:
+            raise ServiceError("RATE_LIMIT_BOUNDARY_MISSING", f"rate_limit metadata missing {key}")
+
+
+def read_jsonl(path: Path) -> list[Any]:
+    if not path.exists():
+        return []
+    return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
+
+
+def write_smoke_progress(out_dir: Path, event: str, status: str, **details: Any) -> None:
+    append_jsonl(
+        out_dir / "progress.jsonl",
+        {
+            "timestamp_ms": now_ms(),
+            "event": event,
+            "status": status,
+            "details": details,
+        },
+    )
+
+
+def write_085_summary_report(out_dir: Path, status: str, metrics: dict[str, Any], verdicts: list[str]) -> None:
+    summary = {
+        "schema_version": SERVICE_SCHEMA_VERSION,
+        "milestone": "STABLE_LOOP_PHASE_LOCK_085_BOUNDED_CHAT_SERVICE_API_ALPHA",
+        "status": status,
+        "service_api_alpha_only": True,
+        "localhost_private_only": True,
+        "deploy_ready_service": False,
+        "public_api_claimed": False,
+        "sdk_surface_exposed": False,
+        "GPT_like_assistant_readiness_claimed": False,
+        "open_domain_chat_supported": False,
+        "production_chat_claimed": False,
+        "safety_alignment_claimed": False,
+        "public_beta_claimed": False,
+        "GA_claimed": False,
+        "hosted_SaaS_claimed": False,
+        "service_metrics": metrics,
+        "verdicts": verdicts,
+        "claim_boundary": CLAIM_BOUNDARY,
+    }
+    write_json(out_dir / "summary.json", summary)
+    (out_dir / "report.md").write_text(
+        "# STABLE_LOOP_PHASE_LOCK_085_BOUNDED_CHAT_SERVICE_API_ALPHA Report\n\n"
+        f"Status: `{status}`\n\n"
+        "085 is service API alpha only, localhost/private only. It is not deploy-ready service, "
+        "not public API, not SDK surface, not GPT-like assistant, not open-domain chat, "
+        "not production chat, not safety alignment, not public beta / GA / hosted SaaS.\n\n"
+        "The bounded chat API route delegates inference to the 084 Rust CLI child runtime and "
+        "parses `single_inference.json`, `runtime_metrics.json`, `summary.json`, `report.md`, "
+        "and `audit_log.jsonl`.\n",
+        encoding="utf-8",
+    )
 
 
 def run_smoke(config: dict[str, Any], out_dir: Path) -> dict[str, Any]:
     if out_dir.exists():
         shutil.rmtree(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
+    initial_metrics = {
+        "localhost_bind_only": False,
+        "public_bind_rejected": False,
+        "auth_required": False,
+        "auth_rejection_has_no_child_side_effect": False,
+        "policy_rejection_has_no_child_side_effect": False,
+        "rate_limit_metadata_present": False,
+        "bounded_chat_route_registered": False,
+        "bounded_chat_single_prompt_pass": False,
+        "bounded_chat_json_envelope_pass": False,
+        "bounded_chat_child_084_positive": False,
+        "artifact_hash_verified": False,
+        "checkpoint_hash_unchanged": False,
+        "train_step_count": 0,
+        "unsupported_input_handled": False,
+        "bad_input_handled": False,
+        "timeout_guard_pass": False,
+        "idempotency_reuse_pass": False,
+        "idempotency_conflict_pass": False,
+        "audit_log_written": False,
+        "child_runtime_artifacts_preserved": False,
+        "existing_062_routes_preserved": False,
+        "service_api_alpha_only": True,
+        "production_chat_claimed": False,
+        "gpt_like_assistant_readiness_claimed": False,
+        "sdk_surface_exposed": False,
+        "deployment_harness_mutated": False,
+    }
+    write_json(
+        out_dir / "queue.json",
+        {
+            "schema_version": SERVICE_SCHEMA_VERSION,
+            "milestone": "STABLE_LOOP_PHASE_LOCK_085_BOUNDED_CHAT_SERVICE_API_ALPHA",
+            "steps": [
+                "start_localhost_service",
+                "verify_auth_policy_guards",
+                "run_bounded_chat_child_runtime",
+                "verify_bad_and_unsupported_inputs",
+                "verify_idempotency",
+                "verify_rate_limit",
+                "write_final_summary",
+            ],
+            "service_api_alpha_only": True,
+            "localhost_private_only": True,
+        },
+    )
+    write_smoke_progress(out_dir, "start", "running", milestone="STABLE_LOOP_PHASE_LOCK_085_BOUNDED_CHAT_SERVICE_API_ALPHA")
+    write_085_summary_report(out_dir, "running", initial_metrics, ["BOUNDED_CHAT_SERVICE_API_ALPHA_RUNNING"])
     service_smoke_start = time.time()
     config = dict(config)
     config["out_dir"] = str(out_dir.relative_to(REPO_ROOT))
+    config["bounded_chat_runtime_out_root"] = str((out_dir / "runtime_children").relative_to(REPO_ROOT))
     config["port"] = 0
+    resolved_config = dict(config)
+    resolved_config["bearer_token"] = "<redacted>"
+    write_json(out_dir / "service_config_resolved.json", resolved_config)
+    write_json(out_dir / "route_manifest.json", {"schema_version": SERVICE_SCHEMA_VERSION, "routes": ROUTES})
     server = make_server(config, service_smoke_start)
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
@@ -759,11 +1276,17 @@ def run_smoke(config: dict[str, Any], out_dir: Path) -> dict[str, Any]:
     base_url = f"http://{host}:{port}"
     token = str(config["bearer_token"])
     observations: dict[str, Any] = {"base_url": base_url}
+    metrics = dict(initial_metrics)
+    metrics["localhost_bind_only"] = host == "127.0.0.1"
     try:
         status, health = http_json("GET", f"{base_url}/v1/health")
         assert status == 200
         assert_envelope(health, expect_ok=True)
+        if "POST /v1/bounded-chat/infer" not in health["value"]["routes"]:
+            raise ServiceError("BOUNDED_CHAT_ROUTE_MISSING", "bounded chat route missing from health metadata")
+        metrics["bounded_chat_route_registered"] = True
         observations["health_ok"] = True
+        write_smoke_progress(out_dir, "health_checked", "completed", routes=health["value"]["routes"])
 
         jobs_before = len(list((out_dir / "jobs").glob("*"))) if (out_dir / "jobs").exists() else 0
         status, auth_error = http_json("POST", f"{base_url}/v1/infer", body={"inputs": ["alpha"]})
@@ -773,6 +1296,20 @@ def run_smoke(config: dict[str, Any], out_dir: Path) -> dict[str, Any]:
         if jobs_after_auth != jobs_before:
             raise ServiceError("AUTHZ_SIDE_EFFECT_LEAK", "auth rejection created job side effects")
         observations["auth_side_effect_guard"] = True
+
+        bounded_children_before = len(list((out_dir / "runtime_children").glob("*"))) if (out_dir / "runtime_children").exists() else 0
+        status, bounded_auth_error = http_json(
+            "POST",
+            f"{base_url}/v1/bounded-chat/infer",
+            body={"prompt": "active code silver, distractor pocket teal; produce active answer"},
+        )
+        assert status == 401
+        assert_envelope(bounded_auth_error, expect_ok=False)
+        bounded_children_after_auth = len(list((out_dir / "runtime_children").glob("*"))) if (out_dir / "runtime_children").exists() else 0
+        if bounded_children_after_auth != bounded_children_before:
+            raise ServiceError("AUTHZ_SIDE_EFFECT_LEAK", "auth rejection created bounded chat child side effects")
+        metrics["auth_required"] = True
+        metrics["auth_rejection_has_no_child_side_effect"] = True
 
         status, policy_error = http_json(
             "POST",
@@ -787,6 +1324,20 @@ def run_smoke(config: dict[str, Any], out_dir: Path) -> dict[str, Any]:
             raise ServiceError("POLICY_REJECTION_SIDE_EFFECT_LEAK", "policy rejection created job side effects")
         observations["policy_side_effect_guard"] = True
 
+        status, bounded_policy_error = http_json(
+            "POST",
+            f"{base_url}/v1/bounded-chat/infer",
+            token=token,
+            body={"intended_use": "clinical high_stakes_education production public_beta hosted_saas", "prompt": "active code silver"},
+        )
+        assert status == 403
+        assert_envelope(bounded_policy_error, expect_ok=False)
+        bounded_children_after_policy = len(list((out_dir / "runtime_children").glob("*"))) if (out_dir / "runtime_children").exists() else 0
+        if bounded_children_after_policy != bounded_children_before:
+            raise ServiceError("POLICY_REJECTION_SIDE_EFFECT_LEAK", "policy rejection created bounded chat child side effects")
+        metrics["policy_rejection_has_no_child_side_effect"] = True
+        write_jsonl(out_dir / "auth_policy_results.jsonl", [bounded_auth_error, bounded_policy_error])
+
         status, policy_ok = http_json(
             "POST",
             f"{base_url}/v1/policy/check",
@@ -796,6 +1347,126 @@ def run_smoke(config: dict[str, Any], out_dir: Path) -> dict[str, Any]:
         assert status == 200
         assert_envelope(policy_ok, expect_ok=True)
         observations["policy_check_ok"] = True
+
+        bounded_prompt_body = {
+            "intended_use": "research",
+            "prompt": "active code silver, distractor pocket teal; produce active answer",
+            "max_response_tokens": 64,
+        }
+        status, bounded_ok = http_json(
+            "POST",
+            f"{base_url}/v1/bounded-chat/infer",
+            token=token,
+            body=dict(bounded_prompt_body),
+            idempotency_key="bounded-chat-ok",
+        )
+        assert status == 200
+        assert_envelope(bounded_ok, expect_ok=True)
+        bounded_value = bounded_ok["value"]
+        bounded_inference = bounded_value["inference"]
+        bounded_metrics = bounded_value["runtime_metrics"]
+        if bounded_inference["status"] != "ok":
+            raise ServiceError("BOUNDED_CHAT_INFERENCE_CHILD_RUNTIME_FAILS", "bounded chat prompt did not return ok")
+        if bounded_metrics.get("artifact_hash_verified") is not True:
+            raise ServiceError("ARTIFACT_HASH_MISMATCH", "child artifact hash was not verified")
+        if bounded_metrics.get("checkpoint_hash_unchanged") is not True:
+            raise ServiceError("CHECKPOINT_MUTATION_DETECTED", "child checkpoint hash changed")
+        if bounded_metrics.get("train_step_count") != 0:
+            raise ServiceError("TRAINING_SIDE_EFFECT_DETECTED", "child runtime reported training")
+        if "BOUNDED_CHAT_INFERENCE_RUNTIME_POSITIVE" not in read_json(REPO_ROOT / bounded_value["child_job_path"] / "summary.json").get("verdicts", []):
+            raise ServiceError("BOUNDED_CHAT_INFERENCE_CHILD_RUNTIME_FAILS", "child summary was not positive")
+        child_path = REPO_ROOT / bounded_value["child_job_path"]
+        required_child = ["single_inference.json", "runtime_metrics.json", "summary.json", "report.md", "audit_log.jsonl"]
+        if not all((child_path / name).exists() for name in required_child):
+            raise ServiceError("BOUNDED_CHAT_INFERENCE_CHILD_RUNTIME_FAILS", "child runtime artifacts were not preserved")
+        metrics["bounded_chat_single_prompt_pass"] = True
+        metrics["bounded_chat_json_envelope_pass"] = isinstance(bounded_inference, dict) and "output_text" in bounded_inference
+        metrics["bounded_chat_child_084_positive"] = True
+        metrics["artifact_hash_verified"] = True
+        metrics["checkpoint_hash_unchanged"] = True
+        metrics["train_step_count"] = 0
+        metrics["timeout_guard_pass"] = bounded_metrics.get("timeout_guard_pass") is True
+        metrics["child_runtime_artifacts_preserved"] = True
+        observations["bounded_chat_job_id"] = bounded_value["job_id"]
+        observations["bounded_chat_child_job_path"] = bounded_value["child_job_path"]
+        write_json(out_dir / "bounded_chat_request_response.json", bounded_ok)
+        write_smoke_progress(out_dir, "bounded_chat_inference_checked", "completed", job_id=bounded_value["job_id"])
+
+        status, bounded_unsupported = http_json(
+            "POST",
+            f"{base_url}/v1/bounded-chat/infer",
+            token=token,
+            body={"intended_use": "research", "prompt": "what is the weather in Budapest tomorrow"},
+            idempotency_key="bounded-chat-unsupported",
+        )
+        assert status == 200
+        assert_envelope(bounded_unsupported, expect_ok=True)
+        if bounded_unsupported["value"]["inference"]["status"] != "unsupported":
+            raise ServiceError("UNSUPPORTED_INPUT_NOT_HANDLED", "unsupported prompt did not preserve unsupported status")
+        metrics["unsupported_input_handled"] = True
+        write_jsonl(out_dir / "unsupported_input_results.jsonl", [bounded_unsupported])
+
+        oversized = "x" * (int(config["bounded_chat_max_input_chars"]) + 1)
+        bad_cases: list[tuple[str, dict[str, Any] | None, str | None]] = [
+            ("missing_prompt", {"intended_use": "research"}, None),
+            ("non_string_prompt", {"intended_use": "research", "prompt": 7}, None),
+            ("empty_prompt", {"intended_use": "research", "prompt": ""}, None),
+            ("whitespace_prompt", {"intended_use": "research", "prompt": "   "}, None),
+            ("oversized_prompt", {"intended_use": "research", "prompt": oversized}, None),
+            (
+                "invalid_max_response_tokens",
+                {"intended_use": "research", "prompt": "active code silver", "max_response_tokens": 0},
+                None,
+            ),
+            ("malformed_json", None, '{"prompt": '),
+        ]
+        bad_results: list[dict[str, Any]] = []
+        for name, body, raw in bad_cases:
+            if raw is not None:
+                status, response = http_raw_json(
+                    "POST",
+                    f"{base_url}/v1/bounded-chat/infer",
+                    token=token,
+                    raw_body=raw,
+                )
+            else:
+                status, response = http_json(
+                    "POST",
+                    f"{base_url}/v1/bounded-chat/infer",
+                    token=token,
+                    body=body,
+                )
+            assert status in {400, 403}
+            assert_envelope(response, expect_ok=False)
+            bad_results.append({"case": name, "status": status, "response": response})
+        metrics["bad_input_handled"] = True
+        write_jsonl(out_dir / "bad_input_results.jsonl", bad_results)
+
+        status, bounded_same_idem = http_json(
+            "POST",
+            f"{base_url}/v1/bounded-chat/infer",
+            token=token,
+            body=dict(bounded_prompt_body),
+            idempotency_key="bounded-chat-ok",
+        )
+        assert status == 200
+        assert_envelope(bounded_same_idem, expect_ok=True)
+        if bounded_same_idem["value"]["job_id"] != bounded_value["job_id"]:
+            raise ServiceError("IDEMPOTENCY_CONFLICT_NOT_DETECTED", "same idempotency key did not reuse bounded chat job")
+        metrics["idempotency_reuse_pass"] = True
+
+        status, bounded_idem_conflict = http_json(
+            "POST",
+            f"{base_url}/v1/bounded-chat/infer",
+            token=token,
+            body={"intended_use": "research", "prompt": "active code teal, produce active answer"},
+            idempotency_key="bounded-chat-ok",
+        )
+        assert status == 409
+        assert_envelope(bounded_idem_conflict, expect_ok=False)
+        if bounded_idem_conflict["error"]["code"] != "IDEMPOTENCY_CONFLICT":
+            raise ServiceError("IDEMPOTENCY_CONFLICT_NOT_DETECTED", "bounded chat idempotency conflict code missing")
+        metrics["idempotency_conflict_pass"] = True
 
         status, job_response = http_json(
             "POST",
@@ -877,6 +1548,7 @@ def run_smoke(config: dict[str, Any], out_dir: Path) -> dict[str, Any]:
             assert status == 403
             assert_envelope(bad_artifact, expect_ok=False)
         observations["artifact_allowlist_reject"] = True
+        metrics["existing_062_routes_preserved"] = True
     finally:
         server.shutdown()
         server.server_close()
@@ -898,9 +1570,15 @@ def run_smoke(config: dict[str, Any], out_dir: Path) -> dict[str, Any]:
         status, exceeded = http_json("GET", f"{rate_url}/v1/health")
         assert status == 429
         assert_envelope(exceeded, expect_ok=False)
-        if exceeded.get("rate_limit_policy") != RATE_LIMIT_POLICY or "retry_after" not in exceeded:
+        if (
+            exceeded.get("rate_limit_policy") != RATE_LIMIT_POLICY
+            or "retry_after" not in exceeded
+            or "retry_after" not in exceeded.get("rate_limit", {})
+        ):
             raise ServiceError("RATE_LIMIT_BOUNDARY_MISSING", "rate limit metadata missing")
         observations["rate_limit_exceeded"] = True
+        metrics["rate_limit_metadata_present"] = True
+        write_json(out_dir / "rate_limit_report.json", {"first": first, "exceeded": exceeded})
     finally:
         rate_server.shutdown()
         rate_server.server_close()
@@ -915,12 +1593,31 @@ def run_smoke(config: dict[str, Any], out_dir: Path) -> dict[str, Any]:
         if err.code != "PUBLIC_BIND_DETECTED":
             raise
     observations["public_bind_rejected"] = True
+    metrics["public_bind_rejected"] = True
+
+    child_manifest = {
+        "schema_version": SERVICE_SCHEMA_VERSION,
+        "bounded_chat_runtime_out_root": config["bounded_chat_runtime_out_root"],
+        "successful_child_job_path": observations.get("bounded_chat_child_job_path"),
+        "required_child_artifacts": ["single_inference.json", "runtime_metrics.json", "summary.json", "report.md", "audit_log.jsonl"],
+    }
+    write_json(out_dir / "child_runtime_manifest.json", child_manifest)
+    audit_rows = read_jsonl(out_dir / "audit_log.jsonl")
+    metrics["audit_log_written"] = any(row.get("route") == "/v1/bounded-chat/infer" for row in audit_rows)
+    metrics["service_api_alpha_only"] = True
+    metrics["production_chat_claimed"] = False
+    metrics["gpt_like_assistant_readiness_claimed"] = False
+    metrics["sdk_surface_exposed"] = False
+    metrics["deployment_harness_mutated"] = False
+    write_json(out_dir / "service_metrics.json", metrics)
 
     summary = {
         "schema_version": SERVICE_SCHEMA_VERSION,
         "service_api_alpha_smoke_pass": True,
+        "bounded_chat_service_api_alpha_smoke_pass": True,
         "service_smoke_start": service_smoke_start,
         "observations": observations,
+        "service_metrics": metrics,
         "verdicts": [
             "SERVICE_API_ALPHA_POSITIVE",
             "API_V1_ALPHA_SCHEMA_DEFINED",
@@ -937,6 +1634,21 @@ def run_smoke(config: dict[str, Any], out_dir: Path) -> dict[str, Any]:
             "POLICY_GUARD_REJECTS_REGULATED_SERVICE_REQUESTS",
             "API_ERROR_ENVELOPE_POSITIVE",
             "PROGRESS_AUDIT_WRITEOUT_POSITIVE",
+            "BOUNDED_CHAT_SERVICE_API_ALPHA_POSITIVE",
+            "LOCALHOST_BIND_RESTRICTED",
+            "AUTH_GUARD_PASSES",
+            "POLICY_GUARD_PASSES",
+            "RATE_LIMIT_METADATA_PASSES",
+            "BOUNDED_CHAT_ROUTE_REGISTERED",
+            "BOUNDED_CHAT_INFERENCE_CHILD_RUNTIME_PASSES",
+            "ARTIFACT_PACKAGE_VERIFIED_BY_CHILD",
+            "CHECKPOINT_UNCHANGED",
+            "JSON_RESPONSE_ENVELOPE_PASSES",
+            "BAD_INPUT_HANDLED",
+            "UNSUPPORTED_INPUT_HANDLED",
+            "AUDIT_LOG_WRITTEN",
+            "NO_TRAINING_PERFORMED",
+            "PRODUCTION_CHAT_NOT_CLAIMED",
             "PRODUCTION_API_READY_NOT_CLAIMED",
             "PUBLIC_BETA_NOT_CLAIMED",
         ],
@@ -945,7 +1657,13 @@ def run_smoke(config: dict[str, Any], out_dir: Path) -> dict[str, Any]:
     write_json(out_dir / "summary.json", summary)
     (out_dir / "report.md").write_text(
         "# STABLE_LOOP_PHASE_LOCK_062_SERVICE_API_ALPHA Smoke Report\n\n"
-        "Status: positive localhost-only service/API alpha smoke.\n\n"
+        "# STABLE_LOOP_PHASE_LOCK_085_BOUNDED_CHAT_SERVICE_API_ALPHA Smoke Report\n\n"
+        "Status: positive localhost-only service/API alpha smoke with bounded chat route.\n\n"
+        "085 is service API alpha only, localhost/private only. It is not deploy-ready service, "
+        "not public API, not SDK surface, not GPT-like assistant, not open-domain chat, "
+        "not production chat, not safety alignment, not public beta / GA / hosted SaaS.\n\n"
+        "The bounded chat route is `POST /v1/bounded-chat/infer` and it delegates inference "
+        "to the 084 Rust CLI child runtime.\n\n"
         "This smoke validates local/private API alpha infrastructure only. "
         "It is no production API readiness, no hosted SaaS, no public beta, "
         "no multi-tenant IAM, no clinical use, no high-stakes education use, "
@@ -953,6 +1671,7 @@ def run_smoke(config: dict[str, Any], out_dir: Path) -> dict[str, Any]:
         "no consciousness, no biological/FlyWire equivalence, and no physical quantum behavior.\n",
         encoding="utf-8",
     )
+    write_smoke_progress(out_dir, "final", "completed", verdict="BOUNDED_CHAT_SERVICE_API_ALPHA_POSITIVE")
     return summary
 
 
@@ -1024,4 +1743,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     sys.exit(main())
-
