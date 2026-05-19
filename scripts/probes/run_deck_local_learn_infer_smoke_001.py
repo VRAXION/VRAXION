@@ -46,6 +46,10 @@ TRAIN_TEMPLATES = [
     ("hungarian_slot", "Case {case}: aktiv kod {target}; zavaro kod {distractor}. Melyik kod marad aktiv?"),
     ("instruction_slot", "Case {case}: answer with the selected code {target}; ignore comparison code {distractor}."),
 ]
+NEGATION_TRAIN_TEMPLATES = [
+    ("negation_uses_slot", "Case {case}: local bounded answer uses {target}; do not use distractor {distractor}."),
+    ("negation_avoid_slot", "Case {case}: answer code {target}; avoid the distractor code {distractor}."),
+]
 EVAL_TEMPLATES = [
     ("heldout_active", "Fresh {case}: keep active code {target}; archive distractor is {distractor}. What code should be answered?"),
     ("heldout_original", "Fresh {case}: original code {target}; conflict says {distractor}. Keep original and answer the code."),
@@ -181,9 +185,12 @@ def resolve_target_out(text: str) -> Path:
     return (REPO_ROOT / path).resolve()
 
 
-def build_dataset(seed: int, train_repeats: int) -> tuple[list[Example], list[Example], dict[str, Any]]:
+def build_dataset(seed: int, train_repeats: int, include_negation_templates: bool) -> tuple[list[Example], list[Example], dict[str, Any]]:
     train: list[Example] = []
     eval_rows: list[Example] = []
+    train_templates = list(TRAIN_TEMPLATES)
+    if include_negation_templates:
+        train_templates.extend(NEGATION_TRAIN_TEMPLATES)
     heldout_pairs: set[str] = set()
     idx = 0
     for target_idx, target in enumerate(COLORS):
@@ -210,7 +217,7 @@ def build_dataset(seed: int, train_repeats: int) -> tuple[list[Example], list[Ex
                     idx += 1
             else:
                 for repeat in range(train_repeats):
-                    family, template = TRAIN_TEMPLATES[(idx + repeat) % len(TRAIN_TEMPLATES)]
+                    family, template = train_templates[(idx + repeat) % len(train_templates)]
                     case = 300_000 + seed + idx * 10 + repeat
                     train.append(
                         Example(
@@ -240,6 +247,7 @@ def build_dataset(seed: int, train_repeats: int) -> tuple[list[Example], list[Ex
         "train_eval_pair_overlap_count": len(train_pairs & eval_pairs),
         "train_labels": sorted({row.label for row in train}),
         "eval_labels": sorted({row.label for row in eval_rows}),
+        "include_negation_templates": include_negation_templates,
     }
     return train, eval_rows, metadata
 
@@ -528,6 +536,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--hidden", type=int, default=128)
     parser.add_argument("--lr", type=float, default=0.015)
     parser.add_argument("--train-repeats", type=int, default=6)
+    parser.add_argument("--include-negation-templates", action="store_true")
     args = parser.parse_args()
     args.out = resolve_target_out(args.out)
     return args
@@ -543,7 +552,7 @@ def main() -> int:
     torch.set_num_threads(1)
     random.seed(args.seed)
     append_jsonl(out / "progress.jsonl", {"ts": utc_now(), "event": "start", "status": "running"})
-    train_rows, eval_rows, dataset_meta = build_dataset(args.seed, args.train_repeats)
+    train_rows, eval_rows, dataset_meta = build_dataset(args.seed, args.train_repeats, args.include_negation_templates)
     write_jsonl(out / "train_dataset.jsonl", examples_to_json(train_rows))
     write_jsonl(out / "heldout_eval_dataset.jsonl", examples_to_json(eval_rows))
     write_json(out / "dataset_manifest.json", {"schema_version": "deck_local_dataset_manifest_v1", **dataset_meta})
@@ -565,6 +574,7 @@ def main() -> int:
             "hidden": args.hidden,
             "learning_rate": args.lr,
             "train_repeats": args.train_repeats,
+            "include_negation_templates": args.include_negation_templates,
             "feature_type": "word_ngram_1_3",
             "feature_count": len(vectorizer.vocab),
             "torch_version": torch.__version__,

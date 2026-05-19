@@ -146,6 +146,71 @@ The model changed its checkpoint, reduced train/eval loss, and beat static and r
 Heldout inference passed at 0.875 with no train/eval text or pair overlap.
 ```
 
+## Multi-Seed Confirmation
+
+The same smoke was run for five seeds:
+
+```text
+2026, 2027, 2028, 2029, 2030
+```
+
+Aggregate:
+
+```text
+all_positive:          true
+min_accuracy:          0.875
+mean_accuracy:         0.875
+max_accuracy:          0.875
+min_margin_vs_random:  0.750
+min_margin_vs_static:  0.7916666666666666
+checkpoint_changed:    true for all seeds
+train/eval text overlap: 0 for all seeds
+train/eval pair overlap: 0 for all seeds
+max_static_output_rate: 0.125
+max_repetition_rate:   0.0
+max_copy_prompt_rate:  0.0
+```
+
+Failure map:
+
+```text
+all failures were in heldout_bounded
+pattern: "local bounded answer uses {target}; do not use distractor {distractor}"
+```
+
+This isolated the residual 0.875 ceiling to one heldout scope/template family.
+
+## Negation/Distractor Coverage Diagnostic
+
+A second five-seed diagnostic added explicit negation/distractor training templates:
+
+```text
+--include-negation-templates
+```
+
+The gates and heldout split stayed the same.
+
+Aggregate:
+
+```text
+all_positive:          true
+min_accuracy:          1.000
+mean_accuracy:         1.000
+max_accuracy:          1.000
+min_margin_vs_random:  0.925
+min_margin_vs_static:  0.9166666666666666
+```
+
+Interpretation:
+
+```text
+The remaining heldout failure was a scope/template coverage gap.
+Adding targeted negation/distractor evidence closed the gap across five seeds.
+This supports the narrower conclusion that the Deck-local learner can acquire
+the bounded slot rule and the distractor-negation variant when that phenomenon
+is represented in training.
+```
+
 ## Boundary
 
 This is a local proof that the Deck runtime can train a fresh bounded model and run heldout inference. It does not replace the official 100/101 artifact-gated path.
