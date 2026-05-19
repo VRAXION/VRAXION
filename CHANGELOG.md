@@ -6,7 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Changed
-- Bump `docs/VERSION.json` `current_release` to `v5.0.0-beta.32`.
+- Bump `docs/VERSION.json` `current_release` to `v5.0.0-beta.33`.
 
 ## [5.0.0-beta.9] - 2026-05-01
 
