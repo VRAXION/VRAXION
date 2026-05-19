@@ -18,12 +18,67 @@ This repository is meant to be a credible front door for technical buyers and en
 
 ## Release Snapshot
 
-- **Current public release tag:** [`v5.0.0-beta.9`](https://github.com/VRAXION/VRAXION/releases/tag/v5.0.0-beta.9) (Phase D10u state-anchored wiring search + `top_01` release-candidate research checkpoint — 30/30 seeds pass adversarial 16k gate, H=384 only, not a mainline replacement)
-- **Prior release:** [`v5.0.0-beta.8`](https://github.com/VRAXION/VRAXION/releases/tag/v5.0.0-beta.8) — Phase D9.2 multi-objective confirmation + `seed2042_improved_generalist_v1` validated H=384 research checkpoint
-- **Next public milestone:** grower-based `v5.0.0 Public Beta`
-- **Current mainline code path on `main`:** [`instnct-core/examples/neuron_grower.rs`](instnct-core/examples/neuron_grower.rs)
+- **Current repo metadata release:** `v5.0.0-beta.33` in [`docs/VERSION.json`](docs/VERSION.json).
+- **Latest GitHub release with public release assets:** [`v5.0.0-beta.8`](https://github.com/VRAXION/VRAXION/releases/tag/v5.0.0-beta.8). Later beta heartbeat commits are source/evidence updates, not broad public-production releases.
+- **Bounded local/private stop condition:** **positive** as of `099_BOUNDED_LOCAL_PRIVATE_CLEAN_DEPLOY_READY_GATE`. This means the bounded-domain local/private stack is release-ready for private/local evaluation under the recorded claim boundary.
+- **Capability track:** `100_OPEN_VOCAB_ASSISTANT_CAPABILITY_SCALE` is positive, but remains research-only. It is not GPT-like readiness, not public API readiness, not production chat, and not an open-domain assistant claim.
+- **Current bounded service path:** local/private bounded chat stack through `tools/instnct_service_alpha/` and `tools/instnct_deploy/`, with evidence in the 083-100 probe lineage.
+- **Current architecture research path:** [`instnct-core/examples/neuron_grower.rs`](instnct-core/examples/neuron_grower.rs) remains the Rust architecture line; open-vocab assistant-scale work is runner-local research, not a replacement architecture claim.
 - **Python deploy SDK:** [`Python/`](Python/) — Block A + B, pure numpy, no ML framework dependency
 - **Historical Python research lane:** frozen at tag [`archives/python-research-20260420`](https://github.com/VRAXION/VRAXION/tree/archives/python-research-20260420) (was `instnct/` — archived 2026-04-20 after migration to Rust `instnct-core/`)
+- **Pre-consolidation source archive:** [`archive/pre-consolidation-20260519-main-snapshot`](https://github.com/VRAXION/VRAXION/tree/archive/pre-consolidation-20260519-main-snapshot) preserves the full tree before the May 19 cleanup.
+
+## Current Official Status
+
+```text
+Local/private bounded AI stack: release-ready under local/private claim boundary
+GPT-like / open-domain assistant: not ready
+Production/public service: not claimed
+```
+
+The validated bounded stack is:
+
+```text
+083 model artifact RC
+-> 084 local inference runtime
+-> 085 localhost/private bounded chat API alpha
+-> 086 deployment harness integration
+-> 087 OOD/red-team service eval
+-> 088 long-run/concurrency stability
+-> 089 private evaluation RC package
+-> 089B packaged winner reproducibility proof
+-> 096 fresh chat generation eval
+-> 097 multi-seed decoder/OOD/retention confirm
+-> 098 private evaluation RC refresh
+-> 099 clean local/private deploy-ready gate
+```
+
+The current research-only capability track is:
+
+```text
+091 open-vocab byte-LM foundation
+-> 092 FineWeb slice confirm
+-> 093 FineWeb margin/scale confirm
+-> 094 chat SFT mix PoC
+-> 094B free-generation gap analysis
+-> 095 decoder generation repair
+-> 096 fresh generation eval
+-> 097 multi-seed OOD/retention confirm
+-> 100 assistant capability scale probe
+```
+
+The safe external wording is:
+
+> VRAXION has a hash-checked, audited, localhost/private bounded-domain AI stack that passed artifact, runtime, API, harness, red-team, long-run, private package, generation-repair, and clean local deploy-readiness gates. Separately, runner-local open-vocab assistant capability probes show improvement, but do not prove GPT-like readiness.
+
+Forbidden overclaims:
+
+- production-ready public AI service
+- public API or hosted SaaS
+- GPT-like assistant readiness
+- open-domain chat readiness
+- safety-aligned production system
+- proof that INSTNCT/AnchorRoute is an open-domain LM winner
 
 ## Why This Architecture Is Different
 
@@ -56,39 +111,44 @@ Retired line names and older local folders belong in [Project Timeline](https://
 
 ### Current mainline
 
-- The live canonical path on `main` is [`instnct-core/examples/neuron_grower.rs`](instnct-core/examples/neuron_grower.rs).
-- The grower is a bias-free threshold builder with scout-ranked parent search, resumable state, and append-only checkpoint snapshots.
-- The old Rust language runner remains the latest released public tag, but it is no longer the current mainline code path on `main`.
-- The Python `graph.py` lane remains in-repo as historical reference/support, not the public mainline.
-- The next promotion gate is byte/opcode v1 with a frozen exact translator; until that lands, the grower is the active mainline builder and beta-prep surface.
+- The local/private bounded chat stack is the current release-ready private evaluation surface.
+- The bounded stack is intentionally scoped: localhost/private only, bounded domain only, no public API, no production chat, no GPT-like/open-domain assistant claim.
+- The live Rust architecture line remains [`instnct-core/examples/neuron_grower.rs`](instnct-core/examples/neuron_grower.rs).
+- The 091-100 open-vocab assistant line is a separate runner-local research track. It may inform future training, but it does not mutate or replace the 099 bounded release baseline.
+- The Python `graph.py` lane remains historical reference/support, not the public mainline.
 
 ### Evidence snapshot
 
-- **Bias-free threshold grower** is the canonical persistent grower representation on `main`; redundant bias search was removed from state and search.
-- **Scout oracle** is part of the mainline builder: single-signal ranking, connect-all probe, and pair-lift shortlist all run before ternary search.
-- **Non-strict accept gate** unlocked compositional stepping-stones; `four_parity` now reaches 100% instead of stalling on equal-val intermediates.
-- **Released beta.1 language-evolution result** (`24.6%` next-character prediction) remains a shipped public result, but it is now a released reference lane rather than the active mainline path on `main`.
+- **099 bounded release-ready gate** passed: fresh local/private deployment harness smoke, SDK smoke, bounded chat service smoke, artifact hash verification, checkpoint unchanged, rollback pointer, no training, and upstream proof lineage all positive.
+- **100 assistant capability scale probe** passed: a new target-only runner-local research checkpoint improved over the 094 generation baseline while keeping bounded retention and release artifacts unchanged.
+- **089B packaged winner proof** passed: the packaged bounded checkpoint, original 080 winner, and deterministic reproduction child matched byte-level checkpoint hash.
+- **088 long-run/concurrency gate** passed: 240/240 service-path requests completed with exact audit coverage and no orphan child jobs.
+- **087 OOD/red-team gate** passed through `POST /v1/bounded-chat/infer`, not a direct model runner.
+- **Bias-free threshold grower** remains a validated Rust architecture surface on `main`; it is not overwritten by the bounded service release or runner-local open-vocab probes.
 
-Raw run dumps, archived sweeps, and older exploratory surfaces are preserved at archive tags listed in [`ARCHIVE.md`](ARCHIVE.md), not on active `main`.
+Raw run dumps, archived sweeps, older scratch tools, and pre-bounded probe runners are preserved at archive tags or the May 19 consolidation archive branch listed in [`ARCHIVE.md`](ARCHIVE.md), not on active `main`.
 
 The canonical evidence summary lives in [`VALIDATED_FINDINGS.md`](VALIDATED_FINDINGS.md).
 
 ### Experimental branch
 
-- The current next candidate is **byte/opcode v1**: `1 byte + 4 opcode -> 1 byte` with a frozen exact translator over grower latent.
-- It is the main promotion gate to public beta, not yet frozen as the live contract.
+- The current next research decision is whether to continue from `100_OPEN_VOCAB_ASSISTANT_CAPABILITY_SCALE` into a fresh assistant eval/failure map, or pause capability training and polish public docs/wiki.
+- This remains research-only until fresh open-domain, multi-turn, Hungarian/English, OOD/refusal, collapse, and retention gates are independently positive.
 
 ## 5-Minute Proof
 
-### Rust (primary surface)
+### Bounded release-ready checks
 
 ```bash
-cargo test -p instnct-core
-python tools/run_grower_regression.py
-python tools/run_byte_opcode_acceptance.py
+python -m py_compile scripts/probes/run_stable_loop_phase_lock_099_bounded_local_private_clean_deploy_ready_gate.py
+python -m py_compile scripts/probes/run_stable_loop_phase_lock_100_open_vocab_assistant_capability_scale.py
+python scripts/probes/run_stable_loop_phase_lock_099_bounded_local_private_clean_deploy_ready_gate_check.py --check-only
+python scripts/probes/run_stable_loop_phase_lock_100_open_vocab_assistant_capability_scale_check.py --check-only
 ```
 
-### Python (reference surface)
+These checks validate the generated local `target/` evidence when it is present. Generated private evaluation artifacts and checkpoints are intentionally not committed to Git.
+
+### Rust and Python surfaces
 
 ```bash
 python -m venv .venv
@@ -96,26 +156,26 @@ python -m venv .venv
 # macOS/Linux: source .venv/bin/activate
 pip install -r requirements.txt
 
+cargo test -p instnct-core
 python -m compileall Python tools
 python -m pytest Python/ -q
-python tools/check_public_surface.py
 ```
 
 These commands verify:
 
-- the Rust library compiles and all tests pass,
-- the grower regression bundle is reproducible and public-facing,
-- the byte/opcode v1 exact translator export/reload path is reproducible and exact,
-- the Python deploy SDK (`Python/` — Block A + B) runs lossless end-to-end,
-- the public-facing docs agree with the canonical code path.
+- the Rust library compiles and tests pass,
+- the Python deploy SDK (`Python/`) remains importable/testable,
+- current release-readiness checkers still parse their target-only evidence.
 
 ## Read Next
 
+- [`docs/CURRENT_STATUS.md`](docs/CURRENT_STATUS.md) — current bounded release baseline and open-vocab capability-track boundary
+- [`docs/REPO_CONSOLIDATION_2026_05_19.md`](docs/REPO_CONSOLIDATION_2026_05_19.md) — what was archived/removed during the cleanup pass
 - [`VALIDATED_FINDINGS.md`](VALIDATED_FINDINGS.md) — canonical evidence summary
-- [`docs/BYTE_OPCODE_V1_CONTRACT.md`](docs/BYTE_OPCODE_V1_CONTRACT.md) — byte/opcode v1 exact translator contract
+- [`docs/research/STABLE_LOOP_PHASE_LOCK_099_BOUNDED_LOCAL_PRIVATE_CLEAN_DEPLOY_READY_GATE_RESULT.md`](docs/research/STABLE_LOOP_PHASE_LOCK_099_BOUNDED_LOCAL_PRIVATE_CLEAN_DEPLOY_READY_GATE_RESULT.md) — bounded local/private release-ready result
+- [`docs/research/STABLE_LOOP_PHASE_LOCK_100_OPEN_VOCAB_ASSISTANT_CAPABILITY_SCALE_RESULT.md`](docs/research/STABLE_LOOP_PHASE_LOCK_100_OPEN_VOCAB_ASSISTANT_CAPABILITY_SCALE_RESULT.md) — current capability-scale research result
 - [`Python/block_a_byte_unit/README.md`](Python/block_a_byte_unit/README.md) + [`Python/block_b_merger/README.md`](Python/block_b_merger/README.md) — deploy SDK per-block entry
 - [VRAXION architecture page (INSTNCT)](https://github.com/VRAXION/VRAXION/wiki/INSTNCT-Architecture)
-- [Issue #114](https://github.com/VRAXION/VRAXION/issues/114) — current next build target
 
 ## License
 

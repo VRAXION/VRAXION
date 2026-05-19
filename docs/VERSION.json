@@ -4,6 +4,9 @@
   "previous_stable": "v4.2.0",
   "internal_code_path": "instnct-core/",
   "architecture_line": "INSTNCT",
+  "bounded_local_private_status": "release-ready via 099_BOUNDED_LOCAL_PRIVATE_CLEAN_DEPLOY_READY_GATE",
+  "open_vocab_capability_status": "research-only positive via 100_OPEN_VOCAB_ASSISTANT_CAPABILITY_SCALE",
+  "claim_boundary": "no production chat, public API, hosted SaaS, GPT-like readiness, open-domain assistant readiness, or safety-alignment claim",
   "rust_surface": "instnct-core (Rust, primary)",
   "python_surface": "archived at tag archives/python-research-20260420 (frozen 2026-04-20; was instnct/)",
   "python_deploy_sdk": "Python/ (Block A + B numpy deploy SDK)"

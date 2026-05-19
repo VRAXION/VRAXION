@@ -14,6 +14,10 @@ _SIBLING_WIKI = ROOT.parent / "VRAXION.wiki"
 WIKI_DIR = _SIBLING_WIKI if _SIBLING_WIKI.exists() else (ROOT / "VRAXION.wiki")
 FILES = [
     "Home.md",
+    "Current-Status.md",
+    "Bounded-Release-Status.md",
+    "Open-Vocab-Capability-Track.md",
+    "Next-Week-Handoff.md",
     "INSTNCT-Architecture.md",
     "Timeline-Archive.md",
     "COMPRESSION_LOOP.md",
