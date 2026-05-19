@@ -50,11 +50,23 @@ NEGATION_TRAIN_TEMPLATES = [
     ("negation_uses_slot", "Case {case}: local bounded answer uses {target}; do not use distractor {distractor}."),
     ("negation_avoid_slot", "Case {case}: answer code {target}; avoid the distractor code {distractor}."),
 ]
+HARD_SURFACE_TRAIN_TEMPLATES = [
+    ("hard_target_marker", "Case {case}: TARGET={target}; DISTRACTOR={distractor}; return TARGET."),
+    ("hard_selected_marker", "Case {case}: selected_code {target}; rejected_code {distractor}; answer selected_code."),
+    ("hard_forbidden_marker", "Case {case}: permitted answer {target}; forbidden answer {distractor}."),
+    ("hard_valid_invalid_marker", "Case {case}: valid option {target}; invalid option {distractor}; answer the valid option."),
+]
 EVAL_TEMPLATES = [
     ("heldout_active", "Fresh {case}: keep active code {target}; archive distractor is {distractor}. What code should be answered?"),
     ("heldout_original", "Fresh {case}: original code {target}; conflict says {distractor}. Keep original and answer the code."),
     ("heldout_hungarian", "Fresh {case}: az aktiv kod {target}; a zavaras {distractor}. Add vissza az aktiv kodot."),
     ("heldout_bounded", "Fresh {case}: local bounded answer uses {target}; do not use distractor {distractor}."),
+]
+HARD_EVAL_TEMPLATES = [
+    ("hard_eval_target_marker", "Fresh {case}: TARGET={target}; DISTRACTOR={distractor}; output the target code."),
+    ("hard_eval_selected_marker", "Fresh {case}: selected_code:{target}; rejected_code:{distractor}; return selected_code."),
+    ("hard_eval_forbidden_marker", "Fresh {case}: do not answer {distractor}; the permitted answer is {target}."),
+    ("hard_eval_valid_invalid", "Fresh {case}: valid option {target}; invalid option {distractor}; answer the valid option."),
 ]
 
 
@@ -185,12 +197,23 @@ def resolve_target_out(text: str) -> Path:
     return (REPO_ROOT / path).resolve()
 
 
-def build_dataset(seed: int, train_repeats: int, include_negation_templates: bool) -> tuple[list[Example], list[Example], dict[str, Any]]:
+def build_dataset(
+    seed: int,
+    train_repeats: int,
+    include_negation_templates: bool,
+    include_hard_surface_templates: bool,
+    hard_eval_templates: bool,
+) -> tuple[list[Example], list[Example], dict[str, Any]]:
     train: list[Example] = []
     eval_rows: list[Example] = []
     train_templates = list(TRAIN_TEMPLATES)
     if include_negation_templates:
         train_templates.extend(NEGATION_TRAIN_TEMPLATES)
+    if include_hard_surface_templates:
+        train_templates.extend(HARD_SURFACE_TRAIN_TEMPLATES)
+    eval_templates = list(EVAL_TEMPLATES)
+    if hard_eval_templates:
+        eval_templates.extend(HARD_EVAL_TEMPLATES)
     heldout_pairs: set[str] = set()
     idx = 0
     for target_idx, target in enumerate(COLORS):
@@ -201,7 +224,7 @@ def build_dataset(seed: int, train_repeats: int, include_negation_templates: boo
             holdout = ((target_idx * 7 + distractor_idx * 11 + seed) % 4) == 0
             if holdout:
                 heldout_pairs.add(pair_key)
-                for family, template in EVAL_TEMPLATES:
+                for family, template in eval_templates:
                     case = 700_000 + seed + idx
                     eval_rows.append(
                         Example(
@@ -248,6 +271,8 @@ def build_dataset(seed: int, train_repeats: int, include_negation_templates: boo
         "train_labels": sorted({row.label for row in train}),
         "eval_labels": sorted({row.label for row in eval_rows}),
         "include_negation_templates": include_negation_templates,
+        "include_hard_surface_templates": include_hard_surface_templates,
+        "hard_eval_templates": hard_eval_templates,
     }
     return train, eval_rows, metadata
 
@@ -537,6 +562,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--lr", type=float, default=0.015)
     parser.add_argument("--train-repeats", type=int, default=6)
     parser.add_argument("--include-negation-templates", action="store_true")
+    parser.add_argument("--include-hard-surface-templates", action="store_true")
+    parser.add_argument("--hard-eval-templates", action="store_true")
     args = parser.parse_args()
     args.out = resolve_target_out(args.out)
     return args
@@ -552,7 +579,13 @@ def main() -> int:
     torch.set_num_threads(1)
     random.seed(args.seed)
     append_jsonl(out / "progress.jsonl", {"ts": utc_now(), "event": "start", "status": "running"})
-    train_rows, eval_rows, dataset_meta = build_dataset(args.seed, args.train_repeats, args.include_negation_templates)
+    train_rows, eval_rows, dataset_meta = build_dataset(
+        args.seed,
+        args.train_repeats,
+        args.include_negation_templates,
+        args.include_hard_surface_templates,
+        args.hard_eval_templates,
+    )
     write_jsonl(out / "train_dataset.jsonl", examples_to_json(train_rows))
     write_jsonl(out / "heldout_eval_dataset.jsonl", examples_to_json(eval_rows))
     write_json(out / "dataset_manifest.json", {"schema_version": "deck_local_dataset_manifest_v1", **dataset_meta})
@@ -575,6 +608,8 @@ def main() -> int:
             "learning_rate": args.lr,
             "train_repeats": args.train_repeats,
             "include_negation_templates": args.include_negation_templates,
+            "include_hard_surface_templates": args.include_hard_surface_templates,
+            "hard_eval_templates": args.hard_eval_templates,
             "feature_type": "word_ngram_1_3",
             "feature_count": len(vectorizer.vocab),
             "torch_version": torch.__version__,

@@ -211,6 +211,14 @@ the bounded slot rule and the distractor-negation variant when that phenomenon
 is represented in training.
 ```
 
+## Follow-Up Stress Matrix
+
+The multi-seed capacity/data/surface stress continuation is documented in:
+
+```text
+docs/research/DECK_LOCAL_LEARN_INFER_STRESS_002_RESULT.md
+```
+
 ## Boundary
 
 This is a local proof that the Deck runtime can train a fresh bounded model and run heldout inference. It does not replace the official 100/101 artifact-gated path.
