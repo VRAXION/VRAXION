@@ -158,6 +158,61 @@ direct_to_target_baseline:
 
 The direct-to-target baseline is rejected as an iterative mechanism: it can move toward the final target, but it does not reproduce the required step-by-step transition path.
 
+## No-Stop Control
+
+The original positive gate uses an external loop stop:
+
+```text
+stop when target/safe-hold is reached
+```
+
+A no-stop control was added to test what happens if that external stop is removed and the learned model is forced to keep running for `20` extra ticks after the stop state should have been reached.
+
+Without explicit target-hold training:
+
+```text
+output:                                  target/pilot_wave/iterative_refinement_dynamics_001/no_stop_control
+verdict:                                 NO_STOP_EXTERNAL_STOP_REQUIRED
+teacher_forced_transition_accuracy:      1.000
+free_run_convergence_rate:               1.000
+free_run_transition_accuracy:            1.000
+no_stop_reached_stop_state_rate:         1.000
+no_stop_final_at_stop_state_rate:        0.061
+no_stop_exit_after_stop_state_rate:      0.939
+no_stop_post_stop_zero_delta_rate:       0.578
+no_stop_mean_abs_error_after_extra:      1.903
+no_stop_runaway_rate:                    0.000
+```
+
+Interpretation:
+
+```text
+The model reaches the stop state, but without an external stop it usually leaves it again.
+It does not run away catastrophically, but it does not reliably self-disable the loop.
+```
+
+With explicit target-hold examples added to training:
+
+```text
+output:                                  target/pilot_wave/iterative_refinement_dynamics_001/no_stop_target_hold_aug
+verdict:                                 NO_STOP_INTERNAL_HOLD_EMERGED
+teacher_forced_transition_accuracy:      1.000
+free_run_convergence_rate:               1.000
+free_run_transition_accuracy:            1.000
+no_stop_final_at_stop_state_rate:        1.000
+no_stop_exit_after_stop_state_rate:      0.000
+no_stop_post_stop_zero_delta_rate:       1.000
+no_stop_mean_abs_error_after_extra:      0.000
+no_stop_runaway_rate:                    0.000
+```
+
+Interpretation:
+
+```text
+Internal loop shutdown is learnable when the target-reached hold state is part of the transition objective.
+It does not appear automatically from the ordinary move-toward-target transition rule.
+```
+
 ## Strict-Short Control
 
 A stricter `max_train_steps=20` control was also run:
@@ -187,6 +242,16 @@ current_state -> learned delta -> next_state -> refeed
 The important result is not simply that the target was reached. The learned arm also matched the expected per-step transition path, avoided wrong-direction updates, avoided overshoot, avoided cycles, and generalized to longer heldout trajectories than the training horizon.
 
 The result does not imply that arbitrary language-model outputs improve by being repeatedly re-fed. The loop needs an explicit state representation, an update rule objective, a stop condition, and ideally a checker.
+
+The no-stop control makes the stop condition boundary explicit:
+
+```text
+without target-hold training:
+  external stop/checker is required
+
+with target-hold training:
+  the model can learn the internal zero-delta hold transition
+```
 
 ## Claim Boundary
 

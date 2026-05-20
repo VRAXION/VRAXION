@@ -192,7 +192,10 @@ def features(current: int, target: int, op: int) -> list[float]:
     ]
 
 
-def build_transition_examples(max_train_steps: int) -> tuple[list[TransitionExample], list[TransitionExample], list[TrajectoryCase]]:
+def build_transition_examples(
+    max_train_steps: int,
+    include_target_hold_examples: bool = False,
+) -> tuple[list[TransitionExample], list[TransitionExample], list[TrajectoryCase]]:
     train: list[TransitionExample] = []
     teacher_forced_eval: list[TransitionExample] = []
     trajectory_eval: list[TrajectoryCase] = []
@@ -260,6 +263,21 @@ def build_transition_examples(max_train_steps: int) -> tuple[list[TransitionExam
                             expected_delta=0,
                         )
                     )
+
+    if include_target_hold_examples:
+        for target in range(-150, 151, 5):
+            for op in OPS:
+                train.append(
+                    TransitionExample(
+                        split="train",
+                        family="target_reached_hold",
+                        current=target,
+                        target=target,
+                        op=op,
+                        expected_next=target,
+                        expected_delta=0,
+                    )
+                )
 
     # Heldout teacher-forced transitions include long remaining distances and off-grid final clamps.
     for start in range(-135, 136, 9):
@@ -550,6 +568,110 @@ def free_run_model(
     }
 
 
+def no_stop_fixed_tick_control(
+    name: str,
+    cases: list[TrajectoryCase],
+    predictor: Callable[[int, int, int], int],
+    out: Path,
+    extra_ticks: int,
+) -> dict[str, Any]:
+    traces: list[dict[str, Any]] = []
+    failures: list[dict[str, Any]] = []
+    case_count = 0
+    reached_stop_state = 0
+    final_at_stop_state = 0
+    exited_after_stop_state = 0
+    post_stop_zero_delta = 0
+    post_stop_total = 0
+    runaway = 0
+    mean_abs_error = 0.0
+    post_stop_same_direction_run = 0
+
+    for case in cases:
+        stop_state = case.target if case.expected_horizon > 0 else case.start
+        total_ticks = max(1, case.expected_horizon) + extra_ticks
+        current = case.start
+        saw_stop = current == stop_state
+        left_after_stop = False
+        post_deltas: list[int] = []
+        for step_idx in range(total_ticks):
+            at_stop_before = current == stop_state
+            if at_stop_before:
+                saw_stop = True
+            delta = predictor(current, case.target, case.op)
+            nxt = current + delta
+            if at_stop_before:
+                post_stop_total += 1
+                post_stop_zero_delta += int(delta == 0)
+                post_deltas.append(delta)
+                if nxt != stop_state:
+                    left_after_stop = True
+            if len(traces) < 5000:
+                traces.append(
+                    {
+                        "model_name": name,
+                        "split": case.split,
+                        "family": case.family,
+                        "start": case.start,
+                        "target": case.target,
+                        "op": case.op,
+                        "expected_horizon": case.expected_horizon,
+                        "stop_state": stop_state,
+                        "step_index": step_idx,
+                        "current": current,
+                        "predicted_delta": delta,
+                        "next": nxt,
+                        "at_stop_before": at_stop_before,
+                    }
+                )
+            current = nxt
+        case_count += 1
+        reached_stop_state += int(saw_stop)
+        final_at_stop_state += int(current == stop_state)
+        exited_after_stop_state += int(left_after_stop)
+        abs_error = abs(current - stop_state)
+        mean_abs_error += abs_error
+        if abs_error > max(10, abs(case.op) * extra_ticks // 2):
+            runaway += 1
+        nonzero_post = [delta for delta in post_deltas if delta != 0]
+        if nonzero_post and all((delta > 0) == (nonzero_post[0] > 0) for delta in nonzero_post):
+            post_stop_same_direction_run += 1
+        if current != stop_state or left_after_stop:
+            if len(failures) < 200:
+                failures.append(
+                    {
+                        "model_name": name,
+                        "split": case.split,
+                        "family": case.family,
+                        "start": case.start,
+                        "target": case.target,
+                        "op": case.op,
+                        "expected_horizon": case.expected_horizon,
+                        "stop_state": stop_state,
+                        "final_state": current,
+                        "saw_stop_state": saw_stop,
+                        "left_after_stop_state": left_after_stop,
+                        "abs_error_after_extra_ticks": abs_error,
+                        "post_stop_deltas_sample": post_deltas[:20],
+                    }
+                )
+    write_jsonl(out / f"no_stop_traces_{name}.jsonl", traces)
+    write_jsonl(out / f"no_stop_failure_examples_{name}.jsonl", failures)
+    return {
+        "model_name": name,
+        "extra_ticks": extra_ticks,
+        "no_stop_case_count": case_count,
+        "no_stop_reached_stop_state_rate": reached_stop_state / max(1, case_count),
+        "no_stop_final_at_stop_state_rate": final_at_stop_state / max(1, case_count),
+        "no_stop_exit_after_stop_state_rate": exited_after_stop_state / max(1, case_count),
+        "no_stop_post_stop_zero_delta_rate": post_stop_zero_delta / max(1, post_stop_total),
+        "no_stop_mean_abs_error_after_extra_ticks": mean_abs_error / max(1, case_count),
+        "no_stop_runaway_rate": runaway / max(1, case_count),
+        "no_stop_same_direction_post_stop_run_rate": post_stop_same_direction_run / max(1, case_count),
+        "no_stop_failure_count": len(failures),
+    }
+
+
 def train_delta_classifier(
     args: argparse.Namespace,
     out: Path,
@@ -677,6 +799,12 @@ def summarize_verdict(metrics: dict[str, Any]) -> tuple[str, list[str]]:
         "CHECKPOINT_CHANGED" if metrics.get("checkpoint_changed") else "CHECKPOINT_UNCHANGED",
         "ORACLE_CONTROL_PASSES",
         "DIRECT_TO_TARGET_SHORTCUT_REJECTED",
+        (
+            "NO_STOP_INTERNAL_HOLD_EMERGED"
+            if metrics.get("no_stop_learned_final_at_stop_state_rate", 0.0) >= 0.95
+            and metrics.get("no_stop_learned_exit_after_stop_state_rate", 1.0) <= 0.05
+            else "NO_STOP_EXTERNAL_STOP_REQUIRED"
+        ),
         "GPT_LIKE_READINESS_NOT_CLAIMED",
         "PRODUCTION_READINESS_NOT_CLAIMED",
     ]
@@ -754,6 +882,12 @@ def write_summary_and_report(out: Path, status: str, verdicts: list[str], metric
         "direct_to_target_per_step_transition_accuracy",
         "checker_guarded_convergence_rate",
         "checker_repair_rate",
+        "no_stop_learned_final_at_stop_state_rate",
+        "no_stop_learned_exit_after_stop_state_rate",
+        "no_stop_learned_post_stop_zero_delta_rate",
+        "no_stop_learned_mean_abs_error_after_extra_ticks",
+        "no_stop_learned_runaway_rate",
+        "no_stop_oracle_final_at_stop_state_rate",
         "wall_clock_sec",
     ]:
         if key in metrics:
@@ -782,6 +916,9 @@ def write_summary_and_report(out: Path, status: str, verdicts: list[str], metric
             "",
             "The direct-to-target control is intentionally rejected as an iterative mechanism when it reaches the target without matching the expected per-step transition path.",
             "",
+            "The no-stop control removes the external target/safe-hold stop and runs extra ticks after the stop state should have been reached. "
+            "If that control fails, an explicit stop/checker is still required; it does not invalidate the external-stop transition result.",
+            "",
             "## Boundary",
             "",
             "Toy integer transition dynamics only.",
@@ -804,6 +941,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--learning-rate", type=float, default=0.003)
     parser.add_argument("--weight-decay", type=float, default=0.0001)
     parser.add_argument("--heartbeat-sec", type=int, default=20)
+    parser.add_argument("--no-stop-extra-ticks", type=int, default=20)
+    parser.add_argument("--include-target-hold-examples", action="store_true")
     args = parser.parse_args()
     args.out = resolve_target_out(args.out)
     return args
@@ -830,12 +969,14 @@ def main() -> int:
             "hidden": args.hidden,
             "learning_rate": args.learning_rate,
             "weight_decay": args.weight_decay,
+            "no_stop_extra_ticks": args.no_stop_extra_ticks,
+            "include_target_hold_examples": args.include_target_hold_examples,
             "torch_version": torch.__version__,
             "python_version": sys.version,
             "boundary": BOUNDARY_TEXT,
         },
     )
-    train_rows, tf_eval_rows, trajectory_cases = build_transition_examples(args.max_train_steps)
+    train_rows, tf_eval_rows, trajectory_cases = build_transition_examples(args.max_train_steps, args.include_target_hold_examples)
     append_jsonl(
         out / "progress.jsonl",
         {
@@ -856,8 +997,30 @@ def main() -> int:
     checker = free_run_model("checker_guarded_learned_delta_classifier", trajectory_cases, lambda c, t, o: predict_delta(model, c, t, o), out, use_checker=True)
     oracle = free_run_model("oracle_transition", trajectory_cases, oracle_predictor, out)
     direct = free_run_model("direct_to_target_baseline", trajectory_cases, direct_to_target_predictor, out)
+    no_stop_learned = no_stop_fixed_tick_control(
+        "learned_delta_classifier",
+        trajectory_cases,
+        lambda c, t, o: predict_delta(model, c, t, o),
+        out,
+        args.no_stop_extra_ticks,
+    )
+    no_stop_oracle = no_stop_fixed_tick_control(
+        "oracle_transition",
+        trajectory_cases,
+        oracle_predictor,
+        out,
+        args.no_stop_extra_ticks,
+    )
     run_rows = [learned, checker, oracle, direct]
     write_metrics_csv(out / "metrics.csv", run_rows)
+    write_json(
+        out / "no_stop_control_metrics.json",
+        {
+            "schema_version": "iterative_refinement_no_stop_control_metrics_v1",
+            "learned_delta_classifier": no_stop_learned,
+            "oracle_transition": no_stop_oracle,
+        },
+    )
 
     metrics: dict[str, Any] = {
         "train_example_count": len(train_rows),
@@ -878,6 +1041,12 @@ def main() -> int:
         "oracle_convergence_rate": oracle["free_run_convergence_rate"],
         "direct_to_target_final_target_accuracy": direct["final_target_accuracy"],
         "direct_to_target_per_step_transition_accuracy": direct["free_run_transition_accuracy"],
+        "no_stop_learned_final_at_stop_state_rate": no_stop_learned["no_stop_final_at_stop_state_rate"],
+        "no_stop_learned_exit_after_stop_state_rate": no_stop_learned["no_stop_exit_after_stop_state_rate"],
+        "no_stop_learned_post_stop_zero_delta_rate": no_stop_learned["no_stop_post_stop_zero_delta_rate"],
+        "no_stop_learned_mean_abs_error_after_extra_ticks": no_stop_learned["no_stop_mean_abs_error_after_extra_ticks"],
+        "no_stop_learned_runaway_rate": no_stop_learned["no_stop_runaway_rate"],
+        "no_stop_oracle_final_at_stop_state_rate": no_stop_oracle["no_stop_final_at_stop_state_rate"],
         "teacher_forced_vs_free_run_gap": tf_metrics["teacher_forced_transition_accuracy"] - learned["free_run_transition_accuracy"],
         "wall_clock_sec": round(time.time() - started, 3),
     }
