@@ -684,12 +684,14 @@ def save_checkpoint_and_state(model: torch.nn.Module, optimizer: torch.optim.Opt
 
 def write_summary(out: Path, status: str, verdicts: list[str], metrics: dict[str, Any], message: str = "") -> None:
     public_metrics = {key: value for key, value in metrics.items() if not key.startswith("_")}
+    runtime_profile = public_metrics.get("runtime_profile", "overnight")
     payload = {
         "schema_version": "overnight_distillation_summary_v1",
         "milestone": MILESTONE,
         "status": status,
         "phase": status,
-        "target_only_overnight_research_training": True,
+        "target_only_overnight_research_training": runtime_profile == "overnight",
+        "target_only_standard_research_training": runtime_profile == "standard",
         "training_performed": public_metrics.get("train_step_count", 0) > 0,
         "service_runtime_integration_performed": False,
         "bounded_release_stack_mutated": False,
@@ -974,7 +976,7 @@ def make_decision(metrics: dict[str, Any]) -> dict[str, Any]:
         nxt = "111C_BOUNDARY_FAILURE_ANALYSIS"
     elif metrics.get("bounded_chat_slot_binding_accuracy", 0.0) < 0.90 or metrics.get("finite_label_anchorroute_retention_accuracy", 0.0) < 0.90 or metrics.get("unsupported_refusal_retention_accuracy", 0.0) < 0.80 or metrics.get("fineweb_eval_loss_regression", 999.0) > 0.50 or metrics.get("fineweb_next_byte_accuracy_drop", 999.0) > 0.10:
         nxt = "111R_RETENTION_OR_LM_REGRESSION_ANALYSIS"
-    elif metrics.get("wall_clock_minutes", 0.0) < metrics.get("min_runtime_minutes", 360.0) or metrics.get("resource_underutilization_detected"):
+    elif metrics.get("runtime_profile") == "overnight" and (metrics.get("wall_clock_minutes", 0.0) < metrics.get("min_runtime_minutes", 360.0) or metrics.get("resource_underutilization_detected")):
         nxt = "111H_OVERNIGHT_HARNESS_UTILIZATION_FIX"
     elif metrics.get("post_111_raw_ood_accuracy", 0.0) >= 0.80 and metrics.get("raw_accuracy_improvement", 0.0) >= 0.20 and metrics.get("post_111_raw_accuracy_gap_to_integrated_teacher", 1.0) <= 0.15:
         nxt = "112_RAW_ASSISTANT_MULTI_SEED_OOD_CONFIRM"
@@ -993,7 +995,7 @@ def make_decision(metrics: dict[str, Any]) -> dict[str, Any]:
 
 
 def validate_positive(metrics: dict[str, Any]) -> None:
-    if metrics["min_runtime_minutes"] < 360 or metrics["wall_clock_minutes"] < metrics["min_runtime_minutes"]:
+    if metrics.get("runtime_profile") == "overnight" and (metrics["min_runtime_minutes"] < 360 or metrics["wall_clock_minutes"] < metrics["min_runtime_minutes"]):
         raise GateError("OVERNIGHT_RUNTIME_UNDERUSED", "minimum overnight runtime not satisfied")
     if metrics["cuda_available"] and metrics["selected_device"] != "cuda" and not metrics.get("cpu_only_fallback_declared"):
         raise GateError("CUDA_AVAILABLE_BUT_NOT_USED", "CUDA was available but not selected")
@@ -1050,6 +1052,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--batch-size", type=int, default=64)
     parser.add_argument("--steps", type=int, default=40_000)
     parser.add_argument("--control-steps", type=int, default=0)
+    parser.add_argument("--runtime-profile", choices=["overnight", "standard"], default="overnight")
     parser.add_argument("--min-runtime-minutes", type=float, default=360.0)
     parser.add_argument("--max-runtime-minutes", type=float, default=540.0)
     parser.add_argument("--heartbeat-sec", type=float, default=20.0)
@@ -1076,7 +1079,9 @@ def main(argv: list[str] | None = None) -> int:
     device_info = choose_device()
     metrics: dict[str, Any] = {
         "runner_local_pytorch_lm": True,
-        "target_only_overnight_research_training": True,
+        "runtime_profile": args.runtime_profile,
+        "target_only_overnight_research_training": args.runtime_profile == "overnight",
+        "target_only_standard_research_training": args.runtime_profile == "standard",
         "min_runtime_minutes": args.min_runtime_minutes,
         "max_runtime_minutes": args.max_runtime_minutes,
         "train_step_count": 0,
@@ -1163,13 +1168,13 @@ def main(argv: list[str] | None = None) -> int:
         selected_seed, selected_model, selected_report, selected_path = min(candidate_models, key=lambda item: item[2]["train_loss_final"])
         initial_plan_finished_min = (time.time() - start) / 60.0
         extra_batches = 0
-        if initial_plan_finished_min < args.min_runtime_minutes:
+        if args.runtime_profile == "overnight" and initial_plan_finished_min < args.min_runtime_minutes:
             metrics["early_finish_prevented"] = True
             metrics["extra_batches_launched_if_needed"] = True
         else:
             metrics["early_finish_prevented"] = False
             metrics["extra_batches_launched_if_needed"] = False
-        while (time.time() - start) / 60.0 < args.min_runtime_minutes and (time.time() - start) / 60.0 < args.max_runtime_minutes:
+        while args.runtime_profile == "overnight" and (time.time() - start) / 60.0 < args.min_runtime_minutes and (time.time() - start) / 60.0 < args.max_runtime_minutes:
             extra_batches += 1
             extension_steps = max(1000, args.steps // 10)
             selected_model, report = train_model(selected_model, args, out, metrics, resources, train_dataset["bytes"], fineweb["replay"], eval_bytes, fineweb["eval"], selected_seed + extra_batches * 1000, extension_steps, f"extension_{extra_batches}", selected_device, fineweb_enabled=True)
@@ -1282,9 +1287,12 @@ def main(argv: list[str] | None = None) -> int:
         write_summary(out, "running", ["OVERNIGHT_DECISION_WRITTEN"], metrics)
 
         validate_positive(metrics)
+        if args.runtime_profile == "standard":
+            runtime_verdicts = ["STANDARD_DECODER_POLICY_DISTILLATION_RAW_ROLLOUT_REPAIR_POSITIVE", "STANDARD_RUNTIME_PROFILE_USED"]
+        else:
+            runtime_verdicts = [POSITIVE_VERDICT, "OVERNIGHT_RUNTIME_UTILIZED"]
         verdicts = [
-            POSITIVE_VERDICT,
-            "OVERNIGHT_RUNTIME_UTILIZED",
+            *runtime_verdicts,
             "TEACHER_DATASET_BUILT",
             "TARGET_RAW_DISTILLATION_TRAINING_COMPLETED",
             "RAW_OOD_ACCURACY_IMPROVES",
