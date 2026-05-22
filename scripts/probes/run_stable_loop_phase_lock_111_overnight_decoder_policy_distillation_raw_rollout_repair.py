@@ -421,11 +421,28 @@ def choose_device() -> dict[str, Any]:
 
 
 def convert_row(row: dict[str, Any], suffix: str) -> dict[str, Any]:
-    converted = dict(row)
+    old_case_id = str(row.get("case_id", ""))
+    suffix_prefix = {"_DISTILL": "711", "_FINAL": "911"}.get(suffix, "811")
+    case_digest = int(stable_json_hash({"suffix": suffix, "seed": row.get("seed"), "case_id": old_case_id, "prompt": row.get("prompt", "")})[:8], 16) % 100000
+    new_case_id = f"{suffix_prefix}{case_digest:05d}"
+
+    def rewrite_case_id(value: Any) -> Any:
+        if not old_case_id:
+            return value
+        if isinstance(value, str):
+            return value.replace(old_case_id, new_case_id)
+        if isinstance(value, list):
+            return [rewrite_case_id(item) for item in value]
+        if isinstance(value, dict):
+            return {key: rewrite_case_id(item) for key, item in value.items()}
+        return value
+
+    converted = {key: rewrite_case_id(value) for key, value in row.items()}
+    converted["case_id"] = new_case_id
     family = row["confirm_family"].replace("_CONFIRM", suffix)
     converted["eval_family"] = family
     converted["confirm_family"] = family
-    route_token = f"phase111_{suffix.lower().strip('_')}_{row.get('seed', 'seed')}_{row.get('case_id', 'case')}_{stable_json_hash(row.get('prompt', ''))[:10]}"
+    route_token = f"phase111_{suffix.lower().strip('_')}_{row.get('seed', 'seed')}_{new_case_id}_{stable_json_hash(row.get('prompt', ''))[:10]}"
     phase_words = (
         "teacher distill alpha braid cedar delta ember field granite helix ion juniper kestrel lumen mesa north opal praxis ridge solstice"
         if suffix == "_DISTILL"
@@ -433,7 +450,7 @@ def convert_row(row: dict[str, Any], suffix: str) -> dict[str, Any]:
     )
     converted["prompt"] = (
         f"Overnight target-only 111 row {route_token}. {phase_words}. "
-        f"Use the validated local evidence inside this 111 row only. {row['prompt']} "
+        f"Use the validated local evidence inside this 111 row only. {converted['prompt']} "
         f"Final 111 instruction: answer this fresh row without using earlier phase text."
     )
     converted["schema_version"] = "overnight_distillation_row_v1"
