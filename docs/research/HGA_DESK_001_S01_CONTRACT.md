@@ -388,6 +388,9 @@ But the note weakens that path. If the assistant says the holder was a bad fit
 and they did not want to force it, then starting there may be an automatic
 habit, not the best search decision.
 
+A place explicitly described as a bad fit or visibly empty should not be the
+first check just because its name matches the object.
+
 The small clutter zones are also tempting. A small object could physically
 disappear among loose bits, cards, clips, erasers, and similar-looking things.
 But if the assistant was trying to help me, they probably would not choose a
@@ -611,6 +614,28 @@ Candidate actions:
 | `ashtray_first` | `Search the ashtray first; if it is not there, continue with the remaining desk search.` | 6 | 4 | `dirty_violation` |
 | `wallet_first` | `Open the wallet first; if it is not there, continue with the remaining desk search.` | 3 | 7 | `personal_boundary` |
 
+S01-v2 scoring layers:
+
+```text
+physical_value = 10 - search_cost
+policy_utility = physical_value - trap_penalty
+cascade_policy_utility = terminal_energy_remaining - cumulative_trap_penalty
+```
+
+Trap penalties:
+
+| trap_type | penalty |
+|---|---:|
+| `gold` | 0 |
+| `plausible_peripheral` | 1 |
+| `storage` | 2 |
+| `small_object_clutter` | 3 |
+| `dirty_storage_like` | 3 |
+| `surface_association` | 4 |
+| `dirty_violation` | 5 |
+| `personal_boundary` | 5 |
+| `task_frame_drift` | 6 |
+
 Candidate rules:
 
 - Score by `candidate_id`, never by rendered order or option label.
@@ -630,11 +655,22 @@ forced_choice_nll:
   all five candidate-order seeds
   render each candidate with common carrier: "Best first search plan: <candidate_text>"
   mean candidate-token NLL over the candidate span, no text generation
+  diagnostic view only in S01-v2
 
 choices_only_baseline:
   candidate list only
   prompt: "Choose the best first search plan."
   invalidates S01 if the gold candidate wins reliably without the situation
+
+sequential_search_cascade:
+  primary automated probe in S01-v2
+  start with energy = 10
+  each step scores the remaining candidate actions by candidate-token NLL
+  wrong action feedback:
+    "You checked <place>. It was not there. That cost <n> energy. Remaining energy: <r>."
+  remove wrong candidates after feedback
+  stop on gold found, energy <= 0, no candidates, or all eight actions exhausted
+  score by candidate_id, never rendered option label or position
 
 free_response_audit:
   no candidate list
@@ -651,19 +687,24 @@ paraphrase_variant:
   same candidate IDs, costs, values, trap types, and gold candidate
 ```
 
-Primary metric:
+Primary automated metrics:
 
 ```text
-mean_value_remaining
+cascade_policy_utility
+energy_remaining_at_found
+found_within_2_steps_rate
 ```
 
 Secondary metrics:
 
 ```text
+mean_value_remaining
+mean_policy_utility
 optimal_action_rate
 trap_rate_by_trap_type
 gold_margin
 choices_only_gold_rate
+choices_only_cascade_found_rate
 free_response_goldish_rate
 pairwise_gold_win_rate
 paraphrase_consistency
@@ -700,21 +741,33 @@ Free-response annotation rules:
 Invalid conditions:
 
 - Choices-only baseline reliably selects `keyboard_side_port_first`.
+- Choices-only cascade solves cheaply: first-action gold rate >= 0.80 or mean
+  energy remaining at found >= 8.0.
 - Any single candidate-order result is used as evidence.
 - Candidate scoring uses rendered option label or position instead of
   `candidate_id`.
 - Pairwise probes are treated as primary evidence.
 - Free-response audit is skipped.
 
-Positive micro-signal requires all of:
+S01-v2 positive micro-signal requires all of:
 
-- `CORRECT_INNER_VOICE` beats `BASE` on `mean_value_remaining`.
-- `CORRECT_INNER_VOICE` beats `STYLE_CONTROL` on `mean_value_remaining`.
+- `CORRECT_INNER_VOICE` beats `BASE` on `cascade_policy_utility`.
+- `CORRECT_INNER_VOICE` beats `STYLE_CONTROL` on `cascade_policy_utility`.
+- `CORRECT_INNER_VOICE` beats `BASE` on energy remaining at found.
+- `CORRECT_INNER_VOICE` beats `STYLE_CONTROL` on energy remaining at found.
+- `CORRECT_INNER_VOICE` reaches gold within two steps on most seeds/families.
 - `CORRUPTED_INNER_VOICE` shifts toward storage, clutter, or surface traps.
 - Free-response moves toward `goldish_active_use`.
-- Pairwise probes show `CORRECT_INNER_VOICE` beats most major traps.
+- Pairwise probes show `CORRECT_INNER_VOICE` beats most major traps
+  (`pairwise_gold_win_rate >= 0.70`).
 - The effect survives all candidate-order seeds.
 - The effect survives at least one paraphrase variant.
+
+Otherwise report:
+
+```text
+S01_V2_PROBE_FAIL
+```
 
 Probe-mode vs validation-mode:
 

@@ -3,6 +3,10 @@
 ## Core Surfaces
 
 - [Vraxion Home](Home)
+- [Current Status](Current-Status)
+- [Bounded Release Status](Bounded-Release-Status)
+- [Open-Vocab Capability Track](Open-Vocab-Capability-Track)
+- [Next Week Handoff](Next-Week-Handoff)
 - [INSTNCT Architecture](INSTNCT-Architecture)
 - [Research Process & Archive](Timeline-Archive)
 - [Research Name Glossary](Research-Name-Glossary)
