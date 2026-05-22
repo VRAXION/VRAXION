@@ -3,6 +3,10 @@
 ## Core Surfaces
 
 - [Vraxion Home](Home)
+- [Current Status](Current-Status)
+- [Bounded Release Status](Bounded-Release-Status)
+- [Open-Vocab Capability Track](Open-Vocab-Capability-Track)
+- [Next Week Handoff](Next-Week-Handoff)
 - [INSTNCT Architecture](INSTNCT-Architecture)
 - [Research Process & Archive](Timeline-Archive)
 - [Research Name Glossary](Research-Name-Glossary)
@@ -22,6 +26,7 @@
   - [Mutation-Selection Dynamics](Mutation-Selection-Dynamics)
   - [Constructed Computation](Constructed-Computation)
   - [Speculative — Cognitive Emergence](Cognitive-Emergence-Speculative)
+- [Grounded Modular Self-Controller](Grounded-Modular-Self-Controller)
 - [Theory of Thought](Theory-of-Thought) *(superseded)*
 - [Structured Chaos Theory](Structured-Chaos-Theory) *(superseded)*
 

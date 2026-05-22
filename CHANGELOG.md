@@ -5,6 +5,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed
+- Bump `docs/VERSION.json` `current_release` to `v5.0.0-beta.34`.
+
 ## [5.0.0-beta.9] - 2026-05-01
 
 ### Added — 2026-04-30: Phase D10u state-anchored wiring search + `top_01` release-candidate research checkpoint

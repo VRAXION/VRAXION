@@ -1,0 +1,13 @@
+{
+  "schema_version": "instnct_deployment_config_v1",
+  "sdk_schema_version": "instnct_sdk_candidate_v1",
+  "deployment_mode": "private_evaluation",
+  "intended_use": "internal_evaluation",
+  "out_dir": "target/pilot_wave/stable_loop_phase_lock_058_deployment_harness/example_private_eval",
+  "seed": 2026,
+  "progress_path": "progress.jsonl",
+  "audit_log_path": "audit_log.jsonl",
+  "production_default_training_enabled": false,
+  "public_beta_promoted": false,
+  "production_api_ready": false
+}

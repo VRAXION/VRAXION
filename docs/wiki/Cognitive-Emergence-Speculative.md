@@ -28,6 +28,32 @@ The framework's mechanisms permit each of these tests; the experiments have not 
 
 ---
 
+## Grounded self-controller toy result (bounded)
+
+The [Grounded Modular Self-Controller Finding](Grounded-Modular-Self-Controller)
+is relevant to this page because it tests a minimal self-anchor/controller
+mechanism:
+
+```text
+semantic event
+-> inferred grounding mode
+-> hard committed self-state
+-> learned controller over frozen modules
+```
+
+The result is positive inside a controlled toy setup: the integrated controller
+solves hard-counterfactual action choices, no-commit/static baselines fail, and
+frozen primitive modules remain intact while a shared end-to-end baseline shows
+primitive drift.
+
+This does **not** change the consciousness boundary. The finding is evidence for
+a small mechanism shape: grounded events can update a committed internal state
+that later controls protected action/skill routing. It is not evidence for
+phenomenal consciousness, biological validity, natural-language understanding,
+production readiness, or full VRAXION behavior.
+
+---
+
 ## Consciousness (currently untestable on this setup)
 
 The longer-distance speculation. The framework explicitly does *not* claim consciousness. The word appears here only to draw a clear boundary with the discussion of established consciousness theories, which can be loosely related to the framework but not derived from it.

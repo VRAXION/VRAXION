@@ -1,0 +1,2 @@
+{"schema_version":"visual_snapshot_v1","run_id":"stable_loop_phase_lock_052_visual_sample","checkpoint":0,"graph_path":"graph/checkpoint_000.json","tick_paths":[],"summary":"pre-prune candidate graph"}
+{"schema_version":"visual_snapshot_v1","run_id":"stable_loop_phase_lock_052_visual_sample","checkpoint":10,"graph_path":"graph/checkpoint_010.json","tick_paths":["ticks/checkpoint_010_tick_000.json"],"summary":"post-prune retained route"}

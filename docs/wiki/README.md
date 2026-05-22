@@ -50,5 +50,6 @@ git push
 
 ## Last full reconcile
 
+- **2026-05-19** — added current status, bounded release status, open-vocab capability track, and next-week handoff pages after the 099/100 runway. Renamed older Home sections as archived so the wiki front door no longer presents D10 as the live current status.
 - **2026-04-18** — cleaned archive stubs from both surfaces, added "Archived scripts (2026-04-18)" blueprint subsection to `Timeline-Archive.md`, updated cross-refs after `tools/*.py` mainline cleanup.
 - **2026-04-17** — pulled `v5-Rust-Port-Benchmarks.md`, `INSTNCT-Architecture.md`, `_Sidebar.md`, `_Footer.md`, `Theory-of-Thought.md` down from canonical; pushed `Home.md`, `Timeline-Archive.md`, `pipeline-architecture.svg` up to canonical; archived six redirect stubs.

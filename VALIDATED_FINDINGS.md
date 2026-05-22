@@ -1,6 +1,6 @@
 # VRAXION Validated Findings
 
-_Last updated: 2026-04-30_
+_Last updated: 2026-05-19_
 
 Canonical evidence summary. Repo-tracked docs are canonical; the GitHub wiki is a mirrored secondary surface.
 
@@ -8,11 +8,36 @@ Canonical evidence summary. Repo-tracked docs are canonical; the GitHub wiki is 
 
 The repo is in a transition state:
 
+- **Bounded local/private release baseline:** `099_BOUNDED_LOCAL_PRIVATE_CLEAN_DEPLOY_READY_GATE` is positive. This is the current release-ready stop condition for the bounded local/private stack.
+- **Open-vocab assistant capability track:** `100_OPEN_VOCAB_ASSISTANT_CAPABILITY_SCALE` is positive as a runner-local research signal only. It is not GPT-like readiness, not open-domain assistant readiness, and not production chat.
 - **Released public tag:** `v5.0.0-beta.9` — Phase D10u state-anchored wiring search, `top_01` release-candidate research checkpoint, 30/30 pass adversarial 16k gate (`v5.0.0-beta.8` is the prior Phase D9.2 multi-objective confirmation + `seed2042_improved_generalist_v1` validated H=384 research checkpoint; `v5.0.0-beta.7` is the prior Phase D9 smooth+accuracy specialist checkpoint; `v5.0.0-beta.6` is the prior Phase D6/D7/D8 research-line checkpoint + wiki/HTML doc-drift correction patch; `v5.0.0-beta.5` is the prior Phase D3/D3.1/D4 SAF lock + 56-example archive cleanup release; `v5.0.0-beta.1` remains as the original language-evolution beta, historical reference only)
 - **Current mainline on `main`:** Rust grower (`instnct-core/examples/neuron_grower.rs`)
 - **Python deploy SDK:** `Python/` — Block A + B, pure numpy (256/256 + 65536/65536 lossless)
 - **Historical Python research lane:** frozen at tag `archives/python-research-20260420` (was `instnct/`, migrated to Rust `instnct-core/` on 2026-04-13)
 - **Active research line:** Byte-level lexical-to-neural pipeline (L0 + L1 frozen; Tokenizer V2 champion; Embedder + Nano Brain scaffolds awaiting training)
+
+### Bounded local/private release runway (2026-05-19)
+
+| Finding | Result | Status |
+|---|---|---|
+| **083-089 private bounded stack** | Model artifact RC, local inference runtime, localhost/private API alpha, deployment harness, OOD/red-team eval, long-run/concurrency stability, and private evaluation RC package all passed. | **Validated / local-private bounded** |
+| **089B packaged winner proof** | Packaged bounded checkpoint, upstream 080 winner checkpoint, and deterministic reproduction child matched byte-level checkpoint hash. The diversity-repair winner was reproduced and controls failed as expected. | **Validated / winner proof** |
+| **095-097 generation repair line** | Free-generation gap was diagnosed, decoder generation repair passed, fresh generation eval passed, and multi-seed OOD/refusal/retention confirm passed. | **Validated / bounded decoder path** |
+| **098 private evaluation RC refresh** | The 094B/095/096/097 generation-repair evidence was bound into the private evaluation RC lineage without training or package mutation. | **Validated / packaging** |
+| **099 clean local/private deploy-ready gate** | Fresh local/private harness smoke, SDK smoke, bounded chat service smoke, artifact hash verification, checkpoint unchanged, rollback pointer, no training, and upstream provenance all passed. | **Release-ready for local/private bounded evaluation** |
+| **Claim boundary** | This does not claim production deployment, public API, hosted SaaS, GPT-like assistant readiness, open-domain chat, production chat, or safety alignment. | **Hard boundary** |
+
+### Open-vocab assistant capability research runway (2026-05-19)
+
+| Finding | Result | Status |
+|---|---|---|
+| **091 open-vocab byte-LM foundation** | Runner-local PyTorch byte-level next-byte objective learned above controls while bounded retention remained intact. | **Validated / research-only** |
+| **092 FineWeb slice confirm** | The next-byte LM signal transferred to a local FineWeb-Edu slice above random/shuffled controls and weakly above char-bigram. | **Validated / research-only** |
+| **093 FineWeb margin/scale confirm** | Multi-seed FineWeb run achieved strong char-bigram margin and beat char-trigram baseline, with collapse rejected and retention preserved. | **Validated / research-only** |
+| **094 chat SFT mix PoC** | Chat-format objective improved ranked behavior and kept FineWeb/bounded retention within limits, but raw free-generation remained weak and warm-start necessity was not proven. | **Validated with caveat** |
+| **094B-097 decoder repair path** | Gap analysis showed generation needed decoder/prompt/stop repair; repair and fresh evals passed under bounded/rubric gates. | **Validated / decoder-bounded** |
+| **100 assistant capability scale probe** | Target-only runner-local research checkpoint improved over the 094 generation baseline while preserving bounded retention and freezing the 099 release baseline. | **Validated / capability signal only** |
+| **Claim boundary** | This is not GPT-like assistant readiness, not open-domain assistant readiness, not production chat, not public release, and not proof that INSTNCT/AnchorRoute is an open-domain LM winner. | **Hard boundary** |
 
 ### Grower lane: proven on `main`
 

@@ -14,6 +14,10 @@ _SIBLING_WIKI = ROOT.parent / "VRAXION.wiki"
 WIKI_DIR = _SIBLING_WIKI if _SIBLING_WIKI.exists() else (ROOT / "VRAXION.wiki")
 FILES = [
     "Home.md",
+    "Current-Status.md",
+    "Bounded-Release-Status.md",
+    "Open-Vocab-Capability-Track.md",
+    "Next-Week-Handoff.md",
     "INSTNCT-Architecture.md",
     "Timeline-Archive.md",
     "COMPRESSION_LOOP.md",
@@ -24,6 +28,7 @@ FILES = [
     "Mutation-Selection-Dynamics.md",
     "Constructed-Computation.md",
     "Cognitive-Emergence-Speculative.md",
+    "Grounded-Modular-Self-Controller.md",
     # Predecessor pages — kept as redirect stubs so existing links don't break.
     "Theory-of-Thought.md",
     "Structured-Chaos-Theory.md",

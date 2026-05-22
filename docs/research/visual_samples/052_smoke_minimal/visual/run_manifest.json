@@ -1,0 +1,11 @@
+{
+  "schema_version": "visual_snapshot_v1",
+  "run_id": "stable_loop_phase_lock_052_visual_sample",
+  "label": "052 smoke minimal visual sample",
+  "checkpoints": [
+    0,
+    10
+  ],
+  "has_ticks": true,
+  "claim_boundary": "visual infrastructure only; no model capability claim"
+}

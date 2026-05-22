@@ -20,7 +20,52 @@ Vraxion exists to advance machine consciousness as an engineering reality. In pu
 
 This page is the mission-first technical front door. Use [Pages](https://vraxion.github.io/VRAXION/) for the polished front door — the Blocks ladder ([A Byte Unit](https://vraxion.github.io/VRAXION/blocks/a-byte-unit.html) → [E Brain](https://vraxion.github.io/VRAXION/blocks/e-brain.html)) plus a Legacy detail view. Use the repo [README.md](https://github.com/VRAXION/VRAXION/blob/main/README.md) for the code-facing entry, and [Research Process & Archive](Timeline-Archive) for protocol, chronology, and proof trail.
 
-## Current D10 Finding
+## Current Official Status
+
+_Updated 2026-05-19._
+
+```text
+Local/private bounded AI stack: release-ready
+GPT-like / open-domain assistant: not ready
+Production/public service: not claimed
+```
+
+The bounded local/private release runway reached its clean deploy-ready stop condition at `099_BOUNDED_LOCAL_PRIVATE_CLEAN_DEPLOY_READY_GATE`. The safe claim is that Vraxion has a hash-checked, audited, localhost/private bounded-domain AI stack that passed artifact, runtime, API, harness, OOD/red-team, long-run, package, generation-repair, and clean local/private deploy-readiness gates.
+
+The open-vocab assistant capability line reached `100_OPEN_VOCAB_ASSISTANT_CAPABILITY_SCALE_POSITIVE` as a runner-local research signal. It does not prove GPT-like assistant readiness, open-domain assistant readiness, production chat, deployment readiness, public release, safety alignment, or that INSTNCT/AnchorRoute is an open-domain LM winner.
+
+Read next:
+
+- [Current Status](Current-Status)
+- [Bounded Release Status](Bounded-Release-Status)
+- [Open-Vocab Capability Track](Open-Vocab-Capability-Track)
+- [Next Week Handoff](Next-Week-Handoff)
+
+## Archived Grounded Controller Finding
+
+As of 2026-05-12, the latest toy integration result is the
+[Grounded Modular Self-Controller Finding](Grounded-Modular-Self-Controller).
+It combines three previously separate mechanisms:
+
+```text
+inferred grounding mode
++ hard committed self-state
++ frozen primitive/action modules
++ learned controller
+```
+
+The main 5-seed probe reached `1.000` hard-counterfactual action accuracy for
+the integrated recursive controller, while no-commit/static baselines stayed at
+`0.444` and shuffled committed state dropped to `0.111`. Frozen primitives had
+`0.000` drift, while the shared end-to-end no-freeze baseline drifted by
+`0.583`.
+
+Safe interpretation: in a controlled toy setting, inferred grounding can update
+a hard committed self-state, and that committed state can later drive a learned
+controller over frozen skills/actions without primitive drift. This is not a
+consciousness, biology, natural-language, full VRAXION, or production claim.
+
+## Archived D10 Finding
 
 As of 2026-04-30, the HDS basin mapping side quest is closed. The H384 D9/D10
 landscape contains real local signal, but not a broad universal release-ready
@@ -36,7 +81,7 @@ near/strict trusted release candidate yet. See [D10 HDS Basin & State Identity
 Finding](D10-HDS-Basin-State-Identity-Finding) and [D10 Release Readiness
 Gate](D10-Release-Readiness-Gate).
 
-## At a Glance
+## Historical At a Glance
 
 - **Architecture line:** `INSTNCT`
 - **Stable public release:** [`v5.0.0-beta.6`](https://github.com/VRAXION/VRAXION/releases/tag/v5.0.0-beta.6) is the current Rust public beta tag (Phase D6/D7/D8 research-line checkpoint + doc-drift correction patch on top of the beta.5 SAF lock); see the [release list](https://github.com/VRAXION/VRAXION/releases) for the full beta.1 → beta.6 chain. The legacy `v4.x` Python lane is preserved for context only.

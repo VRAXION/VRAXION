@@ -1,0 +1,87 @@
+{
+  "files": [
+    {
+      "path": "docs/releases/INSTNCT_RC_001_RELEASE_MANIFEST.md",
+      "sha256_normalized_lf": "96431acc814922028991d2bf86e47feb1cc3bf476ab7a84e586f26acc4d0ff06"
+    },
+    {
+      "path": "docs/releases/INSTNCT_RC_001_INSTALL_GUIDE.md",
+      "sha256_normalized_lf": "55a08b178a6cb1f24eaa4da6450f8e01358a6197baa143328cd07ba9341175b7"
+    },
+    {
+      "path": "docs/releases/INSTNCT_RC_001_SMOKE_TEST_GUIDE.md",
+      "sha256_normalized_lf": "8b4d69e45cd8b5ae086c85be550c6b5f05a2c8d4525da9c577c2696d38eaecac"
+    },
+    {
+      "path": "docs/releases/INSTNCT_RC_001_KNOWN_LIMITATIONS.md",
+      "sha256_normalized_lf": "3ec77c619a4818998e3ad47b7c121269847768ed6a4270c2dc53daa232b65dda"
+    },
+    {
+      "path": "docs/releases/INSTNCT_RC_001_SUPPORT_BOUNDARY.md",
+      "sha256_normalized_lf": "29c7bd5587fd93820d759e17c8ab44e8334f607ccaf5f5066f823cf4dcb9a58d"
+    },
+    {
+      "path": "docs/releases/INSTNCT_RC_001_DOC_INDEX.md",
+      "sha256_normalized_lf": "197599ccc4c71108af76db5c817beb3847c9eeebbeb6e01183ede85bb32b9b3c"
+    },
+    {
+      "path": "docs/releases/INSTNCT_RC_001_CLAIM_BOUNDARY.md",
+      "sha256_normalized_lf": "d37bf8c1eb98e1bbe28145e1603f5ccf510909959343c8b93a759b874c4fc4f4"
+    },
+    {
+      "path": "docs/research/STABLE_LOOP_PHASE_LOCK_061_RELEASE_CANDIDATE_PACKAGE_CONTRACT.md",
+      "sha256_normalized_lf": "36d656ad6300c24746e7bd493a06784078b6439238de0faede8b4e0a909f8dde"
+    },
+    {
+      "path": "docs/research/STABLE_LOOP_PHASE_LOCK_061_RELEASE_CANDIDATE_PACKAGE_RESULT.md",
+      "sha256_normalized_lf": "1f2925f745d2ccf7da65e8177e40cb565701bb1a810441f103e23be60f59b262"
+    },
+    {
+      "path": "scripts/probes/run_stable_loop_phase_lock_061_release_candidate_check.py",
+      "sha256_normalized_lf": "8376c6c51327cbfe63be9b36dedc27e2c3acbfc55dcf92bf8fcc3ca68e54f110"
+    },
+    {
+      "path": "docs/research/STABLE_LOOP_PHASE_LOCK_050_EXPECTED_HASHES.json",
+      "sha256_normalized_lf": "9dea98cc752be17b2faa001294a57b8fd7d14e3042be161b4a2f29ad6ea39890"
+    },
+    {
+      "path": "docs/research/STABLE_LOOP_PHASE_LOCK_050_REPRODUCIBILITY_PACKAGE_AND_PAPER_AUDIT_RESULT.md",
+      "sha256_normalized_lf": "ac8e2aa5bd51f67c05c2a6c0d30b33eed7359114a98bf8ca00e471ca0c3f4bed"
+    },
+    {
+      "path": "docs/research/STABLE_LOOP_PHASE_LOCK_055_VISUAL_SECTION_CLOSURE_REAL_RUN_REPLAY_RESULT.md",
+      "sha256_normalized_lf": "9954edd2901b5bde1efd8036aaf6c56b084077b38dc6f67e39e3869b3de02cf3"
+    },
+    {
+      "path": "docs/research/STABLE_LOOP_PHASE_LOCK_056_PRODUCTIZATION_ARCHITECTURE_AND_LICENSE_BOUNDARY_RESULT.md",
+      "sha256_normalized_lf": "da818c97bfc9a0f574e53aff89df845823fdc2fb31ffd7ba0950f12ebd0d6b41"
+    },
+    {
+      "path": "docs/research/STABLE_LOOP_PHASE_LOCK_057_INSTNCT_SDK_RELEASE_CANDIDATE_RESULT.md",
+      "sha256_normalized_lf": "6b0fa7fea89d6bab2afed29af4b3a683d61e6e1921cd656f28e29d894d99c492"
+    },
+    {
+      "path": "docs/research/STABLE_LOOP_PHASE_LOCK_058_DEPLOYMENT_HARNESS_RESULT.md",
+      "sha256_normalized_lf": "c207f288893bdd482a58ab57eb29fe9ec6902198c309b3843373a55738bdc51d"
+    },
+    {
+      "path": "docs/research/STABLE_LOOP_PHASE_LOCK_059_HOSPITAL_SCHOOL_PILOT_BOUNDARY_RESULT.md",
+      "sha256_normalized_lf": "fa1df819307f0b6db47f7dd62185d7695ae9e1edcc8f87d1086a662ef7b893d8"
+    },
+    {
+      "path": "docs/research/STABLE_LOOP_PHASE_LOCK_060_LICENSE_PACKAGE_RESULT.md",
+      "sha256_normalized_lf": "e8e1143e71cf27b80213fb13f67cfe07fec5f171b058f6cc0e027986c4712385"
+    },
+    {
+      "path": "tools/instnct_deploy/instnct_deploy.py",
+      "sha256_normalized_lf": "3ff674478d73272df3d952770a175445a1b287fd6bc8c3f6463bd38c8f363d63"
+    },
+    {
+      "path": "instnct-core/examples/instnct_sdk_candidate_smoke.rs",
+      "sha256_normalized_lf": "c1c8c53dedc261fb24957b2a3fd387ce91207b2bc4eb7e9fdafb503986d8f56a"
+    }
+  ],
+  "hash_mode": "sha256_normalized_lf",
+  "release_id": "INSTNCT_RC_001",
+  "self_excluded": true
+}

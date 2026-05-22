@@ -23,7 +23,7 @@ This page explains how retired surfaces leave `main` without losing their contex
 
 ## Archive Branches and Tags
 
-Historical surfaces are preserved as **immutable archive tags** (no long-lived archive branches remain). Tag prefixes:
+Historical surfaces are preserved as archive tags or explicit cleanup snapshot branches. Tag prefixes:
 
 - `archives/<topic>-<YYYYMMDD>` — content surfaces (script trees, doc surfaces, residue dumps)
 - `archive/<branch>-<YYYYMMDD>` — previously-live branch heads (frozen on the cleanup date)
@@ -38,6 +38,7 @@ Historical surfaces are preserved as **immutable archive tags** (no long-lived a
 
 **Branch-head snapshots (2026-04-25 → 2026-04-28):**
 
+- `archive/pre-consolidation-20260519-main-snapshot` — main HEAD before the 2026-05-19 consolidation pass that removed historical scratch tools and non-current pre-bounded probe runners from active `main`. Use this branch for any removed `tools/_scratch/` script or old `scripts/probes/` runner.
 - `archive/main-pre-cleanup-20260425`, `archive/main-pre-cleanup-20260426`, `archive/main-pre-cleanup-20260427`, `archive/main-pre-cleanup-20260428` — main HEAD before each successive cleanup pass (the 2026-04-28 snapshot at HEAD `88f9421` is the pre-`v5.0.0-beta.6` Phase D6/D7/D8 checkpoint + doc-drift correction baseline).
 - `archive/codex-phase-b-logging-smoke-20260425` — codex/phase-b-logging-smoke branch (merged into main 2026-04-25).
 - `archive/research-overnight-sct-empirical-20260425` — overnight SCT research branch.

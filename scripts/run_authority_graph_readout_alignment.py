@@ -98,6 +98,14 @@ def static_examples(datasets: dict[str, list[Any]]) -> list[pilot.StaticExample]
     return datasets["latent_refraction_small"] + datasets["multi_aspect_small"]
 
 
+def capped_static_examples(examples: list[pilot.StaticExample], per_frame: int = 24) -> list[pilot.StaticExample]:
+    capped: list[pilot.StaticExample] = []
+    for frame in pilot.FRAMES:
+        frame_examples = [ex for ex in examples if ex.frame == frame]
+        capped.extend(frame_examples[:per_frame])
+    return capped
+
+
 def output_authority_loss(
     model: guided.DifferentiableAuthorityGraph,
     examples: list[pilot.StaticExample],
@@ -140,9 +148,9 @@ def output_authority_loss(
     active_mean = torch.stack(active_values).mean()
     inactive_mean = torch.stack(inactive_values).mean()
     return torch.stack(losses).mean(), {
-        "active": active_mean.detach(),
-        "inactive": inactive_mean.detach(),
-        "active_minus_inactive": (active_mean - inactive_mean).detach(),
+        "active": active_mean,
+        "inactive": inactive_mean,
+        "active_minus_inactive": active_mean - inactive_mean,
     }
 
 
@@ -182,11 +190,6 @@ def alignment_loss(
     mode: str,
 ) -> tuple[torch.Tensor, dict[str, float]]:
     task = bce_loss(model, datasets, steps)
-    authority, auth_stats = output_authority_loss(model, static_examples(datasets), steps=steps, margin=0.10)
-    inactive = inactive_leakage_loss(model, static_examples(datasets), steps=steps, limit=0.08)
-    wrong = wrong_frame_margin_loss(model, datasets, steps=steps, margin=0.20)
-    edge_l2 = model.edge_weights.pow(2).mean()
-    bias_l2 = model.bias.pow(2).mean()
     weights = {
         "CE_only": (0.0, 0.0, 0.0),
         "CE_plus_output_authority": (0.70, 0.0, 0.0),
@@ -196,14 +199,28 @@ def alignment_loss(
         "matched_random_combined_loss": (0.65, 0.55, 0.30),
     }
     authority_w, inactive_w, wrong_w = weights[mode]
+    zero = task.new_tensor(0.0)
+    authority = zero
+    inactive = zero
+    wrong = zero
+    auth_stats = {"active": zero, "inactive": zero}
+    if authority_w > 0.0 or inactive_w > 0.0:
+        authority_examples = capped_static_examples(static_examples(datasets), per_frame=24)
+        authority, auth_stats = output_authority_loss(model, authority_examples, steps=steps, margin=0.10)
+        if inactive_w > 0.0:
+            inactive = F.relu(auth_stats["inactive"] - 0.08)
+    if wrong_w > 0.0:
+        wrong = wrong_frame_margin_loss(model, datasets, steps=steps, margin=0.20)
+    edge_l2 = model.edge_weights.pow(2).mean()
+    bias_l2 = model.bias.pow(2).mean()
     total = task + authority_w * authority + inactive_w * inactive + wrong_w * wrong + 0.0005 * edge_l2 + 0.0002 * bias_l2
     return total, {
         "task_bce": float(task.detach().item()),
         "authority_margin_loss": float(authority.detach().item()),
         "inactive_leakage_loss": float(inactive.detach().item()),
         "wrong_frame_margin_loss": float(wrong.detach().item()),
-        "train_active_influence": float(auth_stats["active"].item()),
-        "train_inactive_influence": float(auth_stats["inactive"].item()),
+        "train_active_influence": float(auth_stats["active"].detach().item()),
+        "train_inactive_influence": float(auth_stats["inactive"].detach().item()),
     }
 
 
