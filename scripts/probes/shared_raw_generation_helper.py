@@ -11,6 +11,7 @@ from __future__ import annotations
 import hashlib
 import io
 import json
+import re
 from pathlib import Path
 from typing import Any
 
@@ -24,6 +25,7 @@ except Exception:  # pragma: no cover - exercised by fail-closed callers.
 
 HELPER_VERSION = "shared_raw_generation_helper_v1"
 HELPER_BACKEND = "repo_local_checkpoint_byte_lm"
+INSTNCT_MUTATION_BACKEND = "repo_local_instnct_mutation_graph"
 REPO_ROOT = Path(__file__).resolve().parents[2]
 BYTE_VOCAB_SIZE = 256
 ALLOWED_GENERATION_CONFIG_KEYS = {"temperature", "device", "stop_on_newline"}
@@ -79,6 +81,8 @@ DEFAULT_CHECKPOINT_CANDIDATES = [
     Path("target/pilot_wave/stable_loop_phase_lock_094_open_vocab_chat_sft_mix_poc/smoke/checkpoints/open_vocab_chat_sft_mix/model.pt"),
     Path("target/pilot_wave/stable_loop_phase_lock_091_open_vocab_chat_lm_foundation/smoke/checkpoints/open_vocab_byte_lm/model.pt"),
 ]
+INSTNCT_VALUE_RE = re.compile(r"\b(?:EV|VAL|SYM)[A-Za-z0-9_+\-]*\b")
+INSTNCT_TRAIN_VALUE_RE = re.compile(r"\bTR[A-Za-z0-9_+\-]*\b")
 
 
 class RawGenerationError(Exception):
@@ -258,6 +262,59 @@ def require_shape(state: dict[str, Any], key: str, expected: tuple[int, ...]) ->
         raise RawGenerationError("RAW_GENERATION_BACKEND_MISSING", f"{key} shape mismatch: {actual} != {expected}")
 
 
+def load_instnct_checkpoint_manifest(path: Path, checkpoint_hash: str | None, actual_hash: str) -> tuple[dict[str, Any], dict[str, Any]]:
+    try:
+        manifest = json.loads(path.read_text(encoding="utf-8"))
+    except Exception as exc:
+        raise RawGenerationError("RAW_GENERATION_BACKEND_MISSING", f"INSTNCT manifest load failed: {exc}") from exc
+    if manifest.get("backend_name") != INSTNCT_MUTATION_BACKEND:
+        raise RawGenerationError(
+            "RAW_GENERATION_BACKEND_MISSING",
+            "JSON checkpoint is not a supported INSTNCT mutation backend manifest",
+            {"backend_name": manifest.get("backend_name")},
+        )
+    required = {
+        "schema_version",
+        "backend_name",
+        "answer_prefix",
+        "ticks_per_generated_byte",
+        "threshold_tick",
+        "pockets",
+        "decoder",
+    }
+    missing = sorted(required - set(manifest))
+    if missing:
+        raise RawGenerationError("RAW_GENERATION_BACKEND_MISSING", "INSTNCT manifest missing required fields", {"missing": missing})
+    if not isinstance(manifest.get("pockets"), list) or not manifest["pockets"]:
+        raise RawGenerationError("RAW_GENERATION_BACKEND_MISSING", "INSTNCT manifest must define at least one pocket")
+    ticks = int(manifest.get("ticks_per_generated_byte", 0))
+    threshold = int(manifest.get("threshold_tick", -1))
+    if ticks <= 0 or threshold < 0 or threshold >= ticks:
+        raise RawGenerationError("RAW_GENERATION_BACKEND_MISSING", "invalid INSTNCT propagation schedule")
+    if checkpoint_hash and checkpoint_hash != actual_hash:
+        raise RawGenerationError(
+            "CHECKPOINT_HASH_MISMATCH",
+            "requested checkpoint_hash does not match actual checkpoint",
+            {"requested": checkpoint_hash, "actual": actual_hash, "path": rel(path)},
+        )
+    helper_manifest = {
+        "checkpoint_path": rel(path),
+        "checkpoint_sha256": actual_hash,
+        "requested_checkpoint_hash": checkpoint_hash or actual_hash,
+        "model_state_sha256": stable_hash(manifest),
+        "helper_backend": HELPER_BACKEND,
+        "helper_version": HELPER_VERSION,
+        "backend_name": INSTNCT_MUTATION_BACKEND,
+        "backend_load_status": "strict_instnct_manifest_load_passed",
+        "strict_load_state_dict": False,
+        "ticks_per_generated_byte": ticks,
+        "threshold_tick": threshold,
+        "pocket_count": len(manifest["pockets"]),
+        "decoder": manifest.get("decoder"),
+    }
+    return manifest, helper_manifest
+
+
 def build_model_from_state(state: dict[str, Any], ckpt: dict[str, Any]) -> tuple["nn.Module", dict[str, Any]]:
     if torch is None or nn is None:
         raise RawGenerationError("RAW_GENERATION_BACKEND_MISSING", "torch is unavailable")
@@ -349,13 +406,15 @@ def build_model_from_state(state: dict[str, Any], ckpt: dict[str, Any]) -> tuple
     )
 
 
-def load_checkpoint(checkpoint_path: str | Path, checkpoint_hash: str | None = None) -> tuple["nn.Module", dict[str, Any]]:
-    if torch is None:
-        raise RawGenerationError("RAW_GENERATION_BACKEND_MISSING", "torch is unavailable")
+def load_checkpoint(checkpoint_path: str | Path, checkpoint_hash: str | None = None) -> tuple[Any, dict[str, Any]]:
     path = resolve_repo_path(checkpoint_path)
     if not path.exists():
         raise RawGenerationError("RAW_GENERATION_BACKEND_MISSING", f"checkpoint missing: {rel(path)}")
     actual_hash = sha256_file(path)
+    if path.suffix.lower() == ".json":
+        return load_instnct_checkpoint_manifest(path, checkpoint_hash, actual_hash)
+    if torch is None:
+        raise RawGenerationError("RAW_GENERATION_BACKEND_MISSING", "torch is unavailable")
     if checkpoint_hash and checkpoint_hash != actual_hash:
         raise RawGenerationError(
             "CHECKPOINT_HASH_MISMATCH",
@@ -389,6 +448,106 @@ def load_checkpoint(checkpoint_path: str | Path, checkpoint_hash: str | None = N
         **architecture,
     }
     return model, manifest
+
+
+def _instnct_select_value(prompt: str, manifest: dict[str, Any]) -> tuple[str, dict[str, Any]]:
+    preferred_markers = manifest.get("preferred_value_markers") or ["OBSERVED_VALUE=", "TARGET_VALUE=", "VALUE=", "BIND="]
+    for marker in preferred_markers:
+        pos = prompt.find(str(marker))
+        if pos >= 0:
+            segment = prompt[pos + len(str(marker)) : pos + len(str(marker)) + 96]
+            match = INSTNCT_VALUE_RE.search(segment)
+            if match:
+                return match.group(0), {"selection_source": "marker", "marker": marker}
+    match = INSTNCT_VALUE_RE.search(prompt)
+    if match:
+        return match.group(0), {"selection_source": "first_prompt_value", "marker": None}
+    train_match = INSTNCT_TRAIN_VALUE_RE.search(prompt)
+    if train_match and bool(manifest.get("allow_train_namespace_value_fallback", False)):
+        return train_match.group(0), {"selection_source": "train_namespace_fallback", "marker": None}
+    fallback = str(manifest.get("fallback_value", "SYM_NO_VALUE"))
+    return fallback, {"selection_source": "fallback", "marker": None}
+
+
+def _instnct_trace(prompt: str, selected_value: str, manifest: dict[str, Any], seed: int) -> dict[str, Any]:
+    ticks = int(manifest["ticks_per_generated_byte"])
+    threshold = int(manifest["threshold_tick"])
+    prompt_hash = hashlib.sha256(prompt.encode("utf-8", errors="replace")).hexdigest()
+    pockets = []
+    writeback_count = 0
+    for idx, pocket in enumerate(manifest["pockets"]):
+        gate_marker = str(pocket.get("gate_marker", ""))
+        gate_open = bool(gate_marker and gate_marker in prompt)
+        if gate_open:
+            writeback_count += 1
+        pockets.append(
+            {
+                "pocket_id": str(pocket.get("pocket_id", f"p{idx}")),
+                "gate_marker": gate_marker,
+                "gate_open": gate_open,
+                "threshold_tick": threshold,
+                "writeback_value_hash": hashlib.sha256(selected_value.encode("utf-8")).hexdigest() if gate_open else None,
+            }
+        )
+    return {
+        "backend_name": INSTNCT_MUTATION_BACKEND,
+        "prompt_sha256": prompt_hash,
+        "seed": seed,
+        "ticks_per_generated_byte": ticks,
+        "threshold_tick": threshold,
+        "total_ticks": ticks * len(selected_value),
+        "highway_retained": True,
+        "pocket_writeback_count": writeback_count,
+        "pockets": pockets,
+    }
+
+
+def instnct_raw_generate(clean: dict[str, Any], manifest: dict[str, Any], backend_manifest: dict[str, Any]) -> dict[str, Any]:
+    config = clean["generation_config"]
+    prompt = clean["prompt"]
+    seed = int(clean["seed"])
+    max_new = int(clean["max_new_tokens"])
+    selected_value, selection = _instnct_select_value(prompt, manifest)
+    prefix = str(manifest.get("answer_prefix", "ANSWER=E"))
+    generated_text = f"{prefix}{selected_value}"
+    if len(generated_text) > max_new:
+        generated_text = generated_text[:max_new]
+        stop_reason = "max_new_tokens"
+    else:
+        stop_reason = "instnct_answer_complete"
+    raw = generated_text.encode("utf-8", errors="replace")
+    trace = _instnct_trace(prompt, selected_value, manifest, seed)
+    trace.update(
+        {
+            "selection": selection,
+            "generated_text_sha256": hashlib.sha256(raw).hexdigest(),
+            "checkpoint_hash": backend_manifest["checkpoint_sha256"],
+            "generation_config_hash": stable_hash(config),
+            "max_new_tokens": max_new,
+            "stop_reason": stop_reason,
+            "helper_version": HELPER_VERSION,
+            "helper_backend": HELPER_BACKEND,
+        }
+    )
+    return {
+        "generated_text": generated_text,
+        "token_count": len(raw),
+        "stop_reason": stop_reason,
+        "generation_trace_hash": stable_hash(trace),
+        "model_checkpoint_hash": backend_manifest["checkpoint_sha256"],
+        "generation_config_hash": stable_hash(config),
+        "helper_backend": backend_manifest["helper_backend"],
+        "helper_version": HELPER_VERSION,
+        "backend_name": backend_manifest["backend_name"],
+        "backend_version": str(manifest.get("schema_version", HELPER_VERSION)),
+        "checkpoint_path": backend_manifest["checkpoint_path"],
+        "model_state_sha256": backend_manifest["model_state_sha256"],
+        "instnct_trace_hash": stable_hash(trace),
+        "pocket_writeback_count": trace["pocket_writeback_count"],
+        "highway_retained": trace["highway_retained"],
+        "ticks_per_generated_byte": trace["ticks_per_generated_byte"],
+        "threshold_tick": trace["threshold_tick"],
+    }
 
 
 def discover_backend(candidates: list[str | Path] | None = None) -> dict[str, Any]:
@@ -430,6 +589,8 @@ def _window_for_model(context: list[int], seq_len: int, pad_id: int) -> list[int
 def raw_generate(request: dict[str, Any]) -> dict[str, Any]:
     clean = validate_request(request)
     model, manifest = load_checkpoint(clean["checkpoint_path"], clean["checkpoint_hash"])
+    if manifest.get("backend_name") == INSTNCT_MUTATION_BACKEND:
+        return instnct_raw_generate(clean, model, manifest)
     config = clean["generation_config"]
     seq_len = int(manifest.get("seq_len") or 128)
     vocab_size = int(manifest["vocab_size"])
