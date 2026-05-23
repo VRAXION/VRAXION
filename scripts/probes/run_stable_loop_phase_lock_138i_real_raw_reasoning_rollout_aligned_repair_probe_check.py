@@ -403,14 +403,15 @@ def check_artifacts() -> list[str]:
 
     namespace = load_json(SMOKE_ROOT / "namespace_metrics.json")
     aggregate = load_json(SMOKE_ROOT / "aggregate_metrics.json")
+    namespace_threshold_violations: list[str] = []
     for key, threshold in NAMESPACE_GATES.items():
         metric_source = aggregate if key in {"post_stale_user_assistant_fragment_rate", "post_off_prompt_output_rate"} else namespace
         if key not in metric_source or key not in aggregate:
             failures.append("NAMESPACE_METRIC_MISSING")
         elif key.endswith("_rate") and metric_source[key] > threshold:
-            pass
+            namespace_threshold_violations.append(key)
         elif not key.endswith("_rate") and metric_source[key] < threshold:
-            pass
+            namespace_threshold_violations.append(key)
     for key in [
         "baseline_train_namespace_leak_rate",
         "post_train_namespace_leak_rate",
@@ -428,6 +429,10 @@ def check_artifacts() -> list[str]:
     ]:
         if key not in namespace:
             failures.append("NAMESPACE_METRIC_MISSING")
+    if aggregate.get("namespace_gates_passed") is True and namespace_threshold_violations:
+        failures.append("NAMESPACE_GATE_TRUE_WITH_THRESHOLD_VIOLATION")
+    if namespace.get("namespace_gates_passed") is True and namespace_threshold_violations:
+        failures.append("NAMESPACE_GATE_TRUE_WITH_THRESHOLD_VIOLATION")
 
     decision = load_json(SMOKE_ROOT / "decision.json")
     allowed_decisions = {
@@ -459,6 +464,8 @@ def check_artifacts() -> list[str]:
         and replay.get("determinism_replay_passed") is True
     )
     if decision.get("decision") == "real_raw_reasoning_rollout_aligned_repair_positive":
+        if namespace_threshold_violations:
+            failures.append("POSITIVE_NAMESPACE_THRESHOLD_VIOLATION")
         if decision.get("verdict") != "REAL_RAW_REASONING_ROLLOUT_ALIGNED_REPAIR_POSITIVE" or positive_gates is not True:
             failures.append("POSITIVE_WITHOUT_ROLLOUT_NAMESPACE_GATES")
         if decision.get("reasoning_subtrack_real_raw_evidence_partially_restored") is not True:
