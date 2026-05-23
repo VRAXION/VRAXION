@@ -30,13 +30,21 @@ Any unknown or forbidden key fails with `RAW_GENERATION_FORBIDDEN_INPUT_DETECTED
 
 The helper response must include `generated_text`, `token_count`, `stop_reason`, `generation_trace_hash`, `model_checkpoint_hash`, `generation_config_hash`, `helper_backend`, and `helper_version`.
 
+`generation_config` is also strict. Its only allowed keys are `temperature`, `device`, and `stop_on_newline`. Unknown keys or nested expected/scorer/oracle/gold/answer fields fail closed with `RAW_GENERATION_FORBIDDEN_INPUT_DETECTED`.
+
 ## Backend and canary
 
 135E must use a real repo-local checkpoint-backed byte-LM backend. If torch is unavailable, no checkpoint exists, checkpoint hash mismatches, checkpoint shape cannot be safely loaded, generation fails, or the loader must guess architecture unsafely, it must fail closed with `RAW_GENERATION_BACKEND_MISSING`.
 
+Checkpoint loading must be exact. Supported backends require an exact expected `state_dict` key set, no extra keys, no missing keys, no ignored keys, no partial loads, tensor rank checks, tensor shape relationship checks, and strict `load_state_dict`. Any runtime, key, or shape error is converted to `RAW_GENERATION_BACKEND_MISSING`.
+
 The expected-output canary duplicates a row, corrupts `expected_output` and `expected_payload` outside the helper request, keeps the prompt and helper request identical, and requires `generated_text`, `generation_trace_hash`, `token_count`, and `stop_reason` to remain identical. If any generation-side field changes, emit `ORACLE_SHORTCUT_DETECTED`.
 
+The canary report must include row hashes, full helper request JSON, helper request hashes, generated text hashes, generation trace hashes, token counts, stop reasons, model checkpoint hashes, and generation config hashes for original and shadow rows. Helper request hashes and all generation-side fields must match.
+
 AST scan must reject old runner imports, expected material in generation paths, deterministic positive-arm construction, generated text assigned from expected material, oracle/rerank/verifier/LLM judge paths, constrained decoding, JSON mode, grammar decoder, regex fixer, post-generation repair, retry loop, best-of-n, actual tool execution, and runtime tool calls.
+
+`raw_generation_helper_provenance.json` must include selected and requested checkpoint hashes, generation config, helper import path, backend load status, checkpoint key counts, extra/missing key lists, shape summary, and `strict_load_state_dict = true`.
 
 ## Positive result
 

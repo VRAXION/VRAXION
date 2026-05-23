@@ -4,6 +4,8 @@
 
 The helper is standalone, uses direct repo-local checkpoint loading, rejects unknown and forbidden request fields, records provenance, and returns generated text plus trace hashes. Old runners remain audit evidence and are not imported, deleted, rewritten, or consolidated.
 
+The hardened helper requires exact checkpoint key sets and strict `load_state_dict`; it rejects extra keys, missing keys, ignored weights, partial loads, ambiguous architectures, shape mismatches, and unknown or forbidden `generation_config` fields. Loader or generation failures fail closed instead of producing placeholder output.
+
 ## Decision
 
 When all gates pass:
@@ -20,7 +22,10 @@ If no safe backend exists, the correct result is `RAW_GENERATION_BACKEND_MISSING
 
 - real repo-local backend used
 - forbidden and unknown metadata rejected
+- unknown or forbidden `generation_config` metadata rejected
+- exact checkpoint key/shape provenance recorded
 - expected-output canary passes
+- canary helper request hashes and generation-side hashes match
 - AST shortcut scan passes
 - provenance artifacts are written
 - generated text exists before scoring

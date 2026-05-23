@@ -137,6 +137,21 @@ def read_files() -> tuple[list[str], dict[str, str]]:
 def ast_scan_source(paths: list[Path]) -> list[str]:
     failures: list[str] = []
     old_runner_re = re.compile(r"^(run_stable_loop_phase_lock_|run_deck_local_)")
+    forbidden_call_names = {
+        "oracle_rerank",
+        "verifier_rerank",
+        "llm_judge",
+        "grammar_decoder",
+        "constrained_decoding",
+        "regex_fixer",
+        "json_fixer",
+        "json_mode",
+        "best_of_n",
+        "retry_loop",
+        "post_generation_repair",
+        "runtime_tool_call",
+        "actual_tool_execution",
+    }
     for path in paths:
         tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
 
@@ -177,6 +192,12 @@ def ast_scan_source(paths: list[Path]) -> list[str]:
                     failures.append("AST_EXPECTED_OUTPUT_IN_GENERATION_PATH")
                 self.generic_visit(node)
 
+            def visit_Call(self, node: ast.Call) -> None:
+                name = ast.unparse(node.func).lower()
+                if any(token in name for token in forbidden_call_names):
+                    failures.append("AST_SHORTCUT_SCAN_FAILED")
+                self.generic_visit(node)
+
         Scanner().visit(tree)
     return failures
 
@@ -199,9 +220,11 @@ def check_artifacts() -> list[str]:
     allowed = set(contract.get("allowed_request_keys", []))
     if allowed != {"prompt", "checkpoint_hash", "checkpoint_path", "seed", "max_new_tokens", "generation_config"}:
         failures.append("STRICT_REQUEST_SCHEMA_MISSING")
+    if set(contract.get("allowed_generation_config_keys", [])) != {"temperature", "device", "stop_on_newline"}:
+        failures.append("STRICT_GENERATION_CONFIG_SCHEMA_MISSING")
     if contract.get("unknown_fields_rejected") is not True:
         failures.append("STRICT_REQUEST_SCHEMA_MISSING")
-    for forbidden in ["expected_output", "expected_payload", "expected_answer", "target_json", "row_answer", "gold_output", "eval_family", "answer"]:
+    for forbidden in ["expected_output", "expected_payload", "expected_answer", "target_json", "row_answer", "gold_output", "eval_family", "answer", "expected_values"]:
         if forbidden not in contract.get("forbidden_request_keys", []):
             failures.append("STRICT_REQUEST_SCHEMA_MISSING")
 
@@ -213,17 +236,43 @@ def check_artifacts() -> list[str]:
     required_provenance = [
         "selected_checkpoint_path",
         "selected_checkpoint_sha256",
+        "requested_checkpoint_hash",
         "model_checkpoint_hash",
         "backend_name",
         "backend_version",
         "torch_available",
         "device",
+        "generation_config",
         "generation_config_hash",
         "helper_source_sha256",
+        "helper_import_path",
+        "backend_load_status",
+        "checkpoint_key_count",
+        "checkpoint_expected_key_count",
+        "checkpoint_extra_keys",
+        "checkpoint_missing_keys",
+        "checkpoint_shape_summary",
+        "strict_load_state_dict",
     ]
     for key in required_provenance:
         if key not in provenance or provenance[key] in ("", None):
             failures.append("HELPER_PROVENANCE_INCOMPLETE")
+    if provenance.get("requested_checkpoint_hash") != provenance.get("selected_checkpoint_sha256"):
+        failures.append("CHECKPOINT_HASH_MISMATCH")
+    if provenance.get("model_checkpoint_hash") != provenance.get("selected_checkpoint_sha256"):
+        failures.append("CHECKPOINT_HASH_MISMATCH")
+    if provenance.get("checkpoint_key_count") != provenance.get("checkpoint_expected_key_count"):
+        failures.append("CHECKPOINT_KEY_SET_MISMATCH")
+    if provenance.get("checkpoint_extra_keys") != [] or provenance.get("checkpoint_missing_keys") != []:
+        failures.append("CHECKPOINT_KEY_SET_MISMATCH")
+    if provenance.get("strict_load_state_dict") is not True:
+        failures.append("STRICT_LOAD_STATE_DICT_MISSING")
+    if provenance.get("backend_load_status") != "strict_load_state_dict_passed":
+        failures.append("BACKEND_LOAD_STATUS_MISSING")
+    if not isinstance(provenance.get("checkpoint_shape_summary"), dict) or not provenance.get("checkpoint_shape_summary"):
+        failures.append("CHECKPOINT_SHAPE_SUMMARY_MISSING")
+    if set((provenance.get("generation_config") or {}).keys()) != {"temperature", "device", "stop_on_newline"}:
+        failures.append("STRICT_GENERATION_CONFIG_SCHEMA_MISSING")
     for key, expected in [
         ("real_raw_generation_backend_used", True),
         ("raw_generation_backend_missing", False),
@@ -238,19 +287,64 @@ def check_artifacts() -> list[str]:
         failures.append("RAW_GENERATION_FORBIDDEN_INPUT_DETECTED")
     if len(forbidden.get("rows", [])) < 10:
         failures.append("FORBIDDEN_INPUT_TEST_TOO_SMALL")
+    for expected_test in ["unknown_config_key", "forbidden_config_expected_output", "nested_forbidden_config_labels"]:
+        if expected_test not in forbidden.get("generation_config_tests", []):
+            failures.append("STRICT_GENERATION_CONFIG_SCHEMA_MISSING")
 
     canary = load_json(SMOKE_ROOT / "expected_output_canary_report.json")
     if canary.get("expected_output_canary_passed") is not True:
         failures.append("ORACLE_SHORTCUT_DETECTED")
     if canary.get("prompt_identical") is not True or canary.get("helper_requests_identical") is not True:
         failures.append("CANARY_REQUEST_MISMATCH")
+    required_canary_fields = [
+        "original_row_hash",
+        "shadow_row_hash",
+        "original_helper_request_json",
+        "shadow_helper_request_json",
+        "original_helper_request_hash",
+        "shadow_helper_request_hash",
+        "generated_text_original_hash",
+        "generated_text_shadow_hash",
+        "generation_trace_hash_original",
+        "generation_trace_hash_shadow",
+        "token_count_original",
+        "token_count_shadow",
+        "stop_reason_original",
+        "stop_reason_shadow",
+        "model_checkpoint_hash_original",
+        "model_checkpoint_hash_shadow",
+        "generation_config_hash_original",
+        "generation_config_hash_shadow",
+    ]
+    for key in required_canary_fields:
+        if key not in canary or canary[key] in ("", None):
+            failures.append("CANARY_IDENTITY_FIELDS_MISSING")
+    if canary.get("original_helper_request_hash") != canary.get("shadow_helper_request_hash"):
+        failures.append("ORACLE_SHORTCUT_DETECTED")
+    if canary.get("generated_text_original_hash") != canary.get("generated_text_shadow_hash"):
+        failures.append("ORACLE_SHORTCUT_DETECTED")
+    for original, shadow in [
+        ("generation_trace_hash_original", "generation_trace_hash_shadow"),
+        ("token_count_original", "token_count_shadow"),
+        ("stop_reason_original", "stop_reason_shadow"),
+        ("model_checkpoint_hash_original", "model_checkpoint_hash_shadow"),
+        ("generation_config_hash_original", "generation_config_hash_shadow"),
+    ]:
+        if canary.get(original) != canary.get(shadow):
+            failures.append("ORACLE_SHORTCUT_DETECTED")
     if canary.get("forbidden_fields_absent_from_helper_requests") is not True:
         failures.append("CANARY_FORBIDDEN_FIELDS_PRESENT")
-    for key in ["generated_text", "generation_trace_hash", "token_count", "stop_reason"]:
+    if canary.get("expected_material_only_outside_helper_request") is not True:
+        failures.append("CANARY_FORBIDDEN_FIELDS_PRESENT")
+    for key in ["generated_text", "generation_trace_hash", "token_count", "stop_reason", "model_checkpoint_hash", "generation_config_hash"]:
         if canary.get("generation_side_fields_identical", {}).get(key) is not True:
             failures.append("ORACLE_SHORTCUT_DETECTED")
     for request_key in list(canary.get("helper_request_original", {})) + list(canary.get("helper_request_shadow", {})):
         if request_key not in allowed:
+            failures.append("CANARY_FORBIDDEN_FIELDS_PRESENT")
+    request_json = f"{canary.get('original_helper_request_json', '')}\n{canary.get('shadow_helper_request_json', '')}"
+    for forbidden_name in ["expected_output", "expected_payload", "expected_answer", "scorer_metadata", "labels", "oracle_data", "target_json", "gold_output"]:
+        if forbidden_name in request_json:
             failures.append("CANARY_FORBIDDEN_FIELDS_PRESENT")
 
     scan = load_json(SMOKE_ROOT / "ast_shortcut_scan_report.json")
@@ -273,6 +367,8 @@ def check_artifacts() -> list[str]:
         for key in ["generated_text", "token_count", "stop_reason", "generation_trace_hash", "model_checkpoint_hash", "generation_config_hash", "helper_backend", "helper_version"]:
             if key not in response:
                 failures.append("RAW_RESPONSE_FIELD_MISSING")
+        if response.get("token_count", 0) <= 0:
+            failures.append("GENERATED_TEXT_MISSING")
 
     hashes = load_json(SMOKE_ROOT / "generated_text_hashes.json")
     if hashes.get("all_generated_text_exists") is not True:

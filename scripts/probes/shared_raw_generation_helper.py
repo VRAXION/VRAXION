@@ -26,6 +26,7 @@ HELPER_VERSION = "shared_raw_generation_helper_v1"
 HELPER_BACKEND = "repo_local_checkpoint_byte_lm"
 REPO_ROOT = Path(__file__).resolve().parents[2]
 BYTE_VOCAB_SIZE = 256
+ALLOWED_GENERATION_CONFIG_KEYS = {"temperature", "device", "stop_on_newline"}
 
 ALLOWED_REQUEST_KEYS = {
     "prompt",
@@ -52,6 +53,25 @@ FORBIDDEN_REQUEST_KEYS = {
     "gold_output",
     "eval_family",
     "answer",
+    "expected_values",
+}
+GRU_STATE_KEYS = {
+    "embedding.weight",
+    "rnn.weight_ih_l0",
+    "rnn.weight_hh_l0",
+    "rnn.bias_ih_l0",
+    "rnn.bias_hh_l0",
+    "head.weight",
+    "head.bias",
+}
+MLP_STATE_KEYS = {
+    "embedding.weight",
+    "net.0.weight",
+    "net.0.bias",
+    "net.2.weight",
+    "net.2.bias",
+    "net.4.weight",
+    "net.4.bias",
 }
 DEFAULT_CHECKPOINT_CANDIDATES = [
     Path("target/pilot_wave/stable_loop_phase_lock_102_decoder_policy_and_rollout_repair/smoke/checkpoints/decoder_policy_rollout_repair/model.pt"),
@@ -97,8 +117,31 @@ def resolve_repo_path(path_text: str | Path) -> Path:
     return path if path.is_absolute() else (REPO_ROOT / path).resolve()
 
 
+def forbidden_config_names(value: Any) -> list[str]:
+    found: list[str] = []
+    if isinstance(value, dict):
+        for key, item in value.items():
+            if str(key) in FORBIDDEN_REQUEST_KEYS:
+                found.append(str(key))
+            found.extend(forbidden_config_names(item))
+    elif isinstance(value, list):
+        for item in value:
+            found.extend(forbidden_config_names(item))
+    return sorted(set(found))
+
+
 def normalize_generation_config(config: dict[str, Any] | None) -> dict[str, Any]:
+    if config is not None and not isinstance(config, dict):
+        raise RawGenerationError("RAW_GENERATION_FORBIDDEN_INPUT_DETECTED", "generation_config must be an object")
     raw = dict(config or {})
+    unknown_keys = sorted(set(raw) - ALLOWED_GENERATION_CONFIG_KEYS)
+    forbidden_nested = forbidden_config_names(raw)
+    if unknown_keys or forbidden_nested:
+        raise RawGenerationError(
+            "RAW_GENERATION_FORBIDDEN_INPUT_DETECTED",
+            "generation_config contains unknown or forbidden fields",
+            {"unknown_generation_config_keys": unknown_keys, "forbidden_generation_config_fields": forbidden_nested},
+        )
     normalized = {
         "temperature": float(raw.get("temperature", 0.0)),
         "device": str(raw.get("device", "cpu")),
@@ -178,29 +221,95 @@ def model_state_hash(model: "nn.Module") -> str:
     return hashlib.sha256(buf.getvalue()).hexdigest()
 
 
+def shape_of(value: Any) -> list[int]:
+    return [int(item) for item in value.shape]
+
+
+def key_analysis(state: dict[str, Any], expected: set[str]) -> dict[str, Any]:
+    actual = set(state)
+    return {
+        "checkpoint_key_count": len(actual),
+        "checkpoint_expected_key_count": len(expected),
+        "checkpoint_extra_keys": sorted(actual - expected),
+        "checkpoint_missing_keys": sorted(expected - actual),
+        "checkpoint_shape_summary": {key: shape_of(state[key]) for key in sorted(actual & expected)},
+    }
+
+
+def require_exact_keys(state: dict[str, Any], expected: set[str], backend: str) -> dict[str, Any]:
+    analysis = key_analysis(state, expected)
+    if analysis["checkpoint_extra_keys"] or analysis["checkpoint_missing_keys"]:
+        raise RawGenerationError(
+            "RAW_GENERATION_BACKEND_MISSING",
+            f"{backend} checkpoint key set mismatch",
+            {"backend_name": backend, **analysis},
+        )
+    return analysis
+
+
+def require_rank(state: dict[str, Any], key: str, rank: int) -> None:
+    if not hasattr(state[key], "shape") or len(state[key].shape) != rank:
+        raise RawGenerationError("RAW_GENERATION_BACKEND_MISSING", f"{key} rank mismatch")
+
+
+def require_shape(state: dict[str, Any], key: str, expected: tuple[int, ...]) -> None:
+    actual = tuple(int(item) for item in state[key].shape)
+    if actual != expected:
+        raise RawGenerationError("RAW_GENERATION_BACKEND_MISSING", f"{key} shape mismatch: {actual} != {expected}")
+
+
 def build_model_from_state(state: dict[str, Any], ckpt: dict[str, Any]) -> tuple["nn.Module", dict[str, Any]]:
     if torch is None or nn is None:
         raise RawGenerationError("RAW_GENERATION_BACKEND_MISSING", "torch is unavailable")
+    if not all(hasattr(value, "shape") for value in state.values()):
+        raise RawGenerationError("RAW_GENERATION_BACKEND_MISSING", "checkpoint state contains non-tensor values")
     if "embedding.weight" not in state:
         raise RawGenerationError("RAW_GENERATION_BACKEND_MISSING", "checkpoint missing embedding.weight")
+    require_rank(state, "embedding.weight", 2)
     embedding = state["embedding.weight"]
     vocab_size = int(embedding.shape[0])
     embed_dim = int(embedding.shape[1])
     if vocab_size < BYTE_VOCAB_SIZE:
         raise RawGenerationError("RAW_GENERATION_BACKEND_MISSING", f"checkpoint vocab too small: {vocab_size}")
 
-    if {"rnn.weight_ih_l0", "rnn.weight_hh_l0", "head.weight", "head.bias"}.issubset(state):
+    if set(state) == GRU_STATE_KEYS:
+        analysis = require_exact_keys(state, GRU_STATE_KEYS, "byte_gru_lm")
+        for key in GRU_STATE_KEYS:
+            require_rank(state, key, 2 if "weight" in key else 1)
         hidden_size = int(state["rnn.weight_hh_l0"].shape[1])
-        if int(state["rnn.weight_ih_l0"].shape[0]) != hidden_size * 3:
+        if hidden_size <= 0 or embed_dim <= 0:
             raise RawGenerationError("RAW_GENERATION_BACKEND_MISSING", "unsupported RNN checkpoint shape")
+        require_shape(state, "rnn.weight_ih_l0", (hidden_size * 3, embed_dim))
+        require_shape(state, "rnn.weight_hh_l0", (hidden_size * 3, hidden_size))
+        require_shape(state, "rnn.bias_ih_l0", (hidden_size * 3,))
+        require_shape(state, "rnn.bias_hh_l0", (hidden_size * 3,))
+        require_shape(state, "head.weight", (vocab_size, hidden_size))
+        require_shape(state, "head.bias", (vocab_size,))
         model = ByteRNNLM(vocab_size=vocab_size, embed_dim=embed_dim, hidden_size=hidden_size)
         backend = "byte_gru_lm"
         seq_len = int(ckpt.get("seq_len") or 128)
-        model.load_state_dict(state)
+        if seq_len <= 0:
+            raise RawGenerationError("RAW_GENERATION_BACKEND_MISSING", "invalid RNN seq_len")
+        try:
+            model.load_state_dict(state, strict=True)
+        except RuntimeError as exc:
+            raise RawGenerationError("RAW_GENERATION_BACKEND_MISSING", f"strict GRU load_state_dict failed: {exc}") from exc
         model.eval()
-        return model, {"backend_name": backend, "vocab_size": vocab_size, "embed_dim": embed_dim, "hidden_size": hidden_size, "seq_len": seq_len}
+        return model, {
+            "backend_name": backend,
+            "vocab_size": vocab_size,
+            "embed_dim": embed_dim,
+            "hidden_size": hidden_size,
+            "seq_len": seq_len,
+            "backend_load_status": "strict_load_state_dict_passed",
+            "strict_load_state_dict": True,
+            **analysis,
+        }
 
-    if {"net.0.weight", "net.0.bias", "net.2.weight", "net.2.bias", "net.4.weight", "net.4.bias"}.issubset(state):
+    if set(state) == MLP_STATE_KEYS:
+        analysis = require_exact_keys(state, MLP_STATE_KEYS, "byte_mlp_lm")
+        for key in MLP_STATE_KEYS:
+            require_rank(state, key, 2 if "weight" in key else 1)
         hidden_size = int(state["net.0.weight"].shape[0])
         flattened = int(state["net.0.weight"].shape[1])
         if flattened % embed_dim != 0:
@@ -208,13 +317,36 @@ def build_model_from_state(state: dict[str, Any], ckpt: dict[str, Any]) -> tuple
         seq_len = int(ckpt.get("seq_len") or (flattened // embed_dim))
         if seq_len <= 0 or seq_len * embed_dim != flattened:
             raise RawGenerationError("RAW_GENERATION_BACKEND_MISSING", "unsafe MLP seq_len inference")
+        require_shape(state, "net.0.weight", (hidden_size, seq_len * embed_dim))
+        require_shape(state, "net.0.bias", (hidden_size,))
+        require_shape(state, "net.2.weight", (hidden_size, hidden_size))
+        require_shape(state, "net.2.bias", (hidden_size,))
+        require_shape(state, "net.4.weight", (vocab_size, hidden_size))
+        require_shape(state, "net.4.bias", (vocab_size,))
         model = ByteMLPLM(vocab_size=vocab_size, seq_len=seq_len, embed_dim=embed_dim, hidden_size=hidden_size)
         backend = "byte_mlp_lm"
-        model.load_state_dict(state)
+        try:
+            model.load_state_dict(state, strict=True)
+        except RuntimeError as exc:
+            raise RawGenerationError("RAW_GENERATION_BACKEND_MISSING", f"strict MLP load_state_dict failed: {exc}") from exc
         model.eval()
-        return model, {"backend_name": backend, "vocab_size": vocab_size, "embed_dim": embed_dim, "hidden_size": hidden_size, "seq_len": seq_len}
+        return model, {
+            "backend_name": backend,
+            "vocab_size": vocab_size,
+            "embed_dim": embed_dim,
+            "hidden_size": hidden_size,
+            "seq_len": seq_len,
+            "backend_load_status": "strict_load_state_dict_passed",
+            "strict_load_state_dict": True,
+            **analysis,
+        }
 
-    raise RawGenerationError("RAW_GENERATION_BACKEND_MISSING", "unsupported checkpoint architecture")
+    supported_keys = {"byte_gru_lm": sorted(GRU_STATE_KEYS), "byte_mlp_lm": sorted(MLP_STATE_KEYS)}
+    raise RawGenerationError(
+        "RAW_GENERATION_BACKEND_MISSING",
+        "unsupported or ambiguous checkpoint architecture",
+        {"actual_keys": sorted(state), "supported_key_sets": supported_keys},
+    )
 
 
 def load_checkpoint(checkpoint_path: str | Path, checkpoint_hash: str | None = None) -> tuple["nn.Module", dict[str, Any]]:
@@ -237,11 +369,21 @@ def load_checkpoint(checkpoint_path: str | Path, checkpoint_hash: str | None = N
     state = ckpt.get("model_state_dict") or ckpt.get("state_dict")
     if not isinstance(state, dict):
         raise RawGenerationError("RAW_GENERATION_BACKEND_MISSING", "checkpoint has no model state dict")
-    model, architecture = build_model_from_state(state, ckpt)
+    try:
+        model, architecture = build_model_from_state(state, ckpt)
+    except RawGenerationError:
+        raise
+    except Exception as exc:
+        raise RawGenerationError("RAW_GENERATION_BACKEND_MISSING", f"checkpoint architecture load failed: {exc}") from exc
+    try:
+        state_hash = model_state_hash(model)
+    except Exception as exc:
+        raise RawGenerationError("RAW_GENERATION_BACKEND_MISSING", f"model state hashing failed: {exc}") from exc
     manifest = {
         "checkpoint_path": rel(path),
         "checkpoint_sha256": actual_hash,
-        "model_state_sha256": model_state_hash(model),
+        "requested_checkpoint_hash": checkpoint_hash or actual_hash,
+        "model_state_sha256": state_hash,
         "helper_backend": HELPER_BACKEND,
         "helper_version": HELPER_VERSION,
         **architecture,
@@ -270,7 +412,9 @@ def discover_backend(candidates: list[str | Path] | None = None) -> dict[str, An
                     item["selected"] = True
                     report["selected"] = item
             except RawGenerationError as exc:
-                item.update({"loadable": False, "failure_verdict": exc.verdict, "failure_message": exc.message})
+                item.update({"loadable": False, "failure_verdict": exc.verdict, "failure_message": exc.message, **exc.details})
+            except Exception as exc:
+                item.update({"loadable": False, "failure_verdict": "RAW_GENERATION_BACKEND_MISSING", "failure_message": f"unexpected backend discovery failure: {exc}"})
         report["candidates"].append(item)
     report["status"] = "selected" if report["selected"] else "missing"
     return report
@@ -299,21 +443,24 @@ def raw_generate(request: dict[str, Any]) -> dict[str, Any]:
     generated: list[int] = []
     generator = torch.Generator(device="cpu")
     generator.manual_seed(seed)
-    with torch.no_grad():
-        for _step in range(max_new):
-            if isinstance(model, ByteRNNLM):
-                window = context[-seq_len:] or [pad_id]
-            else:
-                window = _window_for_model(context, seq_len, pad_id)
-            x = torch.tensor([window], dtype=torch.long)
-            logits = model(x)[0, :BYTE_VOCAB_SIZE]
-            if temperature <= 0:
-                next_id = int(torch.argmax(logits).item())
-            else:
-                probs = torch.softmax(logits / temperature, dim=-1)
-                next_id = int(torch.multinomial(probs, 1, generator=generator).item())
-            generated.append(next_id)
-            context.append(next_id)
+    try:
+        with torch.no_grad():
+            for _step in range(max_new):
+                if isinstance(model, ByteRNNLM):
+                    window = context[-seq_len:] or [pad_id]
+                else:
+                    window = _window_for_model(context, seq_len, pad_id)
+                x = torch.tensor([window], dtype=torch.long)
+                logits = model(x)[0, :BYTE_VOCAB_SIZE]
+                if temperature <= 0:
+                    next_id = int(torch.argmax(logits).item())
+                else:
+                    probs = torch.softmax(logits / temperature, dim=-1)
+                    next_id = int(torch.multinomial(probs, 1, generator=generator).item())
+                generated.append(next_id)
+                context.append(next_id)
+    except Exception as exc:
+        raise RawGenerationError("RAW_GENERATION_BACKEND_MISSING", f"raw generation failed: {exc}") from exc
     raw = bytes(generated)
     generated_text = raw.decode("utf-8", errors="replace")
     stop_reason = "max_new_tokens"

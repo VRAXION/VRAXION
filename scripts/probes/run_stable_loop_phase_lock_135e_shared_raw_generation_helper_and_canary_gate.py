@@ -52,6 +52,7 @@ FORBIDDEN_TEST_FIELDS = [
     "gold_output",
     "eval_family",
     "answer",
+    "expected_values",
     "unexpected_extra",
 ]
 FUTURE_MILESTONES = [
@@ -276,6 +277,7 @@ def helper_contract(helper: Any) -> dict[str, Any]:
         "helper_version": helper.HELPER_VERSION,
         "allowed_request_keys": sorted(helper.ALLOWED_REQUEST_KEYS),
         "forbidden_request_keys": sorted(helper.FORBIDDEN_REQUEST_KEYS),
+        "allowed_generation_config_keys": sorted(helper.ALLOWED_GENERATION_CONFIG_KEYS),
         "required_response_fields": [
             "generated_text",
             "token_count",
@@ -321,9 +323,23 @@ def forbidden_input_tests(helper: Any, selected: dict[str, Any]) -> dict[str, An
             rows.append({"field": field, "rejected": False, "verdict": None})
         except Exception as exc:
             rows.append({"field": field, "rejected": getattr(exc, "verdict", None) == "RAW_GENERATION_FORBIDDEN_INPUT_DETECTED", "verdict": getattr(exc, "verdict", type(exc).__name__)})
+    config_tests = [
+        ("unknown_config_key", {"temperature": 0.0, "device": "cpu", "stop_on_newline": False, "unknown": "blocked"}),
+        ("forbidden_config_expected_output", {"temperature": 0.0, "device": "cpu", "stop_on_newline": False, "expected_output": "blocked"}),
+        ("nested_forbidden_config_labels", {"temperature": 0.0, "device": "cpu", "stop_on_newline": False, "nested": {"labels": ["blocked"]}}),
+    ]
+    for field, generation_config in config_tests:
+        request = dict(base)
+        request["generation_config"] = generation_config
+        try:
+            helper.raw_generate(request)
+            rows.append({"field": field, "rejected": False, "verdict": None})
+        except Exception as exc:
+            rows.append({"field": field, "rejected": getattr(exc, "verdict", None) == "RAW_GENERATION_FORBIDDEN_INPUT_DETECTED", "verdict": getattr(exc, "verdict", type(exc).__name__)})
     return {
         "schema_version": "phase_135e_forbidden_input_rejection_report_v1",
         "tested_fields": FORBIDDEN_TEST_FIELDS,
+        "generation_config_tests": [name for name, _config in config_tests],
         "all_rejected": all(row["rejected"] for row in rows),
         "rows": rows,
     }
@@ -383,18 +399,41 @@ def expected_output_canary(helper: Any, selected: dict[str, Any]) -> dict[str, A
         "generation_trace_hash": original_response["generation_trace_hash"] == shadow_response["generation_trace_hash"],
         "token_count": original_response["token_count"] == shadow_response["token_count"],
         "stop_reason": original_response["stop_reason"] == shadow_response["stop_reason"],
+        "model_checkpoint_hash": original_response["model_checkpoint_hash"] == shadow_response["model_checkpoint_hash"],
+        "generation_config_hash": original_response["generation_config_hash"] == shadow_response["generation_config_hash"],
     }
     forbidden = set(helper.FORBIDDEN_REQUEST_KEYS)
     request_keys = set(original_request) | set(shadow_request)
+    original_request_json = json.dumps(original_request, sort_keys=True, separators=(",", ":"))
+    shadow_request_json = json.dumps(shadow_request, sort_keys=True, separators=(",", ":"))
     return {
         "schema_version": "phase_135e_expected_output_canary_report_v1",
+        "original_row_hash": stable_hash(original_row),
+        "shadow_row_hash": stable_hash(shadow_row),
         "original_row_expected_material": {"expected_output": original_row["expected_output"], "expected_payload": original_row["expected_payload"]},
         "shadow_row_expected_material": {"expected_output": shadow_row["expected_output"], "expected_payload": shadow_row["expected_payload"]},
         "prompt_identical": original_row["prompt"] == shadow_row["prompt"],
         "helper_request_original": original_request,
         "helper_request_shadow": shadow_request,
+        "original_helper_request_json": original_request_json,
+        "shadow_helper_request_json": shadow_request_json,
+        "original_helper_request_hash": stable_hash(original_request),
+        "shadow_helper_request_hash": stable_hash(shadow_request),
         "helper_requests_identical": original_request == shadow_request,
         "forbidden_fields_absent_from_helper_requests": not bool(request_keys & forbidden),
+        "expected_material_only_outside_helper_request": not bool(request_keys & {"expected_output", "expected_payload"}),
+        "generated_text_original_hash": hashlib.sha256(original_response["generated_text"].encode("utf-8", errors="replace")).hexdigest(),
+        "generated_text_shadow_hash": hashlib.sha256(shadow_response["generated_text"].encode("utf-8", errors="replace")).hexdigest(),
+        "generation_trace_hash_original": original_response["generation_trace_hash"],
+        "generation_trace_hash_shadow": shadow_response["generation_trace_hash"],
+        "token_count_original": original_response["token_count"],
+        "token_count_shadow": shadow_response["token_count"],
+        "stop_reason_original": original_response["stop_reason"],
+        "stop_reason_shadow": shadow_response["stop_reason"],
+        "model_checkpoint_hash_original": original_response["model_checkpoint_hash"],
+        "model_checkpoint_hash_shadow": shadow_response["model_checkpoint_hash"],
+        "generation_config_hash_original": original_response["generation_config_hash"],
+        "generation_config_hash_shadow": shadow_response["generation_config_hash"],
         "generation_side_fields_identical": generation_side_fields_identical,
         "expected_output_canary_passed": all(generation_side_fields_identical.values()) and original_request == shadow_request and not bool(request_keys & forbidden),
     }
@@ -420,9 +459,13 @@ def ast_shortcut_scan(paths: list[Path]) -> dict[str, Any]:
         "verifier_rerank",
         "llm_judge",
         "grammar_decoder",
+        "constrained_decoding",
         "regex_fixer",
+        "json_fixer",
         "json_mode",
         "best_of_n",
+        "retry_loop",
+        "post_generation_repair",
         "runtime_tool_call",
         "actual_tool_execution",
     }
@@ -606,13 +649,23 @@ def run(args: argparse.Namespace) -> None:
         "schema_version": "phase_135e_raw_generation_helper_provenance_v1",
         "selected_checkpoint_path": selected["checkpoint_path"],
         "selected_checkpoint_sha256": selected["checkpoint_sha256"],
+        "requested_checkpoint_hash": traces[0]["helper_request"]["checkpoint_hash"],
         "model_checkpoint_hash": selected["checkpoint_sha256"],
         "backend_name": selected["backend_name"],
         "backend_version": helper.HELPER_VERSION,
         "torch_available": backend_report["torch_available"],
         "device": "cpu",
+        "generation_config": traces[0]["helper_request"]["generation_config"],
         "generation_config_hash": traces[0]["response"]["generation_config_hash"],
         "helper_source_sha256": file_hash(HELPER_PATH),
+        "helper_import_path": rel(HELPER_PATH),
+        "backend_load_status": selected["backend_load_status"],
+        "checkpoint_key_count": selected["checkpoint_key_count"],
+        "checkpoint_expected_key_count": selected["checkpoint_expected_key_count"],
+        "checkpoint_extra_keys": selected["checkpoint_extra_keys"],
+        "checkpoint_missing_keys": selected["checkpoint_missing_keys"],
+        "checkpoint_shape_summary": selected["checkpoint_shape_summary"],
+        "strict_load_state_dict": selected["strict_load_state_dict"],
         "real_raw_generation_backend_used": True,
         "raw_generation_backend_missing": False,
         "fake_helper_used": False,
