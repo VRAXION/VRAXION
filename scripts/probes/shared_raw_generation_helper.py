@@ -451,6 +451,8 @@ def load_checkpoint(checkpoint_path: str | Path, checkpoint_hash: str | None = N
 
 
 def _instnct_select_value(prompt: str, manifest: dict[str, Any]) -> tuple[str, dict[str, Any]]:
+    if bool(manifest.get("value_selection_requires_open_pocket", False)):
+        return _instnct_select_open_pocket_value(prompt, manifest)
     preferred_markers = manifest.get("preferred_value_markers") or ["OBSERVED_VALUE=", "TARGET_VALUE=", "VALUE=", "BIND="]
     for marker in preferred_markers:
         pos = prompt.find(str(marker))
@@ -467,6 +469,54 @@ def _instnct_select_value(prompt: str, manifest: dict[str, Any]) -> tuple[str, d
         return train_match.group(0), {"selection_source": "train_namespace_fallback", "marker": None}
     fallback = str(manifest.get("fallback_value", "SYM_NO_VALUE"))
     return fallback, {"selection_source": "fallback", "marker": None}
+
+
+def _instnct_value_from_segment(segment: str) -> str | None:
+    match = INSTNCT_VALUE_RE.search(segment)
+    return match.group(0) if match else None
+
+
+def _instnct_select_open_pocket_value(prompt: str, manifest: dict[str, Any]) -> tuple[str, dict[str, Any]]:
+    payload_markers = [str(item) for item in (manifest.get("pocket_payload_markers") or ["POCKET_VALUE=", "POCKET_BIND=", "POCKET_TABLE_ROW="])]
+    fallback = str(manifest.get("closed_pocket_fallback_value") or manifest.get("fallback_value", "SYM_POCKET_CLOSED"))
+    visible_bypass_forbidden = bool(manifest.get("visible_value_bypass_forbidden", True))
+    for pocket in manifest.get("pockets", []):
+        gate_marker = str(pocket.get("gate_marker", ""))
+        gate_open = bool(gate_marker and gate_marker in prompt)
+        if not gate_open:
+            continue
+        pocket_markers = [str(item) for item in (pocket.get("payload_markers") or payload_markers)]
+        for marker in pocket_markers:
+            pos = prompt.find(marker)
+            if pos < 0:
+                continue
+            segment = prompt[pos + len(marker) : pos + len(marker) + 128]
+            value = _instnct_value_from_segment(segment)
+            if value:
+                return value, {
+                    "selection_source": "open_pocket_writeback",
+                    "marker": marker,
+                    "pocket_id": str(pocket.get("pocket_id", "")),
+                    "gate_marker": gate_marker,
+                    "visible_value_bypass_forbidden": visible_bypass_forbidden,
+                }
+    if visible_bypass_forbidden:
+        return fallback, {
+            "selection_source": "closed_pocket_fallback",
+            "marker": None,
+            "pocket_id": None,
+            "gate_marker": None,
+            "visible_value_bypass_forbidden": True,
+        }
+    preferred_markers = manifest.get("preferred_value_markers") or ["OBSERVED_VALUE=", "TARGET_VALUE=", "VALUE=", "BIND="]
+    for marker in preferred_markers:
+        pos = prompt.find(str(marker))
+        if pos >= 0:
+            segment = prompt[pos + len(str(marker)) : pos + len(str(marker)) + 96]
+            value = _instnct_value_from_segment(segment)
+            if value:
+                return value, {"selection_source": "visible_bypass_fallback", "marker": marker}
+    return fallback, {"selection_source": "closed_pocket_fallback", "marker": None}
 
 
 def _instnct_trace(prompt: str, selected_value: str, manifest: dict[str, Any], seed: int) -> dict[str, Any]:
@@ -547,6 +597,8 @@ def instnct_raw_generate(clean: dict[str, Any], manifest: dict[str, Any], backen
         "highway_retained": trace["highway_retained"],
         "ticks_per_generated_byte": trace["ticks_per_generated_byte"],
         "threshold_tick": trace["threshold_tick"],
+        "value_selection_source": selection.get("selection_source"),
+        "value_selection_requires_open_pocket": bool(manifest.get("value_selection_requires_open_pocket", False)),
     }
 
 
