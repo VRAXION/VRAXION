@@ -39,6 +39,18 @@ FINAL_MARKERS = [
     "verified combined target:",
 ]
 ALLOWED_HELPER_KEYS = {"prompt", "checkpoint_path", "checkpoint_hash", "seed", "max_new_tokens", "generation_config"}
+FORBIDDEN_HELPER_KEYS = {
+    "expected_output",
+    "expected_answer",
+    "scorer_metadata",
+    "labels",
+    "oracle_data",
+    "target_json",
+    "gold_output",
+    "answer",
+    "expected_values",
+    "eval_family",
+}
 VALUE_RE = re.compile(r"\b(?:TR|EV|VAL|SYM)[A-Za-z0-9_+\-]*\b")
 FALSE_FLAGS = {
     "reasoning_restored": False,
@@ -382,11 +394,29 @@ def request_for(prompt: str, checkpoint_path: Path, checkpoint_hash: str, seed: 
     }
 
 
-def run_arm(helper: Any, out: Path, arm: str, rows: list[dict[str, Any]], checkpoint_path: Path, checkpoint_hash: str, max_new_tokens: int, heartbeat_sec: int) -> list[dict[str, Any]]:
+def record_helper_request(audit_rows: list[dict[str, Any]], arm: str, row_id: str, request: dict[str, Any]) -> None:
+    keys = set(request)
+    forbidden = sorted(keys & FORBIDDEN_HELPER_KEYS)
+    audit_rows.append(
+        {
+            "schema_version": "phase_141f_helper_request_audit_row_v1",
+            "arm": arm,
+            "row_id": row_id,
+            "request_keys": sorted(keys),
+            "allowed_keys_only": keys == ALLOWED_HELPER_KEYS,
+            "forbidden_keys_present": forbidden,
+            "checkpoint_path": request.get("checkpoint_path"),
+            "seed": request.get("seed"),
+        }
+    )
+
+
+def run_arm(helper: Any, out: Path, arm: str, rows: list[dict[str, Any]], checkpoint_path: Path, checkpoint_hash: str, max_new_tokens: int, heartbeat_sec: int, request_audit: list[dict[str, Any]]) -> list[dict[str, Any]]:
     results: list[dict[str, Any]] = []
     next_heartbeat = heartbeat_sec
     for index, row in enumerate(rows, start=1):
         request = request_for(row["prompt"], checkpoint_path, checkpoint_hash, row["seed"], max_new_tokens)
+        record_helper_request(request_audit, arm, row["row_id"], request)
         if set(request) != ALLOWED_HELPER_KEYS:
             raise RuntimeError(f"bad helper request keys: {sorted(request)}")
         response = helper.raw_generate(request)
@@ -572,7 +602,7 @@ def control_row(name: str, control_passed: bool, generated_value: str | None, bl
     return {"schema_version": "phase_141f_control_result_v1", "control": name, "control_passed": control_passed, "control_failed": not control_passed, "generated_value": generated_value, "blocked_value": blocked_value}
 
 
-def run_controls(helper: Any, checkpoints: dict[str, tuple[Path, str]], max_new_tokens: int) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+def run_controls(helper: Any, checkpoints: dict[str, tuple[Path, str]], max_new_tokens: int, request_audit: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     prompt = (
         f"MULTI_FIELD_CONTROL\n{FIELD_A_MARKER} EV_CONTROL_A\n{FIELD_B_MARKER} EV_CONTROL_B\n"
         f"{INTERMEDIATE_MARKER} EV_CONTROL_I\n{PRIORITY_WRONG_MARKER} EV_CONTROL_PW\n"
@@ -581,7 +611,9 @@ def run_controls(helper: Any, checkpoints: dict[str, tuple[Path, str]], max_new_
     )
     def generated(candidate: str, seed: int) -> str | None:
         path, digest = checkpoints[candidate]
-        return first_value_after_answer_e(helper.raw_generate(request_for(prompt, path, digest, seed, max_new_tokens))["generated_text"])
+        request = request_for(prompt, path, digest, seed, max_new_tokens)
+        record_helper_request(request_audit, f"control:{candidate}", f"control_seed_{seed}", request)
+        return first_value_after_answer_e(helper.raw_generate(request)["generated_text"])
 
     main_value = generated(SELECTED_CANDIDATE, 901)
     closed_value = generated("closed_pocket_no_multi_field", 902)
@@ -631,6 +663,7 @@ def seed_gate_failures(main_metrics: dict[str, Any], ablation_metrics: dict[str,
             "single_field_shortcut_rate": metrics.get("single_field_shortcut_rate") == 0.0,
             "field_a_shortcut_rate": metrics.get("field_a_shortcut_rate") == 0.0,
             "field_b_shortcut_rate": metrics.get("field_b_shortcut_rate") == 0.0,
+            "intermediate_copy_shortcut_rate": metrics.get("intermediate_copy_shortcut_rate") == 0.0,
             "priority_conflict_wrong_field_rate": metrics.get("priority_conflict_wrong_field_rate") == 0.0,
             "visible_bypass_violation_rate": metrics.get("visible_bypass_violation_rate") == 0.0,
             "noisy_distractor_violation_rate": metrics.get("noisy_distractor_violation_rate") == 0.0,
@@ -638,6 +671,49 @@ def seed_gate_failures(main_metrics: dict[str, Any], ablation_metrics: dict[str,
         for name, passed in checks.items():
             if not passed:
                 failures.append(f"{seed}:{name}")
+    return failures
+
+
+def seed_gate_report(main_metrics: dict[str, Any], ablation_metrics: dict[str, Any]) -> dict[str, Any]:
+    rows = []
+    for seed, metrics in sorted(main_metrics["per_seed"].items()):
+        ablation = ablation_metrics["per_seed"].get(seed, {})
+        checks = {
+            "final_answer_accuracy": metrics.get("final_answer_accuracy", 0.0) >= 0.85,
+            "multi_field_binding_accuracy": metrics.get("multi_field_binding_accuracy", 0.0) >= 0.85,
+            "pocket_writeback_rate": metrics.get("pocket_writeback_rate", 0.0) >= 0.90,
+            "ablation_final_answer_accuracy": ablation.get("final_answer_accuracy", 1.0) <= 0.10,
+            "single_field_shortcut_rate": metrics.get("single_field_shortcut_rate") == 0.0,
+            "field_a_shortcut_rate": metrics.get("field_a_shortcut_rate") == 0.0,
+            "field_b_shortcut_rate": metrics.get("field_b_shortcut_rate") == 0.0,
+            "intermediate_copy_shortcut_rate": metrics.get("intermediate_copy_shortcut_rate") == 0.0,
+            "priority_conflict_wrong_field_rate": metrics.get("priority_conflict_wrong_field_rate") == 0.0,
+            "visible_bypass_violation_rate": metrics.get("visible_bypass_violation_rate") == 0.0,
+            "noisy_distractor_violation_rate": metrics.get("noisy_distractor_violation_rate") == 0.0,
+        }
+        rows.append({"seed": seed, "passed": all(checks.values()), "checks": checks, "main": metrics, "ablation": ablation})
+    return {"schema_version": "phase_141f_per_seed_gate_report_v1", "passed": all(row["passed"] for row in rows), "seeds": rows}
+
+
+def family_gate_report(main_metrics: dict[str, Any]) -> dict[str, Any]:
+    rows = []
+    for family, metrics in sorted(main_metrics["per_family"].items()):
+        checks = {
+            "final_answer_accuracy": metrics.get("final_answer_accuracy", 0.0) >= 0.85,
+            "multi_field_binding_accuracy": metrics.get("multi_field_binding_accuracy", 0.0) >= 0.85,
+            "pocket_writeback_rate": metrics.get("pocket_writeback_rate", 0.0) >= 0.90,
+            "single_field_shortcut_rate": metrics.get("single_field_shortcut_rate") == 0.0,
+        }
+        rows.append({"family": family, "passed": all(checks.values()), "checks": checks, "main": metrics})
+    return {"schema_version": "phase_141f_per_family_gate_report_v1", "passed": all(row["passed"] for row in rows), "families": rows}
+
+
+def family_gate_failures(report: dict[str, Any]) -> list[str]:
+    failures: list[str] = []
+    for row in report["families"]:
+        for name, passed in row["checks"].items():
+            if not passed:
+                failures.append(f"{row['family']}:{name}")
     return failures
 
 
@@ -652,6 +728,7 @@ def choose_decision(
     ast_passed: bool,
     generated_passed: bool,
     leakage_rejected: bool,
+    per_family_gate_failures: list[str],
 ) -> dict[str, Any]:
     per_seed_failures = seed_gate_failures(main_metrics, ablation_metrics)
     if not (canary_passed and ast_passed and generated_passed and leakage_rejected):
@@ -666,11 +743,13 @@ def choose_decision(
         decision = "priority_conflict_failure"; verdict = "INSTNCT_POCKET_GATED_MULTI_FIELD_TRANSFER_FAILS"; next_step = "141E_PRIORITY_CONFLICT_FAILURE_ANALYSIS"
     elif main_metrics["visible_bypass_violation_rate"] > 0.0 or main_metrics["noisy_distractor_violation_rate"] > 0.0:
         decision = "multi_field_binding_failure"; verdict = "INSTNCT_POCKET_GATED_MULTI_FIELD_TRANSFER_FAILS"; next_step = "141C_MULTI_FIELD_BINDING_FAILURE_ANALYSIS"
-    elif ablation_metrics["final_answer_accuracy"] > 0.05 or comparison["pocket_ablation_delta"] < 0.85:
+    elif ablation_metrics["final_answer_accuracy"] > 0.05 or comparison["pocket_ablation_delta_final_answer_accuracy"] < 0.85:
         decision = "pocket_ablation_not_decision_critical"; verdict = "INSTNCT_POCKET_GATED_MULTI_FIELD_TRANSFER_FAILS"; next_step = "141D_POCKET_CAUSALITY_FAILURE_ANALYSIS"
     elif main_metrics["final_answer_accuracy"] < 0.90 or main_metrics["multi_field_binding_accuracy"] < 0.90 or main_metrics["pocket_writeback_rate"] < 0.95 or main_metrics["contrast_group_accuracy"] < 0.90:
         decision = "multi_field_binding_scale_failure"; verdict = "INSTNCT_POCKET_GATED_MULTI_FIELD_TRANSFER_SCALE_FAILS"; next_step = "141C_MULTI_FIELD_BINDING_FAILURE_ANALYSIS"
     elif per_seed_failures:
+        decision = "scale_instability_detected"; verdict = "INSTNCT_POCKET_GATED_MULTI_FIELD_TRANSFER_SCALE_FAILS"; next_step = "141FS_MULTI_FIELD_SCALE_INSTABILITY_ANALYSIS"
+    elif per_family_gate_failures:
         decision = "scale_instability_detected"; verdict = "INSTNCT_POCKET_GATED_MULTI_FIELD_TRANSFER_SCALE_FAILS"; next_step = "141FS_MULTI_FIELD_SCALE_INSTABILITY_ANALYSIS"
     else:
         decision = "instnct_pocket_gated_multi_field_transfer_scale_confirmed"; verdict = "INSTNCT_POCKET_GATED_MULTI_FIELD_TRANSFER_SCALE_CONFIRMED"; next_step = POSITIVE_NEXT
@@ -681,6 +760,7 @@ def choose_decision(
         "next": next_step,
         "clean_negative_valid": True,
         "per_seed_gate_failures": per_seed_failures,
+        "per_family_gate_failures": per_family_gate_failures,
         "pocket_mechanism_claimed": decision == "instnct_pocket_gated_multi_field_transfer_scale_confirmed",
         "multi_field_transfer_scale_confirmed": decision == "instnct_pocket_gated_multi_field_transfer_scale_confirmed",
         "architecture_superiority_claimed": False,
@@ -708,7 +788,7 @@ Scale metrics:
 - main pocket writeback rate: `{comparison['main_pocket_writeback_rate']}`
 - main contrast group accuracy: `{comparison['main_contrast_group_accuracy']}`
 - ablation final answer accuracy: `{comparison['ablation_final_answer_accuracy']}`
-- ablation delta: `{comparison['pocket_ablation_delta']}`
+- ablation delta: `{comparison['pocket_ablation_delta_final_answer_accuracy']}`
 - single-field shortcut rate: `{comparison['single_field_shortcut_rate']}`
 - priority conflict wrong-field rate: `{comparison['priority_conflict_wrong_field_rate']}`
 - direct `POCKET_VALUE=` marker rate: `{comparison['direct_pocket_value_marker_rate']}`
@@ -800,10 +880,11 @@ def main() -> int:
     candidate_rows: list[dict[str, Any]] = []
     trace_rows: list[dict[str, Any]] = []
     manifests: dict[str, tuple[Path, dict[str, Any]]] = {}
+    request_audit_rows: list[dict[str, Any]] = []
     for candidate in candidate_specs():
         checkpoint_path, candidate_manifest = build_manifest(out, candidate)
         manifests[candidate["candidate"]] = (checkpoint_path, candidate_manifest)
-        results = run_arm(helper, out, candidate["candidate"], rows, checkpoint_path, candidate_manifest["checkpoint_sha256"], args.max_new_tokens, args.heartbeat_sec)
+        results = run_arm(helper, out, candidate["candidate"], rows, checkpoint_path, candidate_manifest["checkpoint_sha256"], args.max_new_tokens, args.heartbeat_sec, request_audit_rows)
         scored, metrics, groups = score(candidate["candidate"], rows, results)
         fitness = fitness_for(metrics)
         candidate_rows.append(
@@ -843,8 +924,8 @@ def main() -> int:
     write_json(out / "forbidden_input_rejection_report.json", {"schema_version": "phase_141f_forbidden_input_rejection_v1", "passed": canary["passed"], "canary_verdict": canary["verdict"]})
     append_progress(out, "canary", canary_passed=canary["passed"])
 
-    main_results = run_arm(helper, out, MAIN_ARM, rows, main_checkpoint, main_manifest["checkpoint_sha256"], args.max_new_tokens, args.heartbeat_sec)
-    ablation_results = run_arm(helper, out, ABLATION_ARM, rows, ablation_checkpoint, ablation_manifest["checkpoint_sha256"], args.max_new_tokens, args.heartbeat_sec)
+    main_results = run_arm(helper, out, MAIN_ARM, rows, main_checkpoint, main_manifest["checkpoint_sha256"], args.max_new_tokens, args.heartbeat_sec, request_audit_rows)
+    ablation_results = run_arm(helper, out, ABLATION_ARM, rows, ablation_checkpoint, ablation_manifest["checkpoint_sha256"], args.max_new_tokens, args.heartbeat_sec, request_audit_rows)
     write_jsonl(out / "raw_generation_results.jsonl", main_results)
     write_jsonl(out / "pocket_ablation_results.jsonl", ablation_results)
     write_jsonl(out / "raw_generation_trace.jsonl", main_results + ablation_results)
@@ -857,14 +938,14 @@ def main() -> int:
     write_jsonl(out / "contrast_group_results.jsonl", main_groups + ablation_groups)
     append_progress(out, "scoring", main_final_accuracy=main_metrics["final_answer_accuracy"], ablation_accuracy=ablation_metrics["final_answer_accuracy"])
 
-    control_rows, control_report = run_controls(helper, checkpoint_pairs, args.max_new_tokens)
+    control_rows, control_report = run_controls(helper, checkpoint_pairs, args.max_new_tokens, request_audit_rows)
     write_jsonl(out / "control_results.jsonl", control_rows)
     write_json(out / "control_arm_report.json", control_report)
     write_json(out / "visible_bypass_control_report.json", {"schema_version": "phase_141f_visible_bypass_control_report_v1", "visible_bypass_control_failed": control_report["visible_bypass_control_failed"]})
     write_json(out / "noisy_distractor_control_report.json", {"schema_version": "phase_141f_noisy_distractor_control_report_v1", "noisy_distractor_control_failed": control_report["noisy_distractor_control_failed"]})
     append_progress(out, "controls", controls_failed=control_report["controls_failed"])
 
-    replay = run_arm(helper, out, f"{MAIN_ARM}_replay", rows, main_checkpoint, main_manifest["checkpoint_sha256"], args.max_new_tokens, args.heartbeat_sec)
+    replay = run_arm(helper, out, f"{MAIN_ARM}_replay", rows, main_checkpoint, main_manifest["checkpoint_sha256"], args.max_new_tokens, args.heartbeat_sec, request_audit_rows)
     deterministic = [row["generated_text_hash"] for row in replay] == [row["generated_text_hash"] for row in main_results]
     write_json(out / "determinism_replay_report.json", {"schema_version": "phase_141f_determinism_replay_report_v1", "replay_attempted": True, "same_rows": True, "same_checkpoint": True, "generated_text_hashes_equal": deterministic, "deterministic_replay_passed": deterministic})
     append_progress(out, "determinism replay", passed=deterministic)
@@ -894,6 +975,7 @@ def main() -> int:
         "main_contrast_group_accuracy": main_metrics["contrast_group_accuracy"],
         "ablation_final_answer_accuracy": ablation_metrics["final_answer_accuracy"],
         "ablation_pocket_writeback_rate": ablation_metrics["pocket_writeback_rate"],
+        "pocket_ablation_delta_final_answer_accuracy": main_metrics["final_answer_accuracy"] - ablation_metrics["final_answer_accuracy"],
         "pocket_ablation_delta": main_metrics["final_answer_accuracy"] - ablation_metrics["final_answer_accuracy"],
         "field_a_shortcut_rate": main_metrics["field_a_shortcut_rate"],
         "field_b_shortcut_rate": main_metrics["field_b_shortcut_rate"],
@@ -911,24 +993,65 @@ def main() -> int:
         "architecture_superiority_claimed": False,
         "value_grounding_claimed": False,
     }
+    helper_request_audit = {
+        "schema_version": "phase_141f_helper_request_audit_v1",
+        "accepted_helper_request_count": len(request_audit_rows),
+        "allowed_helper_keys": sorted(ALLOWED_HELPER_KEYS),
+        "forbidden_helper_keys": sorted(FORBIDDEN_HELPER_KEYS),
+        "all_requests_allowed_keys_only": all(row["allowed_keys_only"] for row in request_audit_rows),
+        "forbidden_keys_present_count": sum(1 for row in request_audit_rows if row["forbidden_keys_present"]),
+        "no_forbidden_keys_in_accepted_generation_requests": all(not row["forbidden_keys_present"] for row in request_audit_rows),
+        "raw_generate_allowed_in_runner": True,
+        "raw_generate_allowed_in_checker": False,
+        "shared_helper_only": True,
+        "forbidden_canary_request_excluded_from_generation_audit": True,
+        "sample_requests": request_audit_rows[:25],
+    }
+    alias_report = {
+        "schema_version": "phase_141f_canonical_metric_alias_report_v1",
+        "canonical_metrics": {
+            "direct_pocket_value_marker_rate": comparison["direct_pocket_value_marker_rate"],
+            "pocket_ablation_delta_final_answer_accuracy": comparison["pocket_ablation_delta_final_answer_accuracy"],
+            "main_final_answer_accuracy": comparison["main_final_answer_accuracy"],
+            "main_multi_field_binding_accuracy": comparison["main_multi_field_binding_accuracy"],
+            "main_pocket_writeback_rate": comparison["main_pocket_writeback_rate"],
+            "priority_conflict_wrong_field_rate": comparison["priority_conflict_wrong_field_rate"],
+        },
+        "aliases_normalized": {
+            "direct_POCKET_VALUE_rate": "direct_pocket_value_marker_rate",
+            "direct_pocket_value_marker_present": "direct_pocket_value_marker_rate",
+            "pocket_ablation_delta": "pocket_ablation_delta_final_answer_accuracy",
+            "main_final_accuracy": "main_final_answer_accuracy",
+            "main_binding_accuracy": "main_multi_field_binding_accuracy",
+        },
+        "canonical_fields_written": [
+            "direct_pocket_value_marker_rate",
+            "pocket_ablation_delta_final_answer_accuracy",
+            "main_final_answer_accuracy",
+            "main_multi_field_binding_accuracy",
+        ],
+    }
+    seed_report = seed_gate_report(main_metrics, ablation_metrics)
+    family_report = family_gate_report(main_metrics)
     aggregate_metrics = {
         "schema_version": "phase_141f_aggregate_metrics_v1",
         **comparison,
         "canonical_metric_names": [
             "direct_pocket_value_marker_rate",
+            "pocket_ablation_delta_final_answer_accuracy",
             "main_final_answer_accuracy",
             "main_multi_field_binding_accuracy",
             "main_pocket_writeback_rate",
             "priority_conflict_wrong_field_rate",
         ],
-        "aliases_accepted": ["direct_POCKET_VALUE_rate", "direct_pocket_value_marker_present"],
+        "aliases_accepted": ["direct_POCKET_VALUE_rate", "direct_pocket_value_marker_present", "pocket_ablation_delta", "main_final_accuracy", "main_binding_accuracy"],
         "infrastructure_gates": {
             "expected_output_canary_passed": canary["passed"],
             "ast_scan_passed": ast_report["passed"],
             "leakage_rejected": leakage_report["leakage_rejected"],
             "controls_failed": control_report["controls_failed"],
             "generated_text_before_scoring": generated_report["generated_text_produced_before_scoring"],
-            "helper_request_keys_allowed_only": generated_report["all_helper_requests_allowed_keys_only"],
+            "helper_request_keys_allowed_only": generated_report["all_helper_requests_allowed_keys_only"] and helper_request_audit["all_requests_allowed_keys_only"],
             "no_expected_scorer_oracle_metadata": not generated_report["expected_or_scorer_metadata_in_helper_requests"],
             "deterministic_replay_passed": deterministic,
         },
@@ -938,11 +1061,15 @@ def main() -> int:
     write_json(out / "per_family_metrics.json", {"schema_version": "phase_141f_per_family_metrics_v1", "main": main_metrics["per_family"], "ablation": ablation_metrics["per_family"]})
     write_json(out / "arm_comparison.json", comparison)
     write_json(out / "aggregate_metrics.json", aggregate_metrics)
+    write_json(out / "helper_request_audit.json", helper_request_audit)
+    write_json(out / "canonical_metric_alias_report.json", alias_report)
+    write_json(out / "per_seed_gate_report.json", seed_report)
+    write_json(out / "per_family_gate_report.json", family_report)
     append_progress(out, "aggregate analysis", final_accuracy=comparison["main_final_answer_accuracy"], single_field_shortcut=comparison["single_field_shortcut_rate"])
 
-    decision = choose_decision(main_metrics, ablation_metrics, comparison, control_report, deterministic, selected["candidate"], canary["passed"], ast_report["passed"], generated_report["passed"], leakage_report["leakage_rejected"])
+    decision = choose_decision(main_metrics, ablation_metrics, comparison, control_report, deterministic, selected["candidate"], canary["passed"], ast_report["passed"], generated_report["passed"] and helper_request_audit["all_requests_allowed_keys_only"] and helper_request_audit["no_forbidden_keys_in_accepted_generation_requests"], leakage_report["leakage_rejected"], family_gate_failures(family_report))
     write_json(out / "decision.json", decision)
-    summary = {"schema_version": "phase_141f_summary_v1", "milestone": MILESTONE, "status": "complete", "boundary": BOUNDARY_TEXT, "upstream_141a": upstream_141a, "metrics": comparison, "aggregate_metrics": aggregate_metrics, "selection": selection, "helper_provenance": provenance, "canary_passed": canary["passed"], "ast_shortcut_scan_passed": ast_report["passed"], "generated_before_scoring_passed": generated_report["passed"], "leakage_rejected": leakage_report["leakage_rejected"], "controls_failed": control_report["controls_failed"], **decision}
+    summary = {"schema_version": "phase_141f_summary_v1", "milestone": MILESTONE, "status": "complete", "boundary": BOUNDARY_TEXT, "upstream_141a": upstream_141a, "metrics": comparison, "aggregate_metrics": aggregate_metrics, "helper_request_audit": helper_request_audit, "canonical_metric_alias_report": alias_report, "per_seed_gate_report": seed_report, "per_family_gate_report": family_report, "selection": selection, "helper_provenance": provenance, "canary_passed": canary["passed"], "ast_shortcut_scan_passed": ast_report["passed"], "generated_before_scoring_passed": generated_report["passed"], "leakage_rejected": leakage_report["leakage_rejected"], "controls_failed": control_report["controls_failed"], **decision}
     write_json(out / "summary.json", summary)
     write_report(out, decision, comparison, selection)
     append_progress(out, "decision", decision=decision["decision"], next=decision["next"])

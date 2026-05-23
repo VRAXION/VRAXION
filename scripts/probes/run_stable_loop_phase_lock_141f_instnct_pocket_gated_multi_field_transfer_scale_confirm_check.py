@@ -50,7 +50,9 @@ REQUIRED_ARTIFACTS = [
     "pocket_ablation_results.jsonl", "scoring_results.jsonl", "contrast_group_results.jsonl",
     "control_results.jsonl", "control_arm_report.json", "visible_bypass_control_report.json",
     "noisy_distractor_control_report.json", "generated_before_scoring_report.json", "freshness_leakage_audit.json",
-    "multi_field_transfer_metrics.json", "aggregate_metrics.json", "field_shortcut_report.json", "priority_conflict_report.json",
+    "multi_field_transfer_metrics.json", "aggregate_metrics.json", "helper_request_audit.json",
+    "canonical_metric_alias_report.json", "per_seed_gate_report.json", "per_family_gate_report.json",
+    "field_shortcut_report.json", "priority_conflict_report.json",
     "single_field_shortcut_report.json", "per_seed_metrics.json", "per_family_metrics.json", "arm_comparison.json",
     "determinism_replay_report.json", "decision.json", "summary.json", "report.md",
 ]
@@ -101,6 +103,8 @@ def ast_scan(path: Path) -> list[str]:
             name = node.func.id if isinstance(node.func, ast.Name) else node.func.attr if isinstance(node.func, ast.Attribute) else ""
             if name in {"train", "fit", "backward", "step"}:
                 failures.append(f"TRAINING_CALL_NOT_ALLOWED:{path.name}:{name}")
+            if path.name == Path(CHECKER).name and name == "raw_generate":
+                failures.append(f"CHECKER_RAW_GENERATE_NOT_ALLOWED:{path.name}")
     return failures
 
 
@@ -203,6 +207,35 @@ def require_manifests(root: Path, failures: list[str]) -> None:
 
 
 def require_generation_trace(root: Path, failures: list[str]) -> None:
+    audit = load_json(root / "helper_request_audit.json")
+    if audit.get("all_requests_allowed_keys_only") is not True:
+        failures.append("HELPER_REQUEST_AUDIT_KEYS_NOT_ALLOWED_ONLY")
+    if audit.get("no_forbidden_keys_in_accepted_generation_requests") is not True:
+        failures.append("FORBIDDEN_KEYS_IN_ACCEPTED_HELPER_REQUESTS")
+    if audit.get("raw_generate_allowed_in_runner") is not True:
+        failures.append("RUNNER_RAW_GENERATE_NOT_ALLOWED_IN_AUDIT")
+    if audit.get("raw_generate_allowed_in_checker") is not False:
+        failures.append("CHECKER_RAW_GENERATE_NOT_FORBIDDEN_IN_AUDIT")
+    if audit.get("shared_helper_only") is not True:
+        failures.append("HELPER_REQUEST_AUDIT_NOT_SHARED_HELPER_ONLY")
+    if set(audit.get("allowed_helper_keys", [])) != ALLOWED_HELPER_KEYS:
+        failures.append(f"BAD_AUDIT_ALLOWED_KEYS:{audit.get('allowed_helper_keys')}")
+    forbidden = {
+        "expected_output",
+        "expected_answer",
+        "scorer_metadata",
+        "labels",
+        "oracle_data",
+        "target_json",
+        "gold_output",
+        "answer",
+        "expected_values",
+        "eval_family",
+    }
+    if not forbidden.issubset(set(audit.get("forbidden_helper_keys", []))):
+        failures.append("HELPER_REQUEST_AUDIT_FORBIDDEN_KEY_SET_INCOMPLETE")
+    if audit.get("accepted_helper_request_count", 0) <= 0:
+        failures.append("HELPER_REQUEST_AUDIT_EMPTY")
     rows = read_jsonl(root / "raw_generation_trace.jsonl")
     if not rows:
         failures.append("RAW_GENERATION_TRACE_EMPTY")
@@ -234,7 +267,10 @@ def require_controls(root: Path, failures: list[str]) -> None:
 def require_metrics(root: Path, failures: list[str]) -> None:
     metrics = load_json(root / "arm_comparison.json")
     aggregate = load_json(root / "aggregate_metrics.json")
+    alias_report = load_json(root / "canonical_metric_alias_report.json")
     per_seed = load_json(root / "per_seed_metrics.json")
+    seed_gate = load_json(root / "per_seed_gate_report.json")
+    family_gate = load_json(root / "per_family_gate_report.json")
     required_equal = {
         "single_field_shortcut_rate": 0.0,
         "field_a_shortcut_rate": 0.0,
@@ -253,7 +289,7 @@ def require_metrics(root: Path, failures: list[str]) -> None:
         "main_multi_field_binding_accuracy": 0.90,
         "main_pocket_writeback_rate": 0.95,
         "main_contrast_group_accuracy": 0.90,
-        "pocket_ablation_delta": 0.85,
+        "pocket_ablation_delta_final_answer_accuracy": 0.85,
     }
     for key, floor in lower_bounds.items():
         if metrics.get(key, 0.0) < floor:
@@ -269,6 +305,7 @@ def require_metrics(root: Path, failures: list[str]) -> None:
     canonical = set(aggregate.get("canonical_metric_names", []))
     for name in [
         "direct_pocket_value_marker_rate",
+        "pocket_ablation_delta_final_answer_accuracy",
         "main_final_answer_accuracy",
         "main_multi_field_binding_accuracy",
         "main_pocket_writeback_rate",
@@ -278,6 +315,18 @@ def require_metrics(root: Path, failures: list[str]) -> None:
             failures.append(f"CANONICAL_METRIC_MISSING:{name}")
         if name not in aggregate:
             failures.append(f"AGGREGATE_METRIC_MISSING:{name}")
+        if name not in alias_report.get("canonical_metrics", {}) and name != "priority_conflict_wrong_field_rate":
+            failures.append(f"ALIAS_REPORT_CANONICAL_MISSING:{name}")
+    alias_map = alias_report.get("aliases_normalized", {})
+    expected_aliases = {
+        "direct_POCKET_VALUE_rate": "direct_pocket_value_marker_rate",
+        "pocket_ablation_delta": "pocket_ablation_delta_final_answer_accuracy",
+        "main_final_accuracy": "main_final_answer_accuracy",
+        "main_binding_accuracy": "main_multi_field_binding_accuracy",
+    }
+    for alias, canonical_name in expected_aliases.items():
+        if alias_map.get(alias) != canonical_name:
+            failures.append(f"ALIAS_NORMALIZATION_MISSING:{alias}->{canonical_name}")
     gates = aggregate.get("infrastructure_gates", {})
     for key in [
         "expected_output_canary_passed",
@@ -305,12 +354,27 @@ def require_metrics(root: Path, failures: list[str]) -> None:
             "single_field_shortcut_rate",
             "field_a_shortcut_rate",
             "field_b_shortcut_rate",
+            "intermediate_copy_shortcut_rate",
             "priority_conflict_wrong_field_rate",
             "visible_bypass_violation_rate",
             "noisy_distractor_violation_rate",
         ]:
             if seed_metrics.get(key) != 0.0:
                 failures.append(f"SEED_METRIC_NOT_ZERO:{seed}:{key}:{seed_metrics.get(key)}")
+    if seed_gate.get("passed") is not True:
+        failures.append(f"PER_SEED_GATE_REPORT_FAILED:{seed_gate.get('seeds')}")
+    if family_gate.get("passed") is not True:
+        failures.append(f"PER_FAMILY_GATE_REPORT_FAILED:{family_gate.get('families')}")
+    for row in family_gate.get("families", []):
+        metrics_for_family = row.get("main", {})
+        if metrics_for_family.get("final_answer_accuracy", 0.0) < 0.85:
+            failures.append(f"FAMILY_FINAL_ACCURACY_BELOW_GATE:{row.get('family')}")
+        if metrics_for_family.get("multi_field_binding_accuracy", 0.0) < 0.85:
+            failures.append(f"FAMILY_BINDING_ACCURACY_BELOW_GATE:{row.get('family')}")
+        if metrics_for_family.get("pocket_writeback_rate", 0.0) < 0.90:
+            failures.append(f"FAMILY_WRITEBACK_BELOW_GATE:{row.get('family')}")
+        if metrics_for_family.get("single_field_shortcut_rate") != 0.0:
+            failures.append(f"FAMILY_SINGLE_FIELD_SHORTCUT_NONZERO:{row.get('family')}")
 
 
 def require_selection(root: Path, failures: list[str]) -> None:
@@ -338,6 +402,8 @@ def require_decision(root: Path, failures: list[str]) -> None:
         failures.append("SCALE_CONFIRM_FLAG_NOT_TRUE")
     if decision.get("per_seed_gate_failures") != []:
         failures.append(f"PER_SEED_GATE_FAILURES:{decision.get('per_seed_gate_failures')}")
+    if decision.get("per_family_gate_failures") != []:
+        failures.append(f"PER_FAMILY_GATE_FAILURES:{decision.get('per_family_gate_failures')}")
     if decision.get("value_grounding_claimed") is not False:
         failures.append("BROAD_VALUE_GROUNDING_CLAIMED")
     require_false_flags(decision, failures)

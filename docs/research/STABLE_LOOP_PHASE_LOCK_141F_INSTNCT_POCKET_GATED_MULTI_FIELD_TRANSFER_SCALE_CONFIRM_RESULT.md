@@ -26,6 +26,10 @@ max_new_tokens
 generation_config
 ```
 
+The runner may call `shared_raw_generation_helper.raw_generate` because this is
+an executable scale confirm. The checker must not call `raw_generate`; it
+validates the helper request audit instead.
+
 141F scales the 141A multi-field transfer task to 2880 rows, 6 families, and at
 least 72 scaffold variants. The final field may still be explicitly marker
 carried in the prompt, so the evidence is multi-field final selection under
@@ -39,6 +43,13 @@ valid. The phase also requires failed visible/noisy bypass controls, failed
 closed-pocket ablation, generated text before scoring, leakage rejection,
 deterministic replay, and canonical aggregate metric names.
 
+Additional hardening reports:
+
+- helper_request_audit.json
+- canonical_metric_alias_report.json
+- per_seed_gate_report.json
+- per_family_gate_report.json
+
 Expected positive route:
 
 ```text
@@ -50,6 +61,10 @@ next = 141Z_INSTNCT_POCKET_GATED_MULTI_FIELD_TRANSFER_NEXT_DECISION_PLAN
 The generated reports include:
 
 - aggregate_metrics.json
+- helper_request_audit.json
+- canonical_metric_alias_report.json
+- per_seed_gate_report.json
+- per_family_gate_report.json
 - multi_field_eval_manifest.json
 - multi_field_binding_manifest.json
 - multi_field_transfer_metrics.json
