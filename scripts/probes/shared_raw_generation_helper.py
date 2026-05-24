@@ -26,6 +26,7 @@ except Exception:  # pragma: no cover - exercised by fail-closed callers.
 HELPER_VERSION = "shared_raw_generation_helper_v1"
 HELPER_BACKEND = "repo_local_checkpoint_byte_lm"
 INSTNCT_MUTATION_BACKEND = "repo_local_instnct_mutation_graph"
+RULE_SELECTED_POCKET_BINDING_DECODER = "deterministic_pocket_gated_rule_selected_pocket_binding_decoder"
 REPO_ROOT = Path(__file__).resolve().parents[2]
 BYTE_VOCAB_SIZE = 256
 ALLOWED_GENERATION_CONFIG_KEYS = {"temperature", "device", "stop_on_newline"}
@@ -83,6 +84,7 @@ DEFAULT_CHECKPOINT_CANDIDATES = [
 ]
 INSTNCT_VALUE_RE = re.compile(r"\b(?:EV|VAL|SYM)[A-Za-z0-9_+\-]*\b")
 INSTNCT_TRAIN_VALUE_RE = re.compile(r"\bTR[A-Za-z0-9_+\-]*\b")
+INSTNCT_WINNER_LABEL_RE = re.compile(r"\bwinner\s*=\s*(pocket_[abc])\b", re.IGNORECASE)
 
 
 class RawGenerationError(Exception):
@@ -477,6 +479,9 @@ def _instnct_value_from_segment(segment: str) -> str | None:
 
 
 def _instnct_select_open_pocket_value(prompt: str, manifest: dict[str, Any]) -> tuple[str, dict[str, Any]]:
+    decoder = manifest.get("decoder") if isinstance(manifest.get("decoder"), dict) else {}
+    if decoder.get("type") == RULE_SELECTED_POCKET_BINDING_DECODER:
+        return _instnct_select_rule_selected_pocket_value(prompt, manifest)
     payload_markers = [str(item) for item in (manifest.get("pocket_payload_markers") or ["POCKET_VALUE=", "POCKET_BIND=", "POCKET_TABLE_ROW="])]
     fallback = str(manifest.get("closed_pocket_fallback_value") or manifest.get("fallback_value", "SYM_POCKET_CLOSED"))
     visible_bypass_forbidden = bool(manifest.get("visible_value_bypass_forbidden", True))
@@ -517,6 +522,81 @@ def _instnct_select_open_pocket_value(prompt: str, manifest: dict[str, Any]) -> 
             if value:
                 return value, {"selection_source": "visible_bypass_fallback", "marker": marker}
     return fallback, {"selection_source": "closed_pocket_fallback", "marker": None}
+
+
+def _instnct_select_rule_selected_pocket_value(prompt: str, manifest: dict[str, Any]) -> tuple[str, dict[str, Any]]:
+    fallback = str(manifest.get("closed_pocket_fallback_value") or manifest.get("fallback_value", "SYM_POCKET_CLOSED"))
+    visible_bypass_forbidden = bool(manifest.get("visible_value_bypass_forbidden", True))
+    winner_labels = [match.group(1).lower() for match in INSTNCT_WINNER_LABEL_RE.finditer(prompt)]
+    if len(winner_labels) != 1:
+        return fallback, {
+            "selection_source": "closed_pocket_fallback",
+            "marker": None,
+            "pocket_id": None,
+            "gate_marker": None,
+            "visible_value_bypass_forbidden": visible_bypass_forbidden,
+            "rule_selected_pocket_binding_rejected": "missing_or_ambiguous_winner_label",
+            "winner_label_count": len(winner_labels),
+        }
+    selected_pocket_id = winner_labels[0]
+    marker_map_raw = manifest.get("rule_selected_pocket_marker_map") or manifest.get("static_pocket_marker_map") or {}
+    marker_map = {str(key).lower(): str(value) for key, value in marker_map_raw.items()}
+    selected_marker = marker_map.get(selected_pocket_id)
+    if not selected_marker:
+        return fallback, {
+            "selection_source": "closed_pocket_fallback",
+            "marker": None,
+            "pocket_id": selected_pocket_id,
+            "gate_marker": None,
+            "visible_value_bypass_forbidden": visible_bypass_forbidden,
+            "rule_selected_pocket_binding_rejected": "missing_static_marker_map_entry",
+            "winner_label_count": len(winner_labels),
+        }
+    for pocket in manifest.get("pockets", []):
+        gate_marker = str(pocket.get("gate_marker", ""))
+        gate_open = bool(gate_marker and gate_marker in prompt)
+        if not gate_open:
+            continue
+        pos = prompt.find(selected_marker)
+        if pos < 0:
+            return fallback, {
+                "selection_source": "closed_pocket_fallback",
+                "marker": selected_marker,
+                "pocket_id": selected_pocket_id,
+                "gate_marker": gate_marker,
+                "visible_value_bypass_forbidden": visible_bypass_forbidden,
+                "rule_selected_pocket_binding_rejected": "selected_marker_missing_from_prompt",
+                "winner_label_count": len(winner_labels),
+            }
+        segment = prompt[pos + len(selected_marker) : pos + len(selected_marker) + 128]
+        value = _instnct_value_from_segment(segment)
+        if value:
+            return value, {
+                "selection_source": "rule_selected_pocket_writeback",
+                "marker": selected_marker,
+                "pocket_id": selected_pocket_id,
+                "gate_marker": gate_marker,
+                "visible_value_bypass_forbidden": visible_bypass_forbidden,
+                "winner_label_count": len(winner_labels),
+            }
+        return fallback, {
+            "selection_source": "closed_pocket_fallback",
+            "marker": selected_marker,
+            "pocket_id": selected_pocket_id,
+            "gate_marker": gate_marker,
+            "visible_value_bypass_forbidden": visible_bypass_forbidden,
+            "rule_selected_pocket_binding_rejected": "selected_marker_value_missing",
+            "winner_label_count": len(winner_labels),
+        }
+    return fallback, {
+        "selection_source": "closed_pocket_fallback",
+        "marker": selected_marker,
+        "pocket_id": selected_pocket_id,
+        "gate_marker": None,
+        "visible_value_bypass_forbidden": visible_bypass_forbidden,
+        "rule_selected_pocket_binding_rejected": "open_gate_missing",
+        "winner_label_count": len(winner_labels),
+    }
 
 
 def _instnct_trace(prompt: str, selected_value: str, manifest: dict[str, Any], seed: int) -> dict[str, Any]:
