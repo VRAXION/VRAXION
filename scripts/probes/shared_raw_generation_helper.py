@@ -557,8 +557,9 @@ def _instnct_select_rule_selected_pocket_value(prompt: str, manifest: dict[str, 
         gate_open = bool(gate_marker and gate_marker in prompt)
         if not gate_open:
             continue
-        pos = prompt.find(selected_marker)
-        if pos < 0:
+        candidate_line_re = re.compile(r"^\s*" + re.escape(selected_marker) + r"\s*((?:EV|VAL|SYM)[A-Za-z0-9_+\-]*)?\s*$")
+        candidate_lines = [(line, match.group(1)) for line in prompt.splitlines() if (match := candidate_line_re.match(line))]
+        if not candidate_lines:
             return fallback, {
                 "selection_source": "closed_pocket_fallback",
                 "marker": selected_marker,
@@ -567,9 +568,20 @@ def _instnct_select_rule_selected_pocket_value(prompt: str, manifest: dict[str, 
                 "visible_value_bypass_forbidden": visible_bypass_forbidden,
                 "rule_selected_pocket_binding_rejected": "selected_marker_missing_from_prompt",
                 "winner_label_count": len(winner_labels),
+                "selected_marker_candidate_line_count": 0,
             }
-        segment = prompt[pos + len(selected_marker) : pos + len(selected_marker) + 128]
-        value = _instnct_value_from_segment(segment)
+        if len(candidate_lines) != 1:
+            return fallback, {
+                "selection_source": "closed_pocket_fallback",
+                "marker": selected_marker,
+                "pocket_id": selected_pocket_id,
+                "gate_marker": gate_marker,
+                "visible_value_bypass_forbidden": visible_bypass_forbidden,
+                "rule_selected_pocket_binding_rejected": "selected_marker_duplicate_conflict",
+                "winner_label_count": len(winner_labels),
+                "selected_marker_candidate_line_count": len(candidate_lines),
+            }
+        value = candidate_lines[0][1]
         if value:
             return value, {
                 "selection_source": "rule_selected_pocket_writeback",
@@ -578,6 +590,7 @@ def _instnct_select_rule_selected_pocket_value(prompt: str, manifest: dict[str, 
                 "gate_marker": gate_marker,
                 "visible_value_bypass_forbidden": visible_bypass_forbidden,
                 "winner_label_count": len(winner_labels),
+                "selected_marker_candidate_line_count": len(candidate_lines),
             }
         return fallback, {
             "selection_source": "closed_pocket_fallback",
@@ -587,6 +600,7 @@ def _instnct_select_rule_selected_pocket_value(prompt: str, manifest: dict[str, 
             "visible_value_bypass_forbidden": visible_bypass_forbidden,
             "rule_selected_pocket_binding_rejected": "selected_marker_value_missing",
             "winner_label_count": len(winner_labels),
+            "selected_marker_candidate_line_count": len(candidate_lines),
         }
     return fallback, {
         "selection_source": "closed_pocket_fallback",
