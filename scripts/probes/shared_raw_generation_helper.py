@@ -28,6 +28,7 @@ HELPER_BACKEND = "repo_local_checkpoint_byte_lm"
 INSTNCT_MUTATION_BACKEND = "repo_local_instnct_mutation_graph"
 RULE_SELECTED_POCKET_BINDING_DECODER = "deterministic_pocket_gated_rule_selected_pocket_binding_decoder"
 STRUCTURED_RULE_METADATA_BINDING_DECODER = "deterministic_pocket_gated_structured_rule_metadata_binding_decoder"
+MIXED_STRUCTURED_RULE_COMPOSITION_BINDING_DECODER = "deterministic_pocket_gated_mixed_structured_rule_composition_binding_decoder"
 REPO_ROOT = Path(__file__).resolve().parents[2]
 BYTE_VOCAB_SIZE = 256
 ALLOWED_GENERATION_CONFIG_KEYS = {"temperature", "device", "stop_on_newline"}
@@ -483,6 +484,8 @@ def _instnct_value_from_segment(segment: str) -> str | None:
 
 def _instnct_select_open_pocket_value(prompt: str, manifest: dict[str, Any]) -> tuple[str, dict[str, Any]]:
     decoder = manifest.get("decoder") if isinstance(manifest.get("decoder"), dict) else {}
+    if decoder.get("type") == MIXED_STRUCTURED_RULE_COMPOSITION_BINDING_DECODER:
+        return _instnct_select_mixed_structured_rule_composition_value(prompt, manifest)
     if decoder.get("type") == STRUCTURED_RULE_METADATA_BINDING_DECODER:
         return _instnct_select_structured_rule_metadata_value(prompt, manifest)
     if decoder.get("type") == RULE_SELECTED_POCKET_BINDING_DECODER:
@@ -913,6 +916,307 @@ def _instnct_select_structured_rule_metadata_value(prompt: str, manifest: dict[s
     )
 
 
+def _instnct_mixed_rule_composition_failure(
+    fallback: str,
+    reason: str,
+    *,
+    visible_bypass_forbidden: bool,
+    marker: str | None = None,
+    pocket_id: str | None = None,
+    gate_marker: str | None = None,
+    parsed_rule_blocks: list[dict[str, Any]] | None = None,
+    parsed_priority_order: list[str] | None = None,
+    per_block_parse_success: dict[str, bool] | None = None,
+    per_block_derived_candidate_pocket: dict[str, str | None] | None = None,
+    final_selected_pocket_id: str | None = None,
+    selected_marker_candidate_line_count: int | None = None,
+) -> tuple[str, dict[str, Any]]:
+    return fallback, {
+        "selection_source": "closed_pocket_fallback",
+        "marker": marker,
+        "pocket_id": pocket_id,
+        "gate_marker": gate_marker,
+        "visible_value_bypass_forbidden": visible_bypass_forbidden,
+        "mixed_rule_composition_rejected": reason,
+        "parsed_rule_blocks": parsed_rule_blocks or [],
+        "parsed_priority_order": parsed_priority_order or [],
+        "per_block_parse_success": per_block_parse_success or {},
+        "per_block_derived_candidate_pocket": per_block_derived_candidate_pocket or {},
+        "final_selected_pocket_id": final_selected_pocket_id,
+        "binding_marker": marker,
+        "extracted_value": None,
+        "generated_answer": None,
+        "failure_reason": reason,
+        "selected_marker_candidate_line_count": selected_marker_candidate_line_count,
+    }
+
+
+def _instnct_parse_mixed_priority(value: str, block_types: set[str]) -> tuple[list[str] | None, str | None]:
+    parts = value.split(">")
+    allowed = {"quorum", "recency", "tie_break"}
+    if not parts or any(not item for item in parts):
+        return None, "malformed_priority_separators"
+    if any(item.strip() != item for item in parts):
+        return None, "malformed_priority_separators"
+    if any(item in INSTNCT_POCKET_IDS for item in parts):
+        return None, "priority_pocket_oracle"
+    if any(item not in allowed for item in parts):
+        return None, "unknown_priority_entry"
+    if len(set(parts)) != len(parts):
+        return None, "duplicate_priority_entry"
+    missing = [item for item in parts if item not in block_types]
+    if missing:
+        return None, "priority_references_missing_block_type"
+    return parts, None
+
+
+def _instnct_rule_block_fields(block_type: str, entries: dict[str, str]) -> tuple[dict[str, str] | None, str | None]:
+    allowed: dict[str, set[str]] = {
+        "quorum": {"votes", "tie_break_order"},
+        "recency": {"recency_order"},
+        "tie_break": {"tied", "tie_break_order"},
+    }
+    required: dict[str, set[str]] = {
+        "quorum": {"votes"},
+        "recency": {"recency_order"},
+        "tie_break": {"tied", "tie_break_order"},
+    }
+    if block_type not in allowed:
+        return None, "unknown_rule_block_type"
+    unknown = sorted(set(entries) - allowed[block_type])
+    if unknown:
+        return None, "unknown_block_key"
+    missing = sorted(required[block_type] - set(entries))
+    if missing:
+        return None, "missing_required_block_key"
+    fields = {"rule_type": block_type, **entries}
+    return fields, None
+
+
+def _instnct_parse_mixed_rule_composition(
+    prompt: str,
+) -> tuple[list[dict[str, Any]], list[str] | None, dict[str, bool], dict[str, str | None], str | None, str | None]:
+    blocks: list[dict[str, Any]] = []
+    block_types: set[str] = set()
+    priority_lines: list[str] = []
+    current_type: str | None = None
+    current_entries: dict[str, str] = {}
+    current_line_count = 0
+    structural_error: str | None = None
+
+    def close_current() -> None:
+        nonlocal current_type, current_entries, current_line_count
+        if current_type is None:
+            return
+        fields, parse_error = _instnct_rule_block_fields(current_type, current_entries)
+        candidate, derive_error = (None, None)
+        parse_success = fields is not None
+        if fields is not None:
+            candidate, derive_error = _instnct_derive_selected_pocket(fields)
+        blocks.append(
+            {
+                "rule_block": current_type,
+                "fields": fields or {"rule_type": current_type, **current_entries},
+                "parse_success": parse_success,
+                "parse_error": parse_error,
+                "derived_candidate_pocket": candidate,
+                "derive_error": derive_error,
+                "line_count": current_line_count,
+            }
+        )
+        current_type = None
+        current_entries = {}
+        current_line_count = 0
+
+    for raw_line in prompt.splitlines():
+        line = raw_line.strip()
+        if not line:
+            continue
+        if current_type is None:
+            if line.startswith("rule_block="):
+                match = INSTNCT_RULE_METADATA_LINE_RE.match(line)
+                if not match:
+                    structural_error = "malformed_block_boundary"
+                    break
+                block_type = match.group(2)
+                if block_type not in {"quorum", "recency", "tie_break"}:
+                    structural_error = "unknown_rule_block_type"
+                    break
+                if block_type in block_types:
+                    structural_error = "duplicate_rule_block_type"
+                    break
+                block_types.add(block_type)
+                current_type = block_type
+                current_entries = {}
+                current_line_count = 0
+                continue
+            if line == "block_end":
+                structural_error = "block_end_without_rule_block"
+                break
+            if line.startswith("priority="):
+                priority_lines.append(line[len("priority=") :])
+                continue
+            if "=" in line and INSTNCT_RULE_METADATA_LINE_RE.match(line):
+                structural_error = "metadata_outside_block"
+                break
+            continue
+        if line.startswith("rule_block="):
+            structural_error = "nested_rule_block_before_block_end"
+            break
+        if line == "block_end":
+            if current_line_count == 0:
+                structural_error = "empty_rule_block"
+                break
+            close_current()
+            continue
+        if "=" not in line:
+            continue
+        match = INSTNCT_RULE_METADATA_LINE_RE.match(line)
+        if not match:
+            current_entries["__malformed__"] = line
+            current_line_count += 1
+            continue
+        key, value = match.group(1), match.group(2)
+        if key in current_entries:
+            current_entries["__duplicate_key__"] = key
+        else:
+            current_entries[key] = value
+        current_line_count += 1
+
+    if structural_error:
+        return blocks, None, {}, {}, None, structural_error
+    if current_type is not None:
+        return blocks, None, {}, {}, None, "missing_block_end"
+    if not blocks:
+        return blocks, None, {}, {}, None, "missing_rule_block"
+    if not priority_lines:
+        return blocks, None, {}, {}, None, "missing_priority"
+    if len(priority_lines) != 1:
+        return blocks, None, {}, {}, None, "multiple_priority_lines"
+    priority_order, priority_error = _instnct_parse_mixed_priority(priority_lines[0], block_types)
+    if priority_error or priority_order is None:
+        return blocks, None, {}, {}, None, priority_error or "priority_policy_parse_failure"
+    per_block_parse_success = {block["rule_block"]: bool(block["parse_success"]) for block in blocks}
+    per_block_derived_candidate_pocket = {block["rule_block"]: block["derived_candidate_pocket"] for block in blocks}
+    by_type = {block["rule_block"]: block for block in blocks}
+    for block_type in priority_order:
+        candidate = by_type[block_type]["derived_candidate_pocket"]
+        if candidate:
+            return blocks, priority_order, per_block_parse_success, per_block_derived_candidate_pocket, candidate, None
+    return blocks, priority_order, per_block_parse_success, per_block_derived_candidate_pocket, None, "all_priority_referenced_blocks_invalid"
+
+
+def _instnct_select_mixed_structured_rule_composition_value(prompt: str, manifest: dict[str, Any]) -> tuple[str, dict[str, Any]]:
+    fallback = str(manifest.get("closed_pocket_fallback_value") or manifest.get("fallback_value", "SYM_POCKET_CLOSED"))
+    visible_bypass_forbidden = bool(manifest.get("visible_value_bypass_forbidden", True))
+    parsed_blocks, priority_order, parse_success, derived_candidates, selected_pocket_id, parse_error = _instnct_parse_mixed_rule_composition(prompt)
+    if parse_error or selected_pocket_id is None:
+        return _instnct_mixed_rule_composition_failure(
+            fallback,
+            parse_error or "final_selected_pocket_derivation_failure",
+            visible_bypass_forbidden=visible_bypass_forbidden,
+            parsed_rule_blocks=parsed_blocks,
+            parsed_priority_order=priority_order or [],
+            per_block_parse_success=parse_success,
+            per_block_derived_candidate_pocket=derived_candidates,
+            final_selected_pocket_id=selected_pocket_id,
+        )
+    selected_marker = _instnct_static_marker_for_pocket(manifest, selected_pocket_id)
+    if not selected_marker:
+        return _instnct_mixed_rule_composition_failure(
+            fallback,
+            "missing_static_marker_map_entry",
+            visible_bypass_forbidden=visible_bypass_forbidden,
+            pocket_id=selected_pocket_id,
+            parsed_rule_blocks=parsed_blocks,
+            parsed_priority_order=priority_order or [],
+            per_block_parse_success=parse_success,
+            per_block_derived_candidate_pocket=derived_candidates,
+            final_selected_pocket_id=selected_pocket_id,
+        )
+    for pocket in manifest.get("pockets", []):
+        gate_marker = str(pocket.get("gate_marker", ""))
+        gate_open = bool(gate_marker and gate_marker in prompt)
+        if not gate_open:
+            continue
+        candidate_lines = _instnct_selected_marker_candidate_lines(prompt, selected_marker)
+        if not candidate_lines:
+            return _instnct_mixed_rule_composition_failure(
+                fallback,
+                "selected_marker_missing_from_prompt",
+                visible_bypass_forbidden=visible_bypass_forbidden,
+                marker=selected_marker,
+                pocket_id=selected_pocket_id,
+                gate_marker=gate_marker,
+                parsed_rule_blocks=parsed_blocks,
+                parsed_priority_order=priority_order or [],
+                per_block_parse_success=parse_success,
+                per_block_derived_candidate_pocket=derived_candidates,
+                final_selected_pocket_id=selected_pocket_id,
+                selected_marker_candidate_line_count=0,
+            )
+        if len(candidate_lines) != 1:
+            return _instnct_mixed_rule_composition_failure(
+                fallback,
+                "selected_marker_duplicate_conflict",
+                visible_bypass_forbidden=visible_bypass_forbidden,
+                marker=selected_marker,
+                pocket_id=selected_pocket_id,
+                gate_marker=gate_marker,
+                parsed_rule_blocks=parsed_blocks,
+                parsed_priority_order=priority_order or [],
+                per_block_parse_success=parse_success,
+                per_block_derived_candidate_pocket=derived_candidates,
+                final_selected_pocket_id=selected_pocket_id,
+                selected_marker_candidate_line_count=len(candidate_lines),
+            )
+        value = candidate_lines[0][1]
+        if not value:
+            return _instnct_mixed_rule_composition_failure(
+                fallback,
+                "selected_marker_value_missing",
+                visible_bypass_forbidden=visible_bypass_forbidden,
+                marker=selected_marker,
+                pocket_id=selected_pocket_id,
+                gate_marker=gate_marker,
+                parsed_rule_blocks=parsed_blocks,
+                parsed_priority_order=priority_order or [],
+                per_block_parse_success=parse_success,
+                per_block_derived_candidate_pocket=derived_candidates,
+                final_selected_pocket_id=selected_pocket_id,
+                selected_marker_candidate_line_count=len(candidate_lines),
+            )
+        return value, {
+            "selection_source": "mixed_rule_composition_writeback",
+            "marker": selected_marker,
+            "pocket_id": selected_pocket_id,
+            "gate_marker": gate_marker,
+            "visible_value_bypass_forbidden": visible_bypass_forbidden,
+            "parsed_rule_blocks": parsed_blocks,
+            "parsed_priority_order": priority_order or [],
+            "per_block_parse_success": parse_success,
+            "per_block_derived_candidate_pocket": derived_candidates,
+            "final_selected_pocket_id": selected_pocket_id,
+            "binding_marker": selected_marker,
+            "extracted_value": value,
+            "generated_answer": None,
+            "failure_reason": None,
+            "selected_marker_candidate_line_count": len(candidate_lines),
+        }
+    return _instnct_mixed_rule_composition_failure(
+        fallback,
+        "open_gate_missing",
+        visible_bypass_forbidden=visible_bypass_forbidden,
+        marker=selected_marker,
+        pocket_id=selected_pocket_id,
+        parsed_rule_blocks=parsed_blocks,
+        parsed_priority_order=priority_order or [],
+        per_block_parse_success=parse_success,
+        per_block_derived_candidate_pocket=derived_candidates,
+        final_selected_pocket_id=selected_pocket_id,
+    )
+
+
 def _instnct_trace(prompt: str, selected_value: str, manifest: dict[str, Any], seed: int) -> dict[str, Any]:
     ticks = int(manifest["ticks_per_generated_byte"])
     threshold = int(manifest["threshold_tick"])
@@ -955,7 +1259,7 @@ def instnct_raw_generate(clean: dict[str, Any], manifest: dict[str, Any], backen
     prefix = str(manifest.get("answer_prefix", "ANSWER=E"))
     generated_text = f"{prefix}{selected_value}"
     decoder = manifest.get("decoder") if isinstance(manifest.get("decoder"), dict) else {}
-    if decoder.get("type") == STRUCTURED_RULE_METADATA_BINDING_DECODER:
+    if decoder.get("type") in {STRUCTURED_RULE_METADATA_BINDING_DECODER, MIXED_STRUCTURED_RULE_COMPOSITION_BINDING_DECODER}:
         selection = {**selection, "generated_answer": generated_text}
     if len(generated_text) > max_new:
         generated_text = generated_text[:max_new]
@@ -1003,6 +1307,20 @@ def instnct_raw_generate(clean: dict[str, Any], manifest: dict[str, Any], backen
             "parsed_rule_fields",
             "parse_success",
             "derived_selected_pocket_id",
+            "binding_marker",
+            "extracted_value",
+            "generated_answer",
+            "failure_reason",
+            "selected_marker_candidate_line_count",
+        ]:
+            response[key] = selection.get(key)
+    if decoder.get("type") == MIXED_STRUCTURED_RULE_COMPOSITION_BINDING_DECODER:
+        for key in [
+            "parsed_rule_blocks",
+            "parsed_priority_order",
+            "per_block_parse_success",
+            "per_block_derived_candidate_pocket",
+            "final_selected_pocket_id",
             "binding_marker",
             "extracted_value",
             "generated_answer",
