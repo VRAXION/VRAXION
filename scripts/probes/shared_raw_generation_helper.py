@@ -27,6 +27,7 @@ HELPER_VERSION = "shared_raw_generation_helper_v1"
 HELPER_BACKEND = "repo_local_checkpoint_byte_lm"
 INSTNCT_MUTATION_BACKEND = "repo_local_instnct_mutation_graph"
 RULE_SELECTED_POCKET_BINDING_DECODER = "deterministic_pocket_gated_rule_selected_pocket_binding_decoder"
+STRUCTURED_RULE_METADATA_BINDING_DECODER = "deterministic_pocket_gated_structured_rule_metadata_binding_decoder"
 REPO_ROOT = Path(__file__).resolve().parents[2]
 BYTE_VOCAB_SIZE = 256
 ALLOWED_GENERATION_CONFIG_KEYS = {"temperature", "device", "stop_on_newline"}
@@ -85,6 +86,8 @@ DEFAULT_CHECKPOINT_CANDIDATES = [
 INSTNCT_VALUE_RE = re.compile(r"\b(?:EV|VAL|SYM)[A-Za-z0-9_+\-]*\b")
 INSTNCT_TRAIN_VALUE_RE = re.compile(r"\bTR[A-Za-z0-9_+\-]*\b")
 INSTNCT_WINNER_LABEL_RE = re.compile(r"\bwinner\s*=\s*(pocket_[abc])\b", re.IGNORECASE)
+INSTNCT_RULE_METADATA_LINE_RE = re.compile(r"^([a-z_]+)=([^=\s].*)$")
+INSTNCT_POCKET_IDS = {"pocket_a", "pocket_b", "pocket_c"}
 
 
 class RawGenerationError(Exception):
@@ -480,6 +483,8 @@ def _instnct_value_from_segment(segment: str) -> str | None:
 
 def _instnct_select_open_pocket_value(prompt: str, manifest: dict[str, Any]) -> tuple[str, dict[str, Any]]:
     decoder = manifest.get("decoder") if isinstance(manifest.get("decoder"), dict) else {}
+    if decoder.get("type") == STRUCTURED_RULE_METADATA_BINDING_DECODER:
+        return _instnct_select_structured_rule_metadata_value(prompt, manifest)
     if decoder.get("type") == RULE_SELECTED_POCKET_BINDING_DECODER:
         return _instnct_select_rule_selected_pocket_value(prompt, manifest)
     payload_markers = [str(item) for item in (manifest.get("pocket_payload_markers") or ["POCKET_VALUE=", "POCKET_BIND=", "POCKET_TABLE_ROW="])]
@@ -613,6 +618,301 @@ def _instnct_select_rule_selected_pocket_value(prompt: str, manifest: dict[str, 
     }
 
 
+def _instnct_structured_metadata_failure(
+    fallback: str,
+    reason: str,
+    *,
+    visible_bypass_forbidden: bool,
+    marker: str | None = None,
+    pocket_id: str | None = None,
+    gate_marker: str | None = None,
+    parsed_rule_type: str | None = None,
+    parsed_rule_fields: dict[str, str] | None = None,
+    parse_success: bool = False,
+    derived_selected_pocket_id: str | None = None,
+    selected_marker_candidate_line_count: int | None = None,
+) -> tuple[str, dict[str, Any]]:
+    return fallback, {
+        "selection_source": "closed_pocket_fallback",
+        "marker": marker,
+        "pocket_id": pocket_id,
+        "gate_marker": gate_marker,
+        "visible_value_bypass_forbidden": visible_bypass_forbidden,
+        "structured_rule_metadata_rejected": reason,
+        "parsed_rule_type": parsed_rule_type,
+        "parsed_rule_fields": parsed_rule_fields or {},
+        "parse_success": parse_success,
+        "derived_selected_pocket_id": derived_selected_pocket_id,
+        "binding_marker": marker,
+        "extracted_value": None,
+        "generated_answer": None,
+        "failure_reason": reason,
+        "selected_marker_candidate_line_count": selected_marker_candidate_line_count,
+    }
+
+
+def _instnct_parse_pocket_csv(value: str, *, allow_repeated_votes: bool = False) -> tuple[list[str] | None, str | None]:
+    parts = value.split(",")
+    if not parts or any(not item for item in parts):
+        return None, "missing_or_empty_pocket_list"
+    if any(item.strip() != item for item in parts):
+        return None, "noncanonical_pocket_list_whitespace"
+    if any(item not in INSTNCT_POCKET_IDS for item in parts):
+        return None, "invalid_pocket_id"
+    if not allow_repeated_votes and len(set(parts)) != len(parts):
+        return None, "duplicate_pocket_id"
+    return parts, None
+
+
+def _instnct_parse_pocket_order(value: str) -> tuple[list[str] | None, str | None]:
+    parts = value.split(">")
+    if not parts or any(not item for item in parts):
+        return None, "missing_or_empty_pocket_order"
+    if any(item.strip() != item for item in parts):
+        return None, "noncanonical_pocket_order_whitespace"
+    if any(item not in INSTNCT_POCKET_IDS for item in parts):
+        return None, "invalid_pocket_id"
+    if len(set(parts)) != len(parts):
+        return None, "duplicate_pocket_id"
+    return parts, None
+
+
+def _instnct_parse_optional_pocket(value: str) -> tuple[str | None, str | None]:
+    if value == "none":
+        return None, None
+    if value not in INSTNCT_POCKET_IDS:
+        return None, "invalid_pocket_id"
+    return value, None
+
+
+def _instnct_parse_rule_metadata(prompt: str) -> tuple[dict[str, str] | None, str | None]:
+    fields: dict[str, str] = {}
+    for raw_line in prompt.splitlines():
+        line = raw_line.strip()
+        if not line or "=" not in line:
+            continue
+        match = INSTNCT_RULE_METADATA_LINE_RE.match(line)
+        if not match:
+            return None, "malformed_metadata_line"
+        key, value = match.group(1), match.group(2)
+        if key in fields:
+            return None, "duplicate_key"
+        fields[key] = value
+    rule_type = fields.get("rule_type")
+    if not rule_type:
+        return None, "missing_rule_type"
+    allowed: dict[str, set[str]] = {
+        "quorum": {"rule_type", "votes", "tie_break_order"},
+        "recency": {"rule_type", "recency_order"},
+        "tie_break": {"rule_type", "tied", "tie_break_order"},
+        "hierarchy": {"rule_type", "hierarchy", "stale", "recency_winner", "quorum_winner", "tie_break_winner"},
+    }
+    required: dict[str, set[str]] = {
+        "quorum": {"rule_type", "votes"},
+        "recency": {"rule_type", "recency_order"},
+        "tie_break": {"rule_type", "tied", "tie_break_order"},
+        "hierarchy": {"rule_type", "hierarchy", "stale", "recency_winner", "quorum_winner", "tie_break_winner"},
+    }
+    if rule_type not in allowed:
+        return None, "unknown_rule_type"
+    unknown = sorted(set(fields) - allowed[rule_type])
+    if unknown:
+        return None, "unknown_key"
+    missing = sorted(required[rule_type] - set(fields))
+    if missing:
+        return None, "missing_required_key"
+    return fields, None
+
+
+def _instnct_derive_selected_pocket(fields: dict[str, str]) -> tuple[str | None, str | None]:
+    rule_type = fields["rule_type"]
+    if rule_type == "quorum":
+        votes, error = _instnct_parse_pocket_csv(fields["votes"], allow_repeated_votes=True)
+        if error or not votes:
+            return None, error or "missing_votes"
+        counts = {pocket: votes.count(pocket) for pocket in INSTNCT_POCKET_IDS}
+        top_count = max(counts.values())
+        tied = sorted([pocket for pocket, count in counts.items() if count == top_count])
+        if len(tied) == 1:
+            return tied[0], None
+        order_text = fields.get("tie_break_order")
+        if not order_text:
+            return None, "quorum_tie_without_tie_break_order"
+        order, order_error = _instnct_parse_pocket_order(order_text)
+        if order_error or not order:
+            return None, order_error or "invalid_tie_break_order"
+        for pocket in order:
+            if pocket in tied:
+                return pocket, None
+        return None, "no_tied_pocket_in_tie_break_order"
+    if rule_type == "recency":
+        order, error = _instnct_parse_pocket_order(fields["recency_order"])
+        if error or not order:
+            return None, error or "missing_recency_order"
+        return order[0], None
+    if rule_type == "tie_break":
+        tied, tied_error = _instnct_parse_pocket_csv(fields["tied"], allow_repeated_votes=False)
+        order, order_error = _instnct_parse_pocket_order(fields["tie_break_order"])
+        if tied_error or not tied:
+            return None, tied_error or "missing_tied_pockets"
+        if order_error or not order:
+            return None, order_error or "invalid_tie_break_order"
+        tied_set = set(tied)
+        for pocket in order:
+            if pocket in tied_set:
+                return pocket, None
+        return None, "no_tied_pocket_in_tie_break_order"
+    if rule_type == "hierarchy":
+        hierarchy = fields["hierarchy"].split(">")
+        allowed_steps = {"stale_rejection", "recency", "quorum", "tie_break"}
+        if not hierarchy or any(not item for item in hierarchy) or any(item.strip() != item for item in hierarchy):
+            return None, "malformed_hierarchy_order"
+        if set(hierarchy) - allowed_steps or len(set(hierarchy)) != len(hierarchy):
+            return None, "invalid_hierarchy_order"
+        stale, stale_error = _instnct_parse_optional_pocket(fields["stale"])
+        if stale_error:
+            return None, stale_error
+        sub_winners: dict[str, str | None] = {}
+        for step in ["recency", "quorum", "tie_break"]:
+            winner, error = _instnct_parse_optional_pocket(fields[f"{step}_winner"])
+            if error:
+                return None, error
+            sub_winners[step] = winner
+        for step in hierarchy:
+            if step == "stale_rejection":
+                continue
+            winner = sub_winners[step]
+            if winner and winner != stale:
+                return winner, None
+        return None, "no_non_stale_hierarchy_winner"
+    return None, "unsupported_rule_type"
+
+
+def _instnct_static_marker_for_pocket(manifest: dict[str, Any], selected_pocket_id: str) -> str | None:
+    marker_map_raw = manifest.get("rule_selected_pocket_marker_map") or manifest.get("static_pocket_marker_map") or {}
+    marker_map = {str(key).lower(): str(value) for key, value in marker_map_raw.items()}
+    return marker_map.get(selected_pocket_id)
+
+
+def _instnct_selected_marker_candidate_lines(prompt: str, selected_marker: str) -> list[tuple[str, str | None]]:
+    candidate_line_re = re.compile(r"^\s*" + re.escape(selected_marker) + r"\s*((?:EV|VAL|SYM)[A-Za-z0-9_+\-]*)?\s*$")
+    return [(line, match.group(1)) for line in prompt.splitlines() if (match := candidate_line_re.match(line))]
+
+
+def _instnct_select_structured_rule_metadata_value(prompt: str, manifest: dict[str, Any]) -> tuple[str, dict[str, Any]]:
+    fallback = str(manifest.get("closed_pocket_fallback_value") or manifest.get("fallback_value", "SYM_POCKET_CLOSED"))
+    visible_bypass_forbidden = bool(manifest.get("visible_value_bypass_forbidden", True))
+    fields, parse_error = _instnct_parse_rule_metadata(prompt)
+    parsed_rule_type = fields.get("rule_type") if fields else None
+    if parse_error or fields is None:
+        return _instnct_structured_metadata_failure(
+            fallback,
+            parse_error or "parse_failure",
+            visible_bypass_forbidden=visible_bypass_forbidden,
+            parsed_rule_type=parsed_rule_type,
+            parsed_rule_fields=fields or {},
+            parse_success=False,
+        )
+    selected_pocket_id, derive_error = _instnct_derive_selected_pocket(fields)
+    if derive_error or selected_pocket_id is None:
+        return _instnct_structured_metadata_failure(
+            fallback,
+            derive_error or "derive_failure",
+            visible_bypass_forbidden=visible_bypass_forbidden,
+            parsed_rule_type=parsed_rule_type,
+            parsed_rule_fields=fields,
+            parse_success=True,
+        )
+    selected_marker = _instnct_static_marker_for_pocket(manifest, selected_pocket_id)
+    if not selected_marker:
+        return _instnct_structured_metadata_failure(
+            fallback,
+            "missing_static_marker_map_entry",
+            visible_bypass_forbidden=visible_bypass_forbidden,
+            pocket_id=selected_pocket_id,
+            parsed_rule_type=parsed_rule_type,
+            parsed_rule_fields=fields,
+            parse_success=True,
+            derived_selected_pocket_id=selected_pocket_id,
+        )
+    for pocket in manifest.get("pockets", []):
+        gate_marker = str(pocket.get("gate_marker", ""))
+        gate_open = bool(gate_marker and gate_marker in prompt)
+        if not gate_open:
+            continue
+        candidate_lines = _instnct_selected_marker_candidate_lines(prompt, selected_marker)
+        if not candidate_lines:
+            return _instnct_structured_metadata_failure(
+                fallback,
+                "selected_marker_missing_from_prompt",
+                visible_bypass_forbidden=visible_bypass_forbidden,
+                marker=selected_marker,
+                pocket_id=selected_pocket_id,
+                gate_marker=gate_marker,
+                parsed_rule_type=parsed_rule_type,
+                parsed_rule_fields=fields,
+                parse_success=True,
+                derived_selected_pocket_id=selected_pocket_id,
+                selected_marker_candidate_line_count=0,
+            )
+        if len(candidate_lines) != 1:
+            return _instnct_structured_metadata_failure(
+                fallback,
+                "selected_marker_duplicate_conflict",
+                visible_bypass_forbidden=visible_bypass_forbidden,
+                marker=selected_marker,
+                pocket_id=selected_pocket_id,
+                gate_marker=gate_marker,
+                parsed_rule_type=parsed_rule_type,
+                parsed_rule_fields=fields,
+                parse_success=True,
+                derived_selected_pocket_id=selected_pocket_id,
+                selected_marker_candidate_line_count=len(candidate_lines),
+            )
+        value = candidate_lines[0][1]
+        if not value:
+            return _instnct_structured_metadata_failure(
+                fallback,
+                "selected_marker_value_missing",
+                visible_bypass_forbidden=visible_bypass_forbidden,
+                marker=selected_marker,
+                pocket_id=selected_pocket_id,
+                gate_marker=gate_marker,
+                parsed_rule_type=parsed_rule_type,
+                parsed_rule_fields=fields,
+                parse_success=True,
+                derived_selected_pocket_id=selected_pocket_id,
+                selected_marker_candidate_line_count=len(candidate_lines),
+            )
+        return value, {
+            "selection_source": "structured_rule_metadata_writeback",
+            "marker": selected_marker,
+            "pocket_id": selected_pocket_id,
+            "gate_marker": gate_marker,
+            "visible_value_bypass_forbidden": visible_bypass_forbidden,
+            "parsed_rule_type": parsed_rule_type,
+            "parsed_rule_fields": fields,
+            "parse_success": True,
+            "derived_selected_pocket_id": selected_pocket_id,
+            "binding_marker": selected_marker,
+            "extracted_value": value,
+            "generated_answer": None,
+            "failure_reason": None,
+            "selected_marker_candidate_line_count": len(candidate_lines),
+        }
+    return _instnct_structured_metadata_failure(
+        fallback,
+        "open_gate_missing",
+        visible_bypass_forbidden=visible_bypass_forbidden,
+        marker=selected_marker,
+        pocket_id=selected_pocket_id,
+        parsed_rule_type=parsed_rule_type,
+        parsed_rule_fields=fields,
+        parse_success=True,
+        derived_selected_pocket_id=selected_pocket_id,
+    )
+
+
 def _instnct_trace(prompt: str, selected_value: str, manifest: dict[str, Any], seed: int) -> dict[str, Any]:
     ticks = int(manifest["ticks_per_generated_byte"])
     threshold = int(manifest["threshold_tick"])
@@ -654,6 +954,9 @@ def instnct_raw_generate(clean: dict[str, Any], manifest: dict[str, Any], backen
     selected_value, selection = _instnct_select_value(prompt, manifest)
     prefix = str(manifest.get("answer_prefix", "ANSWER=E"))
     generated_text = f"{prefix}{selected_value}"
+    decoder = manifest.get("decoder") if isinstance(manifest.get("decoder"), dict) else {}
+    if decoder.get("type") == STRUCTURED_RULE_METADATA_BINDING_DECODER:
+        selection = {**selection, "generated_answer": generated_text}
     if len(generated_text) > max_new:
         generated_text = generated_text[:max_new]
         stop_reason = "max_new_tokens"
@@ -673,7 +976,7 @@ def instnct_raw_generate(clean: dict[str, Any], manifest: dict[str, Any], backen
             "helper_backend": HELPER_BACKEND,
         }
     )
-    return {
+    response = {
         "generated_text": generated_text,
         "token_count": len(raw),
         "stop_reason": stop_reason,
@@ -694,6 +997,20 @@ def instnct_raw_generate(clean: dict[str, Any], manifest: dict[str, Any], backen
         "value_selection_source": selection.get("selection_source"),
         "value_selection_requires_open_pocket": bool(manifest.get("value_selection_requires_open_pocket", False)),
     }
+    if decoder.get("type") == STRUCTURED_RULE_METADATA_BINDING_DECODER:
+        for key in [
+            "parsed_rule_type",
+            "parsed_rule_fields",
+            "parse_success",
+            "derived_selected_pocket_id",
+            "binding_marker",
+            "extracted_value",
+            "generated_answer",
+            "failure_reason",
+            "selected_marker_candidate_line_count",
+        ]:
+            response[key] = selection.get(key)
+    return response
 
 
 def discover_backend(candidates: list[str | Path] | None = None) -> dict[str, Any]:
