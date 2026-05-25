@@ -605,6 +605,7 @@ def run_seed_worker(config: dict[str, Any]) -> dict[str, Any]:
             **fail,
             **priority,
         }
+        metrics["schema_version"] = "phase_149h_seed_aggregate_metrics_v1"
         partial_decision = seed_decision(metrics, fail, priority)
         write_json(seed_out / "training_metrics_summary.json", train_metrics)
         write_json(seed_out / "partial_eval_report.json", eval_result | {"rows": f"{len(eval_result['rows'])} rows written to row_level_generation_report.jsonl"})
@@ -741,6 +742,7 @@ def aggregate_seed_outputs(out: Path, seed_results: list[dict[str, Any]]) -> dic
         **fail,
         **priority,
     }
+    metrics["schema_version"] = "phase_149h_aggregate_metrics_v1"
     write_json(out / "bounded_schema_generation_report.json", {"schema_version": "phase_149h_bounded_schema_generation_report_v1", **aggregate_eval, "passed": aggregate_eval["generated_output_schema_valid_rate"] >= 0.95})
     write_json(out / "hub_routing_diagnostic_report.json", hub)
     write_json(out / "failure_category_report.json", fail)
