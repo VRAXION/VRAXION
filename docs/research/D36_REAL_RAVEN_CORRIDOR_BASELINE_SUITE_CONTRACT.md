@@ -11,6 +11,10 @@ D36 implements a real (non-synthetic) baseline suite after D35.
 - Required methods: random_baseline and direct_mutation.
 - Optional methods are marked unavailable unless real implementation exists.
 
+Boundary note:
+- RULE_HIDDEN_ROUTING uses precomputed rule-hypothesis features without family label.
+- It is not raw visual Raven reasoning.
+
 Non-claims:
 - no solved claim
 - no architecture superiority claim

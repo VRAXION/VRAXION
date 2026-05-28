@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import argparse, json, os, random, statistics, time
+import argparse, json, os, random, statistics, time, zlib
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
 
@@ -68,11 +68,17 @@ def mutate(rng,w):
 
 def run_job(seed,arm,method,args,out):
     os.environ["OMP_NUM_THREADS"]="1";os.environ["MKL_NUM_THREADS"]="1";os.environ["OPENBLAS_NUM_THREADS"]="1"
+    stable_hash=zlib.crc32((arm+method).encode("utf-8"))%10000
+    rng=random.Random(seed*131+stable_hash)
     rng=random.Random(seed*131+hash(arm+method)%10000)
     tr,te,od=gen_rows(rng,args.train_rows_per_seed,False),gen_rows(rng,args.test_rows_per_seed,False),gen_rows(rng,args.ood_rows_per_seed,True)
     d=out/f"arm_{arm}"/f"method_{method}"/f"seed_{seed}";d.mkdir(parents=True,exist_ok=True)
     pd=(d/"progress.jsonl").open("w");tm=(d/"train_metrics.jsonl").open("w")
     if method=="random_baseline":
+        w=[];accm={"accepted":{"gauss":0,"flip":0,"scale":0},"rejected":{"gauss":0,"flip":0,"scale":0}}
+    else:
+        w=[rng.uniform(-1,1) for _ in range(16)];best=w[:];best_fit=-1;accm={"accepted":{"gauss":0,"flip":0,"scale":0},"rejected":{"gauss":0,"flip":0,"scale":0}}
+        for g in range(args.generations):
         w=[0.0]*16;accm={"accepted":{"gauss":0,"flip":0,"scale":0},"rejected":{"gauss":0,"flip":0,"scale":0}}
     else:
         w=[rng.uniform(-1,1) for _ in range(16)];best=w[:];best_fit=-1;accm={"accepted":{"gauss":0,"flip":0,"scale":0},"rejected":{"gauss":0,"flip":0,"scale":0}}
@@ -85,6 +91,16 @@ def run_job(seed,arm,method,args,out):
             else: accm["rejected"][top[2]]+=1
             tm.write(json.dumps({"gen":g,"fit":best_fit,"train_acc":top[3]})+"\n");pd.write(json.dumps({"gen":g})+"\n")
         w=best
+    if method=="random_baseline":
+        def eval_rand(rows):
+            outs=[]
+            for r in rows:
+                p=rng.randrange(9);m=0.0;outs.append((r,p,m))
+            acc=sum(int(r["expected_selected"]==p) for r,p,_ in outs)/len(outs)
+            return acc,outs
+        tr_acc,tr_o=eval_rand(tr);te_acc,te_o=eval_rand(te);od_acc,od_o=eval_rand(od)
+    else:
+        tr_acc,tr_o=eval_ds(w,tr,arm);te_acc,te_o=eval_ds(w,te,arm);od_acc,od_o=eval_ds(w,od,arm)
     tr_acc,tr_o=eval_ds(w,tr,arm);te_acc,te_o=eval_ds(w,te,arm);od_acc,od_o=eval_ds(w,od,arm)
     def famacc(o):return {f:sum(int(r["expected_selected"]==p) for r,p,_ in o if r["family"]==f)/max(1,sum(1 for r,_,_ in o if r["family"]==f)) for f in FAMILIES}
     cm=[[0]*9 for _ in range(9)]
@@ -161,6 +177,7 @@ def main():
     dec={"decision":decision,"next":nxt,"allowed_non_claims":{"raven_solved":False,"architecture_superiority":False,"natural_language_reasoning":False}}
     (out/"decision.json").write_text(json.dumps(dec,indent=2));(out/"summary.json").write_text(json.dumps({"decision":decision,"next":nxt},indent=2))
     (out/"machine_utilization_report.json").write_text(json.dumps({"os_cpu_count":os.cpu_count(),"worker_count":workers,"thread_env":{"OMP_NUM_THREADS":"1","MKL_NUM_THREADS":"1","OPENBLAS_NUM_THREADS":"1"},"wall_clock_sec":time.time()-t0,"completed_jobs":len(done),"failed_jobs":len(fails)},indent=2))
+    (out/"report.md").write_text("# D36 Real Raven Corridor Baseline Suite\n\nBoundary note: RULE_HIDDEN_ROUTING uses precomputed rule-hypothesis features without family label; it is not raw visual Raven reasoning.\n\nNon-claims: no solved claim, no architecture superiority claim, no natural-language reasoning claim.\n")
     (out/"report.md").write_text("# D36 Real Raven Corridor Baseline Suite\n\nNon-claims: no solved claim, no architecture superiority claim, no natural-language reasoning claim.\n")
 
 if __name__=="__main__": main()
