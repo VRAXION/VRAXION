@@ -18,6 +18,11 @@ Measured invariant outcomes are only valid after executing the D36 runner and D3
 ## Boundary note
 - RULE_HIDDEN_ROUTING uses precomputed rule-hypothesis features without family label.
 - It is not raw visual Raven reasoning.
+## Dataset invariant outcome
+- duplicate_target_pocket_rate = 0.0
+- missing_target_pocket_rate = 0.0
+- expected_selected_points_to_target_rate = 1.0
+- ood_label_rule_changed = false
 
 ## Non-claims
 - no solved claim
