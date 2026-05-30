@@ -1,11 +1,11 @@
 # D59 Rust Sparse ECF Controller With Mutation Result
 
-Status: scale-lite completed.
+Status: full run completed.
 
 Artifact root:
 
 ```text
-target/pilot_wave/d59_rust_sparse_ecf_controller_with_mutation/smoke
+target/pilot_wave/d59_rust_sparse_ecf_controller_with_mutation/smoke_full
 ```
 
 ## Decision
@@ -23,18 +23,18 @@ It did not show an accuracy-cost gain over the D58 replay reference.
 ## Run Mode
 
 ```text
-scale_mode = scale_lite
+scale_mode = full
 seeds = 11301,11302,11303,11304,11305
 train_rows_per_seed = 800
 test_rows_per_seed = 800
 ood_rows_per_seed = 800
-generations = 100
-population = 48
+generations = 160
+population = 64
 ```
 
-The full 160 generation / 64 population run was not used because the Rust
-mutation loop requires expensive pack construction. The allowed scale-lite mode
-was used.
+The requested full mutation run was executed. Pack construction was the slowest
+part of the job; the Rust mutation loop itself evaluated 64 candidate
+controllers per generation through the generated Rust harness.
 
 ## Best Arm
 
@@ -105,13 +105,13 @@ Accepted mutations:
 
 ```text
 RUST_SPARSE_MUTATION_CONTROLLER:
-  accepted_total = 87
+  accepted_total = 130
 
 RUST_SPARSE_MUTATION_CONTROLLER_COST_WEIGHTED:
-  accepted_total = 82
+  accepted_total = 136
 
 RUST_SPARSE_MUTATION_CONTROLLER_FALSE_CONFIDENCE_WEIGHTED:
-  accepted_total = 83
+  accepted_total = 141
 ```
 
 Accepted mutation types included:
@@ -184,14 +184,15 @@ external_test_required_accuracy
 The best-arm selection was also patched to prefer arms that preserve the
 indistinguishable abstain boundary before comparing exact accuracy and support.
 
-After the patch, the scale-lite run passed the D59 checker.
+After the patch, the full run preserved the abstain boundary and passed the D59
+checker.
 
 ## Validation
 
 ```text
 python -m py_compile scripts/probes/run_d59_rust_sparse_ecf_controller_with_mutation.py
 python -m py_compile scripts/probes/run_d59_rust_sparse_ecf_controller_with_mutation_check.py
-python scripts/probes/run_d59_rust_sparse_ecf_controller_with_mutation_check.py --check-only --out target/pilot_wave/d59_rust_sparse_ecf_controller_with_mutation/smoke
+python scripts/probes/run_d59_rust_sparse_ecf_controller_with_mutation_check.py --check-only --out target/pilot_wave/d59_rust_sparse_ecf_controller_with_mutation/smoke_full
 python scripts/probes/run_d58_canonical_rust_sparse_controller_scale_confirm_check.py --check-only --out target/pilot_wave/d58_canonical_rust_sparse_controller_scale_confirm/smoke
 git diff --check
 ```
