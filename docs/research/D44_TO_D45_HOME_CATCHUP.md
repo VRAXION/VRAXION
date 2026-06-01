@@ -33,4 +33,3 @@ Boundary:
 D45 is a controlled symbolic robust-support policy probe only.
 It does not prove raw visual Raven reasoning, Raven solved, DNA/genome success, AGI, consciousness, architecture superiority, or that intelligence is literally a force.
 ```
-

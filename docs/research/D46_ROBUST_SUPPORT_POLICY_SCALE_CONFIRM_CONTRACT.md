@@ -33,4 +33,3 @@ support cost reported
 ```
 
 Boundary: no raw visual Raven, Raven solved, DNA/genome success, AGI, consciousness, architecture superiority, or literal-force claim.
-

@@ -63,4 +63,3 @@ no broad claims
 ## Boundary
 
 D45 does not prove raw visual Raven reasoning, Raven solved, DNA/genome success, AGI, consciousness, architecture superiority, or that intelligence is literally a force.
-
