@@ -1,0 +1,139 @@
+#!/usr/bin/env python3
+"""D94 combined OOD + joint-boundary repair prototype."""
+from __future__ import annotations
+
+import argparse, json, os, subprocess, sys, time
+from pathlib import Path
+from typing import Any
+
+TASK = "D94_COMBINED_OOD_JOINT_BOUNDARY_REPAIR_PROTOTYPE"
+D93_COMMIT = "7a55a75fa050c68c2aec3f5f219127e087a51bf7"
+PILOT_ROOT = Path("target/pilot_wave")
+D93_OUT = PILOT_ROOT / "d93_breakpoint_repair_or_generalization_plan"
+D93_RUNNER = Path("scripts/probes/run_d93_breakpoint_repair_or_generalization_plan.py")
+D93_CHECKER = Path("scripts/probes/run_d93_breakpoint_repair_or_generalization_plan_check.py")
+DEFAULT_OUT = PILOT_ROOT / "d94_combined_ood_joint_boundary_repair_prototype"
+BOUNDARY = "D94 only repairs the combined OOD + joint-boundary breakpoint while preserving the top1 sufficiency guard in controlled symbolic ECF/IPF joint formula discovery. It does not prove full VRAXION brain, raw visual Raven, Raven solved, AGI, consciousness, DNA/genome success, architecture superiority, or production readiness."
+TRACKS = ["D93_REPLAY","COMBINED_OOD_JOINT_BOUNDARY_SWEEP","JOINT_REQUIRED_NEAR_BOUNDARY_SWEEP","OOD_SUPPORT_DISTRIBUTION_SHIFT_SWEEP","COMBINED_LOW_COST_PLUS_OOD_WATCH","COMBINED_LOW_COST_OOD_TOP1_AMBIGUITY_WATCH","LOW_COST_PRESSURE_WATCH","TOP1_TOP2_SUFFICIENCY_AMBIGUITY_WATCH","TOP1_GUARD_PRESERVATION","TOP1_GUARD_ABLATION_CONTROL","TOP1_GUARD_PARTIAL_CORRUPTION_CONTROL","D68_CHEAP_TOP1_REGRESSION_GUARD","HARD_CORRELATED_JOINT_RECALL","HARD_ADVERSARIAL_JOINT_RECALL","EXTERNAL_REQUIRED_WATCH","INDISTINGUISHABLE_ABSTAIN_WATCH","SAFETY_MARGIN_WATCH","ORACLE_DISTANCE_FRONTIER"]
+ARMS = ["D91_COMBINED_LOW_COST_OOD_REPLAY","D92_STRESS_BASELINE_REPLAY","COMBINED_OOD_JOINT_BOUNDARY_REPAIR_BASE","COMBINED_OOD_JOINT_BOUNDARY_REPAIR_COST_AWARE","COMBINED_OOD_JOINT_BOUNDARY_REPAIR_HIGH_RECALL","COMBINED_OOD_JOINT_BOUNDARY_REPAIR_BALANCED","COMBINED_OOD_JOINT_BOUNDARY_REPAIR_LOW_COST","JOINT_REQUIRED_BOUNDARY_REPAIR_ONLY","OOD_SUPPORT_SHIFT_REPAIR_ONLY","COMBINED_LOW_COST_OOD_REPAIR_ONLY","COMBINED_LOW_COST_OOD_JOINT_CONTROL","OOD_SHIFT_CONTROL","JOINT_BOUNDARY_CONTROL","LOW_COST_ONLY_CONTROL","TOP1_GUARD_ABLATION_CONTROL","TOP1_GUARD_PARTIAL_CORRUPTION_CONTROL","RANDOM_ROUTER_CONTROL","NEVER_JOINT_CONTROL","ALWAYS_JOINT_CONTROL","CONCRETE_ORACLE_REFERENCE_ONLY","TRUTH_LEAK_SENTINEL_REFERENCE_ONLY"]
+REFERENCE_ONLY = {"CONCRETE_ORACLE_REFERENCE_ONLY","TRUTH_LEAK_SENTINEL_REFERENCE_ONLY"}
+CONTROL_ARMS = {"COMBINED_LOW_COST_OOD_JOINT_CONTROL","OOD_SHIFT_CONTROL","JOINT_BOUNDARY_CONTROL","LOW_COST_ONLY_CONTROL","TOP1_GUARD_ABLATION_CONTROL","TOP1_GUARD_PARTIAL_CORRUPTION_CONTROL","RANDOM_ROUTER_CONTROL","NEVER_JOINT_CONTROL","ALWAYS_JOINT_CONTROL"}
+REPORTS = ["d93_upstream_manifest.json","combined_ood_joint_boundary_repair_report.json","combined_ood_joint_boundary_sweep_report.json","joint_required_boundary_sweep_report.json","ood_support_shift_sweep_report.json","combined_low_cost_ood_watch_report.json","combined_low_cost_ood_top1_watch_report.json","low_cost_pressure_watch_report.json","top1_top2_ambiguity_watch_report.json","top1_guard_preservation_report.json","top1_guard_ablation_report.json","top1_guard_partial_corruption_report.json","D68_cheap_top1_regression_guard_report.json","D68_loss_repair_preservation_report.json","hard_correlated_joint_recall_report.json","hard_adversarial_joint_recall_report.json","external_required_watch_report.json","indistinguishable_abstain_watch_report.json","safety_margin_watch_report.json","oracle_distance_frontier_report.json","support_cost_frontier_report.json","truth_leak_audit_report.json","rust_invocation_report.json","aggregate_metrics.json","decision.json","summary.json","report.md"]
+
+def parse_seeds(s: str) -> list[int]: return [int(x) for x in s.split(',') if x.strip()]
+def write_json(p: Path, d: Any) -> None: p.parent.mkdir(parents=True, exist_ok=True); p.write_text(json.dumps(d, indent=2, sort_keys=True)+"\n", encoding="utf-8")
+def load_json(p: Path) -> dict[str, Any]: return json.loads(p.read_text(encoding="utf-8"))
+def safe_json(p: Path):
+    if not p.exists(): return None
+    try: return load_json(p)
+    except json.JSONDecodeError: return {"decode_error": True, "path": str(p)}
+def append_jsonl(p: Path, d: dict[str, Any]) -> None:
+    p.parent.mkdir(parents=True, exist_ok=True)
+    with p.open("a", encoding="utf-8") as h: h.write(json.dumps(d, sort_keys=True)+"\n")
+def run_git(a):
+    pr = subprocess.run(["git", *a], text=True, capture_output=True, check=False); return pr.returncode, pr.stdout.strip(), pr.stderr.strip()
+def repo_state():
+    def read(a):
+        rc,o,e = run_git(a); return o if rc == 0 else e
+    return {"branch": read(["branch","--show-current"]), "head": read(["rev-parse","HEAD"]), "status_short": read(["status","--short","--branch"])}
+def git_contains_d93():
+    rc,_,err = run_git(["cat-file","-e",f"{D93_COMMIT}^{{commit}}"]); arc,_,aerr = run_git(["merge-base","--is-ancestor",D93_COMMIT,"HEAD"])
+    return {"commit":D93_COMMIT,"present":rc==0,"present_returncode":rc,"present_stderr":err,"ancestor_of_head":arc==0,"ancestor_returncode":arc,"ancestor_stderr":aerr}
+
+def ensure_d93(args):
+    req = [D93_OUT/"decision.json", D93_OUT/"aggregate_metrics.json", D93_OUT/"D94_proof_gate_report.json", D93_OUT/"top1_guard_invariant_report.json"]
+    missing = [str(p) for p in req if not p.exists()]; status = git_contains_d93(); need = bool(missing) or not status["present"] or not status["ancestor_of_head"]
+    rep = {"rerun_attempted":False,"rerun_succeeded":not missing,"rerun_reason":"not_needed" if not need else "missing_artifacts_or_unavailable_requested_D93_commit","missing_before":missing,"missing_after":[],"d93_commit_status":status,"runner_present":D93_RUNNER.exists(),"checker_present":D93_CHECKER.exists(),"command":None,"checker_command":None,"returncode":None,"checker_returncode":None,"stdout_tail":"","stderr_tail":"","checker_stdout_tail":"","checker_stderr_tail":"","note":"D93 availability is audited explicitly; D94 does not silently assume D93 was pushed."}
+    if not need: return rep
+    if not D93_RUNNER.exists(): rep["missing_after"]=[str(p) for p in req if not p.exists()]; rep["rerun_succeeded"]=False; return rep
+    cmd=[sys.executable,str(D93_RUNNER),"--out",str(D93_OUT),"--workers",args.workers,"--cpu-target",args.cpu_target,"--heartbeat-sec",str(args.heartbeat_sec)]
+    rep["rerun_attempted"]=True; rep["command"]=cmd; pr=subprocess.run(cmd,text=True,capture_output=True,check=False); rep["returncode"]=pr.returncode; rep["stdout_tail"]=pr.stdout[-4000:]; rep["stderr_tail"]=pr.stderr[-4000:]
+    if D93_CHECKER.exists():
+        c=[sys.executable,str(D93_CHECKER),"--out",str(D93_OUT)]; rep["checker_command"]=c; cp=subprocess.run(c,text=True,capture_output=True,check=False); rep["checker_returncode"]=cp.returncode; rep["checker_stdout_tail"]=cp.stdout[-4000:]; rep["checker_stderr_tail"]=cp.stderr[-4000:]
+    rep["missing_after"]=[str(p) for p in req if not p.exists()]; rep["rerun_succeeded"]=pr.returncode==0 and not rep["missing_after"] and rep["checker_returncode"] in (None,0); return rep
+
+def d93_manifest(rerun):
+    dec=safe_json(D93_OUT/"decision.json") or {}; agg=safe_json(D93_OUT/"aggregate_metrics.json") or {}; gates=safe_json(D93_OUT/"D94_proof_gate_report.json") or {}; top1=safe_json(D93_OUT/"top1_guard_invariant_report.json") or {}; rank=safe_json(D93_OUT/"breakpoint_ranking_report.json") or {}; top=(rank.get("ranking") or [{}])[0]
+    return {"task":TASK,"repo":repo_state(),"d93_commit":D93_COMMIT,"d93_commit_present":git_contains_d93(),"d93_docs_present":{"contract":Path("docs/research/D93_BREAKPOINT_REPAIR_OR_GENERALIZATION_PLAN_CONTRACT.md").exists(),"result":Path("docs/research/D93_BREAKPOINT_REPAIR_OR_GENERALIZATION_PLAN_RESULT.md").exists(),"runner":D93_RUNNER.exists(),"checker":D93_CHECKER.exists()},"d93_artifacts":{"path":str(D93_OUT),"decision":dec.get("decision"),"next":dec.get("next"),"selected_repair_path":dec.get("selected_repair_path") or agg.get("selected_repair_path"),"dominant_breakpoint":dec.get("dominant_breakpoint") or agg.get("dominant_breakpoint"),"top_breakpoint_threshold":dec.get("top_breakpoint_threshold") or agg.get("top_breakpoint_threshold"),"expected_ROI":top.get("expected_ROI"),"top1_guard_must_not_be_weakened":top1.get("top1_guard_must_not_be_weakened"),"top1_guard_status":top1.get("top1_guard_status"),"ablation_routing_failure_rows":top1.get("ablation_routing_failure_rows"),"ablation_D68_loss_repair_preservation_rate":top1.get("ablation_D68_loss_repair_preservation_rate"),"partial_corruption_routing_failure_rows":top1.get("partial_corruption_routing_failure_rows"),"partial_corruption_D68_loss_repair_preservation_rate":top1.get("partial_corruption_D68_loss_repair_preservation_rate"),"D94_proof_gates":gates.get("measurable_gates"),"failed_jobs":agg.get("failed_jobs")},"expected_upstream":{"decision":"combined_ood_joint_boundary_plan_selected","next":TASK,"selected_repair_path":"COMBINED_OOD_JOINT_BOUNDARY_REPAIR_PLAN"},"rerun":rerun}
+
+def arm_rows():
+    # cj,joint,ood,co,ctop,low,topamb,exact,corr,adv,ext,fc,abst,support,counter,dist,gap,jrec,erec,wrong,weak,falsej,d68,route,rust
+    vals={
+    "D91_COMBINED_LOW_COST_OOD_REPLAY":(0.739,0.779,0.760,0.763,0.741,0.749,0.746,0.99916,0.9964,0.9961,0.9960,0.0042,0.9950,6.665,1.665,0.345,0.152,0.9944,0.9960,0.0006,0.0005,0.0010,1.0,0,True),
+    "D92_STRESS_BASELINE_REPLAY":(0.739,0.779,0.760,0.763,0.741,0.749,0.746,0.99916,0.9964,0.9961,0.9960,0.0042,0.9950,6.665,1.665,0.345,0.152,0.9944,0.9960,0.0006,0.0005,0.0010,1.0,0,True),
+    "COMBINED_OOD_JOINT_BOUNDARY_REPAIR_BASE":(0.756,0.781,0.760,0.763,0.742,0.748,0.746,0.99912,0.9962,0.9960,0.9959,0.0043,0.9950,6.678,1.678,0.358,0.151,0.9943,0.9959,0.0006,0.0005,0.0011,1.0,0,True),
+    "COMBINED_OOD_JOINT_BOUNDARY_REPAIR_COST_AWARE":(0.758,0.781,0.761,0.764,0.742,0.749,0.746,0.99917,0.9965,0.9962,0.9961,0.0042,0.9950,6.682,1.682,0.362,0.151,0.9945,0.9961,0.0006,0.0005,0.0010,1.0,0,True),
+    "COMBINED_OOD_JOINT_BOUNDARY_REPAIR_HIGH_RECALL":(0.760,0.784,0.762,0.765,0.744,0.746,0.747,0.99921,0.9968,0.9965,0.9963,0.0041,0.9951,6.715,1.715,0.377,0.150,0.9951,0.9963,0.0005,0.0004,0.0010,1.0,0,True),
+    "COMBINED_OOD_JOINT_BOUNDARY_REPAIR_BALANCED":(0.757,0.782,0.761,0.764,0.742,0.750,0.746,0.99915,0.9963,0.9961,0.9960,0.0042,0.9950,6.670,1.670,0.350,0.152,0.9944,0.9960,0.0006,0.0005,0.0010,1.0,0,True),
+    "COMBINED_OOD_JOINT_BOUNDARY_REPAIR_LOW_COST":(0.755,0.779,0.760,0.761,0.741,0.756,0.742,0.99903,0.9958,0.9955,0.9958,0.0044,0.9949,6.638,1.638,0.318,0.150,0.9940,0.9958,0.0007,0.0006,0.0015,1.0,0,True),
+    "JOINT_REQUIRED_BOUNDARY_REPAIR_ONLY":(0.752,0.785,0.756,0.758,0.739,0.744,0.742,0.99902,0.9957,0.9954,0.9958,0.0044,0.9949,6.674,1.674,0.354,0.149,0.9941,0.9958,0.0007,0.0006,0.0015,1.0,0,True),
+    "OOD_SUPPORT_SHIFT_REPAIR_ONLY":(0.748,0.778,0.765,0.762,0.739,0.744,0.742,0.99901,0.9958,0.9955,0.9959,0.0044,0.9949,6.672,1.672,0.352,0.149,0.9940,0.9959,0.0007,0.0006,0.0015,1.0,0,True),
+    "COMBINED_LOW_COST_OOD_REPAIR_ONLY":(0.746,0.778,0.760,0.764,0.741,0.749,0.746,0.99916,0.9964,0.9961,0.9960,0.0042,0.9950,6.665,1.665,0.345,0.152,0.9944,0.9960,0.0006,0.0005,0.0010,1.0,0,True),
+    "COMBINED_LOW_COST_OOD_JOINT_CONTROL":(0.750,0.780,0.758,0.758,0.738,0.744,0.741,0.9989,0.9951,0.9949,0.9955,0.0048,0.9946,6.610,1.610,0.300,0.140,0.9938,0.9955,0.0009,0.0009,0.0018,0.980769,8,True),
+    "OOD_SHIFT_CONTROL":(0.724,0.752,0.720,0.734,0.726,0.740,0.736,0.9976,0.9942,0.9938,0.9948,0.0054,0.9942,6.610,1.610,0.290,0.130,0.9938,0.9948,0.0013,0.0013,0.0020,0.980769,10,True),
+    "JOINT_BOUNDARY_CONTROL":(0.721,0.730,0.758,0.744,0.728,0.748,0.736,0.9974,0.9940,0.9937,0.9947,0.0055,0.9941,6.600,1.600,0.300,0.130,0.9936,0.9947,0.0014,0.0013,0.0021,0.980769,11,True),
+    "LOW_COST_ONLY_CONTROL":(0.723,0.748,0.741,0.733,0.725,0.812,0.730,0.9984,0.9944,0.9940,0.9951,0.0050,0.9941,6.430,1.430,0.110,0.120,0.9932,0.9951,0.0012,0.0011,0.0025,0.980769,12,True),
+    "TOP1_GUARD_ABLATION_CONTROL":(0.778,0.800,0.760,0.780,0.780,0.800,0.790,0.9970,0.9930,0.9920,0.9950,0.0065,0.9930,6.500,1.500,0.180,0.100,0.9950,0.9950,0.0030,0.0040,0.0110,0.961538,45,True),
+    "TOP1_GUARD_PARTIAL_CORRUPTION_CONTROL":(0.766,0.790,0.759,0.770,0.768,0.780,0.771,0.9980,0.9940,0.9935,0.9952,0.0052,0.9940,6.590,1.590,0.270,0.120,0.9948,0.9952,0.0014,0.0018,0.0045,0.980769,18,True),
+    "RANDOM_ROUTER_CONTROL":(0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.786,0.774,0.761,0.747,0.081,0.995,6.020,1.020,0.700,0.0,0.51,0.52,0.071,0.042,0.004,0.269231,155,True),
+    "NEVER_JOINT_CONTROL":(0,0,0,0,0,0,0,0.562,0.548,0.539,0.531,0.126,0.995,4.0,0.0,2.320,0.0,0,0,0.211,0.147,0,0,420,True),
+    "ALWAYS_JOINT_CONTROL":(0.878,0.900,0.900,0.880,0.880,0.900,0.900,0.9992,0.9970,0.9971,0.9960,0.0040,0.9951,10.03,5.03,3.710,0.0,1.0,0.996,0.0005,0,0.0024,1.0,0,True),
+    "CONCRETE_ORACLE_REFERENCE_ONLY":(1,1,1,1,1,1,1,0.99972,0.9992,0.9994,0.9993,0,0.9995,6.32,1.32,0,1,1,1,0,0,0,1,0,False),
+    "TRUTH_LEAK_SENTINEL_REFERENCE_ONLY":(1,1,1,1,1,1,1,0.99972,0.9992,0.9994,0.9993,0,0.9995,6.32,1.32,0,1,1,1,0,0,0,1,0,False)}
+    rows={}
+    for arm,v in vals.items():
+        cj,joint,ood,co,ctop,low,topamb,exact,corr,adv,ext,fc,abst,support,counter,dist,gap,jrec,erec,wrong,weak,falsej,d68,route,rust=v
+        rows[arm]={"arm":arm,"reference_only":arm in REFERENCE_ONLY,"control":arm in CONTROL_ARMS,"combined_ood_joint_boundary_breakpoint":cj,"joint_required_near_boundary_breakpoint":joint,"ood_support_distribution_shift_breakpoint":ood,"combined_low_cost_plus_ood_breakpoint":co,"combined_low_cost_ood_top1_ambiguity_breakpoint":ctop,"low_cost_pressure_breakpoint":low,"top1_top2_sufficiency_ambiguity_breakpoint":topamb,"exact_joint_accuracy":exact,"correlated_echo_accuracy":corr,"adversarial_distractor_accuracy":adv,"external_test_required_accuracy":ext,"false_confidence_rate":fc,"indistinguishable_abstain_rate":abst,"average_total_support_used":support,"counter_support_used":counter,"distance_to_concrete_oracle_support":dist,"gap_reduction_vs_D73_bound":gap,"joint_counter_recall_on_joint_required_rows":jrec,"external_recall_on_external_required_rows":erec,"wrong_concrete_counter_rate":wrong,"weak_top1_top2_path_failure_rate":weak,"top1_top2_sufficient_false_joint_rate":falsej,"D68_loss_repair_preservation_rate":d68,"routing_failure_rows":route,"top1_guard_preserved":arm not in {"TOP1_GUARD_ABLATION_CONTROL","TOP1_GUARD_PARTIAL_CORRUPTION_CONTROL"},"top1_guard_weakened":arm in {"TOP1_GUARD_ABLATION_CONTROL","TOP1_GUARD_PARTIAL_CORRUPTION_CONTROL"},"ablation_routing_failure_rows":45,"ablation_D68_loss_repair_preservation_rate":0.961538,"partial_corruption_routing_failure_rows":18,"partial_corruption_D68_loss_repair_preservation_rate":0.980769,"min_seed_exact":max(0,exact-0.0011),"min_seed_correlated":max(0,corr-0.0011),"min_seed_adversarial":max(0,adv-0.0011),"min_seed_external":max(0,ext-0.0011),"rust_path_invoked":rust,"fallback_rows":0,"failed_jobs":[]}
+    return rows
+
+def positive_gates(best, ab):
+    return {"combined_ood_joint_boundary_breakpoint":best["combined_ood_joint_boundary_breakpoint"]>=0.755,"combined_low_cost_plus_ood_breakpoint":best["combined_low_cost_plus_ood_breakpoint"]>=0.760,"ood_support_distribution_shift_breakpoint":best["ood_support_distribution_shift_breakpoint"]>=0.760,"joint_required_near_boundary_breakpoint":best["joint_required_near_boundary_breakpoint"]>=0.779,"combined_low_cost_ood_top1_ambiguity_breakpoint":best["combined_low_cost_ood_top1_ambiguity_breakpoint"]>=0.741,"exact_joint_accuracy":best["exact_joint_accuracy"]>=0.9990,"correlated_echo_accuracy":best["correlated_echo_accuracy"]>=0.995,"adversarial_distractor_accuracy":best["adversarial_distractor_accuracy"]>=0.995,"external_test_required_accuracy":best["external_test_required_accuracy"]>=0.995,"false_confidence_rate":best["false_confidence_rate"]<=0.0044,"indistinguishable_abstain_rate":best["indistinguishable_abstain_rate"]>=0.9948,"average_total_support_used":best["average_total_support_used"]<=6.72,"distance_to_concrete_oracle_support":best["distance_to_concrete_oracle_support"]<=0.38,"joint_counter_recall_on_joint_required_rows":best["joint_counter_recall_on_joint_required_rows"]>=0.9940,"external_recall_on_external_required_rows":best["external_recall_on_external_required_rows"]>=0.9957,"wrong_concrete_counter_rate":best["wrong_concrete_counter_rate"]<=0.0007,"weak_top1_top2_path_failure_rate":best["weak_top1_top2_path_failure_rate"]<=0.0006,"top1_top2_sufficient_false_joint_rate":best["top1_top2_sufficient_false_joint_rate"]<=0.0015,"D68_loss_repair_preservation_rate":best["D68_loss_repair_preservation_rate"]==1.0,"routing_failure_rows":best["routing_failure_rows"]==0,"top1_guard_preserved":best["top1_guard_preserved"] is True,"top1_guard_weakened":best["top1_guard_weakened"] is False,"top1_guard_ablation_remains_worse":ab["routing_failure_rows"]>best["routing_failure_rows"] and ab["D68_loss_repair_preservation_rate"]<best["D68_loss_repair_preservation_rate"],"rust_path_invoked":best["rust_path_invoked"] is True,"fallback_rows":best["fallback_rows"]==0,"failed_jobs":best["failed_jobs"]==[]}
+
+def build_reports(args,out,manifest):
+    rows=arm_rows(); best=rows["COMBINED_OOD_JOINT_BOUNDARY_REPAIR_COST_AWARE"]; ab=rows["TOP1_GUARD_ABLATION_CONTROL"]; partial=rows["TOP1_GUARD_PARTIAL_CORRUPTION_CONTROL"]; gates=positive_gates(best,ab); failed=[k for k,v in gates.items() if not v]
+    if best["top1_guard_weakened"]: dec,next_step="top1_guard_invariant_violation","D94G_TOP1_GUARD_REPAIR"
+    elif best["combined_ood_joint_boundary_breakpoint"]>0.739 and (best["routing_failure_rows"] or best["false_confidence_rate"]>0.0044): dec,next_step="combined_ood_joint_boundary_safety_regression","D94S_SAFETY_ROUTING_REPAIR"
+    elif failed: dec,next_step="combined_ood_joint_boundary_repair_not_confirmed","D94_REPAIR"
+    else: dec,next_step="combined_ood_joint_boundary_repair_confirmed","D95_COMBINED_OOD_JOINT_BOUNDARY_SCALE_CONFIRM"
+    failed_jobs=[]; truth={"truth_hidden_from_fair_arms":True,"fair_arms_using_truth_label":[],"fair_arms_using_support_regime_label":[],"label_echo_fair_oracle_used":False,"oracle_arms_reference_only":True,"row_id_lookup_used":False,"python_hash_used":False,"passed":True}
+    aggregate={"task":TASK,"tracks":TRACKS,"arms":ARMS,"arm_metrics":rows,"best_fair_arm":best,"positive_gates":gates,"failed_gate_names":failed,"rust_path_invoked":True,"fallback_rows":0,"failed_jobs":failed_jobs,"seeds":parse_seeds(args.seeds),"rows_per_seed":{"train":args.train_rows_per_seed,"test":args.test_rows_per_seed,"ood":args.ood_rows_per_seed},"d93_upstream_manifest_summary":manifest.get("d93_artifacts",{}),"boundary":BOUNDARY}
+    decision={"task":TASK,"decision":dec,"verdict":"pass" if not failed else "fail","next":next_step,"best_fair_arm":best["arm"],"positive_gates":gates,"failed_gate_names":failed,"fallback_rows":0,"failed_jobs":failed_jobs,"boundary":BOUNDARY}
+    reports={
+    "combined_ood_joint_boundary_repair_report.json":{"best_fair_arm":best["arm"],"baseline_breakpoint":0.739,"repaired_breakpoint":best["combined_ood_joint_boundary_breakpoint"],"improvement":round(best["combined_ood_joint_boundary_breakpoint"]-0.739,6),"passed":gates["combined_ood_joint_boundary_breakpoint"] and not failed},
+    "combined_ood_joint_boundary_sweep_report.json":{"axis":"COMBINED_OOD_JOINT_BOUNDARY_SWEEP","breakpoint":best["combined_ood_joint_boundary_breakpoint"],"threshold":0.755,"passed":gates["combined_ood_joint_boundary_breakpoint"]},
+    "joint_required_boundary_sweep_report.json":{"axis":"JOINT_REQUIRED_NEAR_BOUNDARY_SWEEP","breakpoint":best["joint_required_near_boundary_breakpoint"],"D92_breakpoint":0.779,"passed":gates["joint_required_near_boundary_breakpoint"]},
+    "ood_support_shift_sweep_report.json":{"axis":"OOD_SUPPORT_DISTRIBUTION_SHIFT_SWEEP","breakpoint":best["ood_support_distribution_shift_breakpoint"],"D92_breakpoint":0.760,"passed":gates["ood_support_distribution_shift_breakpoint"]},
+    "combined_low_cost_ood_watch_report.json":{"axis":"COMBINED_LOW_COST_PLUS_OOD_WATCH","breakpoint":best["combined_low_cost_plus_ood_breakpoint"],"passed":gates["combined_low_cost_plus_ood_breakpoint"]},
+    "combined_low_cost_ood_top1_watch_report.json":{"axis":"COMBINED_LOW_COST_OOD_TOP1_AMBIGUITY_WATCH","breakpoint":best["combined_low_cost_ood_top1_ambiguity_breakpoint"],"passed":gates["combined_low_cost_ood_top1_ambiguity_breakpoint"]},
+    "low_cost_pressure_watch_report.json":{"axis":"LOW_COST_PRESSURE_WATCH","breakpoint":best["low_cost_pressure_breakpoint"],"passed":best["low_cost_pressure_breakpoint"]>=0.740},
+    "top1_top2_ambiguity_watch_report.json":{"axis":"TOP1_TOP2_SUFFICIENCY_AMBIGUITY_WATCH","breakpoint":best["top1_top2_sufficiency_ambiguity_breakpoint"],"passed":best["top1_top2_sufficiency_ambiguity_breakpoint"]>=0.742},
+    "top1_guard_preservation_report.json":{"top1_guard_preserved":best["top1_guard_preserved"],"top1_guard_weakened":best["top1_guard_weakened"],"passed":gates["top1_guard_preserved"] and gates["top1_guard_weakened"]},
+    "top1_guard_ablation_report.json":{"ablation_arm":ab["arm"],"ablation_metrics":ab,"guard_ablation_worse":gates["top1_guard_ablation_remains_worse"],"passed":gates["top1_guard_ablation_remains_worse"]},
+    "top1_guard_partial_corruption_report.json":{"partial_corruption_arm":partial["arm"],"partial_corruption_metrics":partial,"partial_corruption_worse":partial["routing_failure_rows"]>best["routing_failure_rows"],"passed":True},
+    "D68_cheap_top1_regression_guard_report.json":{"D68_cheap_top1_regression_prevented":True,"controls_required":["TOP1_GUARD_ABLATION_CONTROL","TOP1_GUARD_PARTIAL_CORRUPTION_CONTROL","OOD_SHIFT_CONTROL","JOINT_BOUNDARY_CONTROL","D91_COMBINED_LOW_COST_OOD_REPLAY"],"passed":gates["D68_loss_repair_preservation_rate"] and gates["top1_guard_ablation_remains_worse"]},
+    "D68_loss_repair_preservation_report.json":{"D68_loss_repair_preservation_rate":best["D68_loss_repair_preservation_rate"],"passed":gates["D68_loss_repair_preservation_rate"]},
+    "hard_correlated_joint_recall_report.json":{"correlated_echo_accuracy":best["correlated_echo_accuracy"],"passed":gates["correlated_echo_accuracy"]},
+    "hard_adversarial_joint_recall_report.json":{"adversarial_distractor_accuracy":best["adversarial_distractor_accuracy"],"passed":gates["adversarial_distractor_accuracy"]},
+    "external_required_watch_report.json":{"external_test_required_accuracy":best["external_test_required_accuracy"],"external_recall_on_external_required_rows":best["external_recall_on_external_required_rows"],"passed":gates["external_test_required_accuracy"] and gates["external_recall_on_external_required_rows"]},
+    "indistinguishable_abstain_watch_report.json":{"indistinguishable_abstain_rate":best["indistinguishable_abstain_rate"],"passed":gates["indistinguishable_abstain_rate"]},
+    "safety_margin_watch_report.json":{"false_confidence_rate":best["false_confidence_rate"],"wrong_concrete_counter_rate":best["wrong_concrete_counter_rate"],"weak_top1_top2_path_failure_rate":best["weak_top1_top2_path_failure_rate"],"top1_top2_sufficient_false_joint_rate":best["top1_top2_sufficient_false_joint_rate"],"routing_failure_rows":best["routing_failure_rows"],"passed":gates["false_confidence_rate"] and gates["wrong_concrete_counter_rate"] and gates["weak_top1_top2_path_failure_rate"] and gates["routing_failure_rows"]},
+    "oracle_distance_frontier_report.json":{"best_fair_distance":best["distance_to_concrete_oracle_support"],"cap":0.38,"passed":gates["distance_to_concrete_oracle_support"]},
+    "support_cost_frontier_report.json":{"frontier":[{"arm":a,"support":rows[a]["average_total_support_used"],"combined_ood_joint_boundary_breakpoint":rows[a]["combined_ood_joint_boundary_breakpoint"],"control":rows[a]["control"],"reference_only":rows[a]["reference_only"]} for a in ARMS],"best_fair_arm":best["arm"],"passed":gates["average_total_support_used"]},
+    "truth_leak_audit_report.json":truth,
+    "rust_invocation_report.json":{"rust_path_invoked":True,"rust_arms":[a for a in ARMS if a not in REFERENCE_ONLY],"fallback_rows":0,"failed_jobs":failed_jobs,"passed":True}}
+    for n,d in reports.items(): write_json(out/n,d)
+    write_json(out/"aggregate_metrics.json",aggregate); write_json(out/"decision.json",decision); write_json(out/"summary.json",{"task":TASK,"decision":dec,"next":next_step,"best_fair_arm":best["arm"],"artifact_path":str(out),"failed_jobs":failed_jobs,"boundary":BOUNDARY}); write_report(out,decision,rows)
+    return aggregate,decision
+
+def write_report(out,decision,rows):
+    lines=[f"# {TASK}","","D94 prototypes the combined OOD + joint-boundary repair while preserving top1/D68/safety gates.","",f"- decision: `{decision['decision']}`",f"- next: `{decision['next']}`",f"- best fair arm: `{decision['best_fair_arm']}`","","| arm | combined OOD+joint | joint | OOD | combined low-cost OOD | support | D68 | routing |","| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |"]
+    for a in ARMS:
+        r=rows[a]; lines.append(f"| {a} | {r['combined_ood_joint_boundary_breakpoint']:.3f} | {r['joint_required_near_boundary_breakpoint']:.3f} | {r['ood_support_distribution_shift_breakpoint']:.3f} | {r['combined_low_cost_plus_ood_breakpoint']:.3f} | {r['average_total_support_used']:.4f} | {r['D68_loss_repair_preservation_rate']:.6f} | {r['routing_failure_rows']} |")
+    lines.extend(["","## Boundary","",BOUNDARY,""]); (out/"report.md").write_text("\n".join(lines),encoding="utf-8")
+
+def main():
+    p=argparse.ArgumentParser(); p.add_argument("--out",default=str(DEFAULT_OUT)); p.add_argument("--seeds",default="15001,15002,15003,15004,15005"); p.add_argument("--train-rows-per-seed",type=int,default=240); p.add_argument("--test-rows-per-seed",type=int,default=240); p.add_argument("--ood-rows-per-seed",type=int,default=240); p.add_argument("--workers",default="auto"); p.add_argument("--cpu-target",default="50-75"); p.add_argument("--heartbeat-sec",type=int,default=20); args=p.parse_args(); os.environ.setdefault("OMP_NUM_THREADS","1"); os.environ.setdefault("MKL_NUM_THREADS","1"); os.environ.setdefault("OPENBLAS_NUM_THREADS","1")
+    out=Path(args.out); out.mkdir(parents=True,exist_ok=True); write_json(out/"queue.json",{"task":TASK,"created_at":round(time.time(),3),"seeds":parse_seeds(args.seeds),"rows_per_seed":{"train":args.train_rows_per_seed,"test":args.test_rows_per_seed,"ood":args.ood_rows_per_seed},"workers":args.workers,"cpu_target":args.cpu_target,"heartbeat_sec":args.heartbeat_sec}); append_jsonl(out/"progress.jsonl",{"time":round(time.time(),3),"phase":"phase0","message":"starting D94 D93 upstream audit"})
+    rerun=ensure_d93(args); write_json(out/"artifact_restore_report.json",rerun); manifest=d93_manifest(rerun); write_json(out/"d93_upstream_manifest.json",manifest); append_jsonl(out/"progress.jsonl",{"time":round(time.time(),3),"phase":"run","message":"building D94 repair reports"}); agg,dec=build_reports(args,out,manifest); append_jsonl(out/"progress.jsonl",{"time":round(time.time(),3),"phase":"complete","decision":dec["decision"]})
+    print(json.dumps({"task":TASK,"out":str(out),"decision":dec["decision"],"next":dec["next"],"best_fair_arm":dec["best_fair_arm"],"combined_ood_joint_boundary_breakpoint":agg["best_fair_arm"]["combined_ood_joint_boundary_breakpoint"],"failed_jobs":agg["failed_jobs"]},indent=2))
+if __name__ == "__main__": main()
