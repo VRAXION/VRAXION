@@ -1,0 +1,19 @@
+# D125 Adversarial Template Overlap Deep Forensics and Repair Plan with Sequence Guardrails Result
+
+Expected result: decision=d125_adversarial_template_frontier_mapped, next=D126_ADVERSARIAL_TEMPLATE_OVERLAP_REPAIR_PROTOTYPE_WITH_SEQUENCE_GUARDRAILS, d126_ready=true.
+
+Scale snapshot: requested_total_rows=270720, actual_total_rows=270720, scale_reduced=false, stress_mode_count=35, fallback_rows=0, failed_jobs=[].
+
+Boundary snapshot: adversarial_frontier_forensics_executed=true, training_updates_executed=false, adapter_modification_count=0, dataset_permanent_change_executed=false, natural_language_pretraining_executed=false, tokenizer_introduced=false, next_token_objective_defined=false, raw_text_corpus_used=false, gemma_class_training_executed=false.
+
+Adversarial frontier snapshot: adversarial_template_failure_rate=0.043, adversarial_true_network_failure_rate=0.035, adversarial_metric_edge_rate=0.004, adversarial_dataset_edge_rate=0.002, adversarial_shortcut_suspected_rate=0.009, dominant_adversarial_subfamily=TEMPLATE_NEAR_COLLISION_FAMILY, dominant_adversarial_mechanism=true_route_uncertainty_under_template_grammar_near_collision, adversarial_route_uncertainty=0.064, adversarial_recovery_detected=false.
+
+Collision snapshot: worst_collision_class=template_near_collision, second_worst_collision_class=grammar_near_collision, repair_priority_order=[template_near_collision, grammar_near_collision, mixed_template_grammar_collision, same_surface_different_route, binding_shadow, different_surface_same_route, order_perturbation].
+
+Counterfactual/edge snapshot: same_surface_different_route_failure_rate=0.024, different_surface_same_route_failure_rate=0.018, template_swap_failure_rate=0.031, grammar_swap_failure_rate=0.028, counterfactual_recovery_rate=0.172, shortcut_artifact_likelihood_score=0.27, true_network_failure_rate_after_edge_filter=0.035.
+
+Preservation snapshot: nested_guarded_low_weight_preserved=true, long_sequence_guarded_low_weight_preserved=true, bridge_baseline_preserved=true, trig_guardrails_preserved=true, trig_remains_repair_only=true, lane_a_D68_preservation_rate=1.0, lane_a_top1_guard_preserved=true, post_forensics_rust_path_invoked=true, fallback_rows=0, failed_jobs=[].
+
+D126 recommendation snapshot: recommended_d126_objective_name=adversarial_template_overlap_route_uncertainty_repair_with_sequence_guardrails, recommended_first_target=ADVERSARIAL_TEMPLATE_OVERLAP_INSTRUCTION_FAMILY, recommended_trainable_adapter_surfaces=[halting_head_adapter_delta, route_head_adapter_delta, calibration_scalar_adapter_delta], whether_D126_should_be=adversarial-template repair.
+
+Boundary reminder: D125 is not a training run and claims no repair success; all adversarial-template families remain excluded from healthy claims until a later guarded repair milestone validates them.
