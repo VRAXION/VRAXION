@@ -285,6 +285,9 @@ def check_artifacts(out: Path, replay: Path | None) -> list[str]:
         failures.append("CONTROLS_SOLVE_TASK")
     if controls.get("non_oracle_controls_below_0_90_heldout", 0) < 7:
         failures.append("TOO_FEW_CONTROLS_BELOW_THRESHOLD")
+    untrained = controls.get("control_metrics", {}).get("untrained_state_medium_control", {})
+    if untrained.get("heldout_accuracy", 1.0) >= 0.90:
+        failures.append("UNTRAINED_STATE_MEDIUM_CONTROL_SOLVES_TASK")
     oracle = controls.get("control_metrics", {}).get("oracle_reference_only", {})
     if oracle.get("reference_only") is not True or oracle.get("used_as_candidate") is not False:
         failures.append("ORACLE_NOT_REFERENCE_ONLY")
@@ -301,6 +304,8 @@ def check_artifacts(out: Path, replay: Path | None) -> list[str]:
         failures.append("FLAT_SCORE_DIRECTION_SANITY_FAILED")
     if leakage_audit.get("leakage_audit_passed") is not True:
         failures.append("LEAKAGE_AUDIT_FAILED")
+    if leakage_audit.get("argmin_route_index_tie_break_prevented") is not True:
+        failures.append("ARGMIN_TIE_BREAK_NOT_PREVENTED")
     for system in ("state_medium", "gated_state_medium"):
         row = leakage_audit.get("systems", {}).get(system, {})
         if row.get("candidate_order_shuffle_passed") is not True:

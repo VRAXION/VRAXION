@@ -54,6 +54,29 @@ FEATURES = (
 )
 FEATURE_INDEX = {name: index for index, name in enumerate(FEATURES)}
 ROUTE_INDEX = {name: index for index, name in enumerate(ROUTES)}
+TIE_BREAK_VECTOR = np.asarray(
+    [
+        0.031,
+        0.047,
+        0.059,
+        0.071,
+        0.083,
+        0.097,
+        0.109,
+        0.127,
+        0.139,
+        0.149,
+        0.163,
+        0.181,
+        0.193,
+        0.211,
+        0.227,
+        0.241,
+        0.263,
+        0.277,
+    ],
+    dtype=np.float64,
+)
 SYSTEMS = ("flat", "state_medium", "gated_state_medium")
 HASH_ARTIFACTS = (
     "e1_candidate_flat_final.json",
@@ -564,7 +587,14 @@ def candidate_hash(candidate: dict[str, Any]) -> str:
 def flat_scores(candidate: dict[str, Any], split_data: dict[str, Any]) -> tuple[np.ndarray, dict[str, Any]]:
     weights = np.asarray([candidate["weights"][feature] for feature in FEATURES], dtype=np.float64)
     scores = split_data["array"] @ weights + candidate["bias"]
+    scores = add_feature_tie_breaker(scores, split_data)
     return scores, {"convergence_by_route": np.zeros_like(scores), "stability_by_route": np.ones_like(scores)}
+
+
+def add_feature_tie_breaker(scores: np.ndarray, split_data: dict[str, Any]) -> np.ndarray:
+    # Exact score ties must not silently pick route index 0.
+    tie_break = split_data["array"] @ TIE_BREAK_VECTOR
+    return scores + (1e-9 * tie_break)
 
 
 def as_array(candidate: dict[str, Any], key: str) -> np.ndarray:
@@ -622,7 +652,7 @@ def state_scores(candidate: dict[str, Any], split_data: dict[str, Any]) -> tuple
             + float(gates["convergence_score"]) * rollout["convergence"].reshape(rows * routes)
             + float(gates["stability_proxy"]) * rollout["stability"].reshape(rows * routes)
         )
-    scores = raw.reshape(rows, routes)
+    scores = add_feature_tie_breaker(raw.reshape(rows, routes), split_data)
     diagnostics = {
         "convergence_by_route": rollout["convergence"],
         "stability_by_route": rollout["stability"],
@@ -1074,6 +1104,8 @@ def state_medium_leakage_audit(searches: dict[str, Any], task: dict[str, Any]) -
         "route_names_used_for_scoring": False,
         "candidate_order_used_as_feature": False,
         "hidden_correct_route_index_used_for_scoring": False,
+        "argmin_route_index_tie_break_prevented": True,
+        "tie_breaker_source": "tiny deterministic route-feature signature, applied only to break exact numeric ties",
         "score_functions_consume": ["split_data.array", "candidate numeric parameters"],
         "score_functions_do_not_consume": ["row.correct_route", "row.routes keys", "route names as labels"],
         "systems": systems,

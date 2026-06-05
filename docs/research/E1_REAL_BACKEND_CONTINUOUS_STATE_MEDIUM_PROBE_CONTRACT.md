@@ -106,6 +106,10 @@ stability_proxy
 
 The gated readout must use only route features and internal state signals. It must not use oracle labels or route-family lookup.
 
+## Tie Handling
+
+Exact numeric score ties must not default to route index order. The implementation must use a tiny deterministic route-feature signature as a tie-breaker so an untrained all-zero readout cannot solve the task by selecting the first candidate route.
+
 ## Controls
 
 The oracle control can reach 1.0 but must be reference-only. At least seven non-oracle controls must stay below 0.90 heldout accuracy, otherwise the task is too easy or leaky.
