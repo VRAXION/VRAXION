@@ -1,0 +1,30 @@
+{
+  "milestone": "E23_TRACE_LOCKED_ONLINE_RULESHIFT_COMPOSITION_VS_NEURAL_BASELINES",
+  "required_files": [
+    "README.md",
+    "artifact_sample_manifest.json",
+    "aggregate_metrics_sample.json",
+    "system_metrics_sample.json",
+    "row_level_sample.jsonl",
+    "trace_locked_sample.jsonl",
+    "training_curve_sample.jsonl",
+    "deterministic_replay_sample_report.json",
+    "sample_only_checker_result.json",
+    "leakage_sample_audit.json",
+    "boundary_claims_sample_report.json",
+    "sample_schema.json"
+  ],
+  "run_id": "b5a314535f258d33",
+  "sample_file_hashes": {
+    "README.md": "9423dbdaeb18a89480f34a148a828fd30737f7be4f5cf8bea822aa140c5bca8a",
+    "aggregate_metrics_sample.json": "9b8ca8e17ac799e04e22e43960446de5a15f4de1a8deccafe30b974da4f4ec8b",
+    "boundary_claims_sample_report.json": "c99623210b63865cc34415804be2a1c63ecf82b21ef96b66579c465882eb70c7",
+    "deterministic_replay_sample_report.json": "fdc0faf89f2db4c1fec45926d2a527c8ea782fa853169f46809ebe578d6e2072",
+    "leakage_sample_audit.json": "3f20006a98c2cd92b570443c79cf75899b77e031f612e871d13d44aac5642c4e",
+    "row_level_sample.jsonl": "01770e3bf55a80fad937f3c3398d744b65bcc387ffb69d207a69e676bce8e911",
+    "sample_schema.json": "fa5ccf1d923e4409804b16f04603e58a12b99750509453d14c9bada76a01aab7",
+    "system_metrics_sample.json": "329dba8ad9c471ad6937c135cfd5ed33cadb09b5341cc9d6733174658eaad832",
+    "trace_locked_sample.jsonl": "ac13b4dc794fff78f8717f7486d08b10228578d9ad608a5c2cbd377fee47b7a2",
+    "training_curve_sample.jsonl": "b22c49936a574642f938a38560f13134744e848412802a84e053f7ca04310930"
+  }
+}
