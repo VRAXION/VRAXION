@@ -1,0 +1,12 @@
+{
+  "required_row_fields": [
+    "episode_id",
+    "phase",
+    "system",
+    "target_label",
+    "predicted_label",
+    "canonical_answer_correct",
+    "latency_ms"
+  ],
+  "semantic_lane_labels_used": false
+}

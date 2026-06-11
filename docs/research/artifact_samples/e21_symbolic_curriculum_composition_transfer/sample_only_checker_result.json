@@ -1,0 +1,27 @@
+{
+  "checker_failure_count": 0,
+  "counts": {
+    "committed_sample_episode_count": 536,
+    "curriculum_stage_represented_count": 12,
+    "curriculum_stage_sample_count": 96,
+    "heldout_transfer_sample_count": 120,
+    "locked_hard_posttest_sample_count": 160,
+    "locked_hard_pretest_sample_count": 160,
+    "undefined_ambiguous_sample_count": 73
+  },
+  "decision": "e21_sample_only_replay_passed",
+  "failures": [],
+  "passed": true,
+  "run_id": "324664fdef2e86ea",
+  "sample_metrics": {
+    "deterministic_replay_match_rate": 1.0,
+    "heldout_composition_transfer_accuracy": 0.9416666666666667,
+    "locked_hard_posttest_accuracy": 0.91875,
+    "locked_hard_pretest_accuracy": 0.43125,
+    "renderer_faithfulness": 1.0,
+    "sample_episode_count": 536,
+    "trace_validity": 0.7817164179104478,
+    "undefined_ambiguous_sample_count": 73
+  },
+  "sample_only_checker_passed": true
+}

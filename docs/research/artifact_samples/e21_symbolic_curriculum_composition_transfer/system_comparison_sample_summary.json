@@ -1,0 +1,50 @@
+{
+  "CURRICULUM_NO_FREEZE_POLICY": {
+    "heldout_transfer_accuracy": 0.7426666666666667,
+    "locked_hard_posttest_accuracy": 0.7541666666666667
+  },
+  "CURRICULUM_WITH_REUSABLE_POCKETS_POLICY": {
+    "heldout_transfer_accuracy": 0.8533333333333334,
+    "locked_hard_posttest_accuracy": 0.8566666666666667
+  },
+  "CURRICULUM_WITH_REUSABLE_POCKETS_PRUNED_PRIMARY": {
+    "heldout_transfer_accuracy": 0.9103333333333333,
+    "locked_hard_posttest_accuracy": 0.9041666666666667
+  },
+  "DIRECT_REGEX_TEMPLATE_BASELINE": {
+    "heldout_transfer_accuracy": 0.3923333333333333,
+    "locked_hard_posttest_accuracy": 0.36583333333333334
+  },
+  "HAND_AUTHORED_SOLVER_CONTROL": {
+    "heldout_transfer_accuracy": 1.0,
+    "locked_hard_posttest_accuracy": 1.0
+  },
+  "MONOLITHIC_EQUAL_BUDGET_MUTATION_POLICY": {
+    "heldout_transfer_accuracy": 0.678,
+    "locked_hard_posttest_accuracy": 0.6891666666666667
+  },
+  "ORACLE_CALCULATOR_CONTROL": {
+    "heldout_transfer_accuracy": 1.0,
+    "locked_hard_posttest_accuracy": 1.0
+  },
+  "ORACLE_PARSE_TREE_CONTROL": {
+    "heldout_transfer_accuracy": 1.0,
+    "locked_hard_posttest_accuracy": 1.0
+  },
+  "PYTHON_EVAL_CONTROL": {
+    "heldout_transfer_accuracy": 1.0,
+    "locked_hard_posttest_accuracy": 1.0
+  },
+  "RANDOM_POLICY": {
+    "heldout_transfer_accuracy": 0.058333333333333334,
+    "locked_hard_posttest_accuracy": 0.058333333333333334
+  },
+  "STATIC_PATTERN_BASELINE": {
+    "heldout_transfer_accuracy": 0.24466666666666667,
+    "locked_hard_posttest_accuracy": 0.25666666666666665
+  },
+  "SYMPY_CONTROL": {
+    "heldout_transfer_accuracy": 1.0,
+    "locked_hard_posttest_accuracy": 1.0
+  }
+}
