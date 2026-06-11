@@ -1,0 +1,32 @@
+{
+  "required_files": [
+    "README.md",
+    "artifact_sample_manifest.json",
+    "aggregate_metrics_sample.json",
+    "target_artifact_sha256_manifest.json",
+    "sample_schema.json",
+    "heldout_episode_sample.jsonl",
+    "stress_episode_sample.jsonl",
+    "trace_sample.jsonl",
+    "replay_sample.jsonl",
+    "codebook_split_sample.json",
+    "oracle_leakage_sample_audit.json",
+    "codebook_leakage_sample_audit.json",
+    "baseline_ablation_sample_summary.json",
+    "collapse_sample_audit.json",
+    "deterministic_replay_sample_report.json",
+    "sample_metric_recompute_report.json",
+    "boundary_claims_sample_report.json"
+  ],
+  "run_id": "3ff826c406e0eba2",
+  "sample_counts": {
+    "cross_modal_necessary": 140,
+    "false_alignment": 88,
+    "heldout": 200,
+    "missing_corrupt": 202,
+    "stress": 260,
+    "total": 460
+  },
+  "seed": 20002,
+  "target_summary_sha256": "92037fe5580924dea56867d80aeaef4326a38cfcc78fc73b2072550c8eac9b61"
+}

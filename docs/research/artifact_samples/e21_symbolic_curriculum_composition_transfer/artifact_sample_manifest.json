@@ -1,0 +1,42 @@
+{
+  "milestone": "E21_SYMBOLIC_CURRICULUM_COMPOSITION_TRANSFER_CONFIRM",
+  "required_files": [
+    "README.md",
+    "artifact_sample_manifest.json",
+    "aggregate_metrics_sample.json",
+    "sample_schema.json",
+    "locked_hard_pretest_sample.jsonl",
+    "locked_hard_posttest_sample.jsonl",
+    "curriculum_stage_sample.jsonl",
+    "heldout_transfer_sample.jsonl",
+    "trace_sample.jsonl",
+    "replay_sample.jsonl",
+    "ablation_sample_summary.json",
+    "system_comparison_sample_summary.json",
+    "leakage_sample_audit.json",
+    "sample_metric_recompute_report.json",
+    "deterministic_replay_sample_report.json",
+    "sample_only_checker_result.json",
+    "boundary_claims_sample_report.json"
+  ],
+  "run_id": "324664fdef2e86ea",
+  "sample_episode_count": 536,
+  "sample_file_hashes": {
+    "README.md": "e0b90522f26b2f32d7a85fdf3706417aa5613e95c72d2c97e25beb21dfc07b62",
+    "ablation_sample_summary.json": "c4cac40b6a49cca0a68d16d5349ac27f93078f843a03d3670e67b38923e881e9",
+    "aggregate_metrics_sample.json": "edf136ac313ced841a38f389f61cc939f3fdd5633866518c11f308f6eb8c5952",
+    "boundary_claims_sample_report.json": "841842749e02afa1df84c59bd822cadbea10ff09b1858961f155b0bda3dc641d",
+    "curriculum_stage_sample.jsonl": "57cf4bd09009c84279f2e8b621e922994bc06e69e598bdfc447c6280fe7d4181",
+    "deterministic_replay_sample_report.json": "1b136447f02b75b9daf17591037e62a4e8154fc3a8361f52042a0848cdfdcfbf",
+    "heldout_transfer_sample.jsonl": "79559a6e9fe0549e6fe4c8adfbc2b72857c1f2182c9ab584a89d1649b68b75f8",
+    "leakage_sample_audit.json": "8a1f0a812b2a2f0ec73035f35507d44fde7f4ee77afede968f17d3fe928d0a07",
+    "locked_hard_posttest_sample.jsonl": "3966fd7ecbb8c6dbe9797f165090aed0285d371139f0d3230b79da25a9a01097",
+    "locked_hard_pretest_sample.jsonl": "020b41288ab8e0ab84a7ec41fe88f8b8b5264d3e3c0fa016c08c014311405660",
+    "replay_sample.jsonl": "6f5a79e46fd30c99087ee0fbc1784a5dc3701f27d80a117585167e5526f1b385",
+    "sample_metric_recompute_report.json": "43ef78cfb981cb9c15c3e9817fe14cf76a37d921ed501515402ba726dc283ce4",
+    "sample_only_checker_result.json": "dca216d412d0776e148cb2deeade8fc0cd8efc8f2b45396d93ca116ac9e91ac9",
+    "sample_schema.json": "f0a737836ab76aec4d8cb10e670a6c8e5f985f5e67e653f7415179a428a679a8",
+    "system_comparison_sample_summary.json": "817ec07f9fbd0726f3bc99316e83f2976536440cda30b872a81701743888c64e",
+    "trace_sample.jsonl": "c3872f07ab5b98cc6203fc79091583223cb255b7b79e6d295e77943deae9a3c7"
+  }
+}
