@@ -1,0 +1,21 @@
+{
+  "checker_failure_count": 0,
+  "decision": "e25_sample_only_replay_passed",
+  "failures": [],
+  "passed": true,
+  "run_id": "7c234ec062aa3a53",
+  "sample_curve_count": 66,
+  "sample_metrics": {
+    "best_valid_heldout_composition_success": 1.0,
+    "best_valid_system": "flow_pocket_naturalized_text_discovery_primary",
+    "deterministic_replay_match_rate": 1.0,
+    "run_id": "7c234ec062aa3a53",
+    "sample_curve_count": 66,
+    "sample_row_count": 1440,
+    "sample_trace_count": 300,
+    "system_count": 16
+  },
+  "sample_only_checker_passed": true,
+  "sample_row_count": 1440,
+  "sample_trace_count": 300
+}

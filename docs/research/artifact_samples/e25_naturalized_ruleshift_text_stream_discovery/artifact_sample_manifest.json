@@ -1,0 +1,30 @@
+{
+  "milestone": "E25_NATURALIZED_RULESHIFT_TEXT_STREAM_DISCOVERY_CONFIRM",
+  "required_files": [
+    "README.md",
+    "artifact_sample_manifest.json",
+    "aggregate_metrics_sample.json",
+    "system_metrics_sample.json",
+    "row_level_sample.jsonl",
+    "trace_discovery_sample.jsonl",
+    "training_curve_sample.jsonl",
+    "deterministic_replay_sample_report.json",
+    "sample_only_checker_result.json",
+    "leakage_sample_audit.json",
+    "boundary_claims_sample_report.json",
+    "sample_schema.json"
+  ],
+  "run_id": "7c234ec062aa3a53",
+  "sample_file_hashes": {
+    "README.md": "45cc219de245bbdc224bffac91e0c19a7593d039dd8f7f28235946ddb7dedc56",
+    "aggregate_metrics_sample.json": "edb258730bbeda613c7d1433fa4464570de5960f589bbe7d981ba725f1fbf9d3",
+    "boundary_claims_sample_report.json": "b458e41b0d249c79b627f88fd9ba1eb16ea48d8fb44e5fa766c71ecec828c8f8",
+    "deterministic_replay_sample_report.json": "fdc0faf89f2db4c1fec45926d2a527c8ea782fa853169f46809ebe578d6e2072",
+    "leakage_sample_audit.json": "d0d33a932128ef2a6104884c8a5f4351bf2f86f1a2c3079464bc66c5436e6e79",
+    "row_level_sample.jsonl": "847b6203e0ea638ef27ad20748d6c5ad5e42c6d5c45c35b932879f9eeecc9bc6",
+    "sample_schema.json": "4501f910f7c886a9b6cfe2e50b47d4008011a5b223e7cca81dfd71f69cb158eb",
+    "system_metrics_sample.json": "d7a074b9c08a5d0e884a4076f1ac79bf030584b4437481d931b5f2c1d3575b90",
+    "trace_discovery_sample.jsonl": "76edb9e6b1931606a61f739e9af95273b8c9c16d96d36d702e1e514c6619a292",
+    "training_curve_sample.jsonl": "1ef811b3a90ea216ba6c016ffd9147b650b22b9637f09f2d5455bc6095b14aa2"
+  }
+}
