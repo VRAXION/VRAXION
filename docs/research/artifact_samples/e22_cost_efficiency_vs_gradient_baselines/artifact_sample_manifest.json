@@ -1,0 +1,28 @@
+{
+  "milestone": "E22_COST_EFFICIENCY_VS_GRADIENT_BASELINES_CONFIRM",
+  "required_files": [
+    "README.md",
+    "artifact_sample_manifest.json",
+    "aggregate_metrics_sample.json",
+    "system_metrics_sample.json",
+    "cost_curve_sample.jsonl",
+    "row_level_sample.jsonl",
+    "deterministic_replay_sample_report.json",
+    "sample_only_checker_result.json",
+    "leakage_sample_audit.json",
+    "boundary_claims_sample_report.json",
+    "sample_schema.json"
+  ],
+  "run_id": "5843fbc44d2896d4",
+  "sample_file_hashes": {
+    "README.md": "ecfbaae09a8b68767c3a057f1c3e5742bb8201d90fe4ba4ec423ab8e338e3c81",
+    "aggregate_metrics_sample.json": "3a4b9a97ae857033a38ea9624e8b25e89ec63650af3c1e21aa880daf6eff7c45",
+    "boundary_claims_sample_report.json": "80a6ff6a11fad1af90e03ac841b3de8f2ad6aac17e1a1db2eae59756ce546af3",
+    "cost_curve_sample.jsonl": "3e914a89f45af5f41edb855ed1b2ce31cfbc1c51731f83316597170c240065cb",
+    "deterministic_replay_sample_report.json": "fdc0faf89f2db4c1fec45926d2a527c8ea782fa853169f46809ebe578d6e2072",
+    "leakage_sample_audit.json": "88adc50206798777a17e71ad3f6bebebf5dbf4306e8154a2ece2973d0122136d",
+    "row_level_sample.jsonl": "ebf23e726d51a55087ee766e73083b7a47b80c913bf44c58a204d1e667a40280",
+    "sample_schema.json": "d763f3cf6fd0029dbbabc299497e9eaaa338894d7db9a452da45f721a5b1b593",
+    "system_metrics_sample.json": "2bda4fa468707590e5a04d43e54eaebdc4865b77dc478b319043b057844d2f82"
+  }
+}

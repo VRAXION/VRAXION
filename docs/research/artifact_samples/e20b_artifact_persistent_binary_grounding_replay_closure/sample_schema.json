@@ -1,0 +1,7 @@
+{
+  "episode_id": "str",
+  "primary_input_summary": "no oracle labels/maps/boundaries",
+  "raw_stream_sha256": "str",
+  "run_id": "str",
+  "trace": "route/alignment/binding steps required"
+}

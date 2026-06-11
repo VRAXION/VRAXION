@@ -1,0 +1,10 @@
+{
+  "deterministic_replay_match_rate": 1.0,
+  "heldout_composition_transfer_accuracy": 0.9416666666666667,
+  "locked_hard_posttest_accuracy": 0.91875,
+  "locked_hard_pretest_accuracy": 0.43125,
+  "renderer_faithfulness": 1.0,
+  "sample_episode_count": 536,
+  "trace_validity": 0.7817164179104478,
+  "undefined_ambiguous_sample_count": 73
+}

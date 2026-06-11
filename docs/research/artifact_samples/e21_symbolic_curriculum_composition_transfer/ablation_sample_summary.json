@@ -1,0 +1,50 @@
+{
+  "NO_ABSTAIN_UNDEFINED_POLICY_ABLATION": {
+    "delta_vs_primary": 0.4116666666666667,
+    "locked_hard_posttest_accuracy": 0.4925
+  },
+  "NO_CANONICAL_RENDERER_ABLATION": {
+    "delta_vs_primary": 0.4241666666666667,
+    "locked_hard_posttest_accuracy": 0.48
+  },
+  "NO_CARRY_BORROW_ABLATION": {
+    "delta_vs_primary": 0.3933333333333333,
+    "locked_hard_posttest_accuracy": 0.5108333333333334
+  },
+  "NO_COMPOSITION_CONTROLLER_ABLATION": {
+    "delta_vs_primary": 0.42,
+    "locked_hard_posttest_accuracy": 0.4841666666666667
+  },
+  "NO_DIGIT_BOUNDARY_ABLATION": {
+    "delta_vs_primary": 0.4225,
+    "locked_hard_posttest_accuracy": 0.4816666666666667
+  },
+  "NO_EQUATION_ISOLATE_ABLATION": {
+    "delta_vs_primary": 0.4316666666666667,
+    "locked_hard_posttest_accuracy": 0.4725
+  },
+  "NO_FRACTION_REDUCTION_ABLATION": {
+    "delta_vs_primary": 0.425,
+    "locked_hard_posttest_accuracy": 0.4791666666666667
+  },
+  "NO_MEMORY_ABLATION": {
+    "delta_vs_primary": 0.42333333333333334,
+    "locked_hard_posttest_accuracy": 0.48083333333333333
+  },
+  "NO_PRECEDENCE_POLICY_ABLATION": {
+    "delta_vs_primary": 0.4116666666666667,
+    "locked_hard_posttest_accuracy": 0.4925
+  },
+  "NO_REUSABLE_POCKET_TRANSFER_ABLATION": {
+    "delta_vs_primary": 0.32666666666666666,
+    "locked_hard_posttest_accuracy": 0.5775
+  },
+  "NO_ROOT_RADICAL_POLICY_ABLATION": {
+    "delta_vs_primary": 0.41833333333333333,
+    "locked_hard_posttest_accuracy": 0.48583333333333334
+  },
+  "NO_SIGN_POLICY_ABLATION": {
+    "delta_vs_primary": 0.42333333333333334,
+    "locked_hard_posttest_accuracy": 0.48083333333333333
+  }
+}

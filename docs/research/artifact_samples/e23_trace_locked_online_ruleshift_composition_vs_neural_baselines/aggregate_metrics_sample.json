@@ -1,0 +1,10 @@
+{
+  "best_valid_heldout_composition_success": 1.0,
+  "best_valid_system": "flow_pocket_online_state_primary",
+  "deterministic_replay_match_rate": 1.0,
+  "run_id": "b5a314535f258d33",
+  "sample_curve_count": 52,
+  "sample_row_count": 900,
+  "sample_trace_count": 300,
+  "system_count": 10
+}
