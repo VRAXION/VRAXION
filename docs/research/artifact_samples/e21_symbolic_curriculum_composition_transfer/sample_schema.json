@@ -1,0 +1,17 @@
+{
+  "forbidden_primary_input_fields": [
+    "oracle_parse_tree",
+    "oracle_answer",
+    "direct_solver_trace"
+  ],
+  "required_row_fields": [
+    "episode_id",
+    "run_id",
+    "phase",
+    "family",
+    "primary_input",
+    "output",
+    "trace_valid",
+    "renderer_faithful"
+  ]
+}
