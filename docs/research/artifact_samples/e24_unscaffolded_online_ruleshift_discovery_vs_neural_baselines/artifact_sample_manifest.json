@@ -1,0 +1,30 @@
+{
+  "milestone": "E24_UNSCAFFOLDED_ONLINE_RULESHIFT_DISCOVERY_VS_NEURAL_BASELINES",
+  "required_files": [
+    "README.md",
+    "artifact_sample_manifest.json",
+    "aggregate_metrics_sample.json",
+    "system_metrics_sample.json",
+    "row_level_sample.jsonl",
+    "trace_discovery_sample.jsonl",
+    "training_curve_sample.jsonl",
+    "deterministic_replay_sample_report.json",
+    "sample_only_checker_result.json",
+    "leakage_sample_audit.json",
+    "boundary_claims_sample_report.json",
+    "sample_schema.json"
+  ],
+  "run_id": "6f7dc35ddc5b3ae9",
+  "sample_file_hashes": {
+    "README.md": "f4601a01a4a89450fdfc0be7b0bd304c2d18797c9df24fcad3596b67b9168790",
+    "aggregate_metrics_sample.json": "ecdb0ed73d0d4a8fbd77dc52883ea91c3f66bbc7e068f9cc8f5f614b2af19695",
+    "boundary_claims_sample_report.json": "6e9c6b5b6aaa34f2418c3834d8a2741dad9664cb1de965b01d4005cf2304eea7",
+    "deterministic_replay_sample_report.json": "fdc0faf89f2db4c1fec45926d2a527c8ea782fa853169f46809ebe578d6e2072",
+    "leakage_sample_audit.json": "d0d33a932128ef2a6104884c8a5f4351bf2f86f1a2c3079464bc66c5436e6e79",
+    "row_level_sample.jsonl": "0c9cfadab1f5d7a8d1d0ba070fe200a35478f55bab2047e3d045c5e9b73fbba1",
+    "sample_schema.json": "4501f910f7c886a9b6cfe2e50b47d4008011a5b223e7cca81dfd71f69cb158eb",
+    "system_metrics_sample.json": "50191f7604625c300a9c73106ca962e1e2e6ade92d46179e514e03456669db8a",
+    "trace_discovery_sample.jsonl": "a5a52466024da43ced75bf679785747a10e94bd1cb5d8221e361efef86500b57",
+    "training_curve_sample.jsonl": "88d9e8cfd96b3fcbc59406b72f733290aba0a29c1ccb9faa9b7193dda6a286b6"
+  }
+}

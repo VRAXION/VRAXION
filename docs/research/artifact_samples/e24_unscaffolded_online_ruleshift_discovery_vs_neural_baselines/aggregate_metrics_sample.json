@@ -1,0 +1,10 @@
+{
+  "best_valid_heldout_composition_success": 1.0,
+  "best_valid_system": "flow_pocket_unsccaffolded_discovery_primary",
+  "deterministic_replay_match_rate": 1.0,
+  "run_id": "6f7dc35ddc5b3ae9",
+  "sample_curve_count": 50,
+  "sample_row_count": 900,
+  "sample_trace_count": 300,
+  "system_count": 10
+}
