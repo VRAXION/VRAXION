@@ -1,0 +1,19 @@
+{
+  "explicit_shift_assignment_visible": false,
+  "information_seeking_repair": true,
+  "required_row_fields": [
+    "episode_id",
+    "system",
+    "split",
+    "scenario",
+    "gold_action",
+    "predicted_action",
+    "correct_action",
+    "answer_correct",
+    "trace_exact",
+    "composition_success",
+    "resolution_success",
+    "output_hash"
+  ],
+  "trace_locked": true
+}

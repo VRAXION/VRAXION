@@ -1,0 +1,30 @@
+{
+  "milestone": "E27_UNRESOLVED_FLOW_STATE_INFORMATION_SEEKING_REPAIR_CONFIRM",
+  "required_files": [
+    "README.md",
+    "artifact_sample_manifest.json",
+    "aggregate_metrics_sample.json",
+    "system_metrics_sample.json",
+    "row_level_sample.jsonl",
+    "trace_discovery_sample.jsonl",
+    "training_curve_sample.jsonl",
+    "deterministic_replay_sample_report.json",
+    "sample_only_checker_result.json",
+    "leakage_sample_audit.json",
+    "boundary_claims_sample_report.json",
+    "sample_schema.json"
+  ],
+  "run_id": "cf19745ca99d8b73",
+  "sample_file_hashes": {
+    "README.md": "ee48ef96f8f7ea7e4577aad397942a034890b6fcdc8782891a4e30da48260298",
+    "aggregate_metrics_sample.json": "23bb5f20509c15065c9d4d4312e80ab66215ff0a2a4873bd2b3bad1b89f33377",
+    "boundary_claims_sample_report.json": "c305b660e782d26645a383437a9918a116fd32fab27f627b76ef19b418bb3a0d",
+    "deterministic_replay_sample_report.json": "fdc0faf89f2db4c1fec45926d2a527c8ea782fa853169f46809ebe578d6e2072",
+    "leakage_sample_audit.json": "11057c7245d090d411a63248b62ce6d576d8cf4e3e452970b4d3933391fe2493",
+    "row_level_sample.jsonl": "e8e973bd59c01303adfba3963ab20ca77c1c43685560dfc15a158f07f750bd02",
+    "sample_schema.json": "a36a66e0629a290fa99719fea185bfc99dba40a37c8c6452d853fd269d13ecc4",
+    "system_metrics_sample.json": "6e8bb9898af12b2d016bae576160b961a118517682ff8beae2967d6ce4d38280",
+    "trace_discovery_sample.jsonl": "3900c69d4ead8657d48b98757dc5058c3b74f19ca62e8832c512a0989135efb4",
+    "training_curve_sample.jsonl": "c0705ea2e5e064a3f910d2c9f4ebb3d0210d03dfdb0b1e2bf4c462be9d53e567"
+  }
+}
