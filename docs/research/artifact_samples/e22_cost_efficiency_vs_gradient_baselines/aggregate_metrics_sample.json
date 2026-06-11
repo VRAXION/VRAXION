@@ -1,0 +1,8 @@
+{
+  "best_valid_heldout_accuracy": 1.0,
+  "best_valid_system": "mlp_gradient_baseline",
+  "deterministic_replay_match_rate": 1.0,
+  "run_id": "5843fbc44d2896d4",
+  "sample_row_count": 720,
+  "system_count": 9
+}

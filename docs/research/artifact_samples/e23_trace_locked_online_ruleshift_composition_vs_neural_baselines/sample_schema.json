@@ -1,0 +1,12 @@
+{
+  "required_row_fields": [
+    "episode_id",
+    "system",
+    "split",
+    "answer_correct",
+    "trace_exact",
+    "composition_success",
+    "output_hash"
+  ],
+  "trace_locked": true
+}
