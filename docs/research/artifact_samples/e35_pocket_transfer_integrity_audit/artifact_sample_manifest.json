@@ -1,0 +1,28 @@
+{
+  "milestone": "E35_POCKET_TRANSFER_INTEGRITY_AUDIT",
+  "required_files": [
+    "README.md",
+    "artifact_sample_manifest.json",
+    "aggregate_metrics_sample.json",
+    "system_metrics_sample.json",
+    "row_level_sample.jsonl",
+    "mutation_history_sample.jsonl",
+    "pocket_manifest_sample.json",
+    "transfer_tests_sample.json",
+    "deterministic_replay_sample_report.json",
+    "sample_only_checker_result.json",
+    "sample_schema.json"
+  ],
+  "run_id": "7e20c0ac43386df1",
+  "sample_file_hashes": {
+    "README.md": "9ac4250c3ea7dafc8a7c61a5ce136dff18514f96c8dac16d2fe7756b470da003",
+    "aggregate_metrics_sample.json": "85f81c676201bb8023d77dca412e1f060d9509aea85d187e6f3326b503242406",
+    "deterministic_replay_sample_report.json": "42fb6b69d2b0a8195f8dc57c2b785aa049991f027d2bb867b27007956abc9a3a",
+    "mutation_history_sample.jsonl": "1037c355eb8e8201632366be30021723a9cef04862f443e77ac7e61ea38769fa",
+    "pocket_manifest_sample.json": "836c6afa692f23b9c320ed29099e9d728fe274c7e59a4bad7a3610926accfda6",
+    "row_level_sample.jsonl": "4d44ed600b4c690d7ebf0216c79552f4049c2bfbe1fff9030d82bb50c1f2ad72",
+    "sample_schema.json": "de7a874cf7c58c58da4672d83bd6baabcb4e192ae7524e33336e22bdc2a7cf02",
+    "system_metrics_sample.json": "55fd362f6459eb6e03b990a15e4c4fc22578fb80bc2d462fd3315d5dfd0dd81c",
+    "transfer_tests_sample.json": "8760faf0786db23ac2de7d5bbf8c9eb59dda7081b0bc207575aa2b211771afa1"
+  }
+}

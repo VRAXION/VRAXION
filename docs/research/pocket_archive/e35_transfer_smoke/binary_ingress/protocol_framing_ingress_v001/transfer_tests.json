@@ -1,0 +1,12 @@
+{
+  "expected_transfer": [
+    "same-codebook zero-shot",
+    "shifted-codebook with adapter"
+  ],
+  "known_non_transfer": [
+    "new raw feature codebook without adapter",
+    "bit insertion/deletion repair"
+  ],
+  "source_success": 0.7976190476190477,
+  "source_wrong_feature_write_rate": 0.0
+}

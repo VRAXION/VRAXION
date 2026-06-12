@@ -1,0 +1,29 @@
+{
+  "archive_report": {
+    "archive_root": "docs\\research\\pocket_archive\\e35_transfer_smoke",
+    "files": [
+      "frozen_params.json",
+      "lineage.json",
+      "pocket_contract.md",
+      "pocket_manifest.json",
+      "safety_report.json",
+      "source_metrics.json",
+      "transfer_tests.json"
+    ],
+    "frozen_params_sha256": "c55e1f9a499afdf2cd49bf2231b307efbc07a9bf3034c17bb41f30808b874090",
+    "pocket_dir": "docs\\research\\pocket_archive\\e35_transfer_smoke\\binary_ingress\\protocol_framing_ingress_v001",
+    "pocket_manifest_sha256": "eac7b56fdb99fc9f6b76daa0351e0c8b60b6d448c67df2054e65e8aa4201a721"
+  },
+  "gradient_descent_used": false,
+  "milestone": "E35_POCKET_TRANSFER_INTEGRITY_AUDIT",
+  "pocket_transfer": true,
+  "systems": [
+    "scratch_no_pocket",
+    "frozen_import_pocket",
+    "imported_plus_small_adapter",
+    "full_retrain_from_import",
+    "wrong_pocket_negative_control",
+    "protocol_ablation_no_import",
+    "oracle_invalid_control"
+  ]
+}

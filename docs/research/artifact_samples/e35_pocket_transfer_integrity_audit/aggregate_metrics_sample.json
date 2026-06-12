@@ -1,0 +1,29 @@
+{
+  "decision": "e35_transfer_partial",
+  "decision_context": {
+    "ablation_target_world_success": 0.9677777777777777,
+    "adapter_bitslip_target_success": 0.3527777777777778,
+    "adapter_stable_target_false_frame_commit_rate": 0.0,
+    "adapter_stable_target_success": 1.0,
+    "adapter_stable_target_wrong_feature_write_rate": 0.0,
+    "adapter_target_false_frame_commit_rate": 0.0066115520282186944,
+    "adapter_target_world_success": 0.7411111111111112,
+    "adapter_target_wrong_feature_write_rate": 0.0,
+    "frozen_same_world_success": 1.0,
+    "frozen_target_world_success": 0.0,
+    "full_retrain_target_world_success": 0.7411111111111112,
+    "localized_ablation_drop": -0.22666666666666657,
+    "repair_accepted": 0,
+    "repair_rejected": 288,
+    "scratch_target_world_success": 0.9677777777777777,
+    "source_policy_accepted": 9,
+    "target_adapter_accepted": 4,
+    "target_adapter_rejected": 32,
+    "target_false_frame_gain_vs_ablation": 0.0196847442680776,
+    "target_safety_gain_vs_ablation": 0.010648148148148146,
+    "wrong_pocket_target_world_success": 0.0,
+    "wrong_pocket_wrong_feature_rate": 0.09938447971781304
+  },
+  "deterministic_replay_match_rate": 1.0,
+  "run_id": "7e20c0ac43386df1"
+}

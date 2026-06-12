@@ -1,0 +1,16 @@
+{
+  "not_learned": [
+    "world-specific codebook",
+    "bit-slip tolerant reassembly"
+  ],
+  "source": "E34D-derived binary active-evidence world",
+  "source_parameter_diff": {
+    "accepted_mutations": 9,
+    "changed": true,
+    "final_hash": "e92ba3ab1975757e784ed3731aad5e9f22f1fb0cf6ce8987669756213b26dcb0",
+    "initial_hash": "2d26b3863f17219dffdf5fa0b6030c87183a7cc7b217ff6c1f054e56d88ea915",
+    "rejected_mutations": 855,
+    "rollback_count": 855
+  },
+  "trained_by": "mutation/rollback source policy path"
+}
