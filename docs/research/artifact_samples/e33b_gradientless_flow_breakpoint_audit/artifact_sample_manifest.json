@@ -1,0 +1,24 @@
+{
+  "milestone": "E33B_GRADIENTLESS_FLOW_BREAKPOINT_AUDIT",
+  "required_files": [
+    "README.md",
+    "artifact_sample_manifest.json",
+    "aggregate_metrics_sample.json",
+    "system_metrics_sample.json",
+    "breakpoint_ladder_sample.json",
+    "row_level_sample.jsonl",
+    "deterministic_replay_sample_report.json",
+    "sample_only_checker_result.json",
+    "sample_schema.json"
+  ],
+  "run_id": "11f4105e28d622d1",
+  "sample_file_hashes": {
+    "README.md": "9e5ed4a2bdc5662281ab0db3686dbfdb41c8969e1c2ea05820c00f46c1e79ac7",
+    "aggregate_metrics_sample.json": "d1b433af54dbbf131602a1c267be50a044c3ee88d90fbab2894627b2e025dcff",
+    "breakpoint_ladder_sample.json": "579bafc55b989e664c8c67ab2c32394af17ceb129c20ca6c1a238740de969aeb",
+    "deterministic_replay_sample_report.json": "fffacfbe2a61ee38a37779365d37ec0f1346b426a8f7d0f461f3cb6f18cf114f",
+    "row_level_sample.jsonl": "bcc9c4347f1f547b1fa77a93035be8210a87d4f19d396ba946ecb58e7855574a",
+    "sample_schema.json": "a4ef8aa7e7b8e46123edf7742a1165fe8812b262a7ff427c5ec72bb715c062f1",
+    "system_metrics_sample.json": "b6bfff69f8d9f6f852f1ac24155446eae7140bc02de5b5548d299eda50872e39"
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "decision": "e33b_gradientless_breakpoint_localized",
+  "decision_context": {
+    "e24_min_primary": 1.0,
+    "e25_min_primary": 1.0,
+    "e26_stage1_4_min": 1.0,
+    "e26_stage5": 0.0,
+    "e27_min_primary": 1.0,
+    "localized_break": "E26_stage5_missing_evidence_ambiguous"
+  },
+  "deterministic_replay_match_rate": 1.0,
+  "run_id": "11f4105e28d622d1"
+}

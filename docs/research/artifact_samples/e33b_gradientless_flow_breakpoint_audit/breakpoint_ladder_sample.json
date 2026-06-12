@@ -1,0 +1,1571 @@
+{
+  "E24": {
+    "gradient_descent_used": false,
+    "helper_imported_from": "S:\\Git\\VRAXION_anchorwiki\\scripts\\probes\\run_e24_unscaffolded_online_ruleshift_discovery_vs_neural_baselines.py",
+    "milestone": "E24",
+    "primary": {
+      "backprop_used": false,
+      "clean_split_count": 4,
+      "first_failed_split": null,
+      "gradient_descent_used": false,
+      "milestone": "E24",
+      "optimizer_used": false,
+      "overall_answer_accuracy": 1.0,
+      "overall_composition_success": 1.0,
+      "overall_evidence_span_valid": 1.0,
+      "overall_trace_exact": 1.0,
+      "row_count": 3600,
+      "split_composition_success": {
+        "adversarial": 1.0,
+        "counterfactual": 1.0,
+        "heldout": 1.0,
+        "ood": 1.0
+      },
+      "split_evidence_span_valid": {
+        "adversarial": 1.0,
+        "counterfactual": 1.0,
+        "heldout": 1.0,
+        "ood": 1.0
+      },
+      "split_trace_exact": {
+        "adversarial": 1.0,
+        "counterfactual": 1.0,
+        "heldout": 1.0,
+        "ood": 1.0
+      },
+      "system": "flow_pocket_unsccaffolded_discovery_primary"
+    },
+    "primary_system": "flow_pocket_unsccaffolded_discovery_primary",
+    "rows_per_split": 900,
+    "split_count": 4,
+    "systems": {
+      "flow_pocket_answer_only_ablation": {
+        "backprop_used": false,
+        "clean_split_count": 0,
+        "first_failed_split": "adversarial",
+        "gradient_descent_used": false,
+        "milestone": "E24",
+        "optimizer_used": false,
+        "overall_answer_accuracy": 1.0,
+        "overall_composition_success": 0.0,
+        "overall_evidence_span_valid": 1.0,
+        "overall_trace_exact": 0.0,
+        "row_count": 3600,
+        "split_composition_success": {
+          "adversarial": 0.0,
+          "counterfactual": 0.0,
+          "heldout": 0.0,
+          "ood": 0.0
+        },
+        "split_evidence_span_valid": {
+          "adversarial": 1.0,
+          "counterfactual": 1.0,
+          "heldout": 1.0,
+          "ood": 1.0
+        },
+        "split_trace_exact": {
+          "adversarial": 0.0,
+          "counterfactual": 0.0,
+          "heldout": 0.0,
+          "ood": 0.0
+        },
+        "system": "flow_pocket_answer_only_ablation"
+      },
+      "flow_pocket_marker_shortcut_ablation": {
+        "backprop_used": false,
+        "clean_split_count": 0,
+        "first_failed_split": "adversarial",
+        "gradient_descent_used": false,
+        "milestone": "E24",
+        "optimizer_used": false,
+        "overall_answer_accuracy": 0.5855555555555556,
+        "overall_composition_success": 0.10361111111111111,
+        "overall_evidence_span_valid": 1.0,
+        "overall_trace_exact": 0.10361111111111111,
+        "row_count": 3600,
+        "split_composition_success": {
+          "adversarial": 0.0,
+          "counterfactual": 0.0,
+          "heldout": 0.2111111111111111,
+          "ood": 0.20333333333333334
+        },
+        "split_evidence_span_valid": {
+          "adversarial": 1.0,
+          "counterfactual": 1.0,
+          "heldout": 1.0,
+          "ood": 1.0
+        },
+        "split_trace_exact": {
+          "adversarial": 0.0,
+          "counterfactual": 0.0,
+          "heldout": 0.2111111111111111,
+          "ood": 0.20333333333333334
+        },
+        "system": "flow_pocket_marker_shortcut_ablation"
+      },
+      "flow_pocket_stale_rule_retention_ablation": {
+        "backprop_used": false,
+        "clean_split_count": 0,
+        "first_failed_split": "adversarial",
+        "gradient_descent_used": false,
+        "milestone": "E24",
+        "optimizer_used": false,
+        "overall_answer_accuracy": 0.20916666666666667,
+        "overall_composition_success": 0.20833333333333334,
+        "overall_evidence_span_valid": 1.0,
+        "overall_trace_exact": 0.20833333333333334,
+        "row_count": 3600,
+        "split_composition_success": {
+          "adversarial": 0.0,
+          "counterfactual": 0.5,
+          "heldout": 0.16666666666666666,
+          "ood": 0.16666666666666666
+        },
+        "split_evidence_span_valid": {
+          "adversarial": 1.0,
+          "counterfactual": 1.0,
+          "heldout": 1.0,
+          "ood": 1.0
+        },
+        "split_trace_exact": {
+          "adversarial": 0.0,
+          "counterfactual": 0.5,
+          "heldout": 0.16666666666666666,
+          "ood": 0.16666666666666666
+        },
+        "system": "flow_pocket_stale_rule_retention_ablation"
+      },
+      "flow_pocket_unsccaffolded_discovery_primary": {
+        "backprop_used": false,
+        "clean_split_count": 4,
+        "first_failed_split": null,
+        "gradient_descent_used": false,
+        "milestone": "E24",
+        "optimizer_used": false,
+        "overall_answer_accuracy": 1.0,
+        "overall_composition_success": 1.0,
+        "overall_evidence_span_valid": 1.0,
+        "overall_trace_exact": 1.0,
+        "row_count": 3600,
+        "split_composition_success": {
+          "adversarial": 1.0,
+          "counterfactual": 1.0,
+          "heldout": 1.0,
+          "ood": 1.0
+        },
+        "split_evidence_span_valid": {
+          "adversarial": 1.0,
+          "counterfactual": 1.0,
+          "heldout": 1.0,
+          "ood": 1.0
+        },
+        "split_trace_exact": {
+          "adversarial": 1.0,
+          "counterfactual": 1.0,
+          "heldout": 1.0,
+          "ood": 1.0
+        },
+        "system": "flow_pocket_unsccaffolded_discovery_primary"
+      },
+      "random_static_control": {
+        "backprop_used": false,
+        "clean_split_count": 0,
+        "first_failed_split": "adversarial",
+        "gradient_descent_used": false,
+        "milestone": "E24",
+        "optimizer_used": false,
+        "overall_answer_accuracy": 0.0025,
+        "overall_composition_success": 0.0,
+        "overall_evidence_span_valid": 1.0,
+        "overall_trace_exact": 0.0,
+        "row_count": 3600,
+        "split_composition_success": {
+          "adversarial": 0.0,
+          "counterfactual": 0.0,
+          "heldout": 0.0,
+          "ood": 0.0
+        },
+        "split_evidence_span_valid": {
+          "adversarial": 1.0,
+          "counterfactual": 1.0,
+          "heldout": 1.0,
+          "ood": 1.0
+        },
+        "split_trace_exact": {
+          "adversarial": 0.0,
+          "counterfactual": 0.0,
+          "heldout": 0.0,
+          "ood": 0.0
+        },
+        "system": "random_static_control"
+      }
+    }
+  },
+  "E25": {
+    "gradient_descent_used": false,
+    "helper_imported_from": "S:\\Git\\VRAXION_anchorwiki\\scripts\\probes\\run_e25_naturalized_ruleshift_text_stream_discovery_confirm.py",
+    "milestone": "E25",
+    "primary": {
+      "backprop_used": false,
+      "clean_split_count": 9,
+      "first_failed_split": null,
+      "gradient_descent_used": false,
+      "milestone": "E25",
+      "optimizer_used": false,
+      "overall_answer_accuracy": 1.0,
+      "overall_composition_success": 1.0,
+      "overall_evidence_span_valid": 1.0,
+      "overall_trace_exact": 1.0,
+      "row_count": 8100,
+      "split_composition_success": {
+        "adversarial": 1.0,
+        "counterfactual": 1.0,
+        "delayed_contradiction": 1.0,
+        "false_marker": 1.0,
+        "heldout": 1.0,
+        "ood": 1.0,
+        "paraphrase": 1.0,
+        "temporal_shuffle": 1.0,
+        "unseen_codeword": 1.0
+      },
+      "split_evidence_span_valid": {
+        "adversarial": 1.0,
+        "counterfactual": 1.0,
+        "delayed_contradiction": 1.0,
+        "false_marker": 1.0,
+        "heldout": 1.0,
+        "ood": 1.0,
+        "paraphrase": 1.0,
+        "temporal_shuffle": 1.0,
+        "unseen_codeword": 1.0
+      },
+      "split_trace_exact": {
+        "adversarial": 1.0,
+        "counterfactual": 1.0,
+        "delayed_contradiction": 1.0,
+        "false_marker": 1.0,
+        "heldout": 1.0,
+        "ood": 1.0,
+        "paraphrase": 1.0,
+        "temporal_shuffle": 1.0,
+        "unseen_codeword": 1.0
+      },
+      "system": "flow_pocket_naturalized_text_discovery_primary"
+    },
+    "primary_system": "flow_pocket_naturalized_text_discovery_primary",
+    "rows_per_split": 900,
+    "split_count": 9,
+    "systems": {
+      "flow_pocket_answer_only_ablation": {
+        "backprop_used": false,
+        "clean_split_count": 0,
+        "first_failed_split": "adversarial",
+        "gradient_descent_used": false,
+        "milestone": "E25",
+        "optimizer_used": false,
+        "overall_answer_accuracy": 1.0,
+        "overall_composition_success": 0.0,
+        "overall_evidence_span_valid": 0.0,
+        "overall_trace_exact": 0.0,
+        "row_count": 8100,
+        "split_composition_success": {
+          "adversarial": 0.0,
+          "counterfactual": 0.0,
+          "delayed_contradiction": 0.0,
+          "false_marker": 0.0,
+          "heldout": 0.0,
+          "ood": 0.0,
+          "paraphrase": 0.0,
+          "temporal_shuffle": 0.0,
+          "unseen_codeword": 0.0
+        },
+        "split_evidence_span_valid": {
+          "adversarial": 0.0,
+          "counterfactual": 0.0,
+          "delayed_contradiction": 0.0,
+          "false_marker": 0.0,
+          "heldout": 0.0,
+          "ood": 0.0,
+          "paraphrase": 0.0,
+          "temporal_shuffle": 0.0,
+          "unseen_codeword": 0.0
+        },
+        "split_trace_exact": {
+          "adversarial": 0.0,
+          "counterfactual": 0.0,
+          "delayed_contradiction": 0.0,
+          "false_marker": 0.0,
+          "heldout": 0.0,
+          "ood": 0.0,
+          "paraphrase": 0.0,
+          "temporal_shuffle": 0.0,
+          "unseen_codeword": 0.0
+        },
+        "system": "flow_pocket_answer_only_ablation"
+      },
+      "flow_pocket_marker_shortcut_ablation": {
+        "backprop_used": false,
+        "clean_split_count": 0,
+        "first_failed_split": "adversarial",
+        "gradient_descent_used": false,
+        "milestone": "E25",
+        "optimizer_used": false,
+        "overall_answer_accuracy": 0.6138271604938271,
+        "overall_composition_success": 0.1482716049382716,
+        "overall_evidence_span_valid": 0.7166666666666667,
+        "overall_trace_exact": 0.21209876543209877,
+        "row_count": 8100,
+        "split_composition_success": {
+          "adversarial": 0.0,
+          "counterfactual": 0.0,
+          "delayed_contradiction": 0.0,
+          "false_marker": 0.0,
+          "heldout": 0.21444444444444444,
+          "ood": 0.21444444444444444,
+          "paraphrase": 0.20666666666666667,
+          "temporal_shuffle": 0.4888888888888889,
+          "unseen_codeword": 0.21
+        },
+        "split_evidence_span_valid": {
+          "adversarial": 0.53,
+          "counterfactual": 0.5,
+          "delayed_contradiction": 1.0,
+          "false_marker": 1.0,
+          "heldout": 0.6577777777777778,
+          "ood": 0.6711111111111111,
+          "paraphrase": 0.6566666666666666,
+          "temporal_shuffle": 0.7588888888888888,
+          "unseen_codeword": 0.6755555555555556
+        },
+        "split_trace_exact": {
+          "adversarial": 0.0,
+          "counterfactual": 0.25666666666666665,
+          "delayed_contradiction": 0.0,
+          "false_marker": 0.0,
+          "heldout": 0.2877777777777778,
+          "ood": 0.2833333333333333,
+          "paraphrase": 0.2777777777777778,
+          "temporal_shuffle": 0.5155555555555555,
+          "unseen_codeword": 0.2877777777777778
+        },
+        "system": "flow_pocket_marker_shortcut_ablation"
+      },
+      "flow_pocket_naturalized_text_discovery_primary": {
+        "backprop_used": false,
+        "clean_split_count": 9,
+        "first_failed_split": null,
+        "gradient_descent_used": false,
+        "milestone": "E25",
+        "optimizer_used": false,
+        "overall_answer_accuracy": 1.0,
+        "overall_composition_success": 1.0,
+        "overall_evidence_span_valid": 1.0,
+        "overall_trace_exact": 1.0,
+        "row_count": 8100,
+        "split_composition_success": {
+          "adversarial": 1.0,
+          "counterfactual": 1.0,
+          "delayed_contradiction": 1.0,
+          "false_marker": 1.0,
+          "heldout": 1.0,
+          "ood": 1.0,
+          "paraphrase": 1.0,
+          "temporal_shuffle": 1.0,
+          "unseen_codeword": 1.0
+        },
+        "split_evidence_span_valid": {
+          "adversarial": 1.0,
+          "counterfactual": 1.0,
+          "delayed_contradiction": 1.0,
+          "false_marker": 1.0,
+          "heldout": 1.0,
+          "ood": 1.0,
+          "paraphrase": 1.0,
+          "temporal_shuffle": 1.0,
+          "unseen_codeword": 1.0
+        },
+        "split_trace_exact": {
+          "adversarial": 1.0,
+          "counterfactual": 1.0,
+          "delayed_contradiction": 1.0,
+          "false_marker": 1.0,
+          "heldout": 1.0,
+          "ood": 1.0,
+          "paraphrase": 1.0,
+          "temporal_shuffle": 1.0,
+          "unseen_codeword": 1.0
+        },
+        "system": "flow_pocket_naturalized_text_discovery_primary"
+      },
+      "flow_pocket_no_counterfactual_repair_ablation": {
+        "backprop_used": false,
+        "clean_split_count": 7,
+        "first_failed_split": "adversarial",
+        "gradient_descent_used": false,
+        "milestone": "E25",
+        "optimizer_used": false,
+        "overall_answer_accuracy": 0.8333333333333334,
+        "overall_composition_success": 0.8333333333333334,
+        "overall_evidence_span_valid": 0.8333333333333334,
+        "overall_trace_exact": 0.8333333333333334,
+        "row_count": 8100,
+        "split_composition_success": {
+          "adversarial": 0.0,
+          "counterfactual": 0.5,
+          "delayed_contradiction": 1.0,
+          "false_marker": 1.0,
+          "heldout": 1.0,
+          "ood": 1.0,
+          "paraphrase": 1.0,
+          "temporal_shuffle": 1.0,
+          "unseen_codeword": 1.0
+        },
+        "split_evidence_span_valid": {
+          "adversarial": 0.0,
+          "counterfactual": 0.5,
+          "delayed_contradiction": 1.0,
+          "false_marker": 1.0,
+          "heldout": 1.0,
+          "ood": 1.0,
+          "paraphrase": 1.0,
+          "temporal_shuffle": 1.0,
+          "unseen_codeword": 1.0
+        },
+        "split_trace_exact": {
+          "adversarial": 0.0,
+          "counterfactual": 0.5,
+          "delayed_contradiction": 1.0,
+          "false_marker": 1.0,
+          "heldout": 1.0,
+          "ood": 1.0,
+          "paraphrase": 1.0,
+          "temporal_shuffle": 1.0,
+          "unseen_codeword": 1.0
+        },
+        "system": "flow_pocket_no_counterfactual_repair_ablation"
+      },
+      "flow_pocket_no_evidence_span_tracking_ablation": {
+        "backprop_used": false,
+        "clean_split_count": 0,
+        "first_failed_split": "adversarial",
+        "gradient_descent_used": false,
+        "milestone": "E25",
+        "optimizer_used": false,
+        "overall_answer_accuracy": 1.0,
+        "overall_composition_success": 0.0,
+        "overall_evidence_span_valid": 0.0,
+        "overall_trace_exact": 1.0,
+        "row_count": 8100,
+        "split_composition_success": {
+          "adversarial": 0.0,
+          "counterfactual": 0.0,
+          "delayed_contradiction": 0.0,
+          "false_marker": 0.0,
+          "heldout": 0.0,
+          "ood": 0.0,
+          "paraphrase": 0.0,
+          "temporal_shuffle": 0.0,
+          "unseen_codeword": 0.0
+        },
+        "split_evidence_span_valid": {
+          "adversarial": 0.0,
+          "counterfactual": 0.0,
+          "delayed_contradiction": 0.0,
+          "false_marker": 0.0,
+          "heldout": 0.0,
+          "ood": 0.0,
+          "paraphrase": 0.0,
+          "temporal_shuffle": 0.0,
+          "unseen_codeword": 0.0
+        },
+        "split_trace_exact": {
+          "adversarial": 1.0,
+          "counterfactual": 1.0,
+          "delayed_contradiction": 1.0,
+          "false_marker": 1.0,
+          "heldout": 1.0,
+          "ood": 1.0,
+          "paraphrase": 1.0,
+          "temporal_shuffle": 1.0,
+          "unseen_codeword": 1.0
+        },
+        "system": "flow_pocket_no_evidence_span_tracking_ablation"
+      },
+      "flow_pocket_no_paraphrase_generalization_ablation": {
+        "backprop_used": false,
+        "clean_split_count": 4,
+        "first_failed_split": "adversarial",
+        "gradient_descent_used": false,
+        "milestone": "E25",
+        "optimizer_used": false,
+        "overall_answer_accuracy": 0.5259259259259259,
+        "overall_composition_success": 0.4444444444444444,
+        "overall_evidence_span_valid": 0.4444444444444444,
+        "overall_trace_exact": 0.4444444444444444,
+        "row_count": 8100,
+        "split_composition_success": {
+          "adversarial": 0.0,
+          "counterfactual": 1.0,
+          "delayed_contradiction": 0.0,
+          "false_marker": 1.0,
+          "heldout": 1.0,
+          "ood": 0.0,
+          "paraphrase": 0.0,
+          "temporal_shuffle": 0.0,
+          "unseen_codeword": 1.0
+        },
+        "split_evidence_span_valid": {
+          "adversarial": 0.0,
+          "counterfactual": 1.0,
+          "delayed_contradiction": 0.0,
+          "false_marker": 1.0,
+          "heldout": 1.0,
+          "ood": 0.0,
+          "paraphrase": 0.0,
+          "temporal_shuffle": 0.0,
+          "unseen_codeword": 1.0
+        },
+        "split_trace_exact": {
+          "adversarial": 0.0,
+          "counterfactual": 1.0,
+          "delayed_contradiction": 0.0,
+          "false_marker": 1.0,
+          "heldout": 1.0,
+          "ood": 0.0,
+          "paraphrase": 0.0,
+          "temporal_shuffle": 0.0,
+          "unseen_codeword": 1.0
+        },
+        "system": "flow_pocket_no_paraphrase_generalization_ablation"
+      },
+      "flow_pocket_stale_rule_retention_ablation": {
+        "backprop_used": false,
+        "clean_split_count": 1,
+        "first_failed_split": "adversarial",
+        "gradient_descent_used": false,
+        "milestone": "E25",
+        "optimizer_used": false,
+        "overall_answer_accuracy": 0.26049382716049385,
+        "overall_composition_success": 0.25925925925925924,
+        "overall_evidence_span_valid": 0.25925925925925924,
+        "overall_trace_exact": 0.25925925925925924,
+        "row_count": 8100,
+        "split_composition_success": {
+          "adversarial": 0.0,
+          "counterfactual": 0.5,
+          "delayed_contradiction": 0.0,
+          "false_marker": 1.0,
+          "heldout": 0.16666666666666666,
+          "ood": 0.16666666666666666,
+          "paraphrase": 0.16666666666666666,
+          "temporal_shuffle": 0.16666666666666666,
+          "unseen_codeword": 0.16666666666666666
+        },
+        "split_evidence_span_valid": {
+          "adversarial": 0.0,
+          "counterfactual": 0.5,
+          "delayed_contradiction": 0.0,
+          "false_marker": 1.0,
+          "heldout": 0.16666666666666666,
+          "ood": 0.16666666666666666,
+          "paraphrase": 0.16666666666666666,
+          "temporal_shuffle": 0.16666666666666666,
+          "unseen_codeword": 0.16666666666666666
+        },
+        "split_trace_exact": {
+          "adversarial": 0.0,
+          "counterfactual": 0.5,
+          "delayed_contradiction": 0.0,
+          "false_marker": 1.0,
+          "heldout": 0.16666666666666666,
+          "ood": 0.16666666666666666,
+          "paraphrase": 0.16666666666666666,
+          "temporal_shuffle": 0.16666666666666666,
+          "unseen_codeword": 0.16666666666666666
+        },
+        "system": "flow_pocket_stale_rule_retention_ablation"
+      },
+      "flow_pocket_temporal_order_shuffle_ablation": {
+        "backprop_used": false,
+        "clean_split_count": 8,
+        "first_failed_split": "temporal_shuffle",
+        "gradient_descent_used": false,
+        "milestone": "E25",
+        "optimizer_used": false,
+        "overall_answer_accuracy": 0.9448148148148148,
+        "overall_composition_success": 0.9093827160493827,
+        "overall_evidence_span_valid": 0.9586419753086419,
+        "overall_trace_exact": 0.938641975308642,
+        "row_count": 8100,
+        "split_composition_success": {
+          "adversarial": 1.0,
+          "counterfactual": 1.0,
+          "delayed_contradiction": 1.0,
+          "false_marker": 1.0,
+          "heldout": 1.0,
+          "ood": 1.0,
+          "paraphrase": 1.0,
+          "temporal_shuffle": 0.18444444444444444,
+          "unseen_codeword": 1.0
+        },
+        "split_evidence_span_valid": {
+          "adversarial": 1.0,
+          "counterfactual": 1.0,
+          "delayed_contradiction": 1.0,
+          "false_marker": 1.0,
+          "heldout": 1.0,
+          "ood": 1.0,
+          "paraphrase": 1.0,
+          "temporal_shuffle": 0.6277777777777778,
+          "unseen_codeword": 1.0
+        },
+        "split_trace_exact": {
+          "adversarial": 1.0,
+          "counterfactual": 1.0,
+          "delayed_contradiction": 1.0,
+          "false_marker": 1.0,
+          "heldout": 1.0,
+          "ood": 1.0,
+          "paraphrase": 1.0,
+          "temporal_shuffle": 0.4477777777777778,
+          "unseen_codeword": 1.0
+        },
+        "system": "flow_pocket_temporal_order_shuffle_ablation"
+      },
+      "parser_only_control": {
+        "backprop_used": false,
+        "clean_split_count": 0,
+        "first_failed_split": "adversarial",
+        "gradient_descent_used": false,
+        "milestone": "E25",
+        "optimizer_used": false,
+        "overall_answer_accuracy": 0.5296296296296297,
+        "overall_composition_success": 0.0,
+        "overall_evidence_span_valid": 0.0,
+        "overall_trace_exact": 0.09802469135802469,
+        "row_count": 8100,
+        "split_composition_success": {
+          "adversarial": 0.0,
+          "counterfactual": 0.0,
+          "delayed_contradiction": 0.0,
+          "false_marker": 0.0,
+          "heldout": 0.0,
+          "ood": 0.0,
+          "paraphrase": 0.0,
+          "temporal_shuffle": 0.0,
+          "unseen_codeword": 0.0
+        },
+        "split_evidence_span_valid": {
+          "adversarial": 0.0,
+          "counterfactual": 0.0,
+          "delayed_contradiction": 0.0,
+          "false_marker": 0.0,
+          "heldout": 0.0,
+          "ood": 0.0,
+          "paraphrase": 0.0,
+          "temporal_shuffle": 0.0,
+          "unseen_codeword": 0.0
+        },
+        "split_trace_exact": {
+          "adversarial": 0.0,
+          "counterfactual": 0.24333333333333335,
+          "delayed_contradiction": 0.0,
+          "false_marker": 0.0,
+          "heldout": 0.31444444444444447,
+          "ood": 0.0,
+          "paraphrase": 0.0,
+          "temporal_shuffle": 0.0,
+          "unseen_codeword": 0.3244444444444444
+        },
+        "system": "parser_only_control"
+      },
+      "random_static_control": {
+        "backprop_used": false,
+        "clean_split_count": 0,
+        "first_failed_split": "adversarial",
+        "gradient_descent_used": false,
+        "milestone": "E25",
+        "optimizer_used": false,
+        "overall_answer_accuracy": 0.0024691358024691358,
+        "overall_composition_success": 0.0,
+        "overall_evidence_span_valid": 0.0,
+        "overall_trace_exact": 0.0,
+        "row_count": 8100,
+        "split_composition_success": {
+          "adversarial": 0.0,
+          "counterfactual": 0.0,
+          "delayed_contradiction": 0.0,
+          "false_marker": 0.0,
+          "heldout": 0.0,
+          "ood": 0.0,
+          "paraphrase": 0.0,
+          "temporal_shuffle": 0.0,
+          "unseen_codeword": 0.0
+        },
+        "split_evidence_span_valid": {
+          "adversarial": 0.0,
+          "counterfactual": 0.0,
+          "delayed_contradiction": 0.0,
+          "false_marker": 0.0,
+          "heldout": 0.0,
+          "ood": 0.0,
+          "paraphrase": 0.0,
+          "temporal_shuffle": 0.0,
+          "unseen_codeword": 0.0
+        },
+        "split_trace_exact": {
+          "adversarial": 0.0,
+          "counterfactual": 0.0,
+          "delayed_contradiction": 0.0,
+          "false_marker": 0.0,
+          "heldout": 0.0,
+          "ood": 0.0,
+          "paraphrase": 0.0,
+          "temporal_shuffle": 0.0,
+          "unseen_codeword": 0.0
+        },
+        "system": "random_static_control"
+      }
+    }
+  },
+  "E26": {
+    "gradient_descent_used": false,
+    "helper_imported_from": "S:\\Git\\VRAXION_anchorwiki\\scripts\\probes\\run_e26_hard_skip_text_reasoning_failure_map.py",
+    "milestone": "E26",
+    "primary": {
+      "backprop_used": false,
+      "clean_split_count": 4,
+      "first_failed_split": "stage5_missing_evidence_ambiguous",
+      "gradient_descent_used": false,
+      "milestone": "E26",
+      "optimizer_used": false,
+      "overall_answer_accuracy": 0.7292063492063492,
+      "overall_composition_success": 0.5804761904761905,
+      "overall_evidence_span_valid": 0.5804761904761905,
+      "overall_trace_exact": 0.7142857142857143,
+      "row_count": 6300,
+      "split_composition_success": {
+        "stage1_bridge_single_shift": 1.0,
+        "stage2_multi_rule_document": 1.0,
+        "stage3_long_decoy_dense": 1.0,
+        "stage4_temporal_disorder": 1.0,
+        "stage5_missing_evidence_ambiguous": 0.0,
+        "stage6_indirect_language": 0.0,
+        "stage7_long_context_memory": 0.06333333333333334
+      },
+      "split_evidence_span_valid": {
+        "stage1_bridge_single_shift": 1.0,
+        "stage2_multi_rule_document": 1.0,
+        "stage3_long_decoy_dense": 1.0,
+        "stage4_temporal_disorder": 1.0,
+        "stage5_missing_evidence_ambiguous": 0.0,
+        "stage6_indirect_language": 0.0,
+        "stage7_long_context_memory": 0.06333333333333334
+      },
+      "split_trace_exact": {
+        "stage1_bridge_single_shift": 1.0,
+        "stage2_multi_rule_document": 1.0,
+        "stage3_long_decoy_dense": 1.0,
+        "stage4_temporal_disorder": 1.0,
+        "stage5_missing_evidence_ambiguous": 0.0,
+        "stage6_indirect_language": 0.0,
+        "stage7_long_context_memory": 1.0
+      },
+      "system": "flow_pocket_hard_skip_primary"
+    },
+    "primary_system": "flow_pocket_hard_skip_primary",
+    "rows_per_split": 900,
+    "split_count": 7,
+    "systems": {
+      "flow_pocket_answer_only_ablation": {
+        "backprop_used": false,
+        "clean_split_count": 0,
+        "first_failed_split": "stage1_bridge_single_shift",
+        "gradient_descent_used": false,
+        "milestone": "E26",
+        "optimizer_used": false,
+        "overall_answer_accuracy": 1.0,
+        "overall_composition_success": 0.0,
+        "overall_evidence_span_valid": 0.0,
+        "overall_trace_exact": 0.0,
+        "row_count": 6300,
+        "split_composition_success": {
+          "stage1_bridge_single_shift": 0.0,
+          "stage2_multi_rule_document": 0.0,
+          "stage3_long_decoy_dense": 0.0,
+          "stage4_temporal_disorder": 0.0,
+          "stage5_missing_evidence_ambiguous": 0.0,
+          "stage6_indirect_language": 0.0,
+          "stage7_long_context_memory": 0.0
+        },
+        "split_evidence_span_valid": {
+          "stage1_bridge_single_shift": 0.0,
+          "stage2_multi_rule_document": 0.0,
+          "stage3_long_decoy_dense": 0.0,
+          "stage4_temporal_disorder": 0.0,
+          "stage5_missing_evidence_ambiguous": 0.0,
+          "stage6_indirect_language": 0.0,
+          "stage7_long_context_memory": 0.0
+        },
+        "split_trace_exact": {
+          "stage1_bridge_single_shift": 0.0,
+          "stage2_multi_rule_document": 0.0,
+          "stage3_long_decoy_dense": 0.0,
+          "stage4_temporal_disorder": 0.0,
+          "stage5_missing_evidence_ambiguous": 0.0,
+          "stage6_indirect_language": 0.0,
+          "stage7_long_context_memory": 0.0
+        },
+        "system": "flow_pocket_answer_only_ablation"
+      },
+      "flow_pocket_hard_skip_primary": {
+        "backprop_used": false,
+        "clean_split_count": 4,
+        "first_failed_split": "stage5_missing_evidence_ambiguous",
+        "gradient_descent_used": false,
+        "milestone": "E26",
+        "optimizer_used": false,
+        "overall_answer_accuracy": 0.7292063492063492,
+        "overall_composition_success": 0.5804761904761905,
+        "overall_evidence_span_valid": 0.5804761904761905,
+        "overall_trace_exact": 0.7142857142857143,
+        "row_count": 6300,
+        "split_composition_success": {
+          "stage1_bridge_single_shift": 1.0,
+          "stage2_multi_rule_document": 1.0,
+          "stage3_long_decoy_dense": 1.0,
+          "stage4_temporal_disorder": 1.0,
+          "stage5_missing_evidence_ambiguous": 0.0,
+          "stage6_indirect_language": 0.0,
+          "stage7_long_context_memory": 0.06333333333333334
+        },
+        "split_evidence_span_valid": {
+          "stage1_bridge_single_shift": 1.0,
+          "stage2_multi_rule_document": 1.0,
+          "stage3_long_decoy_dense": 1.0,
+          "stage4_temporal_disorder": 1.0,
+          "stage5_missing_evidence_ambiguous": 0.0,
+          "stage6_indirect_language": 0.0,
+          "stage7_long_context_memory": 0.06333333333333334
+        },
+        "split_trace_exact": {
+          "stage1_bridge_single_shift": 1.0,
+          "stage2_multi_rule_document": 1.0,
+          "stage3_long_decoy_dense": 1.0,
+          "stage4_temporal_disorder": 1.0,
+          "stage5_missing_evidence_ambiguous": 0.0,
+          "stage6_indirect_language": 0.0,
+          "stage7_long_context_memory": 1.0
+        },
+        "system": "flow_pocket_hard_skip_primary"
+      },
+      "flow_pocket_marker_shortcut_ablation": {
+        "backprop_used": false,
+        "clean_split_count": 0,
+        "first_failed_split": "stage1_bridge_single_shift",
+        "gradient_descent_used": false,
+        "milestone": "E26",
+        "optimizer_used": false,
+        "overall_answer_accuracy": 0.5704761904761905,
+        "overall_composition_success": 0.07968253968253969,
+        "overall_evidence_span_valid": 0.32285714285714284,
+        "overall_trace_exact": 0.21746031746031746,
+        "row_count": 6300,
+        "split_composition_success": {
+          "stage1_bridge_single_shift": 0.0,
+          "stage2_multi_rule_document": 0.27,
+          "stage3_long_decoy_dense": 0.0,
+          "stage4_temporal_disorder": 0.2822222222222222,
+          "stage5_missing_evidence_ambiguous": 0.0,
+          "stage6_indirect_language": 0.0,
+          "stage7_long_context_memory": 0.005555555555555556
+        },
+        "split_evidence_span_valid": {
+          "stage1_bridge_single_shift": 0.3333333333333333,
+          "stage2_multi_rule_document": 0.5066666666666667,
+          "stage3_long_decoy_dense": 0.49666666666666665,
+          "stage4_temporal_disorder": 0.8322222222222222,
+          "stage5_missing_evidence_ambiguous": 0.0,
+          "stage6_indirect_language": 0.0,
+          "stage7_long_context_memory": 0.09111111111111111
+        },
+        "split_trace_exact": {
+          "stage1_bridge_single_shift": 0.3422222222222222,
+          "stage2_multi_rule_document": 0.27,
+          "stage3_long_decoy_dense": 0.0,
+          "stage4_temporal_disorder": 0.2822222222222222,
+          "stage5_missing_evidence_ambiguous": 0.5144444444444445,
+          "stage6_indirect_language": 0.0,
+          "stage7_long_context_memory": 0.11333333333333333
+        },
+        "system": "flow_pocket_marker_shortcut_ablation"
+      },
+      "flow_pocket_no_evidence_span_tracking_ablation": {
+        "backprop_used": false,
+        "clean_split_count": 0,
+        "first_failed_split": "stage1_bridge_single_shift",
+        "gradient_descent_used": false,
+        "milestone": "E26",
+        "optimizer_used": false,
+        "overall_answer_accuracy": 0.7292063492063492,
+        "overall_composition_success": 0.0,
+        "overall_evidence_span_valid": 0.0,
+        "overall_trace_exact": 0.7142857142857143,
+        "row_count": 6300,
+        "split_composition_success": {
+          "stage1_bridge_single_shift": 0.0,
+          "stage2_multi_rule_document": 0.0,
+          "stage3_long_decoy_dense": 0.0,
+          "stage4_temporal_disorder": 0.0,
+          "stage5_missing_evidence_ambiguous": 0.0,
+          "stage6_indirect_language": 0.0,
+          "stage7_long_context_memory": 0.0
+        },
+        "split_evidence_span_valid": {
+          "stage1_bridge_single_shift": 0.0,
+          "stage2_multi_rule_document": 0.0,
+          "stage3_long_decoy_dense": 0.0,
+          "stage4_temporal_disorder": 0.0,
+          "stage5_missing_evidence_ambiguous": 0.0,
+          "stage6_indirect_language": 0.0,
+          "stage7_long_context_memory": 0.0
+        },
+        "split_trace_exact": {
+          "stage1_bridge_single_shift": 1.0,
+          "stage2_multi_rule_document": 1.0,
+          "stage3_long_decoy_dense": 1.0,
+          "stage4_temporal_disorder": 1.0,
+          "stage5_missing_evidence_ambiguous": 0.0,
+          "stage6_indirect_language": 0.0,
+          "stage7_long_context_memory": 1.0
+        },
+        "system": "flow_pocket_no_evidence_span_tracking_ablation"
+      },
+      "flow_pocket_no_memory_ablation": {
+        "backprop_used": false,
+        "clean_split_count": 0,
+        "first_failed_split": "stage1_bridge_single_shift",
+        "gradient_descent_used": false,
+        "milestone": "E26",
+        "optimizer_used": false,
+        "overall_answer_accuracy": 0.06412698412698413,
+        "overall_composition_success": 0.047619047619047616,
+        "overall_evidence_span_valid": 0.047619047619047616,
+        "overall_trace_exact": 0.047619047619047616,
+        "row_count": 6300,
+        "split_composition_success": {
+          "stage1_bridge_single_shift": 0.3333333333333333,
+          "stage2_multi_rule_document": 0.0,
+          "stage3_long_decoy_dense": 0.0,
+          "stage4_temporal_disorder": 0.0,
+          "stage5_missing_evidence_ambiguous": 0.0,
+          "stage6_indirect_language": 0.0,
+          "stage7_long_context_memory": 0.0
+        },
+        "split_evidence_span_valid": {
+          "stage1_bridge_single_shift": 0.3333333333333333,
+          "stage2_multi_rule_document": 0.0,
+          "stage3_long_decoy_dense": 0.0,
+          "stage4_temporal_disorder": 0.0,
+          "stage5_missing_evidence_ambiguous": 0.0,
+          "stage6_indirect_language": 0.0,
+          "stage7_long_context_memory": 0.0
+        },
+        "split_trace_exact": {
+          "stage1_bridge_single_shift": 0.3333333333333333,
+          "stage2_multi_rule_document": 0.0,
+          "stage3_long_decoy_dense": 0.0,
+          "stage4_temporal_disorder": 0.0,
+          "stage5_missing_evidence_ambiguous": 0.0,
+          "stage6_indirect_language": 0.0,
+          "stage7_long_context_memory": 0.0
+        },
+        "system": "flow_pocket_no_memory_ablation"
+      },
+      "flow_pocket_no_paraphrase_generalization_ablation": {
+        "backprop_used": false,
+        "clean_split_count": 1,
+        "first_failed_split": "stage2_multi_rule_document",
+        "gradient_descent_used": false,
+        "milestone": "E26",
+        "optimizer_used": false,
+        "overall_answer_accuracy": 0.22285714285714286,
+        "overall_composition_success": 0.14285714285714285,
+        "overall_evidence_span_valid": 0.14285714285714285,
+        "overall_trace_exact": 0.14285714285714285,
+        "row_count": 6300,
+        "split_composition_success": {
+          "stage1_bridge_single_shift": 1.0,
+          "stage2_multi_rule_document": 0.0,
+          "stage3_long_decoy_dense": 0.0,
+          "stage4_temporal_disorder": 0.0,
+          "stage5_missing_evidence_ambiguous": 0.0,
+          "stage6_indirect_language": 0.0,
+          "stage7_long_context_memory": 0.0
+        },
+        "split_evidence_span_valid": {
+          "stage1_bridge_single_shift": 1.0,
+          "stage2_multi_rule_document": 0.0,
+          "stage3_long_decoy_dense": 0.0,
+          "stage4_temporal_disorder": 0.0,
+          "stage5_missing_evidence_ambiguous": 0.0,
+          "stage6_indirect_language": 0.0,
+          "stage7_long_context_memory": 0.0
+        },
+        "split_trace_exact": {
+          "stage1_bridge_single_shift": 1.0,
+          "stage2_multi_rule_document": 0.0,
+          "stage3_long_decoy_dense": 0.0,
+          "stage4_temporal_disorder": 0.0,
+          "stage5_missing_evidence_ambiguous": 0.0,
+          "stage6_indirect_language": 0.0,
+          "stage7_long_context_memory": 0.0
+        },
+        "system": "flow_pocket_no_paraphrase_generalization_ablation"
+      },
+      "flow_pocket_stale_rule_retention_ablation": {
+        "backprop_used": false,
+        "clean_split_count": 0,
+        "first_failed_split": "stage1_bridge_single_shift",
+        "gradient_descent_used": false,
+        "milestone": "E26",
+        "optimizer_used": false,
+        "overall_answer_accuracy": 0.06412698412698413,
+        "overall_composition_success": 0.047619047619047616,
+        "overall_evidence_span_valid": 0.047619047619047616,
+        "overall_trace_exact": 0.047619047619047616,
+        "row_count": 6300,
+        "split_composition_success": {
+          "stage1_bridge_single_shift": 0.3333333333333333,
+          "stage2_multi_rule_document": 0.0,
+          "stage3_long_decoy_dense": 0.0,
+          "stage4_temporal_disorder": 0.0,
+          "stage5_missing_evidence_ambiguous": 0.0,
+          "stage6_indirect_language": 0.0,
+          "stage7_long_context_memory": 0.0
+        },
+        "split_evidence_span_valid": {
+          "stage1_bridge_single_shift": 0.3333333333333333,
+          "stage2_multi_rule_document": 0.0,
+          "stage3_long_decoy_dense": 0.0,
+          "stage4_temporal_disorder": 0.0,
+          "stage5_missing_evidence_ambiguous": 0.0,
+          "stage6_indirect_language": 0.0,
+          "stage7_long_context_memory": 0.0
+        },
+        "split_trace_exact": {
+          "stage1_bridge_single_shift": 0.3333333333333333,
+          "stage2_multi_rule_document": 0.0,
+          "stage3_long_decoy_dense": 0.0,
+          "stage4_temporal_disorder": 0.0,
+          "stage5_missing_evidence_ambiguous": 0.0,
+          "stage6_indirect_language": 0.0,
+          "stage7_long_context_memory": 0.0
+        },
+        "system": "flow_pocket_stale_rule_retention_ablation"
+      },
+      "parser_only_control": {
+        "backprop_used": false,
+        "clean_split_count": 0,
+        "first_failed_split": "stage1_bridge_single_shift",
+        "gradient_descent_used": false,
+        "milestone": "E26",
+        "optimizer_used": false,
+        "overall_answer_accuracy": 0.35095238095238096,
+        "overall_composition_success": 0.0,
+        "overall_evidence_span_valid": 0.0,
+        "overall_trace_exact": 0.1153968253968254,
+        "row_count": 6300,
+        "split_composition_success": {
+          "stage1_bridge_single_shift": 0.0,
+          "stage2_multi_rule_document": 0.0,
+          "stage3_long_decoy_dense": 0.0,
+          "stage4_temporal_disorder": 0.0,
+          "stage5_missing_evidence_ambiguous": 0.0,
+          "stage6_indirect_language": 0.0,
+          "stage7_long_context_memory": 0.0
+        },
+        "split_evidence_span_valid": {
+          "stage1_bridge_single_shift": 0.0,
+          "stage2_multi_rule_document": 0.0,
+          "stage3_long_decoy_dense": 0.0,
+          "stage4_temporal_disorder": 0.0,
+          "stage5_missing_evidence_ambiguous": 0.0,
+          "stage6_indirect_language": 0.0,
+          "stage7_long_context_memory": 0.0
+        },
+        "split_trace_exact": {
+          "stage1_bridge_single_shift": 0.29777777777777775,
+          "stage2_multi_rule_document": 0.0,
+          "stage3_long_decoy_dense": 0.0,
+          "stage4_temporal_disorder": 0.0,
+          "stage5_missing_evidence_ambiguous": 0.51,
+          "stage6_indirect_language": 0.0,
+          "stage7_long_context_memory": 0.0
+        },
+        "system": "parser_only_control"
+      },
+      "random_static_control": {
+        "backprop_used": false,
+        "clean_split_count": 0,
+        "first_failed_split": "stage1_bridge_single_shift",
+        "gradient_descent_used": false,
+        "milestone": "E26",
+        "optimizer_used": false,
+        "overall_answer_accuracy": 0.004126984126984127,
+        "overall_composition_success": 0.0,
+        "overall_evidence_span_valid": 0.0,
+        "overall_trace_exact": 0.0,
+        "row_count": 6300,
+        "split_composition_success": {
+          "stage1_bridge_single_shift": 0.0,
+          "stage2_multi_rule_document": 0.0,
+          "stage3_long_decoy_dense": 0.0,
+          "stage4_temporal_disorder": 0.0,
+          "stage5_missing_evidence_ambiguous": 0.0,
+          "stage6_indirect_language": 0.0,
+          "stage7_long_context_memory": 0.0
+        },
+        "split_evidence_span_valid": {
+          "stage1_bridge_single_shift": 0.0,
+          "stage2_multi_rule_document": 0.0,
+          "stage3_long_decoy_dense": 0.0,
+          "stage4_temporal_disorder": 0.0,
+          "stage5_missing_evidence_ambiguous": 0.0,
+          "stage6_indirect_language": 0.0,
+          "stage7_long_context_memory": 0.0
+        },
+        "split_trace_exact": {
+          "stage1_bridge_single_shift": 0.0,
+          "stage2_multi_rule_document": 0.0,
+          "stage3_long_decoy_dense": 0.0,
+          "stage4_temporal_disorder": 0.0,
+          "stage5_missing_evidence_ambiguous": 0.0,
+          "stage6_indirect_language": 0.0,
+          "stage7_long_context_memory": 0.0
+        },
+        "system": "random_static_control"
+      }
+    }
+  },
+  "E27": {
+    "gradient_descent_used": false,
+    "helper_imported_from": "S:\\Git\\VRAXION_anchorwiki\\scripts\\probes\\run_e27_unresolved_flow_state_information_seeking_repair_confirm.py",
+    "milestone": "E27",
+    "primary": {
+      "backprop_used": false,
+      "clean_split_count": 7,
+      "first_failed_split": null,
+      "gradient_descent_used": false,
+      "milestone": "E27",
+      "optimizer_used": false,
+      "overall_answer_accuracy": 0.8571428571428571,
+      "overall_composition_success": 1.0,
+      "overall_evidence_span_valid": 1.0,
+      "overall_trace_exact": 1.0,
+      "row_count": 6300,
+      "split_composition_success": {
+        "stage1_bridge_single_shift": 1.0,
+        "stage2_multi_rule_document": 1.0,
+        "stage3_long_decoy_dense": 1.0,
+        "stage4_temporal_disorder": 1.0,
+        "stage5_missing_evidence_ambiguous": 1.0,
+        "stage6_indirect_language": 1.0,
+        "stage7_long_context_memory": 1.0
+      },
+      "split_evidence_span_valid": {
+        "stage1_bridge_single_shift": 1.0,
+        "stage2_multi_rule_document": 1.0,
+        "stage3_long_decoy_dense": 1.0,
+        "stage4_temporal_disorder": 1.0,
+        "stage5_missing_evidence_ambiguous": 1.0,
+        "stage6_indirect_language": 1.0,
+        "stage7_long_context_memory": 1.0
+      },
+      "split_trace_exact": {
+        "stage1_bridge_single_shift": 1.0,
+        "stage2_multi_rule_document": 1.0,
+        "stage3_long_decoy_dense": 1.0,
+        "stage4_temporal_disorder": 1.0,
+        "stage5_missing_evidence_ambiguous": 1.0,
+        "stage6_indirect_language": 1.0,
+        "stage7_long_context_memory": 1.0
+      },
+      "system": "flow_pocket_unresolved_information_seeking_primary"
+    },
+    "primary_system": "flow_pocket_unresolved_information_seeking_primary",
+    "rows_per_split": 900,
+    "split_count": 7,
+    "systems": {
+      "always_ask_baseline": {
+        "backprop_used": false,
+        "clean_split_count": 1,
+        "first_failed_split": "stage1_bridge_single_shift",
+        "gradient_descent_used": false,
+        "milestone": "E27",
+        "optimizer_used": false,
+        "overall_answer_accuracy": 0.0,
+        "overall_composition_success": 0.14285714285714285,
+        "overall_evidence_span_valid": 1.0,
+        "overall_trace_exact": 1.0,
+        "row_count": 6300,
+        "split_composition_success": {
+          "stage1_bridge_single_shift": 0.0,
+          "stage2_multi_rule_document": 0.0,
+          "stage3_long_decoy_dense": 0.0,
+          "stage4_temporal_disorder": 0.0,
+          "stage5_missing_evidence_ambiguous": 1.0,
+          "stage6_indirect_language": 0.0,
+          "stage7_long_context_memory": 0.0
+        },
+        "split_evidence_span_valid": {
+          "stage1_bridge_single_shift": 1.0,
+          "stage2_multi_rule_document": 1.0,
+          "stage3_long_decoy_dense": 1.0,
+          "stage4_temporal_disorder": 1.0,
+          "stage5_missing_evidence_ambiguous": 1.0,
+          "stage6_indirect_language": 1.0,
+          "stage7_long_context_memory": 1.0
+        },
+        "split_trace_exact": {
+          "stage1_bridge_single_shift": 1.0,
+          "stage2_multi_rule_document": 1.0,
+          "stage3_long_decoy_dense": 1.0,
+          "stage4_temporal_disorder": 1.0,
+          "stage5_missing_evidence_ambiguous": 1.0,
+          "stage6_indirect_language": 1.0,
+          "stage7_long_context_memory": 1.0
+        },
+        "system": "always_ask_baseline"
+      },
+      "flow_pocket_answer_only_ablation": {
+        "backprop_used": false,
+        "clean_split_count": 0,
+        "first_failed_split": "stage1_bridge_single_shift",
+        "gradient_descent_used": false,
+        "milestone": "E27",
+        "optimizer_used": false,
+        "overall_answer_accuracy": 1.0,
+        "overall_composition_success": 0.0,
+        "overall_evidence_span_valid": 0.0,
+        "overall_trace_exact": 0.0,
+        "row_count": 6300,
+        "split_composition_success": {
+          "stage1_bridge_single_shift": 0.0,
+          "stage2_multi_rule_document": 0.0,
+          "stage3_long_decoy_dense": 0.0,
+          "stage4_temporal_disorder": 0.0,
+          "stage5_missing_evidence_ambiguous": 0.0,
+          "stage6_indirect_language": 0.0,
+          "stage7_long_context_memory": 0.0
+        },
+        "split_evidence_span_valid": {
+          "stage1_bridge_single_shift": 0.0,
+          "stage2_multi_rule_document": 0.0,
+          "stage3_long_decoy_dense": 0.0,
+          "stage4_temporal_disorder": 0.0,
+          "stage5_missing_evidence_ambiguous": 0.0,
+          "stage6_indirect_language": 0.0,
+          "stage7_long_context_memory": 0.0
+        },
+        "split_trace_exact": {
+          "stage1_bridge_single_shift": 0.0,
+          "stage2_multi_rule_document": 0.0,
+          "stage3_long_decoy_dense": 0.0,
+          "stage4_temporal_disorder": 0.0,
+          "stage5_missing_evidence_ambiguous": 0.0,
+          "stage6_indirect_language": 0.0,
+          "stage7_long_context_memory": 0.0
+        },
+        "system": "flow_pocket_answer_only_ablation"
+      },
+      "flow_pocket_no_evidence_span_tracking_ablation": {
+        "backprop_used": false,
+        "clean_split_count": 0,
+        "first_failed_split": "stage1_bridge_single_shift",
+        "gradient_descent_used": false,
+        "milestone": "E27",
+        "optimizer_used": false,
+        "overall_answer_accuracy": 0.8571428571428571,
+        "overall_composition_success": 0.0,
+        "overall_evidence_span_valid": 0.0,
+        "overall_trace_exact": 0.8571428571428571,
+        "row_count": 6300,
+        "split_composition_success": {
+          "stage1_bridge_single_shift": 0.0,
+          "stage2_multi_rule_document": 0.0,
+          "stage3_long_decoy_dense": 0.0,
+          "stage4_temporal_disorder": 0.0,
+          "stage5_missing_evidence_ambiguous": 0.0,
+          "stage6_indirect_language": 0.0,
+          "stage7_long_context_memory": 0.0
+        },
+        "split_evidence_span_valid": {
+          "stage1_bridge_single_shift": 0.0,
+          "stage2_multi_rule_document": 0.0,
+          "stage3_long_decoy_dense": 0.0,
+          "stage4_temporal_disorder": 0.0,
+          "stage5_missing_evidence_ambiguous": 0.0,
+          "stage6_indirect_language": 0.0,
+          "stage7_long_context_memory": 0.0
+        },
+        "split_trace_exact": {
+          "stage1_bridge_single_shift": 1.0,
+          "stage2_multi_rule_document": 1.0,
+          "stage3_long_decoy_dense": 1.0,
+          "stage4_temporal_disorder": 1.0,
+          "stage5_missing_evidence_ambiguous": 0.0,
+          "stage6_indirect_language": 1.0,
+          "stage7_long_context_memory": 1.0
+        },
+        "system": "flow_pocket_no_evidence_span_tracking_ablation"
+      },
+      "flow_pocket_unresolved_information_seeking_primary": {
+        "backprop_used": false,
+        "clean_split_count": 7,
+        "first_failed_split": null,
+        "gradient_descent_used": false,
+        "milestone": "E27",
+        "optimizer_used": false,
+        "overall_answer_accuracy": 0.8571428571428571,
+        "overall_composition_success": 1.0,
+        "overall_evidence_span_valid": 1.0,
+        "overall_trace_exact": 1.0,
+        "row_count": 6300,
+        "split_composition_success": {
+          "stage1_bridge_single_shift": 1.0,
+          "stage2_multi_rule_document": 1.0,
+          "stage3_long_decoy_dense": 1.0,
+          "stage4_temporal_disorder": 1.0,
+          "stage5_missing_evidence_ambiguous": 1.0,
+          "stage6_indirect_language": 1.0,
+          "stage7_long_context_memory": 1.0
+        },
+        "split_evidence_span_valid": {
+          "stage1_bridge_single_shift": 1.0,
+          "stage2_multi_rule_document": 1.0,
+          "stage3_long_decoy_dense": 1.0,
+          "stage4_temporal_disorder": 1.0,
+          "stage5_missing_evidence_ambiguous": 1.0,
+          "stage6_indirect_language": 1.0,
+          "stage7_long_context_memory": 1.0
+        },
+        "split_trace_exact": {
+          "stage1_bridge_single_shift": 1.0,
+          "stage2_multi_rule_document": 1.0,
+          "stage3_long_decoy_dense": 1.0,
+          "stage4_temporal_disorder": 1.0,
+          "stage5_missing_evidence_ambiguous": 1.0,
+          "stage6_indirect_language": 1.0,
+          "stage7_long_context_memory": 1.0
+        },
+        "system": "flow_pocket_unresolved_information_seeking_primary"
+      },
+      "forced_answer_stale_rule_baseline": {
+        "backprop_used": false,
+        "clean_split_count": 0,
+        "first_failed_split": "stage1_bridge_single_shift",
+        "gradient_descent_used": false,
+        "milestone": "E27",
+        "optimizer_used": false,
+        "overall_answer_accuracy": 0.04936507936507936,
+        "overall_composition_success": 0.047619047619047616,
+        "overall_evidence_span_valid": 0.19047619047619047,
+        "overall_trace_exact": 0.047619047619047616,
+        "row_count": 6300,
+        "split_composition_success": {
+          "stage1_bridge_single_shift": 0.3333333333333333,
+          "stage2_multi_rule_document": 0.0,
+          "stage3_long_decoy_dense": 0.0,
+          "stage4_temporal_disorder": 0.0,
+          "stage5_missing_evidence_ambiguous": 0.0,
+          "stage6_indirect_language": 0.0,
+          "stage7_long_context_memory": 0.0
+        },
+        "split_evidence_span_valid": {
+          "stage1_bridge_single_shift": 0.3333333333333333,
+          "stage2_multi_rule_document": 0.0,
+          "stage3_long_decoy_dense": 0.0,
+          "stage4_temporal_disorder": 0.0,
+          "stage5_missing_evidence_ambiguous": 1.0,
+          "stage6_indirect_language": 0.0,
+          "stage7_long_context_memory": 0.0
+        },
+        "split_trace_exact": {
+          "stage1_bridge_single_shift": 0.3333333333333333,
+          "stage2_multi_rule_document": 0.0,
+          "stage3_long_decoy_dense": 0.0,
+          "stage4_temporal_disorder": 0.0,
+          "stage5_missing_evidence_ambiguous": 0.0,
+          "stage6_indirect_language": 0.0,
+          "stage7_long_context_memory": 0.0
+        },
+        "system": "forced_answer_stale_rule_baseline"
+      },
+      "no_information_seeking_action_ablation": {
+        "backprop_used": false,
+        "clean_split_count": 6,
+        "first_failed_split": "stage5_missing_evidence_ambiguous",
+        "gradient_descent_used": false,
+        "milestone": "E27",
+        "optimizer_used": false,
+        "overall_answer_accuracy": 0.8571428571428571,
+        "overall_composition_success": 0.8571428571428571,
+        "overall_evidence_span_valid": 1.0,
+        "overall_trace_exact": 0.8571428571428571,
+        "row_count": 6300,
+        "split_composition_success": {
+          "stage1_bridge_single_shift": 1.0,
+          "stage2_multi_rule_document": 1.0,
+          "stage3_long_decoy_dense": 1.0,
+          "stage4_temporal_disorder": 1.0,
+          "stage5_missing_evidence_ambiguous": 0.0,
+          "stage6_indirect_language": 1.0,
+          "stage7_long_context_memory": 1.0
+        },
+        "split_evidence_span_valid": {
+          "stage1_bridge_single_shift": 1.0,
+          "stage2_multi_rule_document": 1.0,
+          "stage3_long_decoy_dense": 1.0,
+          "stage4_temporal_disorder": 1.0,
+          "stage5_missing_evidence_ambiguous": 1.0,
+          "stage6_indirect_language": 1.0,
+          "stage7_long_context_memory": 1.0
+        },
+        "split_trace_exact": {
+          "stage1_bridge_single_shift": 1.0,
+          "stage2_multi_rule_document": 1.0,
+          "stage3_long_decoy_dense": 1.0,
+          "stage4_temporal_disorder": 1.0,
+          "stage5_missing_evidence_ambiguous": 0.0,
+          "stage6_indirect_language": 1.0,
+          "stage7_long_context_memory": 1.0
+        },
+        "system": "no_information_seeking_action_ablation"
+      },
+      "no_query_dependency_check_ablation": {
+        "backprop_used": false,
+        "clean_split_count": 4,
+        "first_failed_split": "stage1_bridge_single_shift",
+        "gradient_descent_used": false,
+        "milestone": "E27",
+        "optimizer_used": false,
+        "overall_answer_accuracy": 0.8571428571428571,
+        "overall_composition_success": 0.6209523809523809,
+        "overall_evidence_span_valid": 0.7638095238095238,
+        "overall_trace_exact": 0.8571428571428571,
+        "row_count": 6300,
+        "split_composition_success": {
+          "stage1_bridge_single_shift": 0.3333333333333333,
+          "stage2_multi_rule_document": 1.0,
+          "stage3_long_decoy_dense": 1.0,
+          "stage4_temporal_disorder": 1.0,
+          "stage5_missing_evidence_ambiguous": 0.0,
+          "stage6_indirect_language": 1.0,
+          "stage7_long_context_memory": 0.013333333333333334
+        },
+        "split_evidence_span_valid": {
+          "stage1_bridge_single_shift": 0.3333333333333333,
+          "stage2_multi_rule_document": 1.0,
+          "stage3_long_decoy_dense": 1.0,
+          "stage4_temporal_disorder": 1.0,
+          "stage5_missing_evidence_ambiguous": 1.0,
+          "stage6_indirect_language": 1.0,
+          "stage7_long_context_memory": 0.013333333333333334
+        },
+        "split_trace_exact": {
+          "stage1_bridge_single_shift": 1.0,
+          "stage2_multi_rule_document": 1.0,
+          "stage3_long_decoy_dense": 1.0,
+          "stage4_temporal_disorder": 1.0,
+          "stage5_missing_evidence_ambiguous": 0.0,
+          "stage6_indirect_language": 1.0,
+          "stage7_long_context_memory": 1.0
+        },
+        "system": "no_query_dependency_check_ablation"
+      },
+      "random_static_control": {
+        "backprop_used": false,
+        "clean_split_count": 0,
+        "first_failed_split": "stage1_bridge_single_shift",
+        "gradient_descent_used": false,
+        "milestone": "E27",
+        "optimizer_used": false,
+        "overall_answer_accuracy": 0.0009523809523809524,
+        "overall_composition_success": 0.0,
+        "overall_evidence_span_valid": 0.0,
+        "overall_trace_exact": 0.10587301587301587,
+        "row_count": 6300,
+        "split_composition_success": {
+          "stage1_bridge_single_shift": 0.0,
+          "stage2_multi_rule_document": 0.0,
+          "stage3_long_decoy_dense": 0.0,
+          "stage4_temporal_disorder": 0.0,
+          "stage5_missing_evidence_ambiguous": 0.0,
+          "stage6_indirect_language": 0.0,
+          "stage7_long_context_memory": 0.0
+        },
+        "split_evidence_span_valid": {
+          "stage1_bridge_single_shift": 0.0,
+          "stage2_multi_rule_document": 0.0,
+          "stage3_long_decoy_dense": 0.0,
+          "stage4_temporal_disorder": 0.0,
+          "stage5_missing_evidence_ambiguous": 0.0,
+          "stage6_indirect_language": 0.0,
+          "stage7_long_context_memory": 0.0
+        },
+        "split_trace_exact": {
+          "stage1_bridge_single_shift": 0.0,
+          "stage2_multi_rule_document": 0.0,
+          "stage3_long_decoy_dense": 0.0,
+          "stage4_temporal_disorder": 0.0,
+          "stage5_missing_evidence_ambiguous": 0.7411111111111112,
+          "stage6_indirect_language": 0.0,
+          "stage7_long_context_memory": 0.0
+        },
+        "system": "random_static_control"
+      },
+      "stale_rule_retention_ablation": {
+        "backprop_used": false,
+        "clean_split_count": 0,
+        "first_failed_split": "stage1_bridge_single_shift",
+        "gradient_descent_used": false,
+        "milestone": "E27",
+        "optimizer_used": false,
+        "overall_answer_accuracy": 0.04936507936507936,
+        "overall_composition_success": 0.047619047619047616,
+        "overall_evidence_span_valid": 0.19047619047619047,
+        "overall_trace_exact": 0.047619047619047616,
+        "row_count": 6300,
+        "split_composition_success": {
+          "stage1_bridge_single_shift": 0.3333333333333333,
+          "stage2_multi_rule_document": 0.0,
+          "stage3_long_decoy_dense": 0.0,
+          "stage4_temporal_disorder": 0.0,
+          "stage5_missing_evidence_ambiguous": 0.0,
+          "stage6_indirect_language": 0.0,
+          "stage7_long_context_memory": 0.0
+        },
+        "split_evidence_span_valid": {
+          "stage1_bridge_single_shift": 0.3333333333333333,
+          "stage2_multi_rule_document": 0.0,
+          "stage3_long_decoy_dense": 0.0,
+          "stage4_temporal_disorder": 0.0,
+          "stage5_missing_evidence_ambiguous": 1.0,
+          "stage6_indirect_language": 0.0,
+          "stage7_long_context_memory": 0.0
+        },
+        "split_trace_exact": {
+          "stage1_bridge_single_shift": 0.3333333333333333,
+          "stage2_multi_rule_document": 0.0,
+          "stage3_long_decoy_dense": 0.0,
+          "stage4_temporal_disorder": 0.0,
+          "stage5_missing_evidence_ambiguous": 0.0,
+          "stage6_indirect_language": 0.0,
+          "stage7_long_context_memory": 0.0
+        },
+        "system": "stale_rule_retention_ablation"
+      }
+    }
+  }
+}
