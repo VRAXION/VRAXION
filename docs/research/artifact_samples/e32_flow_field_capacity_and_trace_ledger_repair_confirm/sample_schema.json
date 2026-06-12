@@ -1,0 +1,36 @@
+{
+  "canonical_naming": true,
+  "milestone": "E32_FLOW_FIELD_CAPACITY_AND_TRACE_LEDGER_REPAIR_CONFIRM",
+  "rungs": [
+    "R0_explicit_controlled_evidence",
+    "R1_final_mixed_canonical",
+    "R2_naturalized_text_canonical",
+    "R3_paraphrase_variation",
+    "R4_decoy_density",
+    "R5_temporal_disorder",
+    "R6_unresolved_answerable_minimal_pairs",
+    "R7_long_context_evidence_span",
+    "R8_indirect_implication_language",
+    "R9_mined_real_text_weak_labels"
+  ],
+  "systems": [
+    "baseline_d96_p8",
+    "capacity_flow_d192_p8",
+    "trace_ledger_weighted_d96_p8",
+    "trace_ledger_weighted_d192_p8",
+    "span_bucket_aux_d96_p8",
+    "ingress_event_aux_d96_p8",
+    "combined_capacity_aux_d192_p8",
+    "random_static_control"
+  ],
+  "trace_keys": [
+    "binding_detected",
+    "rule_inferred",
+    "decoy_rejected",
+    "temporal_update",
+    "contradiction_detected",
+    "unresolved_state",
+    "evidence_span_tracked",
+    "answer_ready"
+  ]
+}

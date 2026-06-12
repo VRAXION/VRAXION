@@ -1,0 +1,722 @@
+{
+  "baseline_d96_p8": {
+    "device": "cuda",
+    "event_weight": 0.0,
+    "false_ask_on_answerable": 0.021222410865874362,
+    "flow_dim": 96,
+    "heldout_action_accuracy": 0.8022727272727272,
+    "heldout_resolution_success": 0.7477272727272727,
+    "heldout_trace_bit_accuracy": 0.9122159090909091,
+    "heldout_trace_exact": 0.6722727272727272,
+    "parameter_count": 484492,
+    "pocket_count": 8,
+    "row_count": 4400,
+    "rung_metrics": {
+      "R0_explicit_controlled_evidence": {
+        "heldout_action_accuracy": 1.0,
+        "heldout_resolution_success": 0.5045454545454545,
+        "heldout_trace_bit_accuracy": 0.8130681818181819,
+        "heldout_trace_exact": 0.5,
+        "row_count": 220
+      },
+      "R1_final_mixed_canonical": {
+        "heldout_action_accuracy": 0.8590909090909091,
+        "heldout_resolution_success": 0.8590909090909091,
+        "heldout_trace_bit_accuracy": 0.9488636363636364,
+        "heldout_trace_exact": 0.7954545454545454,
+        "row_count": 220
+      },
+      "R2_naturalized_text_canonical": {
+        "heldout_action_accuracy": 0.9,
+        "heldout_resolution_success": 0.9,
+        "heldout_trace_bit_accuracy": 0.9397727272727273,
+        "heldout_trace_exact": 0.759090909090909,
+        "row_count": 220
+      },
+      "R3_paraphrase_variation": {
+        "heldout_action_accuracy": 0.9045454545454545,
+        "heldout_resolution_success": 0.9045454545454545,
+        "heldout_trace_bit_accuracy": 0.9261363636363636,
+        "heldout_trace_exact": 0.6045454545454545,
+        "row_count": 220
+      },
+      "R4_decoy_density": {
+        "heldout_action_accuracy": 0.8409090909090909,
+        "heldout_resolution_success": 0.8409090909090909,
+        "heldout_trace_bit_accuracy": 0.9159090909090909,
+        "heldout_trace_exact": 0.33181818181818185,
+        "row_count": 220
+      },
+      "R5_temporal_disorder": {
+        "heldout_action_accuracy": 0.8363636363636363,
+        "heldout_resolution_success": 0.8363636363636363,
+        "heldout_trace_bit_accuracy": 1.0,
+        "heldout_trace_exact": 1.0,
+        "row_count": 220
+      },
+      "R6_unresolved_answerable_minimal_pairs": {
+        "heldout_action_accuracy": 0.7363636363636363,
+        "heldout_resolution_success": 0.7363636363636363,
+        "heldout_trace_bit_accuracy": 1.0,
+        "heldout_trace_exact": 1.0,
+        "row_count": 220
+      },
+      "R7_long_context_evidence_span": {
+        "heldout_action_accuracy": 0.8272727272727273,
+        "heldout_resolution_success": 0.8272727272727273,
+        "heldout_trace_bit_accuracy": 0.9619318181818182,
+        "heldout_trace_exact": 0.759090909090909,
+        "row_count": 220
+      },
+      "R8_indirect_implication_language": {
+        "heldout_action_accuracy": 0.8363636363636363,
+        "heldout_resolution_success": 0.8363636363636363,
+        "heldout_trace_bit_accuracy": 0.9960227272727272,
+        "heldout_trace_exact": 0.9681818181818181,
+        "row_count": 220
+      },
+      "R9_mined_real_text_weak_labels": {
+        "heldout_action_accuracy": 0.2818181818181818,
+        "heldout_resolution_success": 0.2318181818181818,
+        "heldout_trace_bit_accuracy": 0.6204545454545455,
+        "heldout_trace_exact": 0.004545454545454545,
+        "row_count": 220
+      }
+    },
+    "span_weight": 0.0,
+    "system": "baseline_d96_p8",
+    "trace_weight": 0.75,
+    "validation_resolution_success": 0.7686363636363637,
+    "wrong_confident_answer_on_unresolved": 0.05039138943248532
+  },
+  "capacity_flow_d192_p8": {
+    "device": "cuda",
+    "event_weight": 0.0,
+    "false_ask_on_answerable": 0.02504244482173175,
+    "flow_dim": 192,
+    "heldout_action_accuracy": 0.8159090909090909,
+    "heldout_resolution_success": 0.8104545454545454,
+    "heldout_trace_bit_accuracy": 0.9726136363636364,
+    "heldout_trace_exact": 0.9386363636363636,
+    "parameter_count": 1134796,
+    "pocket_count": 8,
+    "row_count": 4400,
+    "rung_metrics": {
+      "R0_explicit_controlled_evidence": {
+        "heldout_action_accuracy": 1.0,
+        "heldout_resolution_success": 1.0,
+        "heldout_trace_bit_accuracy": 1.0,
+        "heldout_trace_exact": 1.0,
+        "row_count": 220
+      },
+      "R1_final_mixed_canonical": {
+        "heldout_action_accuracy": 0.8727272727272727,
+        "heldout_resolution_success": 0.8727272727272727,
+        "heldout_trace_bit_accuracy": 1.0,
+        "heldout_trace_exact": 1.0,
+        "row_count": 220
+      },
+      "R2_naturalized_text_canonical": {
+        "heldout_action_accuracy": 0.8909090909090909,
+        "heldout_resolution_success": 0.8909090909090909,
+        "heldout_trace_bit_accuracy": 1.0,
+        "heldout_trace_exact": 1.0,
+        "row_count": 220
+      },
+      "R3_paraphrase_variation": {
+        "heldout_action_accuracy": 0.9227272727272727,
+        "heldout_resolution_success": 0.9227272727272727,
+        "heldout_trace_bit_accuracy": 0.9971590909090909,
+        "heldout_trace_exact": 0.9772727272727273,
+        "row_count": 220
+      },
+      "R4_decoy_density": {
+        "heldout_action_accuracy": 0.8454545454545455,
+        "heldout_resolution_success": 0.8454545454545455,
+        "heldout_trace_bit_accuracy": 0.9971590909090909,
+        "heldout_trace_exact": 0.9772727272727273,
+        "row_count": 220
+      },
+      "R5_temporal_disorder": {
+        "heldout_action_accuracy": 0.85,
+        "heldout_resolution_success": 0.85,
+        "heldout_trace_bit_accuracy": 1.0,
+        "heldout_trace_exact": 1.0,
+        "row_count": 220
+      },
+      "R6_unresolved_answerable_minimal_pairs": {
+        "heldout_action_accuracy": 0.7454545454545455,
+        "heldout_resolution_success": 0.7454545454545455,
+        "heldout_trace_bit_accuracy": 1.0,
+        "heldout_trace_exact": 1.0,
+        "row_count": 220
+      },
+      "R7_long_context_evidence_span": {
+        "heldout_action_accuracy": 0.8318181818181818,
+        "heldout_resolution_success": 0.8272727272727273,
+        "heldout_trace_bit_accuracy": 0.9971590909090909,
+        "heldout_trace_exact": 0.9863636363636363,
+        "row_count": 220
+      },
+      "R8_indirect_implication_language": {
+        "heldout_action_accuracy": 0.85,
+        "heldout_resolution_success": 0.85,
+        "heldout_trace_bit_accuracy": 1.0,
+        "heldout_trace_exact": 1.0,
+        "row_count": 220
+      },
+      "R9_mined_real_text_weak_labels": {
+        "heldout_action_accuracy": 0.35,
+        "heldout_resolution_success": 0.3,
+        "heldout_trace_bit_accuracy": 0.7346590909090909,
+        "heldout_trace_exact": 0.44545454545454544,
+        "row_count": 220
+      }
+    },
+    "span_weight": 0.0,
+    "system": "capacity_flow_d192_p8",
+    "trace_weight": 0.75,
+    "validation_resolution_success": 0.825,
+    "wrong_confident_answer_on_unresolved": 0.03962818003913894
+  },
+  "combined_capacity_aux_d192_p8": {
+    "device": "cuda",
+    "event_weight": 0.3,
+    "false_ask_on_answerable": 0.01825127334465195,
+    "flow_dim": 192,
+    "heldout_action_accuracy": 0.8018181818181818,
+    "heldout_resolution_success": 0.8018181818181818,
+    "heldout_trace_bit_accuracy": 0.970625,
+    "heldout_trace_exact": 0.9177272727272727,
+    "parameter_count": 1134796,
+    "pocket_count": 8,
+    "row_count": 4400,
+    "rung_metrics": {
+      "R0_explicit_controlled_evidence": {
+        "heldout_action_accuracy": 1.0,
+        "heldout_resolution_success": 1.0,
+        "heldout_trace_bit_accuracy": 1.0,
+        "heldout_trace_exact": 1.0,
+        "row_count": 220
+      },
+      "R1_final_mixed_canonical": {
+        "heldout_action_accuracy": 0.8590909090909091,
+        "heldout_resolution_success": 0.8590909090909091,
+        "heldout_trace_bit_accuracy": 1.0,
+        "heldout_trace_exact": 1.0,
+        "row_count": 220
+      },
+      "R2_naturalized_text_canonical": {
+        "heldout_action_accuracy": 0.9,
+        "heldout_resolution_success": 0.9,
+        "heldout_trace_bit_accuracy": 1.0,
+        "heldout_trace_exact": 1.0,
+        "row_count": 220
+      },
+      "R3_paraphrase_variation": {
+        "heldout_action_accuracy": 0.9045454545454545,
+        "heldout_resolution_success": 0.9045454545454545,
+        "heldout_trace_bit_accuracy": 0.9943181818181818,
+        "heldout_trace_exact": 0.9636363636363636,
+        "row_count": 220
+      },
+      "R4_decoy_density": {
+        "heldout_action_accuracy": 0.8409090909090909,
+        "heldout_resolution_success": 0.8409090909090909,
+        "heldout_trace_bit_accuracy": 0.9835227272727273,
+        "heldout_trace_exact": 0.9045454545454545,
+        "row_count": 220
+      },
+      "R5_temporal_disorder": {
+        "heldout_action_accuracy": 0.8363636363636363,
+        "heldout_resolution_success": 0.8363636363636363,
+        "heldout_trace_bit_accuracy": 1.0,
+        "heldout_trace_exact": 1.0,
+        "row_count": 220
+      },
+      "R6_unresolved_answerable_minimal_pairs": {
+        "heldout_action_accuracy": 0.7363636363636363,
+        "heldout_resolution_success": 0.7363636363636363,
+        "heldout_trace_bit_accuracy": 1.0,
+        "heldout_trace_exact": 1.0,
+        "row_count": 220
+      },
+      "R7_long_context_evidence_span": {
+        "heldout_action_accuracy": 0.8272727272727273,
+        "heldout_resolution_success": 0.8272727272727273,
+        "heldout_trace_bit_accuracy": 0.977840909090909,
+        "heldout_trace_exact": 0.8363636363636363,
+        "row_count": 220
+      },
+      "R8_indirect_implication_language": {
+        "heldout_action_accuracy": 0.8409090909090909,
+        "heldout_resolution_success": 0.8409090909090909,
+        "heldout_trace_bit_accuracy": 1.0,
+        "heldout_trace_exact": 1.0,
+        "row_count": 220
+      },
+      "R9_mined_real_text_weak_labels": {
+        "heldout_action_accuracy": 0.2727272727272727,
+        "heldout_resolution_success": 0.2727272727272727,
+        "heldout_trace_bit_accuracy": 0.7505681818181819,
+        "heldout_trace_exact": 0.4727272727272727,
+        "row_count": 220
+      }
+    },
+    "span_weight": 0.25,
+    "system": "combined_capacity_aux_d192_p8",
+    "trace_weight": 1.25,
+    "validation_resolution_success": 0.8190909090909091,
+    "wrong_confident_answer_on_unresolved": 0.06555772994129158
+  },
+  "ingress_event_aux_d96_p8": {
+    "device": "cuda",
+    "event_weight": 0.4,
+    "false_ask_on_answerable": 0.022071307300509338,
+    "flow_dim": 96,
+    "heldout_action_accuracy": 0.8195454545454546,
+    "heldout_resolution_success": 0.8140909090909091,
+    "heldout_trace_bit_accuracy": 0.9588068181818182,
+    "heldout_trace_exact": 0.8536363636363636,
+    "parameter_count": 484492,
+    "pocket_count": 8,
+    "row_count": 4400,
+    "rung_metrics": {
+      "R0_explicit_controlled_evidence": {
+        "heldout_action_accuracy": 1.0,
+        "heldout_resolution_success": 1.0,
+        "heldout_trace_bit_accuracy": 0.9386363636363636,
+        "heldout_trace_exact": 0.509090909090909,
+        "row_count": 220
+      },
+      "R1_final_mixed_canonical": {
+        "heldout_action_accuracy": 0.8772727272727273,
+        "heldout_resolution_success": 0.8772727272727273,
+        "heldout_trace_bit_accuracy": 0.9988636363636364,
+        "heldout_trace_exact": 0.990909090909091,
+        "row_count": 220
+      },
+      "R2_naturalized_text_canonical": {
+        "heldout_action_accuracy": 0.8954545454545455,
+        "heldout_resolution_success": 0.8954545454545455,
+        "heldout_trace_bit_accuracy": 0.9982954545454545,
+        "heldout_trace_exact": 0.9863636363636363,
+        "row_count": 220
+      },
+      "R3_paraphrase_variation": {
+        "heldout_action_accuracy": 0.9227272727272727,
+        "heldout_resolution_success": 0.9227272727272727,
+        "heldout_trace_bit_accuracy": 0.9948863636363636,
+        "heldout_trace_exact": 0.9590909090909091,
+        "row_count": 220
+      },
+      "R4_decoy_density": {
+        "heldout_action_accuracy": 0.8454545454545455,
+        "heldout_resolution_success": 0.8454545454545455,
+        "heldout_trace_bit_accuracy": 0.990909090909091,
+        "heldout_trace_exact": 0.9272727272727272,
+        "row_count": 220
+      },
+      "R5_temporal_disorder": {
+        "heldout_action_accuracy": 0.8590909090909091,
+        "heldout_resolution_success": 0.8590909090909091,
+        "heldout_trace_bit_accuracy": 1.0,
+        "heldout_trace_exact": 1.0,
+        "row_count": 220
+      },
+      "R6_unresolved_answerable_minimal_pairs": {
+        "heldout_action_accuracy": 0.7636363636363637,
+        "heldout_resolution_success": 0.7636363636363637,
+        "heldout_trace_bit_accuracy": 1.0,
+        "heldout_trace_exact": 1.0,
+        "row_count": 220
+      },
+      "R7_long_context_evidence_span": {
+        "heldout_action_accuracy": 0.8363636363636363,
+        "heldout_resolution_success": 0.8363636363636363,
+        "heldout_trace_bit_accuracy": 0.990909090909091,
+        "heldout_trace_exact": 0.9318181818181818,
+        "row_count": 220
+      },
+      "R8_indirect_implication_language": {
+        "heldout_action_accuracy": 0.8545454545454545,
+        "heldout_resolution_success": 0.8545454545454545,
+        "heldout_trace_bit_accuracy": 1.0,
+        "heldout_trace_exact": 1.0,
+        "row_count": 220
+      },
+      "R9_mined_real_text_weak_labels": {
+        "heldout_action_accuracy": 0.3409090909090909,
+        "heldout_resolution_success": 0.2863636363636364,
+        "heldout_trace_bit_accuracy": 0.6755681818181818,
+        "heldout_trace_exact": 0.2318181818181818,
+        "row_count": 220
+      }
+    },
+    "span_weight": 0.0,
+    "system": "ingress_event_aux_d96_p8",
+    "trace_weight": 0.95,
+    "validation_resolution_success": 0.8140909090909091,
+    "wrong_confident_answer_on_unresolved": 0.04892367906066536
+  },
+  "random_static_control": {
+    "device": "none",
+    "event_weight": 0.0,
+    "false_ask_on_answerable": 0.7610356536502547,
+    "flow_dim": 0,
+    "heldout_action_accuracy": 0.24681818181818183,
+    "heldout_resolution_success": 0.0,
+    "heldout_trace_bit_accuracy": 0.0,
+    "heldout_trace_exact": 0.0,
+    "parameter_count": 0,
+    "pocket_count": 0,
+    "row_count": 4400,
+    "rung_metrics": {
+      "R0_explicit_controlled_evidence": {
+        "heldout_action_accuracy": 0.22727272727272727,
+        "heldout_resolution_success": 0.0,
+        "heldout_trace_bit_accuracy": 0.0,
+        "heldout_trace_exact": 0.0,
+        "row_count": 220
+      },
+      "R1_final_mixed_canonical": {
+        "heldout_action_accuracy": 0.22727272727272727,
+        "heldout_resolution_success": 0.0,
+        "heldout_trace_bit_accuracy": 0.0,
+        "heldout_trace_exact": 0.0,
+        "row_count": 220
+      },
+      "R2_naturalized_text_canonical": {
+        "heldout_action_accuracy": 0.2636363636363636,
+        "heldout_resolution_success": 0.0,
+        "heldout_trace_bit_accuracy": 0.0,
+        "heldout_trace_exact": 0.0,
+        "row_count": 220
+      },
+      "R3_paraphrase_variation": {
+        "heldout_action_accuracy": 0.2818181818181818,
+        "heldout_resolution_success": 0.0,
+        "heldout_trace_bit_accuracy": 0.0,
+        "heldout_trace_exact": 0.0,
+        "row_count": 220
+      },
+      "R4_decoy_density": {
+        "heldout_action_accuracy": 0.22727272727272727,
+        "heldout_resolution_success": 0.0,
+        "heldout_trace_bit_accuracy": 0.0,
+        "heldout_trace_exact": 0.0,
+        "row_count": 220
+      },
+      "R5_temporal_disorder": {
+        "heldout_action_accuracy": 0.2318181818181818,
+        "heldout_resolution_success": 0.0,
+        "heldout_trace_bit_accuracy": 0.0,
+        "heldout_trace_exact": 0.0,
+        "row_count": 220
+      },
+      "R6_unresolved_answerable_minimal_pairs": {
+        "heldout_action_accuracy": 0.22727272727272727,
+        "heldout_resolution_success": 0.0,
+        "heldout_trace_bit_accuracy": 0.0,
+        "heldout_trace_exact": 0.0,
+        "row_count": 220
+      },
+      "R7_long_context_evidence_span": {
+        "heldout_action_accuracy": 0.22727272727272727,
+        "heldout_resolution_success": 0.0,
+        "heldout_trace_bit_accuracy": 0.0,
+        "heldout_trace_exact": 0.0,
+        "row_count": 220
+      },
+      "R8_indirect_implication_language": {
+        "heldout_action_accuracy": 0.2318181818181818,
+        "heldout_resolution_success": 0.0,
+        "heldout_trace_bit_accuracy": 0.0,
+        "heldout_trace_exact": 0.0,
+        "row_count": 220
+      },
+      "R9_mined_real_text_weak_labels": {
+        "heldout_action_accuracy": 0.32272727272727275,
+        "heldout_resolution_success": 0.0,
+        "heldout_trace_bit_accuracy": 0.0,
+        "heldout_trace_exact": 0.0,
+        "row_count": 220
+      }
+    },
+    "span_weight": 0.0,
+    "system": "random_static_control",
+    "trace_weight": 0.0,
+    "validation_resolution_success": 0.0,
+    "wrong_confident_answer_on_unresolved": 0.2553816046966732
+  },
+  "span_bucket_aux_d96_p8": {
+    "device": "cuda",
+    "event_weight": 0.0,
+    "false_ask_on_answerable": 0.016129032258064516,
+    "flow_dim": 96,
+    "heldout_action_accuracy": 0.8045454545454546,
+    "heldout_resolution_success": 0.8027272727272727,
+    "heldout_trace_bit_accuracy": 0.9235795454545455,
+    "heldout_trace_exact": 0.735,
+    "parameter_count": 484492,
+    "pocket_count": 8,
+    "row_count": 4400,
+    "rung_metrics": {
+      "R0_explicit_controlled_evidence": {
+        "heldout_action_accuracy": 0.9954545454545455,
+        "heldout_resolution_success": 0.9954545454545455,
+        "heldout_trace_bit_accuracy": 0.9613636363636363,
+        "heldout_trace_exact": 0.7,
+        "row_count": 220
+      },
+      "R1_final_mixed_canonical": {
+        "heldout_action_accuracy": 0.8909090909090909,
+        "heldout_resolution_success": 0.8909090909090909,
+        "heldout_trace_bit_accuracy": 0.9488636363636364,
+        "heldout_trace_exact": 0.7954545454545454,
+        "row_count": 220
+      },
+      "R2_naturalized_text_canonical": {
+        "heldout_action_accuracy": 0.8863636363636364,
+        "heldout_resolution_success": 0.8863636363636364,
+        "heldout_trace_bit_accuracy": 0.9397727272727273,
+        "heldout_trace_exact": 0.759090909090909,
+        "row_count": 220
+      },
+      "R3_paraphrase_variation": {
+        "heldout_action_accuracy": 0.9181818181818182,
+        "heldout_resolution_success": 0.9181818181818182,
+        "heldout_trace_bit_accuracy": 0.9323863636363636,
+        "heldout_trace_exact": 0.6727272727272727,
+        "row_count": 220
+      },
+      "R4_decoy_density": {
+        "heldout_action_accuracy": 0.8409090909090909,
+        "heldout_resolution_success": 0.8409090909090909,
+        "heldout_trace_bit_accuracy": 0.8988636363636363,
+        "heldout_trace_exact": 0.509090909090909,
+        "row_count": 220
+      },
+      "R5_temporal_disorder": {
+        "heldout_action_accuracy": 0.8772727272727273,
+        "heldout_resolution_success": 0.8772727272727273,
+        "heldout_trace_bit_accuracy": 1.0,
+        "heldout_trace_exact": 1.0,
+        "row_count": 220
+      },
+      "R6_unresolved_answerable_minimal_pairs": {
+        "heldout_action_accuracy": 0.7636363636363637,
+        "heldout_resolution_success": 0.7636363636363637,
+        "heldout_trace_bit_accuracy": 1.0,
+        "heldout_trace_exact": 1.0,
+        "row_count": 220
+      },
+      "R7_long_context_evidence_span": {
+        "heldout_action_accuracy": 0.8227272727272728,
+        "heldout_resolution_success": 0.8227272727272728,
+        "heldout_trace_bit_accuracy": 0.9630681818181818,
+        "heldout_trace_exact": 0.7727272727272727,
+        "row_count": 220
+      },
+      "R8_indirect_implication_language": {
+        "heldout_action_accuracy": 0.8409090909090909,
+        "heldout_resolution_success": 0.8409090909090909,
+        "heldout_trace_bit_accuracy": 1.0,
+        "heldout_trace_exact": 1.0,
+        "row_count": 220
+      },
+      "R9_mined_real_text_weak_labels": {
+        "heldout_action_accuracy": 0.20909090909090908,
+        "heldout_resolution_success": 0.19090909090909092,
+        "heldout_trace_bit_accuracy": 0.5914772727272727,
+        "heldout_trace_exact": 0.1409090909090909,
+        "row_count": 220
+      }
+    },
+    "span_weight": 0.35,
+    "system": "span_bucket_aux_d96_p8",
+    "trace_weight": 0.95,
+    "validation_resolution_success": 0.8231818181818182,
+    "wrong_confident_answer_on_unresolved": 0.08317025440313111
+  },
+  "trace_ledger_weighted_d192_p8": {
+    "device": "cuda",
+    "event_weight": 0.0,
+    "false_ask_on_answerable": 0.019100169779286927,
+    "flow_dim": 192,
+    "heldout_action_accuracy": 0.8109090909090909,
+    "heldout_resolution_success": 0.8095454545454546,
+    "heldout_trace_bit_accuracy": 0.9735227272727273,
+    "heldout_trace_exact": 0.945,
+    "parameter_count": 1134796,
+    "pocket_count": 8,
+    "row_count": 4400,
+    "rung_metrics": {
+      "R0_explicit_controlled_evidence": {
+        "heldout_action_accuracy": 1.0,
+        "heldout_resolution_success": 1.0,
+        "heldout_trace_bit_accuracy": 1.0,
+        "heldout_trace_exact": 1.0,
+        "row_count": 220
+      },
+      "R1_final_mixed_canonical": {
+        "heldout_action_accuracy": 0.8818181818181818,
+        "heldout_resolution_success": 0.8818181818181818,
+        "heldout_trace_bit_accuracy": 1.0,
+        "heldout_trace_exact": 1.0,
+        "row_count": 220
+      },
+      "R2_naturalized_text_canonical": {
+        "heldout_action_accuracy": 0.8909090909090909,
+        "heldout_resolution_success": 0.8909090909090909,
+        "heldout_trace_bit_accuracy": 1.0,
+        "heldout_trace_exact": 1.0,
+        "row_count": 220
+      },
+      "R3_paraphrase_variation": {
+        "heldout_action_accuracy": 0.9045454545454545,
+        "heldout_resolution_success": 0.9045454545454545,
+        "heldout_trace_bit_accuracy": 1.0,
+        "heldout_trace_exact": 1.0,
+        "row_count": 220
+      },
+      "R4_decoy_density": {
+        "heldout_action_accuracy": 0.8318181818181818,
+        "heldout_resolution_success": 0.8318181818181818,
+        "heldout_trace_bit_accuracy": 1.0,
+        "heldout_trace_exact": 1.0,
+        "row_count": 220
+      },
+      "R5_temporal_disorder": {
+        "heldout_action_accuracy": 0.8545454545454545,
+        "heldout_resolution_success": 0.8545454545454545,
+        "heldout_trace_bit_accuracy": 1.0,
+        "heldout_trace_exact": 1.0,
+        "row_count": 220
+      },
+      "R6_unresolved_answerable_minimal_pairs": {
+        "heldout_action_accuracy": 0.759090909090909,
+        "heldout_resolution_success": 0.759090909090909,
+        "heldout_trace_bit_accuracy": 1.0,
+        "heldout_trace_exact": 1.0,
+        "row_count": 220
+      },
+      "R7_long_context_evidence_span": {
+        "heldout_action_accuracy": 0.8454545454545455,
+        "heldout_resolution_success": 0.8454545454545455,
+        "heldout_trace_bit_accuracy": 0.9994318181818181,
+        "heldout_trace_exact": 0.9954545454545455,
+        "row_count": 220
+      },
+      "R8_indirect_implication_language": {
+        "heldout_action_accuracy": 0.8590909090909091,
+        "heldout_resolution_success": 0.8590909090909091,
+        "heldout_trace_bit_accuracy": 1.0,
+        "heldout_trace_exact": 1.0,
+        "row_count": 220
+      },
+      "R9_mined_real_text_weak_labels": {
+        "heldout_action_accuracy": 0.2818181818181818,
+        "heldout_resolution_success": 0.2681818181818182,
+        "heldout_trace_bit_accuracy": 0.7357954545454546,
+        "heldout_trace_exact": 0.45454545454545453,
+        "row_count": 220
+      }
+    },
+    "span_weight": 0.0,
+    "system": "trace_ledger_weighted_d192_p8",
+    "trace_weight": 1.65,
+    "validation_resolution_success": 0.8231818181818182,
+    "wrong_confident_answer_on_unresolved": 0.059197651663405085
+  },
+  "trace_ledger_weighted_d96_p8": {
+    "device": "cuda",
+    "event_weight": 0.0,
+    "false_ask_on_answerable": 0.017826825127334467,
+    "flow_dim": 96,
+    "heldout_action_accuracy": 0.7786363636363637,
+    "heldout_resolution_success": 0.7777272727272727,
+    "heldout_trace_bit_accuracy": 0.9397727272727273,
+    "heldout_trace_exact": 0.7809090909090909,
+    "parameter_count": 484492,
+    "pocket_count": 8,
+    "row_count": 4400,
+    "rung_metrics": {
+      "R0_explicit_controlled_evidence": {
+        "heldout_action_accuracy": 1.0,
+        "heldout_resolution_success": 1.0,
+        "heldout_trace_bit_accuracy": 0.8125,
+        "heldout_trace_exact": 0.0,
+        "row_count": 220
+      },
+      "R1_final_mixed_canonical": {
+        "heldout_action_accuracy": 0.8590909090909091,
+        "heldout_resolution_success": 0.8590909090909091,
+        "heldout_trace_bit_accuracy": 1.0,
+        "heldout_trace_exact": 1.0,
+        "row_count": 220
+      },
+      "R2_naturalized_text_canonical": {
+        "heldout_action_accuracy": 0.9,
+        "heldout_resolution_success": 0.9,
+        "heldout_trace_bit_accuracy": 1.0,
+        "heldout_trace_exact": 1.0,
+        "row_count": 220
+      },
+      "R3_paraphrase_variation": {
+        "heldout_action_accuracy": 0.9,
+        "heldout_resolution_success": 0.9,
+        "heldout_trace_bit_accuracy": 0.99375,
+        "heldout_trace_exact": 0.9590909090909091,
+        "row_count": 220
+      },
+      "R4_decoy_density": {
+        "heldout_action_accuracy": 0.8409090909090909,
+        "heldout_resolution_success": 0.8409090909090909,
+        "heldout_trace_bit_accuracy": 1.0,
+        "heldout_trace_exact": 1.0,
+        "row_count": 220
+      },
+      "R5_temporal_disorder": {
+        "heldout_action_accuracy": 0.8363636363636363,
+        "heldout_resolution_success": 0.8363636363636363,
+        "heldout_trace_bit_accuracy": 1.0,
+        "heldout_trace_exact": 1.0,
+        "row_count": 220
+      },
+      "R6_unresolved_answerable_minimal_pairs": {
+        "heldout_action_accuracy": 0.7363636363636363,
+        "heldout_resolution_success": 0.7363636363636363,
+        "heldout_trace_bit_accuracy": 1.0,
+        "heldout_trace_exact": 1.0,
+        "row_count": 220
+      },
+      "R7_long_context_evidence_span": {
+        "heldout_action_accuracy": 0.7363636363636363,
+        "heldout_resolution_success": 0.7318181818181818,
+        "heldout_trace_bit_accuracy": 0.9630681818181818,
+        "heldout_trace_exact": 0.7272727272727273,
+        "row_count": 220
+      },
+      "R8_indirect_implication_language": {
+        "heldout_action_accuracy": 0.8318181818181818,
+        "heldout_resolution_success": 0.8318181818181818,
+        "heldout_trace_bit_accuracy": 0.9994318181818181,
+        "heldout_trace_exact": 0.9954545454545455,
+        "row_count": 220
+      },
+      "R9_mined_real_text_weak_labels": {
+        "heldout_action_accuracy": 0.14545454545454545,
+        "heldout_resolution_success": 0.1409090909090909,
+        "heldout_trace_bit_accuracy": 0.6289772727272728,
+        "heldout_trace_exact": 0.12727272727272726,
+        "row_count": 220
+      }
+    },
+    "span_weight": 0.0,
+    "system": "trace_ledger_weighted_d96_p8",
+    "trace_weight": 1.65,
+    "validation_resolution_success": 0.8113636363636364,
+    "wrong_confident_answer_on_unresolved": 0.06653620352250489
+  }
+}
