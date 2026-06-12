@@ -1,0 +1,26 @@
+{
+  "milestone": "E39B_ROUTER_DISCOVERS_LOCATION_AND_SCALE_PROBE",
+  "required_files": [
+    "README.md",
+    "aggregate_metrics_sample.json",
+    "system_results_sample.json",
+    "row_level_sample.jsonl",
+    "footprint_frame_sample.jsonl",
+    "mutation_history_sample.jsonl",
+    "deterministic_replay_sample_report.json",
+    "sample_only_checker_result.json",
+    "sample_schema.json"
+  ],
+  "run_id": "400f94647cf92ed9",
+  "sample_file_hashes": {
+    "README.md": "7bc014f270c36fbb3381777472afcd6b9eb3cf4f844f4584e5ba57e4332c8ad1",
+    "aggregate_metrics_sample.json": "2ffe544c8239741dac1303932af09eeb309af520e4e9c49c2a2c3b8d8198b296",
+    "deterministic_replay_sample_report.json": "b22f10a3f89672f4b39003e9a5fb03763b043fb5e2edd003d272abe7ce7e8c28",
+    "footprint_frame_sample.jsonl": "341616c510c4ae15130053e507c705f7402a4b8aa559b5328f800833376bd176",
+    "mutation_history_sample.jsonl": "321618b0a408fbd830e81f6d873354fc33c4a45fbe279fad2858e45656042dec",
+    "row_level_sample.jsonl": "c1c31aa79707cf2e9c932e0367d61b7aec047a224829f918d0e2d6c3fe692238",
+    "sample_only_checker_result.json": "31f3f9fe8985f2782cdecafe84f4c62d0bdb9ec7f3c2ae5204e6eff9e1365ca0",
+    "sample_schema.json": "9c05cb1c9110e6b80842039b36efdfd7bb310caa4f015a8ba2d285f8e0b99f25",
+    "system_results_sample.json": "35f5955ac2f4185db79426bcdc10fd8bc76a21334ccad74b2756a0c9d5772284"
+  }
+}

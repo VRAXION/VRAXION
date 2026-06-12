@@ -1,0 +1,6 @@
+{
+  "footprint_logging_v1": true,
+  "gradient_descent_used": false,
+  "milestone": "E39B_ROUTER_DISCOVERS_LOCATION_AND_SCALE_PROBE",
+  "router_discovers_location_scale": true
+}
