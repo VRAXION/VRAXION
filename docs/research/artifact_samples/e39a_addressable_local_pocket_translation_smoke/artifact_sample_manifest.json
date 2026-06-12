@@ -1,0 +1,26 @@
+{
+  "milestone": "E39A_ADDRESSABLE_LOCAL_POCKET_TRANSLATION_SMOKE",
+  "required_files": [
+    "README.md",
+    "aggregate_metrics_sample.json",
+    "system_results_sample.json",
+    "row_level_sample.jsonl",
+    "footprint_frame_sample.jsonl",
+    "mutation_history_sample.jsonl",
+    "deterministic_replay_sample_report.json",
+    "sample_only_checker_result.json",
+    "sample_schema.json"
+  ],
+  "run_id": "3101d4b0dc176e79",
+  "sample_file_hashes": {
+    "README.md": "327e6995cb9350f60844adff87b6f09dead2a4cd74321a78ad464b3424e3e80d",
+    "aggregate_metrics_sample.json": "cb555078f0c6eae1155db54980c2593513941a7a752d8bb34b27710899d5e83a",
+    "deterministic_replay_sample_report.json": "e6675f10fd09af82d6edcc62693f0b6fccd5f67ae62687fc8a31ebba61b091dc",
+    "footprint_frame_sample.jsonl": "89ba27bcb8bae1ddb4a5acfe97ad47960d107153dfefe9a2871d08c3309a00bf",
+    "mutation_history_sample.jsonl": "1745b84e6c3c96fb61fa7aacc40a6c75c006ba3734210fca37d13887cf98ebdc",
+    "row_level_sample.jsonl": "b6a537eecca86ab11bb040e8490d61b1ac88ef437ead69d95b7e8a117a3af671",
+    "sample_only_checker_result.json": "5dbb86f3fb8f40c57adcb81bab17abdb20d2bca18cc31bbfda6f5aaca86fdf48",
+    "sample_schema.json": "c6318b6630498aee4d6e8486fc57b29b87ed009018ba3fa811eef5325da6ffcf",
+    "system_results_sample.json": "7a8225fb7f2f30ad81d0b2770661e53c96fc3d7a2036b3a9d6bddd2172c8b118"
+  }
+}

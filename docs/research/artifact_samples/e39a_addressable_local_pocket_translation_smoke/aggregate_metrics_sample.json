@@ -1,0 +1,53 @@
+{
+  "decision": "e39a_multiscale_local_pocket_needed",
+  "milestone": "E39A_ADDRESSABLE_LOCAL_POCKET_TRANSLATION_SMOKE",
+  "run_id": "3101d4b0dc176e79",
+  "system_results": {
+    "addressable_local_pocket_mutation": {
+      "cell_accuracy": 0.9933186848958333,
+      "changed_spread_ratio": 0.04143880208333333,
+      "exact_rate": 0.8395833333333333,
+      "illegal_write_count_mean": 0.753125,
+      "missed_target_write_count_mean": 1.7708333333333333,
+      "row_count": 960,
+      "write_spread_ratio": 0.06158447265625
+    },
+    "addressable_multiscale_local_pocket_mutation": {
+      "cell_accuracy": 1.0,
+      "changed_spread_ratio": 0.044051106770833334,
+      "exact_rate": 1.0,
+      "illegal_write_count_mean": 0.0,
+      "missed_target_write_count_mean": 0.0,
+      "row_count": 960,
+      "write_spread_ratio": 0.06555989583333334
+    },
+    "full_flow_painter_diagnostic": {
+      "cell_accuracy": 1.0,
+      "changed_spread_ratio": 0.044051106770833334,
+      "exact_rate": 1.0,
+      "illegal_write_count_mean": 239.21666666666667,
+      "missed_target_write_count_mean": 0.0,
+      "row_count": 960,
+      "write_spread_ratio": 1.0
+    },
+    "origin_bound_local_pocket_mutation": {
+      "cell_accuracy": 0.9559488932291667,
+      "changed_spread_ratio": 0.0,
+      "exact_rate": 0.0,
+      "illegal_write_count_mean": 14.688541666666667,
+      "missed_target_write_count_mean": 15.471875,
+      "row_count": 960,
+      "write_spread_ratio": 0.0625
+    },
+    "random_location_control": {
+      "cell_accuracy": 0.9559488932291667,
+      "changed_spread_ratio": 0.0,
+      "exact_rate": 0.0,
+      "illegal_write_count_mean": 14.869791666666666,
+      "missed_target_write_count_mean": 15.653125,
+      "row_count": 960,
+      "write_spread_ratio": 0.0625
+    }
+  },
+  "wall_time_seconds": 15.795301999998628
+}
