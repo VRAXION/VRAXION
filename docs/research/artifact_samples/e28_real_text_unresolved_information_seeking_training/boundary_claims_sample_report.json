@@ -1,0 +1,5 @@
+{
+  "boundary": "E28 is a real-text feasibility audit over local FineWeb-Edu parquet data. It tests whether natural web text contains enough uncertainty and information-seeking signal for a small gradient-trained text model to learn a non-answer action. It is not a chatbot, raw language reasoning proof, deployed-model claim, AGI claim, consciousness claim, or model-scale claim.",
+  "forbidden_claims_present": false,
+  "passed": true
+}

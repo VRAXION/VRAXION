@@ -1,0 +1,17 @@
+{"device": "cuda", "epoch": 1, "event": "training_epoch", "loss": 1.3123737403324671, "system": "tiny_hash_mlp_real_text_gradient", "train_action_accuracy": 0.5882862088863243, "validation_action_accuracy": 0.5568345323741007}
+{"device": "cuda", "epoch": 2, "event": "training_epoch", "loss": 1.2080269711358207, "system": "tiny_hash_mlp_real_text_gradient", "train_action_accuracy": 0.5957876514714369, "validation_action_accuracy": 0.5597122302158274}
+{"device": "cuda", "epoch": 3, "event": "training_epoch", "loss": 1.0731801305498396, "system": "tiny_hash_mlp_real_text_gradient", "train_action_accuracy": 0.6586843623773803, "validation_action_accuracy": 0.6230215827338129}
+{"device": "cuda", "epoch": 4, "event": "training_epoch", "loss": 0.9146503337791988, "system": "tiny_hash_mlp_real_text_gradient", "train_action_accuracy": 0.7293710328909405, "validation_action_accuracy": 0.6618705035971223}
+{"device": "cuda", "epoch": 5, "event": "training_epoch", "loss": 0.7759025905813489, "system": "tiny_hash_mlp_real_text_gradient", "train_action_accuracy": 0.7893825735718407, "validation_action_accuracy": 0.6776978417266187}
+{"device": "cuda", "epoch": 6, "event": "training_epoch", "loss": 0.656201741525105, "system": "tiny_hash_mlp_real_text_gradient", "train_action_accuracy": 0.8228505481823427, "validation_action_accuracy": 0.6964028776978417}
+{"device": "cuda", "epoch": 7, "event": "training_epoch", "loss": 0.5499593530382428, "system": "tiny_hash_mlp_real_text_gradient", "train_action_accuracy": 0.8545874206578188, "validation_action_accuracy": 0.7136690647482015}
+{"device": "cuda", "epoch": 8, "event": "training_epoch", "loss": 0.4642712665455682, "system": "tiny_hash_mlp_real_text_gradient", "train_action_accuracy": 0.8958453548759376, "validation_action_accuracy": 0.7309352517985611}
+{"device": "cuda", "epoch": 9, "event": "training_epoch", "loss": 0.39054231345653534, "system": "tiny_hash_mlp_real_text_gradient", "train_action_accuracy": 0.9079630698211194, "validation_action_accuracy": 0.7438848920863309}
+{"device": "cuda", "epoch": 10, "event": "training_epoch", "loss": 0.33010572620800566, "system": "tiny_hash_mlp_real_text_gradient", "train_action_accuracy": 0.9359492210040392, "validation_action_accuracy": 0.7640287769784173}
+{"device": "cuda", "epoch": 11, "event": "training_epoch", "loss": 0.27881028609616415, "system": "tiny_hash_mlp_real_text_gradient", "train_action_accuracy": 0.9544143104443162, "validation_action_accuracy": 0.7611510791366907}
+{"device": "cuda", "epoch": 12, "event": "training_epoch", "loss": 0.23963959089347295, "system": "tiny_hash_mlp_real_text_gradient", "train_action_accuracy": 0.9679746105020196, "validation_action_accuracy": 0.7697841726618705}
+{"device": "cuda", "epoch": 13, "event": "training_epoch", "loss": 0.20349510652678354, "system": "tiny_hash_mlp_real_text_gradient", "train_action_accuracy": 0.9760530871321408, "validation_action_accuracy": 0.7611510791366907}
+{"device": "cuda", "epoch": 14, "event": "training_epoch", "loss": 0.17446902713605336, "system": "tiny_hash_mlp_real_text_gradient", "train_action_accuracy": 0.985862665897288, "validation_action_accuracy": 0.7697841726618705}
+{"epoch": 0, "system": "keyword_regex_reference", "validation_action_accuracy": 1.0}
+{"epoch": 0, "system": "majority_answer_baseline", "validation_action_accuracy": 0.3381294964028777}
+{"epoch": 0, "system": "random_control", "validation_action_accuracy": 0.20431654676258992}

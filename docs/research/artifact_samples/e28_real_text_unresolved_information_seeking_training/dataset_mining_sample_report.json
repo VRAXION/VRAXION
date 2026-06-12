@@ -1,0 +1,36 @@
+{
+  "counts_by_action": {
+    "ANSWER": 1600,
+    "ASK_FOR_EVIDENCE": 1600,
+    "HOLD_UNRESOLVED": 1600,
+    "SEARCH_MORE": 1600
+  },
+  "counts_by_pattern": {
+    "answer_hard_negative": 1504,
+    "cannot_determine": 67,
+    "dont_know": 197,
+    "expert_referral": 904,
+    "gather_more_data": 42,
+    "more_research_needed": 1558,
+    "need_more_info": 300,
+    "neutral_random": 96,
+    "not_enough_info": 396,
+    "unclear_uncertain": 683,
+    "unknown": 653
+  },
+  "counts_by_split": {
+    "heldout": 682,
+    "phrase_holdout": 1557,
+    "train": 3466,
+    "validation": 695
+  },
+  "examples_selected": 6400,
+  "file_report_count": 12,
+  "label_source": "regex-mined natural web text; labels are weak supervision, not human-reviewed gold",
+  "max_row_groups_per_file": 24,
+  "parquet_files": 12,
+  "parquet_root": "S:\\AI\\MESSY TRAINING DATA - INPUT ONLY\\Fineweb edu 10B",
+  "passed": true,
+  "row_groups_seen": 288,
+  "rows_seen": 288000
+}

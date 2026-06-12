@@ -1,0 +1,17 @@
+{
+  "actions": [
+    "ANSWER",
+    "ASK_FOR_EVIDENCE",
+    "SEARCH_MORE",
+    "HOLD_UNRESOLVED"
+  ],
+  "milestone": "E28_REAL_TEXT_UNRESOLVED_INFORMATION_SEEKING_TRAINING_AUDIT",
+  "real_text_source": "fineweb_edu_parquet",
+  "systems": [
+    "tiny_hash_mlp_real_text_gradient",
+    "keyword_regex_reference",
+    "majority_answer_baseline",
+    "random_control"
+  ],
+  "weak_supervision": true
+}
