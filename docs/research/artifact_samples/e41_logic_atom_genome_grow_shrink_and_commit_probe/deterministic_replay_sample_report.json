@@ -1,0 +1,12 @@
+{
+  "artifact_hashes": {
+    "footprint_frames.jsonl": "6f138ede3512e1c203ffcb951c8e344802fddf88c91bda791e436fea89896221",
+    "logic_atom_genome_report.json": "b55798375282591ca482dd12e37349a995e666958ff02a196261caca7dc657f2",
+    "mutation_report.json": "d0dd6660f734ec713f92d80164e6cc84aca5fce1767b3107a4578822deae4d15",
+    "proposal_commit_report.json": "1ad38b2cea55172d43cb0b3163b045da07e164b5089841f4741f2f93633f08a9",
+    "row_level_results.jsonl": "8c08c60945311d155b83aebb448587c7404c651ea8b37e5f43a67352143c358d",
+    "system_results.json": "6170b1abf97973c5a7182fbadb4bbeedc84b3f3d8a9f25f8e9cc6b1a46fef769"
+  },
+  "deterministic_replay_match_rate": 1.0,
+  "passed": true
+}
