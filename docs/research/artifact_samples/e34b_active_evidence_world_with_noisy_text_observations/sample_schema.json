@@ -1,0 +1,14 @@
+{
+  "active_evidence_world": true,
+  "gradient_descent_used": false,
+  "milestone": "E34B_ACTIVE_EVIDENCE_WORLD_WITH_NOISY_TEXT_OBSERVATIONS",
+  "noisy_text_observations": true,
+  "systems": [
+    "learned_mutation_text_policy",
+    "forced_initial_text_answer",
+    "random_text_action_control",
+    "ask_all_text_until_unique",
+    "keyword_shortcut_text_control",
+    "oracle_text_policy_reference"
+  ]
+}
