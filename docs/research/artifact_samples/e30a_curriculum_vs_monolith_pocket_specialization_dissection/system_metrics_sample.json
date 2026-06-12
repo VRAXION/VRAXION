@@ -1,0 +1,172 @@
+{
+  "curriculum_staged_final": {
+    "ablation_locality_score": 0.0,
+    "device": "cuda",
+    "false_ask_on_answerable": 0.0,
+    "heldout_action_accuracy": 0.6357142857142857,
+    "heldout_resolution_success": 0.6357142857142857,
+    "heldout_trace_bit_accuracy": 0.7598214285714285,
+    "heldout_trace_exact": 0.0,
+    "parameter_count": 479060,
+    "phrase_holdout_resolution_success": 0.6452380952380953,
+    "pocket_specialization_score": 0.2911147129323441,
+    "row_count": 1680,
+    "system": "curriculum_staged_final",
+    "training_plan": [
+      [
+        "stage1_train",
+        3
+      ],
+      [
+        "stage2_train",
+        3
+      ],
+      [
+        "stage3_train",
+        3
+      ],
+      [
+        "stage4_train",
+        3
+      ],
+      [
+        "stage5_train",
+        3
+      ],
+      [
+        "stage6_train",
+        9
+      ]
+    ],
+    "trap_resolution_success": 0.6857142857142857,
+    "validation_resolution_success": 0.6785714285714286,
+    "wrong_confident_answer_on_unresolved": 1.0
+  },
+  "monolith_direct_final": {
+    "ablation_locality_score": 0.07636459062281327,
+    "device": "cuda",
+    "false_ask_on_answerable": 0.0,
+    "heldout_action_accuracy": 0.8976190476190476,
+    "heldout_resolution_success": 0.8285714285714286,
+    "heldout_trace_bit_accuracy": 0.8535714285714285,
+    "heldout_trace_exact": 0.3261904761904762,
+    "parameter_count": 479060,
+    "phrase_holdout_resolution_success": 0.8214285714285714,
+    "pocket_specialization_score": 0.44906913812686994,
+    "row_count": 1680,
+    "system": "monolith_direct_final",
+    "training_plan": [
+      [
+        "stage6_train",
+        24
+      ]
+    ],
+    "trap_resolution_success": 0.8904761904761904,
+    "validation_resolution_success": 0.8452380952380952,
+    "wrong_confident_answer_on_unresolved": 0.0
+  },
+  "random_order_curriculum_control": {
+    "ablation_locality_score": 0.0,
+    "device": "cuda",
+    "false_ask_on_answerable": 0.0,
+    "heldout_action_accuracy": 0.7214285714285714,
+    "heldout_resolution_success": 0.6357142857142857,
+    "heldout_trace_bit_accuracy": 0.7154761904761905,
+    "heldout_trace_exact": 0.0,
+    "parameter_count": 479060,
+    "phrase_holdout_resolution_success": 0.6452380952380953,
+    "pocket_specialization_score": 0.2872391740253527,
+    "row_count": 1680,
+    "system": "random_order_curriculum_control",
+    "training_plan": [
+      [
+        "stage3_train",
+        3
+      ],
+      [
+        "stage1_train",
+        3
+      ],
+      [
+        "stage5_train",
+        3
+      ],
+      [
+        "stage2_train",
+        3
+      ],
+      [
+        "stage4_train",
+        3
+      ],
+      [
+        "stage6_train",
+        9
+      ]
+    ],
+    "trap_resolution_success": 0.6857142857142857,
+    "validation_resolution_success": 0.6785714285714286,
+    "wrong_confident_answer_on_unresolved": 0.7135325131810193
+  },
+  "random_static_control": {
+    "ablation_locality_score": 0.0,
+    "device": "none",
+    "false_ask_on_answerable": 0.7317731773177317,
+    "heldout_action_accuracy": 0.25476190476190474,
+    "heldout_resolution_success": 0.0,
+    "heldout_trace_bit_accuracy": 0.0,
+    "heldout_trace_exact": 0.0,
+    "parameter_count": 0,
+    "phrase_holdout_resolution_success": 0.0,
+    "pocket_specialization_score": 0.0,
+    "row_count": 1680,
+    "system": "random_static_control",
+    "training_plan": [],
+    "trap_resolution_success": 0.0,
+    "validation_resolution_success": 0.0,
+    "wrong_confident_answer_on_unresolved": 0.22671353251318102
+  },
+  "reverse_curriculum_control": {
+    "ablation_locality_score": 0.0,
+    "device": "cuda",
+    "false_ask_on_answerable": 0.0,
+    "heldout_action_accuracy": 0.6357142857142857,
+    "heldout_resolution_success": 0.6357142857142857,
+    "heldout_trace_bit_accuracy": 0.7604166666666666,
+    "heldout_trace_exact": 0.30952380952380953,
+    "parameter_count": 479060,
+    "phrase_holdout_resolution_success": 0.6452380952380953,
+    "pocket_specialization_score": 0.263070674467599,
+    "row_count": 1680,
+    "system": "reverse_curriculum_control",
+    "training_plan": [
+      [
+        "stage5_train",
+        3
+      ],
+      [
+        "stage4_train",
+        3
+      ],
+      [
+        "stage3_train",
+        3
+      ],
+      [
+        "stage2_train",
+        3
+      ],
+      [
+        "stage1_train",
+        3
+      ],
+      [
+        "stage6_train",
+        9
+      ]
+    ],
+    "trap_resolution_success": 0.6857142857142857,
+    "validation_resolution_success": 0.6785714285714286,
+    "wrong_confident_answer_on_unresolved": 1.0
+  }
+}

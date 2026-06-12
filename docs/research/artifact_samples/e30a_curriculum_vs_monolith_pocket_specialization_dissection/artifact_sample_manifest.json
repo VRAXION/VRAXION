@@ -1,0 +1,30 @@
+{
+  "milestone": "E30A_CURRICULUM_VS_MONOLITH_POCKET_SPECIALIZATION_DISSECTION",
+  "required_files": [
+    "README.md",
+    "artifact_sample_manifest.json",
+    "aggregate_metrics_sample.json",
+    "system_metrics_sample.json",
+    "row_level_sample.jsonl",
+    "pocket_activation_sample.json",
+    "pocket_ablation_sample.json",
+    "trace_ledger_sample.jsonl",
+    "training_curve_sample.jsonl",
+    "deterministic_replay_sample_report.json",
+    "sample_only_checker_result.json",
+    "sample_schema.json"
+  ],
+  "run_id": "b11a1296c579fed5",
+  "sample_file_hashes": {
+    "README.md": "46a5bef2b797621a6b85576117a3cad9346a44a725af532233d7959e52b48b46",
+    "aggregate_metrics_sample.json": "4ec5f2d50c17de66f3b67f1c3f962bbde68c1381b4855ffb72cd00ffa6f6b5cf",
+    "deterministic_replay_sample_report.json": "9b41a90c8e9ef28b0421da156b2528340e8c5b0a97d4cad95b202cf47eaeed14",
+    "pocket_ablation_sample.json": "e278bcc09a2b94b55df35f068892467643c76493df3710047c746a77e3d629ae",
+    "pocket_activation_sample.json": "083b1d1f56ba275e930f1cdf42bc66c9ab616f7703dcdfcf7be204912d7ddacf",
+    "row_level_sample.jsonl": "a8f1b144ba3dc1d9900c19bd6a91047c3940c63fe7b4b62a1d32b1ca31bd230e",
+    "sample_schema.json": "f655927d9b45e4496306d37500b76196934d79a78d5fce7b0c6c372f93284fc4",
+    "system_metrics_sample.json": "b0ceab2776377bf6b5f7138968c8e7aa82d302228e6bc730a6c1f3553f0a619e",
+    "trace_ledger_sample.jsonl": "f210f190199fd16df3924122266488c8273fea44f89495c556588b4aaa770c43",
+    "training_curve_sample.jsonl": "5fd08cc9696f3864465e22dff77863114ac65d18520a7eb59ae3cd2f60978f41"
+  }
+}

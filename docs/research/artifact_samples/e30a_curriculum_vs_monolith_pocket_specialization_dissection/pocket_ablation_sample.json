@@ -1,0 +1,483 @@
+{
+  "curriculum_staged_final": {
+    "ablation_locality_score": 0.0,
+    "base_resolution_success": 0.6613095238095238,
+    "pocket_ablation": [
+      {
+        "ablated_resolution_success": 0.6613095238095238,
+        "ablation_locality": 0.0,
+        "overall_drop": 0.0,
+        "pocket": 0,
+        "skill_drops": {
+          "binding": 0.0,
+          "contradiction": 0.0,
+          "decoy": 0.0,
+          "rule": 0.0,
+          "temporal": 0.0,
+          "unresolved": 0.0
+        }
+      },
+      {
+        "ablated_resolution_success": 0.6613095238095238,
+        "ablation_locality": 0.0,
+        "overall_drop": 0.0,
+        "pocket": 1,
+        "skill_drops": {
+          "binding": 0.0,
+          "contradiction": 0.0,
+          "decoy": 0.0,
+          "rule": 0.0,
+          "temporal": 0.0,
+          "unresolved": 0.0
+        }
+      },
+      {
+        "ablated_resolution_success": 0.6613095238095238,
+        "ablation_locality": 0.0,
+        "overall_drop": 0.0,
+        "pocket": 2,
+        "skill_drops": {
+          "binding": 0.0,
+          "contradiction": 0.0,
+          "decoy": 0.0,
+          "rule": 0.0,
+          "temporal": 0.0,
+          "unresolved": 0.0
+        }
+      },
+      {
+        "ablated_resolution_success": 0.6613095238095238,
+        "ablation_locality": 0.0,
+        "overall_drop": 0.0,
+        "pocket": 3,
+        "skill_drops": {
+          "binding": 0.0,
+          "contradiction": 0.0,
+          "decoy": 0.0,
+          "rule": 0.0,
+          "temporal": 0.0,
+          "unresolved": 0.0
+        }
+      },
+      {
+        "ablated_resolution_success": 0.6613095238095238,
+        "ablation_locality": 0.0,
+        "overall_drop": 0.0,
+        "pocket": 4,
+        "skill_drops": {
+          "binding": 0.0,
+          "contradiction": 0.0,
+          "decoy": 0.0,
+          "rule": 0.0,
+          "temporal": 0.0,
+          "unresolved": 0.0
+        }
+      },
+      {
+        "ablated_resolution_success": 0.6613095238095238,
+        "ablation_locality": 0.0,
+        "overall_drop": 0.0,
+        "pocket": 5,
+        "skill_drops": {
+          "binding": 0.0,
+          "contradiction": 0.0,
+          "decoy": 0.0,
+          "rule": 0.0,
+          "temporal": 0.0,
+          "unresolved": 0.0
+        }
+      },
+      {
+        "ablated_resolution_success": 0.6613095238095238,
+        "ablation_locality": 0.0,
+        "overall_drop": 0.0,
+        "pocket": 6,
+        "skill_drops": {
+          "binding": 0.0,
+          "contradiction": 0.0,
+          "decoy": 0.0,
+          "rule": 0.0,
+          "temporal": 0.0,
+          "unresolved": 0.0
+        }
+      },
+      {
+        "ablated_resolution_success": 0.6613095238095238,
+        "ablation_locality": 0.0,
+        "overall_drop": 0.0,
+        "pocket": 7,
+        "skill_drops": {
+          "binding": 0.0,
+          "contradiction": 0.0,
+          "decoy": 0.0,
+          "rule": 0.0,
+          "temporal": 0.0,
+          "unresolved": 0.0
+        }
+      }
+    ],
+    "system": "curriculum_staged_final"
+  },
+  "monolith_direct_final": {
+    "ablation_locality_score": 0.07636459062281327,
+    "base_resolution_success": 0.8464285714285714,
+    "pocket_ablation": [
+      {
+        "ablated_resolution_success": 0.8464285714285714,
+        "ablation_locality": 0.0,
+        "overall_drop": 0.0,
+        "pocket": 0,
+        "skill_drops": {
+          "binding": 0.0,
+          "contradiction": 0.0,
+          "decoy": 0.0,
+          "rule": 0.0,
+          "temporal": 0.0,
+          "unresolved": 0.0
+        }
+      },
+      {
+        "ablated_resolution_success": 0.8464285714285714,
+        "ablation_locality": 0.0,
+        "overall_drop": 0.0,
+        "pocket": 1,
+        "skill_drops": {
+          "binding": 0.0,
+          "contradiction": 0.0,
+          "decoy": 0.0,
+          "rule": 0.0,
+          "temporal": 0.0,
+          "unresolved": 0.0
+        }
+      },
+      {
+        "ablated_resolution_success": 0.8470238095238095,
+        "ablation_locality": 0.0,
+        "overall_drop": -0.0005952380952380931,
+        "pocket": 2,
+        "skill_drops": {
+          "binding": 0.0,
+          "contradiction": 0.0,
+          "decoy": 0.0,
+          "rule": 0.0,
+          "temporal": 0.0,
+          "unresolved": -0.0034364261168384896
+        }
+      },
+      {
+        "ablated_resolution_success": 0.843452380952381,
+        "ablation_locality": 0.6109167249825062,
+        "overall_drop": 0.0029761904761904656,
+        "pocket": 3,
+        "skill_drops": {
+          "binding": 0.0,
+          "contradiction": 0.010791366906474864,
+          "decoy": 0.0,
+          "rule": 0.0,
+          "temporal": 0.0,
+          "unresolved": 0.006872852233676979
+        }
+      },
+      {
+        "ablated_resolution_success": 0.8464285714285714,
+        "ablation_locality": 0.0,
+        "overall_drop": 0.0,
+        "pocket": 4,
+        "skill_drops": {
+          "binding": 0.0,
+          "contradiction": 0.0,
+          "decoy": 0.0,
+          "rule": 0.0,
+          "temporal": 0.0,
+          "unresolved": 0.0
+        }
+      },
+      {
+        "ablated_resolution_success": 0.8470238095238095,
+        "ablation_locality": 0.0,
+        "overall_drop": -0.0005952380952380931,
+        "pocket": 5,
+        "skill_drops": {
+          "binding": 0.0,
+          "contradiction": 0.0,
+          "decoy": 0.0,
+          "rule": 0.0,
+          "temporal": 0.0,
+          "unresolved": -0.0034364261168384896
+        }
+      },
+      {
+        "ablated_resolution_success": 0.8470238095238095,
+        "ablation_locality": 0.0,
+        "overall_drop": -0.0005952380952380931,
+        "pocket": 6,
+        "skill_drops": {
+          "binding": 0.0,
+          "contradiction": 0.0,
+          "decoy": 0.0,
+          "rule": 0.0,
+          "temporal": 0.0,
+          "unresolved": -0.0034364261168384896
+        }
+      },
+      {
+        "ablated_resolution_success": 0.8464285714285714,
+        "ablation_locality": 0.0,
+        "overall_drop": 0.0,
+        "pocket": 7,
+        "skill_drops": {
+          "binding": 0.0,
+          "contradiction": 0.0,
+          "decoy": 0.0,
+          "rule": 0.0,
+          "temporal": 0.0,
+          "unresolved": 0.0
+        }
+      }
+    ],
+    "system": "monolith_direct_final"
+  },
+  "random_order_curriculum_control": {
+    "ablation_locality_score": 0.0,
+    "base_resolution_success": 0.6613095238095238,
+    "pocket_ablation": [
+      {
+        "ablated_resolution_success": 0.6613095238095238,
+        "ablation_locality": 0.0,
+        "overall_drop": 0.0,
+        "pocket": 0,
+        "skill_drops": {
+          "binding": 0.0,
+          "contradiction": 0.0,
+          "decoy": 0.0,
+          "rule": 0.0,
+          "temporal": 0.0,
+          "unresolved": 0.0
+        }
+      },
+      {
+        "ablated_resolution_success": 0.6613095238095238,
+        "ablation_locality": 0.0,
+        "overall_drop": 0.0,
+        "pocket": 1,
+        "skill_drops": {
+          "binding": 0.0,
+          "contradiction": 0.0,
+          "decoy": 0.0,
+          "rule": 0.0,
+          "temporal": 0.0,
+          "unresolved": 0.0
+        }
+      },
+      {
+        "ablated_resolution_success": 0.6613095238095238,
+        "ablation_locality": 0.0,
+        "overall_drop": 0.0,
+        "pocket": 2,
+        "skill_drops": {
+          "binding": 0.0,
+          "contradiction": 0.0,
+          "decoy": 0.0,
+          "rule": 0.0,
+          "temporal": 0.0,
+          "unresolved": 0.0
+        }
+      },
+      {
+        "ablated_resolution_success": 0.6613095238095238,
+        "ablation_locality": 0.0,
+        "overall_drop": 0.0,
+        "pocket": 3,
+        "skill_drops": {
+          "binding": 0.0,
+          "contradiction": 0.0,
+          "decoy": 0.0,
+          "rule": 0.0,
+          "temporal": 0.0,
+          "unresolved": 0.0
+        }
+      },
+      {
+        "ablated_resolution_success": 0.6613095238095238,
+        "ablation_locality": 0.0,
+        "overall_drop": 0.0,
+        "pocket": 4,
+        "skill_drops": {
+          "binding": 0.0,
+          "contradiction": 0.0,
+          "decoy": 0.0,
+          "rule": 0.0,
+          "temporal": 0.0,
+          "unresolved": 0.0
+        }
+      },
+      {
+        "ablated_resolution_success": 0.6613095238095238,
+        "ablation_locality": 0.0,
+        "overall_drop": 0.0,
+        "pocket": 5,
+        "skill_drops": {
+          "binding": 0.0,
+          "contradiction": 0.0,
+          "decoy": 0.0,
+          "rule": 0.0,
+          "temporal": 0.0,
+          "unresolved": 0.0
+        }
+      },
+      {
+        "ablated_resolution_success": 0.6613095238095238,
+        "ablation_locality": 0.0,
+        "overall_drop": 0.0,
+        "pocket": 6,
+        "skill_drops": {
+          "binding": 0.0,
+          "contradiction": 0.0,
+          "decoy": 0.0,
+          "rule": 0.0,
+          "temporal": 0.0,
+          "unresolved": 0.0
+        }
+      },
+      {
+        "ablated_resolution_success": 0.6613095238095238,
+        "ablation_locality": 0.0,
+        "overall_drop": 0.0,
+        "pocket": 7,
+        "skill_drops": {
+          "binding": 0.0,
+          "contradiction": 0.0,
+          "decoy": 0.0,
+          "rule": 0.0,
+          "temporal": 0.0,
+          "unresolved": 0.0
+        }
+      }
+    ],
+    "system": "random_order_curriculum_control"
+  },
+  "random_static_control": {
+    "ablation_locality_score": 0.0,
+    "pocket_ablation": [],
+    "system": "random_static_control"
+  },
+  "reverse_curriculum_control": {
+    "ablation_locality_score": 0.0,
+    "base_resolution_success": 0.6613095238095238,
+    "pocket_ablation": [
+      {
+        "ablated_resolution_success": 0.6613095238095238,
+        "ablation_locality": 0.0,
+        "overall_drop": 0.0,
+        "pocket": 0,
+        "skill_drops": {
+          "binding": 0.0,
+          "contradiction": 0.0,
+          "decoy": 0.0,
+          "rule": 0.0,
+          "temporal": 0.0,
+          "unresolved": 0.0
+        }
+      },
+      {
+        "ablated_resolution_success": 0.6613095238095238,
+        "ablation_locality": 0.0,
+        "overall_drop": 0.0,
+        "pocket": 1,
+        "skill_drops": {
+          "binding": 0.0,
+          "contradiction": 0.0,
+          "decoy": 0.0,
+          "rule": 0.0,
+          "temporal": 0.0,
+          "unresolved": 0.0
+        }
+      },
+      {
+        "ablated_resolution_success": 0.6613095238095238,
+        "ablation_locality": 0.0,
+        "overall_drop": 0.0,
+        "pocket": 2,
+        "skill_drops": {
+          "binding": 0.0,
+          "contradiction": 0.0,
+          "decoy": 0.0,
+          "rule": 0.0,
+          "temporal": 0.0,
+          "unresolved": 0.0
+        }
+      },
+      {
+        "ablated_resolution_success": 0.6613095238095238,
+        "ablation_locality": 0.0,
+        "overall_drop": 0.0,
+        "pocket": 3,
+        "skill_drops": {
+          "binding": 0.0,
+          "contradiction": 0.0,
+          "decoy": 0.0,
+          "rule": 0.0,
+          "temporal": 0.0,
+          "unresolved": 0.0
+        }
+      },
+      {
+        "ablated_resolution_success": 0.6613095238095238,
+        "ablation_locality": 0.0,
+        "overall_drop": 0.0,
+        "pocket": 4,
+        "skill_drops": {
+          "binding": 0.0,
+          "contradiction": 0.0,
+          "decoy": 0.0,
+          "rule": 0.0,
+          "temporal": 0.0,
+          "unresolved": 0.0
+        }
+      },
+      {
+        "ablated_resolution_success": 0.6613095238095238,
+        "ablation_locality": 0.0,
+        "overall_drop": 0.0,
+        "pocket": 5,
+        "skill_drops": {
+          "binding": 0.0,
+          "contradiction": 0.0,
+          "decoy": 0.0,
+          "rule": 0.0,
+          "temporal": 0.0,
+          "unresolved": 0.0
+        }
+      },
+      {
+        "ablated_resolution_success": 0.6613095238095238,
+        "ablation_locality": 0.0,
+        "overall_drop": 0.0,
+        "pocket": 6,
+        "skill_drops": {
+          "binding": 0.0,
+          "contradiction": 0.0,
+          "decoy": 0.0,
+          "rule": 0.0,
+          "temporal": 0.0,
+          "unresolved": 0.0
+        }
+      },
+      {
+        "ablated_resolution_success": 0.6613095238095238,
+        "ablation_locality": 0.0,
+        "overall_drop": 0.0,
+        "pocket": 7,
+        "skill_drops": {
+          "binding": 0.0,
+          "contradiction": 0.0,
+          "decoy": 0.0,
+          "rule": 0.0,
+          "temporal": 0.0,
+          "unresolved": 0.0
+        }
+      }
+    ],
+    "system": "reverse_curriculum_control"
+  }
+}
