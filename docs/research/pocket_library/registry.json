@@ -1,0 +1,96 @@
+{
+  "active_selection": {
+    "ecology_selection_report": "docs/research/pocket_ecology/e36_selection/ecology_selection_report.json",
+    "milestone": "E36_POCKET_ECOLOGY_LIBRARY_SELECTION_CONFIRM",
+    "pocket_value_report": "docs/research/pocket_ecology/e36_selection/pocket_value_report.json",
+    "run_result": "docs/research/E36_POCKET_ECOLOGY_LIBRARY_SELECTION_CONFIRM_RESULT.md"
+  },
+  "canonical_roots": {
+    "archive_root": "docs/research/pocket_archive",
+    "ecology_root": "docs/research/pocket_ecology",
+    "registry_path": "docs/research/pocket_library/registry.json"
+  },
+  "lifecycle_policy": {
+    "banned_load_allowed": false,
+    "candidate_load_allowed": false,
+    "core_load_allowed": true,
+    "deprecated_load_allowed": false,
+    "stable_load_allowed": true,
+    "staging_load_allowed": false,
+    "stable_anchor_overwrite_allowed": false
+  },
+  "pockets": {
+    "dirty_start_only_decoder": {
+      "load_allowed": false,
+      "promotion_source": "E36_POCKET_ECOLOGY_LIBRARY_SELECTION_CONFIRM",
+      "reason": "high raw target score but dirtier commit behavior; useful diagnostic, not stable/core reusable pocket",
+      "status": "staging",
+      "value_report": {
+        "false_frame_commit_rate": 0.0265,
+        "stable_target_success": 0.9756944444444444,
+        "target_world_success": 0.9695833333333334,
+        "wrong_feature_write_rate": 0.010121527777777776
+      }
+    },
+    "dormant_unused_pocket": {
+      "load_allowed": false,
+      "promotion_source": "E36_POCKET_ECOLOGY_LIBRARY_SELECTION_CONFIRM",
+      "reason": "AFK pocket with no useful activations",
+      "status": "deprecated",
+      "value_report": {
+        "activation_count": 0,
+        "target_world_success": 0.0
+      }
+    },
+    "protocol_framing_ingress_v001": {
+      "archive_dir": "docs/research/pocket_archive/e35_transfer_smoke/binary_ingress/protocol_framing_ingress_v001",
+      "compatible_families": [
+        "binary_ingress",
+        "start_length_crc_end stable framing"
+      ],
+      "frozen_params_digest": "e92ba3ab1975757e784ed3731aad5e9f22f1fb0cf6ce8987669756213b26dcb0",
+      "frozen_params_path": "docs/research/pocket_archive/e35_transfer_smoke/binary_ingress/protocol_framing_ingress_v001/frozen_params.json",
+      "known_bottlenecks": [
+        "requires target-world codebook adapter when raw feature codes differ",
+        "bit-slip stream reassembly remains unresolved"
+      ],
+      "load_allowed": true,
+      "manifest_path": "docs/research/pocket_archive/e35_transfer_smoke/binary_ingress/protocol_framing_ingress_v001/pocket_manifest.json",
+      "pocket_id": "ProtocolFramingIngressPocket",
+      "pocket_type": "Ingress Codec / Lens Pocket",
+      "promotion_source": "E36_POCKET_ECOLOGY_LIBRARY_SELECTION_CONFIRM",
+      "reason": "safe stable-target transfer despite unsolved bit-slip family",
+      "requires_adapter": true,
+      "status": "stable",
+      "value_report": {
+        "bitslip_target_success": 0.3651041666666667,
+        "false_frame_commit_rate": 0.005081597222222222,
+        "stable_target_success": 1.0,
+        "target_world_success": 0.7460416666666667,
+        "wrong_feature_write_rate": 0.0
+      },
+      "version": "v001"
+    },
+    "protocol_framing_no_adapter": {
+      "load_allowed": false,
+      "promotion_source": "E36_POCKET_ECOLOGY_LIBRARY_SELECTION_CONFIRM",
+      "reason": "negative transfer without target adapter",
+      "status": "banned",
+      "value_report": {
+        "target_world_success": 0.0,
+        "wrong_feature_write_rate": 0.09440542328042327
+      }
+    },
+    "wrong_rotated_codebook_pocket": {
+      "load_allowed": false,
+      "promotion_source": "E36_POCKET_ECOLOGY_LIBRARY_SELECTION_CONFIRM",
+      "reason": "toxic wrong-codebook negative control",
+      "status": "banned",
+      "value_report": {
+        "target_world_success": 0.0,
+        "wrong_feature_write_rate": 0.0902423115079365
+      }
+    }
+  },
+  "schema_version": 1
+}

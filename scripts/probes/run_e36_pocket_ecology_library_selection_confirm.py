@@ -11,6 +11,7 @@ from typing import Any
 
 import run_e34a_minimal_evidence_world_harness_smoke as e34a
 import run_e35_pocket_transfer_integrity_audit as e35
+import pocket_library
 
 
 MILESTONE = "E36_POCKET_ECOLOGY_LIBRARY_SELECTION_CONFIRM"
@@ -86,9 +87,12 @@ POCKET_CANDIDATES: dict[str, dict[str, Any]] = {
 
 
 def load_source_policy() -> dict[str, Any]:
-    archive = Path("docs/research/pocket_archive/e35_transfer_smoke/binary_ingress/protocol_framing_ingress_v001/frozen_params.json")
-    if archive.exists():
-        return json.loads(archive.read_text(encoding="utf-8"))
+    try:
+        return pocket_library.load_frozen_params("protocol_framing_ingress_v001")
+    except (FileNotFoundError, KeyError, ValueError):
+        archive = Path("docs/research/pocket_archive/e35_transfer_smoke/binary_ingress/protocol_framing_ingress_v001/frozen_params.json")
+        if archive.exists():
+            return json.loads(archive.read_text(encoding="utf-8"))
     return e35.e34d.initial_policy()
 
 
@@ -483,7 +487,7 @@ def main() -> int:
         "passed": True,
     }
     write_sample_pack(sample_dir, aggregate, all_rows, selection_history)
-    e34a.write_json(out / "backend_manifest.json", {"milestone": MILESTONE, "run_id": run_id, "systems": SYSTEMS, "valid_systems": VALID_SYSTEMS, "gradient_descent_used": False, "optimizer_used": False, "backprop_used": False, "boundary": BOUNDARY})
+    e34a.write_json(out / "backend_manifest.json", {"milestone": MILESTONE, "run_id": run_id, "systems": SYSTEMS, "valid_systems": VALID_SYSTEMS, "gradient_descent_used": False, "optimizer_used": False, "backprop_used": False, "pocket_library_registry": "docs/research/pocket_library/registry.json", "boundary": BOUNDARY})
     e34a.write_json(out / "ecology_world_report.json", {"world_count": len(worlds), "worlds": [{"world_id": w["world_id"], "world_run_id": w["world_run_id"], "support_count": len(w["support"])} for w in worlds], "splits": SPLITS})
     e34a.write_json(out / "candidate_pocket_report.json", POCKET_CANDIDATES)
     e34a.write_json(out / "pocket_value_report.json", pocket_values)
