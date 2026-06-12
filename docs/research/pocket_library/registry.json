@@ -15,6 +15,8 @@
     "candidate_load_allowed": false,
     "core_load_allowed": true,
     "deprecated_load_allowed": false,
+    "legacy_quarantine_control_load_allowed": true,
+    "legacy_quarantine_main_load_allowed": false,
     "stable_load_allowed": true,
     "staging_load_allowed": false,
     "stable_anchor_overwrite_allowed": false
@@ -75,7 +77,12 @@
         "requires target-world codebook adapter when raw feature codes differ",
         "bit-slip stream reassembly remains unresolved"
       ],
-      "load_allowed": true,
+      "control_load_allowed": true,
+      "control_modes_allowed": [
+        "quarantine_only",
+        "mixed_with_normal"
+      ],
+      "load_allowed": false,
       "manifest_path": "docs/research/pocket_archive/e35_transfer_smoke/binary_ingress/protocol_framing_ingress_v001/pocket_manifest.json",
       "input_contract": "binary stream bits plus optional requested_feature guard",
       "output_contract": "accepted Flow Field evidence event or reject",
@@ -114,7 +121,7 @@
           "target codebook remap without adapter declaration"
         ]
       },
-      "status": "stable",
+      "status": "legacy_quarantine",
       "trace_contract": {
         "must_record": [
           "activation",
@@ -158,6 +165,27 @@
         "wrong_feature_write_rate": 0.0902423115079365
       }
     }
+  },
+  "quarantine_policy": {
+    "active": true,
+    "allowed_control_modes": [
+      "normal_only",
+      "quarantine_only",
+      "mixed_with_normal"
+    ],
+    "default_main_load_policy": "exclude_quarantine",
+    "include_banned_requires_unsafe_flag": true,
+    "load_requires_explicit_control_mode": true,
+    "main_library_empty_allowed": true,
+    "notes": [
+      "Legacy pockets are excluded from normal pocket-generation runs.",
+      "Legacy pockets may be used only as explicit non-main controls.",
+      "Use quarantine_only to test old pockets alone.",
+      "Use mixed_with_normal to test old pockets mixed into current stable/core pockets."
+    ],
+    "quarantine_statuses": [
+      "legacy_quarantine"
+    ]
   },
   "schema_version": 1,
   "training_lock": {

@@ -8,8 +8,10 @@ from pathlib import Path
 from typing import Any
 
 
-ALLOWED_STATUSES = {"candidate", "staging", "stable", "core", "deprecated", "banned"}
+ALLOWED_STATUSES = {"candidate", "staging", "stable", "core", "legacy_quarantine", "deprecated", "banned"}
 LOAD_ALLOWED_STATUSES = {"stable", "core"}
+QUARANTINE_STATUSES = {"legacy_quarantine"}
+CONTROL_MODES = {"normal_only", "quarantine_only", "mixed_with_normal"}
 ACTIVE_ABI_VERSION = "PocketABI-v1"
 ACTIVE_REGISTRY_SCHEMA_VERSION = 1
 REQUIRED_STABLE_FILES = [
@@ -114,6 +116,31 @@ def stable_pocket_ids(registry: dict[str, Any] | None = None, pocket_type: str |
     return sorted(out)
 
 
+def quarantine_pocket_ids(registry: dict[str, Any] | None = None, pocket_type: str | None = None) -> list[str]:
+    out: list[str] = []
+    for pocket_id, entry in pocket_entries(registry).items():
+        if entry.get("status") not in QUARANTINE_STATUSES:
+            continue
+        if entry.get("control_load_allowed") is not True:
+            continue
+        if pocket_type is not None and entry.get("pocket_type") != pocket_type:
+            continue
+        out.append(pocket_id)
+    return sorted(out)
+
+
+def control_pocket_ids(control_mode: str, registry: dict[str, Any] | None = None, pocket_type: str | None = None) -> list[str]:
+    if control_mode not in CONTROL_MODES:
+        raise ValueError(f"invalid control mode {control_mode}; expected one of {sorted(CONTROL_MODES)}")
+    stable_ids = stable_pocket_ids(registry=registry, pocket_type=pocket_type)
+    quarantined_ids = quarantine_pocket_ids(registry=registry, pocket_type=pocket_type)
+    if control_mode == "normal_only":
+        return stable_ids
+    if control_mode == "quarantine_only":
+        return quarantined_ids
+    return sorted(set(stable_ids) | set(quarantined_ids))
+
+
 def load_pocket_entry(pocket_id: str, registry: dict[str, Any] | None = None, require_load_allowed: bool = True) -> dict[str, Any]:
     entries = pocket_entries(registry)
     if pocket_id not in entries:
@@ -124,6 +151,16 @@ def load_pocket_entry(pocket_id: str, registry: dict[str, Any] | None = None, re
             raise ValueError(f"pocket is not load-allowed: {pocket_id} status={entry.get('status')}")
         if entry.get("abi_version") != ACTIVE_ABI_VERSION:
             raise ValueError(f"unsupported ABI for {pocket_id}: {entry.get('abi_version')}")
+    return entry
+
+
+def load_control_entry(pocket_id: str, control_mode: str, registry: dict[str, Any] | None = None) -> dict[str, Any]:
+    entry = load_pocket_entry(pocket_id, registry=registry, require_load_allowed=False)
+    allowed = set(control_pocket_ids(control_mode, registry=registry))
+    if pocket_id not in allowed:
+        raise ValueError(f"pocket is not allowed in control_mode={control_mode}: {pocket_id}")
+    if entry.get("abi_version") != ACTIVE_ABI_VERSION:
+        raise ValueError(f"unsupported ABI for {pocket_id}: {entry.get('abi_version')}")
     return entry
 
 
@@ -138,11 +175,34 @@ def load_frozen_params(pocket_id: str, registry: dict[str, Any] | None = None) -
     return params
 
 
+def load_control_frozen_params(pocket_id: str, control_mode: str, registry: dict[str, Any] | None = None) -> dict[str, Any]:
+    entry = load_control_entry(pocket_id, control_mode=control_mode, registry=registry)
+    params_path = resolve_repo_path(str(entry["frozen_params_path"]))
+    params = read_json(params_path)
+    expected = entry.get("frozen_params_digest")
+    observed = json_digest(params)
+    if expected and expected != observed:
+        raise ValueError(f"frozen param digest mismatch for {pocket_id}: {observed} != {expected}")
+    return params
+
+
 def load_for_target(pocket_id: str, adapter_declared: bool = False, registry: dict[str, Any] | None = None) -> dict[str, Any]:
     entry = load_pocket_entry(pocket_id, registry=registry, require_load_allowed=True)
     if entry.get("requires_adapter") is True and not adapter_declared:
         raise ValueError(f"pocket requires adapter declaration for target import: {pocket_id}")
     return {"entry": entry, "frozen_params": load_frozen_params(pocket_id, registry=registry)}
+
+
+def load_for_control_target(
+    pocket_id: str,
+    control_mode: str,
+    adapter_declared: bool = False,
+    registry: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    entry = load_control_entry(pocket_id, control_mode=control_mode, registry=registry)
+    if entry.get("requires_adapter") is True and not adapter_declared:
+        raise ValueError(f"pocket requires adapter declaration for target control import: {pocket_id}")
+    return {"entry": entry, "frozen_params": load_control_frozen_params(pocket_id, control_mode=control_mode, registry=registry)}
 
 
 def stage_candidate_guard(pocket_id: str, archive_dir: str, registry: dict[str, Any] | None = None) -> None:
@@ -168,10 +228,21 @@ def validate_registry(path: Path = REGISTRY_PATH) -> dict[str, Any]:
         return {"passed": False, "failure_count": 1, "failures": [f"registry parse failed: {exc}"]}
 
     roots = registry.get("canonical_roots", {})
+    quarantine_policy = registry.get("quarantine_policy", {})
     if roots.get("archive_root") != "docs/research/pocket_archive":
         failures.append("canonical archive root mismatch")
     if roots.get("ecology_root") != "docs/research/pocket_ecology":
         failures.append("canonical ecology root mismatch")
+    if quarantine_policy:
+        if quarantine_policy.get("active") is not True:
+            failures.append("quarantine_policy exists but is not active")
+        modes = set(quarantine_policy.get("allowed_control_modes", []))
+        if modes != CONTROL_MODES:
+            failures.append("quarantine_policy allowed_control_modes mismatch")
+        if quarantine_policy.get("default_main_load_policy") != "exclude_quarantine":
+            failures.append("quarantine_policy must exclude quarantine from main loads")
+        if quarantine_policy.get("load_requires_explicit_control_mode") is not True:
+            failures.append("quarantine control loads must require explicit control mode")
     lock = registry.get("training_lock", {})
     if registry.get("schema_version") != ACTIVE_REGISTRY_SCHEMA_VERSION:
         failures.append("registry schema_version mismatch")
@@ -242,7 +313,9 @@ def validate_registry(path: Path = REGISTRY_PATH) -> dict[str, Any]:
                         failures.append(f"{pocket_id}: abi_compatibility ABI mismatch")
                     if abi.get("frozen_params_digest") != entry.get("frozen_params_digest"):
                         failures.append(f"{pocket_id}: abi_compatibility digest mismatch")
-    if not stable_ids:
+    quarantined_ids = quarantine_pocket_ids(registry)
+    clean_empty_main_allowed = quarantine_policy.get("main_library_empty_allowed") is True
+    if not stable_ids and not clean_empty_main_allowed:
         failures.append("no stable/core loadable pockets")
 
     for pocket_id, entry in entries.items():
@@ -252,22 +325,38 @@ def validate_registry(path: Path = REGISTRY_PATH) -> dict[str, Any]:
                 failures.append(f"{pocket_id}: unsafe load did not fail")
             except ValueError:
                 pass
-    try:
-        load_for_target("protocol_framing_ingress_v001", adapter_declared=False, registry=registry)
-        failures.append("adapter-required target import did not fail without adapter declaration")
-    except ValueError:
-        pass
     if "protocol_framing_ingress_v001" in entries:
         try:
-            load_for_target("protocol_framing_ingress_v001", adapter_declared=True, registry=registry)
+            load_for_target("protocol_framing_ingress_v001", adapter_declared=False, registry=registry)
+            failures.append("quarantined pocket loaded through main target import")
+        except ValueError:
+            pass
+        try:
+            load_for_control_target(
+                "protocol_framing_ingress_v001",
+                control_mode="quarantine_only",
+                adapter_declared=False,
+                registry=registry,
+            )
+            failures.append("adapter-required quarantine control import did not fail without adapter declaration")
+        except ValueError:
+            pass
+        try:
+            load_for_control_target(
+                "protocol_framing_ingress_v001",
+                control_mode="quarantine_only",
+                adapter_declared=True,
+                registry=registry,
+            )
         except Exception as exc:
-            failures.append(f"adapter-declared target import failed: {exc}")
+            failures.append(f"adapter-declared quarantine control import failed: {exc}")
 
     return {
         "passed": not failures,
         "failure_count": len(failures),
         "failures": failures,
         "stable_pocket_ids": sorted(stable_ids),
+        "quarantine_pocket_ids": sorted(quarantined_ids),
         "registry_path": rel(path),
     }
 
@@ -276,7 +365,10 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--check", action="store_true")
     parser.add_argument("--list-stable", action="store_true")
+    parser.add_argument("--list-control", choices=sorted(CONTROL_MODES))
     parser.add_argument("--load-pocket")
+    parser.add_argument("--load-control")
+    parser.add_argument("--control-mode", choices=sorted(CONTROL_MODES), default="quarantine_only")
     parser.add_argument("--write-summary")
     args = parser.parse_args()
 
@@ -289,11 +381,29 @@ def main() -> int:
     if args.list_stable:
         print(json.dumps({"stable_pocket_ids": stable_pocket_ids()}, indent=2, sort_keys=True))
         return 0
+    if args.list_control:
+        print(json.dumps({"control_mode": args.list_control, "pocket_ids": control_pocket_ids(args.list_control)}, indent=2, sort_keys=True))
+        return 0
     if args.load_pocket:
         params = load_frozen_params(args.load_pocket)
         print(json.dumps({"pocket_id": args.load_pocket, "param_keys": sorted(params), "param_digest": json_digest(params)}, indent=2, sort_keys=True))
         return 0
-    raise SystemExit("use --check, --list-stable, or --load-pocket")
+    if args.load_control:
+        params = load_control_frozen_params(args.load_control, control_mode=args.control_mode)
+        print(
+            json.dumps(
+                {
+                    "control_mode": args.control_mode,
+                    "pocket_id": args.load_control,
+                    "param_keys": sorted(params),
+                    "param_digest": json_digest(params),
+                },
+                indent=2,
+                sort_keys=True,
+            )
+        )
+        return 0
+    raise SystemExit("use --check, --list-stable, --list-control, --load-pocket, or --load-control")
 
 
 if __name__ == "__main__":

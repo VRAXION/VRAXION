@@ -4,6 +4,7 @@
     "staging",
     "stable",
     "core",
+    "legacy_quarantine",
     "deprecated",
     "banned"
   ],
@@ -15,6 +16,14 @@
   "load_allowed_statuses": [
     "stable",
     "core"
+  ],
+  "quarantine_control_statuses": [
+    "legacy_quarantine"
+  ],
+  "quarantine_control_modes": [
+    "normal_only",
+    "quarantine_only",
+    "mixed_with_normal"
   ],
   "required_archive_files_for_stable_core": [
     "pocket_manifest.json",

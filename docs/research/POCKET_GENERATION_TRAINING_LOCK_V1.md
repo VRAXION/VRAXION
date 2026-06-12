@@ -116,6 +116,39 @@ toxic/wrong-codebook pockets
 These may exist as candidate/staging diagnostics, but `load_allowed` must stay
 false until they pass the registry and ecology gates.
 
+## Legacy Quarantine Mode
+
+Old-architecture pockets are not deleted, but they must not auto-load into new
+main pocket-generation runs. They move to:
+
+```text
+status = legacy_quarantine
+load_allowed = false
+control_load_allowed = true
+```
+
+Allowed control modes:
+
+```text
+normal_only
+  load only current stable/core pockets
+
+quarantine_only
+  load only legacy quarantine pockets
+
+mixed_with_normal
+  load stable/core pockets plus legacy quarantine pockets
+```
+
+Default main policy:
+
+```text
+exclude_quarantine
+```
+
+This preserves old pockets for regression/ablation/control tests without letting
+them contaminate the new footprint-aware architecture.
+
 ## Canonical Storage
 
 ```text
@@ -155,12 +188,13 @@ use available CPU/GPU aggressively where safe
 never run as a black box
 ```
 
-## Current Locked Stable Pocket
+## Current Legacy Quarantine Pocket
 
 ```text
 protocol_framing_ingress_v001
-status = stable
-load_allowed = true
+status = legacy_quarantine
+load_allowed = false
+control_load_allowed = true
 abi_version = PocketABI-v1
 ```
 
@@ -175,6 +209,9 @@ Needs local adapter:
 
 Not solved:
   bit-slip stream reassembly
+
+Control use only:
+  quarantine_only or mixed_with_normal
 ```
 
 Boundary: this lock is an engineering/research scaffold for controlled pocket

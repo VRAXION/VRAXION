@@ -21,6 +21,20 @@
     "stable",
     "core"
   ],
+  "quarantine_control_modes": [
+    "normal_only",
+    "quarantine_only",
+    "mixed_with_normal"
+  ],
+  "quarantine_statuses": [
+    "legacy_quarantine"
+  ],
+  "quarantine_policy": {
+    "default_main_load_policy": "exclude_quarantine",
+    "legacy_control_load_allowed": true,
+    "load_requires_explicit_control_mode": true,
+    "main_library_empty_allowed": true
+  },
   "locked_call_shape": "CALL(pocket_id, flow_or_payload, context) -> proposal/event/reject",
   "must_not_auto_promote": [
     "dirty monolithic decoders",

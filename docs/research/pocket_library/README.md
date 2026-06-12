@@ -27,28 +27,42 @@ docs/research/POCKET_GENERATION_TRAINING_LOCK_V1.md
 docs/research/pocket_library/training_lock_v1.json
 ```
 
-The first stable pocket is:
+The current legacy quarantine pocket is:
 
 ```text
 protocol_framing_ingress_v001
 ```
 
-It is a protocol/framing ingress mechanism pocket, not a full binary-stream or
-text-ingress solution. It still requires a target-world adapter when feature
-codebooks differ, and bit-slip stream reassembly remains unresolved.
+It was useful as a protocol/framing ingress mechanism pocket, but it belongs to
+the pre-footprint-logging architecture. It is excluded from default main runs and
+is available only as a non-main control.
 
 ## Lifecycle Statuses
 
 ```text
-candidate   new, not trusted
-staging     useful but not stable/core
-stable      load-allowed frozen anchor
-core        load-allowed high-confidence frozen anchor
-deprecated  stale/AFK/no-use pocket
-banned      toxic/negative-transfer pocket
+candidate          new, not trusted
+staging            useful but not stable/core
+stable             load-allowed frozen anchor
+core               load-allowed high-confidence frozen anchor
+legacy_quarantine  old-architecture pocket; control-only, never main auto-load
+deprecated         stale/AFK/no-use pocket
+banned             toxic/negative-transfer pocket
 ```
 
 Only `stable` and `core` pockets may be loaded automatically by future probes.
+`legacy_quarantine` pockets may be loaded only through an explicit control mode:
+
+```text
+normal_only        current stable/core pockets only
+quarantine_only    legacy quarantine pockets only
+mixed_with_normal  stable/core plus legacy quarantine pockets
+```
+
+The default main load policy is:
+
+```text
+exclude_quarantine
+```
 
 Stable/core pockets must declare `abi_version = PocketABI-v1`.
 
@@ -69,7 +83,8 @@ Use:
 ```text
 python scripts/probes/pocket_library.py --check
 python scripts/probes/pocket_library.py --list-stable
-python scripts/probes/pocket_library.py --load-pocket protocol_framing_ingress_v001
+python scripts/probes/pocket_library.py --list-control quarantine_only
+python scripts/probes/pocket_library.py --load-control protocol_framing_ingress_v001 --control-mode quarantine_only
 python scripts/probes/run_pocket_library_registry_check.py --write-summary
 ```
 
