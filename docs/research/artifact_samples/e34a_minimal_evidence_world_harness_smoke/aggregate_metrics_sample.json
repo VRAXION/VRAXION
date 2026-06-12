@@ -1,0 +1,17 @@
+{
+  "decision": "e34a_active_evidence_world_confirmed",
+  "decision_context": {
+    "accepted_mutations": 2,
+    "ask_all_avg_steps": 3.3660714285714284,
+    "ask_all_closed_loop_success": 1.0,
+    "forced_wrong_confident_answer": 1.0,
+    "learned_avg_steps": 3.0,
+    "learned_closed_loop_success": 1.0,
+    "learned_trace_exact": 1.0,
+    "learned_wrong_confident_answer": 0.0,
+    "random_closed_loop_success": 0.4738095238095238,
+    "rejected_mutations": 2158
+  },
+  "deterministic_replay_match_rate": 1.0,
+  "run_id": "bfd5c9a7ecd660c0"
+}

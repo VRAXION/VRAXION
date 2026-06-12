@@ -1,0 +1,12 @@
+{
+  "active_evidence_world": true,
+  "gradient_descent_used": false,
+  "milestone": "E34A_MINIMAL_EVIDENCE_WORLD_HARNESS_SMOKE",
+  "systems": [
+    "learned_mutation_policy",
+    "forced_initial_answer",
+    "random_action_control",
+    "ask_all_until_unique",
+    "oracle_info_gain_reference"
+  ]
+}
