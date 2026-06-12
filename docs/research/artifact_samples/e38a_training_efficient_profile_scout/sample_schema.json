@@ -1,0 +1,13 @@
+{
+  "gradient_descent_used": false,
+  "milestone": "E38A_TRAINING_EFFICIENT_PROFILE_SCOUT",
+  "profile_scout": true,
+  "profiles": [
+    "P1",
+    "P2",
+    "P3",
+    "P4",
+    "P5",
+    "P6"
+  ]
+}

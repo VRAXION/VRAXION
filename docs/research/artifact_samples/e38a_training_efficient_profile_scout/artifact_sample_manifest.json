@@ -1,0 +1,24 @@
+{
+  "milestone": "E38A_TRAINING_EFFICIENT_PROFILE_SCOUT",
+  "required_files": [
+    "README.md",
+    "artifact_sample_manifest.json",
+    "aggregate_metrics_sample.json",
+    "profile_results_sample.json",
+    "row_level_sample.jsonl",
+    "mutation_history_sample.jsonl",
+    "deterministic_replay_sample_report.json",
+    "sample_only_checker_result.json",
+    "sample_schema.json"
+  ],
+  "run_id": "9f8f4aaa8e976fa7",
+  "sample_file_hashes": {
+    "README.md": "3f6867af6c7f8d9d8e4270831e285a2369cf0261a14af02bfbe60328a80c4a40",
+    "aggregate_metrics_sample.json": "3288794a00ea27b81da41258f2394978cf923db2eb9427db40b229bc518e164a",
+    "deterministic_replay_sample_report.json": "836c7446dd7d767587efba74452c16843fe7d98c92a2a1064bb8c1f1e6d32628",
+    "mutation_history_sample.jsonl": "2c20d00f8828f09f0eb2e342c39a4755a3cbc60dcd0af312bdb55abb5e156709",
+    "profile_results_sample.json": "fbb59fb380f49ff58695ecba7dd11d2481f519142e15ca58549e154c1ab704c0",
+    "row_level_sample.jsonl": "f3f7c5c28baa918005eebce800bf1e46dedc372739f903b7a91009254285dd52",
+    "sample_schema.json": "20541479424f47ae88c13704ae80c5ff50a2f2a760be7111cd295eb542ee5c9c"
+  }
+}
