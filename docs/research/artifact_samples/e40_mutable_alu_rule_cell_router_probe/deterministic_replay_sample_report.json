@@ -1,0 +1,11 @@
+{
+  "artifact_hashes": {
+    "alu_rule_program_report.json": "7a9513a42f46188aed3b692c2c7b15fb039fcbdf9eea7b33149c908a95e511ae",
+    "footprint_frames.jsonl": "e32e2b91c39148de80d948f4bb7217e7fcdc7728d6309cf93e87e351fa63e5ec",
+    "mutation_report.json": "f1bc37fdc6669ff53331771d132b488c93335a6fe713f029888ec0daddac74fa",
+    "row_level_results.jsonl": "a35ae68d58431da4e5a762c0c00eb3c131705f9ea4efd7d9d432cf99fd1baeca",
+    "system_results.json": "84d9815883b70e548bfa92f75008c421d44f84f8d384a596a27c35b35e767c06"
+  },
+  "deterministic_replay_match_rate": 1.0,
+  "passed": true
+}
