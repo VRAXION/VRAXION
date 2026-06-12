@@ -53,6 +53,22 @@
         "binary_ingress",
         "start_length_crc_end stable framing"
       ],
+      "compatible_flow_dims": [
+        "payload_native"
+      ],
+      "compatible_protocols": [
+        "start_length_crc_end"
+      ],
+      "cost_estimate": {
+        "call_cost": 0.06,
+        "cost_unit": "E36 symbolic row utility"
+      },
+      "evaluator_version": "E36-pocket-value-v1",
+      "failure_modes": [
+        "target codebook mismatch without adapter",
+        "bit-slip stream reassembly",
+        "false frame if protocol guard is removed"
+      ],
       "frozen_params_digest": "e92ba3ab1975757e784ed3731aad5e9f22f1fb0cf6ce8987669756213b26dcb0",
       "frozen_params_path": "docs/research/pocket_archive/e35_transfer_smoke/binary_ingress/protocol_framing_ingress_v001/frozen_params.json",
       "known_bottlenecks": [
@@ -65,10 +81,50 @@
       "output_contract": "accepted Flow Field evidence event or reject",
       "pocket_id": "ProtocolFramingIngressPocket",
       "pocket_type": "Ingress Codec / Lens Pocket",
+      "preserve_mask_contract": {
+        "kind": "payload_native",
+        "rule": "does not mutate Stable Flow directly; emits accepted evidence event or reject"
+      },
       "promotion_source": "E36_POCKET_ECOLOGY_LIBRARY_SELECTION_CONFIRM",
+      "quantization_format": "json_float_policy_v1",
+      "read_mask_contract": {
+        "kind": "payload_native",
+        "rule": "reads raw_bits and optional requested_feature guard"
+      },
+      "reaudit_policy": {
+        "required_if": [
+          "ABI major version changes",
+          "registry schema changes",
+          "evaluator version changes",
+          "Flow/Grounding Field layout changes",
+          "quantization format changes",
+          "safety rule changes",
+          "adapter contract changes"
+        ]
+      },
       "reason": "safe stable-target transfer despite unsolved bit-slip family",
       "requires_adapter": true,
+      "side_effect_policy": {
+        "allowed": [
+          "emit accepted evidence event",
+          "reject malformed/unguarded frame"
+        ],
+        "forbidden": [
+          "direct Stable Flow overwrite",
+          "target codebook remap without adapter declaration"
+        ]
+      },
       "status": "stable",
+      "trace_contract": {
+        "must_record": [
+          "activation",
+          "requested_feature",
+          "frame_guard_result",
+          "commit_or_reject",
+          "decoded_feature",
+          "wrong_feature_write_guard"
+        ]
+      },
       "value_report": {
         "bitslip_target_success": 0.3651041666666667,
         "false_frame_commit_rate": 0.005081597222222222,
@@ -76,7 +132,11 @@
         "target_world_success": 0.7460416666666667,
         "wrong_feature_write_rate": 0.0
       },
-      "version": "v001"
+      "version": "v001",
+      "write_mask_contract": {
+        "kind": "payload_native",
+        "rule": "writes only event/proposal channel owned by caller integration layer"
+      }
     },
     "protocol_framing_no_adapter": {
       "load_allowed": false,

@@ -1,0 +1,31 @@
+{
+  "allowed_statuses": [
+    "candidate",
+    "staging",
+    "stable",
+    "core",
+    "deprecated",
+    "banned"
+  ],
+  "canonical_roots": {
+    "archive_root": "docs/research/pocket_archive",
+    "ecology_root": "docs/research/pocket_ecology",
+    "registry_path": "docs/research/pocket_library/registry.json"
+  },
+  "load_allowed_statuses": [
+    "stable",
+    "core"
+  ],
+  "required_archive_files_for_stable_core": [
+    "pocket_manifest.json",
+    "pocket_contract.md",
+    "frozen_params.json",
+    "lineage.json",
+    "source_metrics.json",
+    "transfer_tests.json",
+    "safety_report.json",
+    "abi_compatibility.json"
+  ],
+  "schema_version": 1,
+  "stable_anchor_overwrite_allowed": false
+}

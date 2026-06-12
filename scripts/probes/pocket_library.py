@@ -11,6 +11,7 @@ from typing import Any
 ALLOWED_STATUSES = {"candidate", "staging", "stable", "core", "deprecated", "banned"}
 LOAD_ALLOWED_STATUSES = {"stable", "core"}
 ACTIVE_ABI_VERSION = "PocketABI-v1"
+ACTIVE_REGISTRY_SCHEMA_VERSION = 1
 REQUIRED_STABLE_FILES = [
     "pocket_manifest.json",
     "pocket_contract.md",
@@ -19,6 +20,31 @@ REQUIRED_STABLE_FILES = [
     "source_metrics.json",
     "transfer_tests.json",
     "safety_report.json",
+    "abi_compatibility.json",
+]
+REQUIRED_STABLE_ENTRY_FIELDS = [
+    "abi_version",
+    "archive_dir",
+    "manifest_path",
+    "frozen_params_path",
+    "frozen_params_digest",
+    "input_contract",
+    "output_contract",
+    "read_mask_contract",
+    "write_mask_contract",
+    "preserve_mask_contract",
+    "side_effect_policy",
+    "requires_adapter",
+    "compatible_flow_dims",
+    "compatible_protocols",
+    "compatible_families",
+    "quantization_format",
+    "cost_estimate",
+    "trace_contract",
+    "failure_modes",
+    "known_bottlenecks",
+    "evaluator_version",
+    "reaudit_policy",
 ]
 
 
@@ -31,6 +57,8 @@ REGISTRY_PATH = REPO_ROOT / "docs" / "research" / "pocket_library" / "registry.j
 ARCHIVE_ROOT = REPO_ROOT / "docs" / "research" / "pocket_archive"
 ECOLOGY_ROOT = REPO_ROOT / "docs" / "research" / "pocket_ecology"
 TRAINING_LOCK_PATH = REPO_ROOT / "docs" / "research" / "pocket_library" / "training_lock_v1.json"
+ABI_SCHEMA_PATH = REPO_ROOT / "docs" / "research" / "pocket_library" / "abi_schema_v1.json"
+REGISTRY_SCHEMA_PATH = REPO_ROOT / "docs" / "research" / "pocket_library" / "registry_schema_v1.json"
 
 
 def json_digest(value: object) -> str:
@@ -94,6 +122,8 @@ def load_pocket_entry(pocket_id: str, registry: dict[str, Any] | None = None, re
     if require_load_allowed:
         if entry.get("status") not in LOAD_ALLOWED_STATUSES or entry.get("load_allowed") is not True:
             raise ValueError(f"pocket is not load-allowed: {pocket_id} status={entry.get('status')}")
+        if entry.get("abi_version") != ACTIVE_ABI_VERSION:
+            raise ValueError(f"unsupported ABI for {pocket_id}: {entry.get('abi_version')}")
     return entry
 
 
@@ -106,6 +136,13 @@ def load_frozen_params(pocket_id: str, registry: dict[str, Any] | None = None) -
     if expected and expected != observed:
         raise ValueError(f"frozen param digest mismatch for {pocket_id}: {observed} != {expected}")
     return params
+
+
+def load_for_target(pocket_id: str, adapter_declared: bool = False, registry: dict[str, Any] | None = None) -> dict[str, Any]:
+    entry = load_pocket_entry(pocket_id, registry=registry, require_load_allowed=True)
+    if entry.get("requires_adapter") is True and not adapter_declared:
+        raise ValueError(f"pocket requires adapter declaration for target import: {pocket_id}")
+    return {"entry": entry, "frozen_params": load_frozen_params(pocket_id, registry=registry)}
 
 
 def stage_candidate_guard(pocket_id: str, archive_dir: str, registry: dict[str, Any] | None = None) -> None:
@@ -136,6 +173,8 @@ def validate_registry(path: Path = REGISTRY_PATH) -> dict[str, Any]:
     if roots.get("ecology_root") != "docs/research/pocket_ecology":
         failures.append("canonical ecology root mismatch")
     lock = registry.get("training_lock", {})
+    if registry.get("schema_version") != ACTIVE_REGISTRY_SCHEMA_VERSION:
+        failures.append("registry schema_version mismatch")
     if lock.get("status") != "active" or lock.get("abi_version") != ACTIVE_ABI_VERSION:
         failures.append("active PocketABI-v1 training lock missing")
     if lock.get("lock_json") != "docs/research/pocket_library/training_lock_v1.json":
@@ -150,6 +189,15 @@ def validate_registry(path: Path = REGISTRY_PATH) -> dict[str, Any]:
             failures.append("training lock ABI mismatch")
         if training_lock.get("stable_anchor_overwrite_allowed") is not False:
             failures.append("training lock permits stable anchor overwrite")
+    for schema_path in [ABI_SCHEMA_PATH, REGISTRY_SCHEMA_PATH]:
+        if not schema_path.exists():
+            failures.append(f"missing schema file {rel(schema_path)}")
+        else:
+            schema = read_json(schema_path)
+            if schema.get("abi_version") not in {None, ACTIVE_ABI_VERSION}:
+                failures.append(f"{rel(schema_path)} ABI mismatch")
+            if schema_path == REGISTRY_SCHEMA_PATH and schema.get("schema_version") != ACTIVE_REGISTRY_SCHEMA_VERSION:
+                failures.append("registry schema file version mismatch")
 
     entries = registry.get("pockets", {})
     if not isinstance(entries, dict) or not entries:
@@ -165,19 +213,7 @@ def validate_registry(path: Path = REGISTRY_PATH) -> dict[str, Any]:
             failures.append(f"{pocket_id}: load_allowed true while status={status}")
         if status in LOAD_ALLOWED_STATUSES:
             stable_ids.append(pocket_id)
-            for key in [
-                "abi_version",
-                "archive_dir",
-                "manifest_path",
-                "frozen_params_path",
-                "frozen_params_digest",
-                "input_contract",
-                "output_contract",
-                "allowed_side_effects",
-                "compatible_families",
-                "known_bottlenecks",
-                "requires_adapter",
-            ]:
+            for key in REQUIRED_STABLE_ENTRY_FIELDS:
                 if not entry.get(key):
                     failures.append(f"{pocket_id}: missing {key}")
             if entry.get("abi_version") != ACTIVE_ABI_VERSION:
@@ -199,8 +235,33 @@ def validate_registry(path: Path = REGISTRY_PATH) -> dict[str, Any]:
                     failures.append(f"{pocket_id}: frozen params digest mismatch")
                 if manifest.get("version") != entry.get("version"):
                     failures.append(f"{pocket_id}: version mismatch")
+                abi_path = archive_dir / "abi_compatibility.json"
+                if abi_path.exists():
+                    abi = read_json(abi_path)
+                    if abi.get("abi_version") != entry.get("abi_version"):
+                        failures.append(f"{pocket_id}: abi_compatibility ABI mismatch")
+                    if abi.get("frozen_params_digest") != entry.get("frozen_params_digest"):
+                        failures.append(f"{pocket_id}: abi_compatibility digest mismatch")
     if not stable_ids:
         failures.append("no stable/core loadable pockets")
+
+    for pocket_id, entry in entries.items():
+        if entry.get("status") not in LOAD_ALLOWED_STATUSES:
+            try:
+                load_pocket_entry(pocket_id, registry=registry, require_load_allowed=True)
+                failures.append(f"{pocket_id}: unsafe load did not fail")
+            except ValueError:
+                pass
+    try:
+        load_for_target("protocol_framing_ingress_v001", adapter_declared=False, registry=registry)
+        failures.append("adapter-required target import did not fail without adapter declaration")
+    except ValueError:
+        pass
+    if "protocol_framing_ingress_v001" in entries:
+        try:
+            load_for_target("protocol_framing_ingress_v001", adapter_declared=True, registry=registry)
+        except Exception as exc:
+            failures.append(f"adapter-declared target import failed: {exc}")
 
     return {
         "passed": not failures,

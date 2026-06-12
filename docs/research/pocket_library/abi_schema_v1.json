@@ -1,0 +1,42 @@
+{
+  "abi_version": "PocketABI-v1",
+  "allowed_mask_kinds": [
+    "absolute",
+    "symbolic",
+    "adapter_mapped",
+    "region_relative",
+    "payload_native",
+    "none"
+  ],
+  "required_stable_entry_fields": [
+    "abi_version",
+    "pocket_id",
+    "version",
+    "pocket_type",
+    "input_contract",
+    "output_contract",
+    "read_mask_contract",
+    "write_mask_contract",
+    "preserve_mask_contract",
+    "side_effect_policy",
+    "requires_adapter",
+    "compatible_flow_dims",
+    "compatible_protocols",
+    "compatible_families",
+    "quantization_format",
+    "cost_estimate",
+    "trace_contract",
+    "failure_modes",
+    "known_bottlenecks",
+    "frozen_params_digest",
+    "evaluator_version",
+    "reaudit_policy",
+    "status",
+    "load_allowed",
+    "promotion_source"
+  ],
+  "stable_load_allowed_statuses": [
+    "stable",
+    "core"
+  ]
+}
