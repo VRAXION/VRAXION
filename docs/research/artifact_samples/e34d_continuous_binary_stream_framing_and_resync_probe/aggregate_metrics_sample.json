@@ -1,0 +1,20 @@
+{
+  "decision": "e34d_crc_guard_positive_but_resync_brittle",
+  "decision_context": {
+    "accepted_mutations": 17,
+    "crc_end_success": 0.7811111111111111,
+    "multi_adversarial_success": 1.0,
+    "multi_bit_drop_success": 0.33,
+    "multi_bit_insert_success": 0.36333333333333334,
+    "multi_continuous_success": 1.0,
+    "multi_false_frame_commit_rate": 0.004226851851851852,
+    "multi_frame_success": 0.7811111111111111,
+    "multi_wrong_feature_write_rate": 0.0,
+    "rejected_mutations": 1903,
+    "requested_guard_success": 0.7811111111111111,
+    "shortcut_adversarial_success": 0.0,
+    "start_only_success": 0.9622222222222222
+  },
+  "deterministic_replay_match_rate": 1.0,
+  "run_id": "8ec88c64f476afff"
+}

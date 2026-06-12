@@ -1,0 +1,474 @@
+{
+  "crc_end_requested_feature_guard": {
+    "accepted_flow_write_accuracy": 0.9383333333333334,
+    "answer_correct": 0.8516666666666667,
+    "avg_inspects": 3.94,
+    "avg_rejected_packets": 2.352777777777778,
+    "avg_steps": 5.94,
+    "binary_ingress_accuracy": 0.9816104497354498,
+    "closed_loop_success": 0.7811111111111111,
+    "false_ask": 0.0,
+    "false_frame_commit_rate": 0.004226851851851852,
+    "first_useful_evidence_action": 1.0,
+    "frame_sync_accuracy": 0.9691510141093475,
+    "redundant_actions": 0.4172222222222222,
+    "row_count": 1800,
+    "split_accepted_flow_write_accuracy": {
+      "adversarial_sync_decoy": 1.0,
+      "continuous_bit_drop": 0.82,
+      "continuous_bit_insert": 0.81,
+      "continuous_stream": 1.0,
+      "packet_clean": 1.0,
+      "packet_noise_10": 1.0
+    },
+    "split_avg_steps": {
+      "adversarial_sync_decoy": 4.0,
+      "continuous_bit_drop": 9.073333333333334,
+      "continuous_bit_insert": 9.266666666666667,
+      "continuous_stream": 4.0,
+      "packet_clean": 4.0,
+      "packet_noise_10": 5.3
+    },
+    "split_closed_loop_success": {
+      "adversarial_sync_decoy": 1.0,
+      "continuous_bit_drop": 0.33,
+      "continuous_bit_insert": 0.36333333333333334,
+      "continuous_stream": 1.0,
+      "packet_clean": 1.0,
+      "packet_noise_10": 0.9933333333333333
+    },
+    "split_false_frame_commit_rate": {
+      "adversarial_sync_decoy": 0.0,
+      "continuous_bit_drop": 0.015228835978835979,
+      "continuous_bit_insert": 0.010132275132275131,
+      "continuous_stream": 0.0,
+      "packet_clean": 0.0,
+      "packet_noise_10": 0.0
+    },
+    "split_wrong_feature_write_rate": {
+      "adversarial_sync_decoy": 0.0,
+      "continuous_bit_drop": 0.0,
+      "continuous_bit_insert": 0.0,
+      "continuous_stream": 0.0,
+      "packet_clean": 0.0,
+      "packet_noise_10": 0.0
+    },
+    "system": "crc_end_requested_feature_guard",
+    "trace_exact": 0.7811111111111111,
+    "wrong_confident_answer": 0.21888888888888888,
+    "wrong_feature_write_rate": 0.0
+  },
+  "first_sync_shortcut_control": {
+    "accepted_flow_write_accuracy": 0.6091834215167549,
+    "answer_correct": 0.4938888888888889,
+    "avg_inspects": 5.016666666666667,
+    "avg_rejected_packets": 4.306666666666667,
+    "avg_steps": 7.016666666666667,
+    "binary_ingress_accuracy": 0.5009166666666667,
+    "closed_loop_success": 0.36444444444444446,
+    "false_ask": 0.01,
+    "false_frame_commit_rate": 0.04086882716049382,
+    "first_useful_evidence_action": 0.9577777777777777,
+    "frame_sync_accuracy": 0.483744708994709,
+    "redundant_actions": 0.7172222222222222,
+    "row_count": 1800,
+    "split_accepted_flow_write_accuracy": {
+      "adversarial_sync_decoy": 0.17176719576719576,
+      "continuous_bit_drop": 0.32666666666666666,
+      "continuous_bit_insert": 0.33,
+      "continuous_stream": 0.8466666666666667,
+      "packet_clean": 1.0,
+      "packet_noise_10": 0.98
+    },
+    "split_avg_steps": {
+      "adversarial_sync_decoy": 8.126666666666667,
+      "continuous_bit_drop": 8.57,
+      "continuous_bit_insert": 8.843333333333334,
+      "continuous_stream": 7.693333333333333,
+      "packet_clean": 3.86,
+      "packet_noise_10": 5.006666666666667
+    },
+    "split_closed_loop_success": {
+      "adversarial_sync_decoy": 0.0,
+      "continuous_bit_drop": 0.016666666666666666,
+      "continuous_bit_insert": 0.013333333333333334,
+      "continuous_stream": 0.36666666666666664,
+      "packet_clean": 0.91,
+      "packet_noise_10": 0.88
+    },
+    "split_false_frame_commit_rate": {
+      "adversarial_sync_decoy": 0.2368796296296296,
+      "continuous_bit_drop": 0.005277777777777778,
+      "continuous_bit_insert": 0.0030555555555555553,
+      "continuous_stream": 0.0,
+      "packet_clean": 0.0,
+      "packet_noise_10": 0.0
+    },
+    "split_wrong_feature_write_rate": {
+      "adversarial_sync_decoy": 0.2368796296296296,
+      "continuous_bit_drop": 0.0,
+      "continuous_bit_insert": 0.0,
+      "continuous_stream": 0.0,
+      "packet_clean": 0.0,
+      "packet_noise_10": 0.0
+    },
+    "system": "first_sync_shortcut_control",
+    "trace_exact": 0.36444444444444446,
+    "wrong_confident_answer": 0.615,
+    "wrong_feature_write_rate": 0.03947993827160493
+  },
+  "multi_frame_resync_guard": {
+    "accepted_flow_write_accuracy": 0.9383333333333334,
+    "answer_correct": 0.8516666666666667,
+    "avg_inspects": 3.94,
+    "avg_rejected_packets": 2.352777777777778,
+    "avg_steps": 5.94,
+    "binary_ingress_accuracy": 0.9816104497354498,
+    "closed_loop_success": 0.7811111111111111,
+    "false_ask": 0.0,
+    "false_frame_commit_rate": 0.004226851851851852,
+    "first_useful_evidence_action": 1.0,
+    "frame_sync_accuracy": 0.9691510141093475,
+    "redundant_actions": 0.4172222222222222,
+    "row_count": 1800,
+    "split_accepted_flow_write_accuracy": {
+      "adversarial_sync_decoy": 1.0,
+      "continuous_bit_drop": 0.82,
+      "continuous_bit_insert": 0.81,
+      "continuous_stream": 1.0,
+      "packet_clean": 1.0,
+      "packet_noise_10": 1.0
+    },
+    "split_avg_steps": {
+      "adversarial_sync_decoy": 4.0,
+      "continuous_bit_drop": 9.073333333333334,
+      "continuous_bit_insert": 9.266666666666667,
+      "continuous_stream": 4.0,
+      "packet_clean": 4.0,
+      "packet_noise_10": 5.3
+    },
+    "split_closed_loop_success": {
+      "adversarial_sync_decoy": 1.0,
+      "continuous_bit_drop": 0.33,
+      "continuous_bit_insert": 0.36333333333333334,
+      "continuous_stream": 1.0,
+      "packet_clean": 1.0,
+      "packet_noise_10": 0.9933333333333333
+    },
+    "split_false_frame_commit_rate": {
+      "adversarial_sync_decoy": 0.0,
+      "continuous_bit_drop": 0.015228835978835979,
+      "continuous_bit_insert": 0.010132275132275131,
+      "continuous_stream": 0.0,
+      "packet_clean": 0.0,
+      "packet_noise_10": 0.0
+    },
+    "split_wrong_feature_write_rate": {
+      "adversarial_sync_decoy": 0.0,
+      "continuous_bit_drop": 0.0,
+      "continuous_bit_insert": 0.0,
+      "continuous_stream": 0.0,
+      "packet_clean": 0.0,
+      "packet_noise_10": 0.0
+    },
+    "system": "multi_frame_resync_guard",
+    "trace_exact": 0.7811111111111111,
+    "wrong_confident_answer": 0.21888888888888888,
+    "wrong_feature_write_rate": 0.0
+  },
+  "oracle_framing_reference": {
+    "accepted_flow_write_accuracy": 1.0,
+    "answer_correct": 1.0,
+    "avg_inspects": 2.0,
+    "avg_rejected_packets": 0.0,
+    "avg_steps": 4.0,
+    "binary_ingress_accuracy": 1.0,
+    "closed_loop_success": 1.0,
+    "false_ask": 0.0,
+    "false_frame_commit_rate": 0.0,
+    "first_useful_evidence_action": 1.0,
+    "frame_sync_accuracy": 1.0,
+    "redundant_actions": 0.0,
+    "row_count": 1800,
+    "split_accepted_flow_write_accuracy": {
+      "adversarial_sync_decoy": 1.0,
+      "continuous_bit_drop": 1.0,
+      "continuous_bit_insert": 1.0,
+      "continuous_stream": 1.0,
+      "packet_clean": 1.0,
+      "packet_noise_10": 1.0
+    },
+    "split_avg_steps": {
+      "adversarial_sync_decoy": 4.0,
+      "continuous_bit_drop": 4.0,
+      "continuous_bit_insert": 4.0,
+      "continuous_stream": 4.0,
+      "packet_clean": 4.0,
+      "packet_noise_10": 4.0
+    },
+    "split_closed_loop_success": {
+      "adversarial_sync_decoy": 1.0,
+      "continuous_bit_drop": 1.0,
+      "continuous_bit_insert": 1.0,
+      "continuous_stream": 1.0,
+      "packet_clean": 1.0,
+      "packet_noise_10": 1.0
+    },
+    "split_false_frame_commit_rate": {
+      "adversarial_sync_decoy": 0.0,
+      "continuous_bit_drop": 0.0,
+      "continuous_bit_insert": 0.0,
+      "continuous_stream": 0.0,
+      "packet_clean": 0.0,
+      "packet_noise_10": 0.0
+    },
+    "split_wrong_feature_write_rate": {
+      "adversarial_sync_decoy": 0.0,
+      "continuous_bit_drop": 0.0,
+      "continuous_bit_insert": 0.0,
+      "continuous_stream": 0.0,
+      "packet_clean": 0.0,
+      "packet_noise_10": 0.0
+    },
+    "system": "oracle_framing_reference",
+    "trace_exact": 1.0,
+    "wrong_confident_answer": 0.0,
+    "wrong_feature_write_rate": 0.0
+  },
+  "start_end_marker": {
+    "accepted_flow_write_accuracy": 0.9755,
+    "answer_correct": 0.9333333333333333,
+    "avg_inspects": 3.5366666666666666,
+    "avg_rejected_packets": 1.701111111111111,
+    "avg_steps": 5.536666666666667,
+    "binary_ingress_accuracy": 0.9690273368606702,
+    "closed_loop_success": 0.885,
+    "false_ask": 0.0,
+    "false_frame_commit_rate": 0.009623677248677248,
+    "first_useful_evidence_action": 1.0,
+    "frame_sync_accuracy": 0.9420753968253968,
+    "redundant_actions": 0.39444444444444443,
+    "row_count": 1800,
+    "split_accepted_flow_write_accuracy": {
+      "adversarial_sync_decoy": 1.0,
+      "continuous_bit_drop": 0.943,
+      "continuous_bit_insert": 0.9202777777777778,
+      "continuous_stream": 1.0,
+      "packet_clean": 1.0,
+      "packet_noise_10": 0.9897222222222223
+    },
+    "split_avg_steps": {
+      "adversarial_sync_decoy": 4.0,
+      "continuous_bit_drop": 8.216666666666667,
+      "continuous_bit_insert": 8.033333333333333,
+      "continuous_stream": 4.0,
+      "packet_clean": 4.0,
+      "packet_noise_10": 4.97
+    },
+    "split_closed_loop_success": {
+      "adversarial_sync_decoy": 1.0,
+      "continuous_bit_drop": 0.66,
+      "continuous_bit_insert": 0.68,
+      "continuous_stream": 1.0,
+      "packet_clean": 1.0,
+      "packet_noise_10": 0.97
+    },
+    "split_false_frame_commit_rate": {
+      "adversarial_sync_decoy": 0.0,
+      "continuous_bit_drop": 0.026982804232804233,
+      "continuous_bit_insert": 0.02448148148148148,
+      "continuous_stream": 0.0,
+      "packet_clean": 0.0,
+      "packet_noise_10": 0.006277777777777778
+    },
+    "split_wrong_feature_write_rate": {
+      "adversarial_sync_decoy": 0.0,
+      "continuous_bit_drop": 0.003703703703703704,
+      "continuous_bit_insert": 0.00505026455026455,
+      "continuous_stream": 0.0,
+      "packet_clean": 0.0,
+      "packet_noise_10": 0.007611111111111111
+    },
+    "system": "start_end_marker",
+    "trace_exact": 0.885,
+    "wrong_confident_answer": 0.10611111111111111,
+    "wrong_feature_write_rate": 0.002727513227513228
+  },
+  "start_length_crc_end": {
+    "accepted_flow_write_accuracy": 0.9383333333333334,
+    "answer_correct": 0.8516666666666667,
+    "avg_inspects": 3.94,
+    "avg_rejected_packets": 2.352777777777778,
+    "avg_steps": 5.94,
+    "binary_ingress_accuracy": 0.9816104497354498,
+    "closed_loop_success": 0.7811111111111111,
+    "false_ask": 0.0,
+    "false_frame_commit_rate": 0.004226851851851852,
+    "first_useful_evidence_action": 1.0,
+    "frame_sync_accuracy": 0.9691510141093475,
+    "redundant_actions": 0.4172222222222222,
+    "row_count": 1800,
+    "split_accepted_flow_write_accuracy": {
+      "adversarial_sync_decoy": 1.0,
+      "continuous_bit_drop": 0.82,
+      "continuous_bit_insert": 0.81,
+      "continuous_stream": 1.0,
+      "packet_clean": 1.0,
+      "packet_noise_10": 1.0
+    },
+    "split_avg_steps": {
+      "adversarial_sync_decoy": 4.0,
+      "continuous_bit_drop": 9.073333333333334,
+      "continuous_bit_insert": 9.266666666666667,
+      "continuous_stream": 4.0,
+      "packet_clean": 4.0,
+      "packet_noise_10": 5.3
+    },
+    "split_closed_loop_success": {
+      "adversarial_sync_decoy": 1.0,
+      "continuous_bit_drop": 0.33,
+      "continuous_bit_insert": 0.36333333333333334,
+      "continuous_stream": 1.0,
+      "packet_clean": 1.0,
+      "packet_noise_10": 0.9933333333333333
+    },
+    "split_false_frame_commit_rate": {
+      "adversarial_sync_decoy": 0.0,
+      "continuous_bit_drop": 0.015228835978835979,
+      "continuous_bit_insert": 0.010132275132275131,
+      "continuous_stream": 0.0,
+      "packet_clean": 0.0,
+      "packet_noise_10": 0.0
+    },
+    "split_wrong_feature_write_rate": {
+      "adversarial_sync_decoy": 0.0,
+      "continuous_bit_drop": 0.0,
+      "continuous_bit_insert": 0.0,
+      "continuous_stream": 0.0,
+      "packet_clean": 0.0,
+      "packet_noise_10": 0.0
+    },
+    "system": "start_length_crc_end",
+    "trace_exact": 0.7811111111111111,
+    "wrong_confident_answer": 0.21888888888888888,
+    "wrong_feature_write_rate": 0.0
+  },
+  "start_length_end": {
+    "accepted_flow_write_accuracy": 0.9616666666666667,
+    "answer_correct": 0.9,
+    "avg_inspects": 3.732222222222222,
+    "avg_rejected_packets": 2.022222222222222,
+    "avg_steps": 5.732222222222222,
+    "binary_ingress_accuracy": 0.979950176366843,
+    "closed_loop_success": 0.8416666666666667,
+    "false_ask": 0.0,
+    "false_frame_commit_rate": 0.0054032186948853615,
+    "first_useful_evidence_action": 1.0,
+    "frame_sync_accuracy": 0.9652098765432099,
+    "redundant_actions": 0.4022222222222222,
+    "row_count": 1800,
+    "split_accepted_flow_write_accuracy": {
+      "adversarial_sync_decoy": 1.0,
+      "continuous_bit_drop": 0.8733333333333333,
+      "continuous_bit_insert": 0.8966666666666666,
+      "continuous_stream": 1.0,
+      "packet_clean": 1.0,
+      "packet_noise_10": 1.0
+    },
+    "split_avg_steps": {
+      "adversarial_sync_decoy": 4.0,
+      "continuous_bit_drop": 8.77,
+      "continuous_bit_insert": 8.53,
+      "continuous_stream": 4.0,
+      "packet_clean": 4.0,
+      "packet_noise_10": 5.093333333333334
+    },
+    "split_closed_loop_success": {
+      "adversarial_sync_decoy": 1.0,
+      "continuous_bit_drop": 0.5066666666666667,
+      "continuous_bit_insert": 0.5433333333333333,
+      "continuous_stream": 1.0,
+      "packet_clean": 1.0,
+      "packet_noise_10": 1.0
+    },
+    "split_false_frame_commit_rate": {
+      "adversarial_sync_decoy": 0.0,
+      "continuous_bit_drop": 0.017334656084656085,
+      "continuous_bit_insert": 0.015084656084656084,
+      "continuous_stream": 0.0,
+      "packet_clean": 0.0,
+      "packet_noise_10": 0.0
+    },
+    "split_wrong_feature_write_rate": {
+      "adversarial_sync_decoy": 0.0,
+      "continuous_bit_drop": 0.0,
+      "continuous_bit_insert": 0.0,
+      "continuous_stream": 0.0,
+      "packet_clean": 0.0,
+      "packet_noise_10": 0.0
+    },
+    "system": "start_length_end",
+    "trace_exact": 0.8416666666666667,
+    "wrong_confident_answer": 0.15833333333333333,
+    "wrong_feature_write_rate": 0.0
+  },
+  "start_only_baseline": {
+    "accepted_flow_write_accuracy": 0.9876851851851851,
+    "answer_correct": 0.9772222222222222,
+    "avg_inspects": 2.1077777777777778,
+    "avg_rejected_packets": 0.10388888888888889,
+    "avg_steps": 4.107777777777778,
+    "binary_ingress_accuracy": 0.9786516754850089,
+    "closed_loop_success": 0.9622222222222222,
+    "false_ask": 0.0005555555555555556,
+    "false_frame_commit_rate": 0.028839506172839507,
+    "first_useful_evidence_action": 1.0,
+    "frame_sync_accuracy": 0.9649043209876543,
+    "redundant_actions": 0.0661111111111111,
+    "row_count": 1800,
+    "split_accepted_flow_write_accuracy": {
+      "adversarial_sync_decoy": 0.981111111111111,
+      "continuous_bit_drop": 0.9916666666666667,
+      "continuous_bit_insert": 0.9866666666666667,
+      "continuous_stream": 0.9888888888888889,
+      "packet_clean": 1.0,
+      "packet_noise_10": 0.9777777777777777
+    },
+    "split_avg_steps": {
+      "adversarial_sync_decoy": 4.0,
+      "continuous_bit_drop": 4.073333333333333,
+      "continuous_bit_insert": 4.06,
+      "continuous_stream": 4.0,
+      "packet_clean": 4.0,
+      "packet_noise_10": 4.513333333333334
+    },
+    "split_closed_loop_success": {
+      "adversarial_sync_decoy": 0.9433333333333334,
+      "continuous_bit_drop": 0.9733333333333334,
+      "continuous_bit_insert": 0.96,
+      "continuous_stream": 0.9666666666666667,
+      "packet_clean": 1.0,
+      "packet_noise_10": 0.93
+    },
+    "split_false_frame_commit_rate": {
+      "adversarial_sync_decoy": 0.018888888888888886,
+      "continuous_bit_drop": 0.07977777777777778,
+      "continuous_bit_insert": 0.035,
+      "continuous_stream": 0.01111111111111111,
+      "packet_clean": 0.0,
+      "packet_noise_10": 0.02825925925925926
+    },
+    "split_wrong_feature_write_rate": {
+      "adversarial_sync_decoy": 0.018888888888888886,
+      "continuous_bit_drop": 0.008166666666666666,
+      "continuous_bit_insert": 0.012777777777777777,
+      "continuous_stream": 0.01111111111111111,
+      "packet_clean": 0.0,
+      "packet_noise_10": 0.019648148148148147
+    },
+    "system": "start_only_baseline",
+    "trace_exact": 0.9622222222222222,
+    "wrong_confident_answer": 0.0005555555555555556,
+    "wrong_feature_write_rate": 0.011765432098765433
+  }
+}

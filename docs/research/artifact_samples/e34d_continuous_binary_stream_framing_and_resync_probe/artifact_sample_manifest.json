@@ -1,0 +1,24 @@
+{
+  "milestone": "E34D_CONTINUOUS_BINARY_STREAM_FRAMING_AND_RESYNC_PROBE",
+  "required_files": [
+    "README.md",
+    "artifact_sample_manifest.json",
+    "aggregate_metrics_sample.json",
+    "system_metrics_sample.json",
+    "row_level_sample.jsonl",
+    "mutation_history_sample.jsonl",
+    "deterministic_replay_sample_report.json",
+    "sample_only_checker_result.json",
+    "sample_schema.json"
+  ],
+  "run_id": "8ec88c64f476afff",
+  "sample_file_hashes": {
+    "README.md": "aacb8d1bea6dc2f3a04a5d116b09ac9e38eb37bd74342c382203da78f6e8c110",
+    "aggregate_metrics_sample.json": "b843d44b4f4ecee75f0f13b45593afce334a2c5f72922e45d62fbc0b17eaada8",
+    "deterministic_replay_sample_report.json": "abfb44d0ba18e1958458257f39d66b58aa805e0d05b84edceb775c5695f2830a",
+    "mutation_history_sample.jsonl": "19f8fa963017d49906dee56896c458ef02900b2d2ddad627396a1a3d0898830b",
+    "row_level_sample.jsonl": "f4a7629dfe3df8242dbd569dd5dcdb76aca6c11d41b7b2de2d5f1e556b9d8653",
+    "sample_schema.json": "b329b4effed0ad7150bcf575ec57e2aa54265918ce18ade9b0552bb63d9429c4",
+    "system_metrics_sample.json": "edaea10f8b1c7dd5b7221fbeb4a6830062d058922477382d9fc2ed0ae3a43dd2"
+  }
+}

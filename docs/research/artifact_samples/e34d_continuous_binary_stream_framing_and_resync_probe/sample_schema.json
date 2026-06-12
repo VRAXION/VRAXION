@@ -1,0 +1,16 @@
+{
+  "active_evidence_world": true,
+  "binary_stream_resync": true,
+  "gradient_descent_used": false,
+  "milestone": "E34D_CONTINUOUS_BINARY_STREAM_FRAMING_AND_RESYNC_PROBE",
+  "systems": [
+    "start_only_baseline",
+    "start_end_marker",
+    "start_length_end",
+    "start_length_crc_end",
+    "crc_end_requested_feature_guard",
+    "multi_frame_resync_guard",
+    "first_sync_shortcut_control",
+    "oracle_framing_reference"
+  ]
+}
