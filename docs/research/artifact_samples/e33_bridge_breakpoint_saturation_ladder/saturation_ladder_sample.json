@@ -1,0 +1,418 @@
+{
+  "first_failed_step_by_system": {
+    "large_workspace_d192": "S0_structured_events_no_text",
+    "large_workspace_trace_focus_d192": "S0_structured_events_no_text",
+    "oracle_text_interpreter_d96": "S0_structured_events_no_text",
+    "random_static_control": "S0_structured_events_no_text",
+    "small_workspace_d96": "S0_structured_events_no_text"
+  },
+  "last_clean_step_by_system": {
+    "large_workspace_d192": null,
+    "large_workspace_trace_focus_d192": null,
+    "oracle_text_interpreter_d96": null,
+    "random_static_control": null,
+    "small_workspace_d96": null
+  },
+  "steps": {
+    "S0_structured_events_no_text": {
+      "description": "clean machine-like event records, no natural language burden",
+      "systems": {
+        "large_workspace_d192": {
+          "action_accuracy": 1.0,
+          "clean_98": false,
+          "perfect_100": false,
+          "resolution_success": 0.5,
+          "trace_exact": 0.5
+        },
+        "large_workspace_trace_focus_d192": {
+          "action_accuracy": 1.0,
+          "clean_98": false,
+          "perfect_100": false,
+          "resolution_success": 0.5,
+          "trace_exact": 0.5
+        },
+        "oracle_text_interpreter_d96": {
+          "action_accuracy": 1.0,
+          "clean_98": false,
+          "perfect_100": false,
+          "resolution_success": 0.5,
+          "trace_exact": 0.5
+        },
+        "random_static_control": {
+          "action_accuracy": 0.23076923076923078,
+          "clean_98": false,
+          "perfect_100": false,
+          "resolution_success": 0.0,
+          "trace_exact": 0.0
+        },
+        "small_workspace_d96": {
+          "action_accuracy": 1.0,
+          "clean_98": false,
+          "perfect_100": false,
+          "resolution_success": 0.5,
+          "trace_exact": 0.5
+        }
+      }
+    },
+    "S1_clean_symbolic_sentences": {
+      "description": "controlled mixed symbolic sentences",
+      "systems": {
+        "large_workspace_d192": {
+          "action_accuracy": 0.8615384615384616,
+          "clean_98": false,
+          "perfect_100": false,
+          "resolution_success": 0.7230769230769231,
+          "trace_exact": 0.4115384615384615
+        },
+        "large_workspace_trace_focus_d192": {
+          "action_accuracy": 0.8576923076923076,
+          "clean_98": false,
+          "perfect_100": false,
+          "resolution_success": 0.8576923076923076,
+          "trace_exact": 0.6346153846153846
+        },
+        "oracle_text_interpreter_d96": {
+          "action_accuracy": 0.6615384615384615,
+          "clean_98": false,
+          "perfect_100": false,
+          "resolution_success": 0.4807692307692308,
+          "trace_exact": 0.0
+        },
+        "random_static_control": {
+          "action_accuracy": 0.22692307692307692,
+          "clean_98": false,
+          "perfect_100": false,
+          "resolution_success": 0.0,
+          "trace_exact": 0.0
+        },
+        "small_workspace_d96": {
+          "action_accuracy": 0.8038461538461539,
+          "clean_98": false,
+          "perfect_100": false,
+          "resolution_success": 0.48846153846153845,
+          "trace_exact": 0.19615384615384615
+        }
+      }
+    },
+    "S2_naturalized_templates": {
+      "description": "simple naturalized text templates",
+      "systems": {
+        "large_workspace_d192": {
+          "action_accuracy": 0.8576923076923076,
+          "clean_98": false,
+          "perfect_100": false,
+          "resolution_success": 0.7346153846153847,
+          "trace_exact": 0.5461538461538461
+        },
+        "large_workspace_trace_focus_d192": {
+          "action_accuracy": 0.8538461538461538,
+          "clean_98": false,
+          "perfect_100": false,
+          "resolution_success": 0.8538461538461538,
+          "trace_exact": 0.6846153846153846
+        },
+        "oracle_text_interpreter_d96": {
+          "action_accuracy": 0.7384615384615385,
+          "clean_98": false,
+          "perfect_100": false,
+          "resolution_success": 0.5230769230769231,
+          "trace_exact": 0.27307692307692305
+        },
+        "random_static_control": {
+          "action_accuracy": 0.24615384615384617,
+          "clean_98": false,
+          "perfect_100": false,
+          "resolution_success": 0.0,
+          "trace_exact": 0.0
+        },
+        "small_workspace_d96": {
+          "action_accuracy": 0.8192307692307692,
+          "clean_98": false,
+          "perfect_100": false,
+          "resolution_success": 0.47307692307692306,
+          "trace_exact": 0.27307692307692305
+        }
+      }
+    },
+    "S3_paraphrase_variation": {
+      "description": "same task with paraphrased wording",
+      "systems": {
+        "large_workspace_d192": {
+          "action_accuracy": 0.7884615384615384,
+          "clean_98": false,
+          "perfect_100": false,
+          "resolution_success": 0.6884615384615385,
+          "trace_exact": 0.5384615384615384
+        },
+        "large_workspace_trace_focus_d192": {
+          "action_accuracy": 0.7884615384615384,
+          "clean_98": false,
+          "perfect_100": false,
+          "resolution_success": 0.7884615384615384,
+          "trace_exact": 0.7423076923076923
+        },
+        "oracle_text_interpreter_d96": {
+          "action_accuracy": 0.7115384615384616,
+          "clean_98": false,
+          "perfect_100": false,
+          "resolution_success": 0.5846153846153846,
+          "trace_exact": 0.45384615384615384
+        },
+        "random_static_control": {
+          "action_accuracy": 0.21923076923076923,
+          "clean_98": false,
+          "perfect_100": false,
+          "resolution_success": 0.0,
+          "trace_exact": 0.0
+        },
+        "small_workspace_d96": {
+          "action_accuracy": 0.6923076923076923,
+          "clean_98": false,
+          "perfect_100": false,
+          "resolution_success": 0.573076923076923,
+          "trace_exact": 0.45384615384615384
+        }
+      }
+    },
+    "S4_decoy_dense_text": {
+      "description": "extra irrelevant true-but-useless details",
+      "systems": {
+        "large_workspace_d192": {
+          "action_accuracy": 0.7807692307692308,
+          "clean_98": false,
+          "perfect_100": false,
+          "resolution_success": 0.7576923076923077,
+          "trace_exact": 0.38846153846153847
+        },
+        "large_workspace_trace_focus_d192": {
+          "action_accuracy": 0.6653846153846154,
+          "clean_98": false,
+          "perfect_100": false,
+          "resolution_success": 0.6653846153846154,
+          "trace_exact": 0.3153846153846154
+        },
+        "oracle_text_interpreter_d96": {
+          "action_accuracy": 0.6653846153846154,
+          "clean_98": false,
+          "perfect_100": false,
+          "resolution_success": 0.6653846153846154,
+          "trace_exact": 0.0
+        },
+        "random_static_control": {
+          "action_accuracy": 0.28076923076923077,
+          "clean_98": false,
+          "perfect_100": false,
+          "resolution_success": 0.0,
+          "trace_exact": 0.0
+        },
+        "small_workspace_d96": {
+          "action_accuracy": 0.6653846153846154,
+          "clean_98": false,
+          "perfect_100": false,
+          "resolution_success": 0.6653846153846154,
+          "trace_exact": 0.0
+        }
+      }
+    },
+    "S5_temporal_order_shuffle": {
+      "description": "evidence appears out of normal order",
+      "systems": {
+        "large_workspace_d192": {
+          "action_accuracy": 0.8269230769230769,
+          "clean_98": false,
+          "perfect_100": false,
+          "resolution_success": 0.7769230769230769,
+          "trace_exact": 0.7307692307692307
+        },
+        "large_workspace_trace_focus_d192": {
+          "action_accuracy": 0.8269230769230769,
+          "clean_98": false,
+          "perfect_100": false,
+          "resolution_success": 0.8,
+          "trace_exact": 0.9076923076923077
+        },
+        "oracle_text_interpreter_d96": {
+          "action_accuracy": 0.6961538461538461,
+          "clean_98": false,
+          "perfect_100": false,
+          "resolution_success": 0.6884615384615385,
+          "trace_exact": 0.6884615384615385
+        },
+        "random_static_control": {
+          "action_accuracy": 0.25,
+          "clean_98": false,
+          "perfect_100": false,
+          "resolution_success": 0.0,
+          "trace_exact": 0.0
+        },
+        "small_workspace_d96": {
+          "action_accuracy": 0.6884615384615385,
+          "clean_98": false,
+          "perfect_100": false,
+          "resolution_success": 0.6884615384615385,
+          "trace_exact": 0.6884615384615385
+        }
+      }
+    },
+    "S6_missing_info_minimal_pairs": {
+      "description": "answerable vs not-enough-info near pairs",
+      "systems": {
+        "large_workspace_d192": {
+          "action_accuracy": 0.7384615384615385,
+          "clean_98": false,
+          "perfect_100": false,
+          "resolution_success": 0.7384615384615385,
+          "trace_exact": 1.0
+        },
+        "large_workspace_trace_focus_d192": {
+          "action_accuracy": 0.75,
+          "clean_98": false,
+          "perfect_100": false,
+          "resolution_success": 0.75,
+          "trace_exact": 1.0
+        },
+        "oracle_text_interpreter_d96": {
+          "action_accuracy": 0.7423076923076923,
+          "clean_98": false,
+          "perfect_100": false,
+          "resolution_success": 0.7076923076923077,
+          "trace_exact": 0.7576923076923077
+        },
+        "random_static_control": {
+          "action_accuracy": 0.26153846153846155,
+          "clean_98": false,
+          "perfect_100": false,
+          "resolution_success": 0.0,
+          "trace_exact": 0.0
+        },
+        "small_workspace_d96": {
+          "action_accuracy": 0.7346153846153847,
+          "clean_98": false,
+          "perfect_100": false,
+          "resolution_success": 0.7230769230769231,
+          "trace_exact": 0.7576923076923077
+        }
+      }
+    },
+    "S7_long_context_evidence": {
+      "description": "relevant evidence is farther away in a longer text",
+      "systems": {
+        "large_workspace_d192": {
+          "action_accuracy": 0.3076923076923077,
+          "clean_98": false,
+          "perfect_100": false,
+          "resolution_success": 0.3076923076923077,
+          "trace_exact": 0.3076923076923077
+        },
+        "large_workspace_trace_focus_d192": {
+          "action_accuracy": 0.3076923076923077,
+          "clean_98": false,
+          "perfect_100": false,
+          "resolution_success": 0.3076923076923077,
+          "trace_exact": 0.3076923076923077
+        },
+        "oracle_text_interpreter_d96": {
+          "action_accuracy": 0.3076923076923077,
+          "clean_98": false,
+          "perfect_100": false,
+          "resolution_success": 0.3076923076923077,
+          "trace_exact": 0.3076923076923077
+        },
+        "random_static_control": {
+          "action_accuracy": 0.25,
+          "clean_98": false,
+          "perfect_100": false,
+          "resolution_success": 0.0,
+          "trace_exact": 0.0
+        },
+        "small_workspace_d96": {
+          "action_accuracy": 0.3076923076923077,
+          "clean_98": false,
+          "perfect_100": false,
+          "resolution_success": 0.3076923076923077,
+          "trace_exact": 0.3076923076923077
+        }
+      }
+    },
+    "S8_indirect_language": {
+      "description": "state changes are phrased indirectly",
+      "systems": {
+        "large_workspace_d192": {
+          "action_accuracy": 0.7807692307692308,
+          "clean_98": false,
+          "perfect_100": false,
+          "resolution_success": 0.676923076923077,
+          "trace_exact": 0.6692307692307692
+        },
+        "large_workspace_trace_focus_d192": {
+          "action_accuracy": 0.8384615384615385,
+          "clean_98": false,
+          "perfect_100": false,
+          "resolution_success": 0.8384615384615385,
+          "trace_exact": 0.7615384615384615
+        },
+        "oracle_text_interpreter_d96": {
+          "action_accuracy": 0.7230769230769231,
+          "clean_98": false,
+          "perfect_100": false,
+          "resolution_success": 0.6461538461538462,
+          "trace_exact": 0.5346153846153846
+        },
+        "random_static_control": {
+          "action_accuracy": 0.23461538461538461,
+          "clean_98": false,
+          "perfect_100": false,
+          "resolution_success": 0.0,
+          "trace_exact": 0.0
+        },
+        "small_workspace_d96": {
+          "action_accuracy": 0.6692307692307692,
+          "clean_98": false,
+          "perfect_100": false,
+          "resolution_success": 0.5115384615384615,
+          "trace_exact": 0.36153846153846153
+        }
+      }
+    },
+    "S9_weak_mined_real_text": {
+      "description": "real web text with regex-mined weak labels",
+      "systems": {
+        "large_workspace_d192": {
+          "action_accuracy": 0.18076923076923077,
+          "clean_98": false,
+          "perfect_100": false,
+          "resolution_success": 0.06923076923076923,
+          "trace_exact": 0.65
+        },
+        "large_workspace_trace_focus_d192": {
+          "action_accuracy": 0.13846153846153847,
+          "clean_98": false,
+          "perfect_100": false,
+          "resolution_success": 0.07692307692307693,
+          "trace_exact": 0.7923076923076923
+        },
+        "oracle_text_interpreter_d96": {
+          "action_accuracy": 0.16153846153846155,
+          "clean_98": false,
+          "perfect_100": false,
+          "resolution_success": 0.06153846153846154,
+          "trace_exact": 0.7923076923076923
+        },
+        "random_static_control": {
+          "action_accuracy": 0.2423076923076923,
+          "clean_98": false,
+          "perfect_100": false,
+          "resolution_success": 0.0,
+          "trace_exact": 0.0
+        },
+        "small_workspace_d96": {
+          "action_accuracy": 0.08461538461538462,
+          "clean_98": false,
+          "perfect_100": false,
+          "resolution_success": 0.08461538461538462,
+          "trace_exact": 0.7923076923076923
+        }
+      }
+    }
+  }
+}
