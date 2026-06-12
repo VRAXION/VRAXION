@@ -1,0 +1,26 @@
+{
+  "milestone": "E36_POCKET_ECOLOGY_LIBRARY_SELECTION_CONFIRM",
+  "required_files": [
+    "README.md",
+    "artifact_sample_manifest.json",
+    "aggregate_metrics_sample.json",
+    "system_metrics_sample.json",
+    "row_level_sample.jsonl",
+    "selection_history_sample.jsonl",
+    "pocket_value_sample.json",
+    "deterministic_replay_sample_report.json",
+    "sample_only_checker_result.json",
+    "sample_schema.json"
+  ],
+  "run_id": "9559d0c6c3add6a9",
+  "sample_file_hashes": {
+    "README.md": "7078d3a3e43617e2d4bf18a9ccdfc5db4a2b5bccb0e4b250d68ea38938b3a334",
+    "aggregate_metrics_sample.json": "8c366018612ffa8e3bc447c5875f3bea5b211b09fd128e998f202d23eb082ed1",
+    "deterministic_replay_sample_report.json": "86fc6dad7a7640581b6c9ed216f7cf375526c1609d8b582d378deb699fa0e079",
+    "pocket_value_sample.json": "9dedbf19c2203b83fc0de12a708043ba702ab06851d16434e3028b6a3c76c746",
+    "row_level_sample.jsonl": "c5f51aee9f54df0331c7a94e445cf4c24010a6f17e29aecfbe733d03815c7fbb",
+    "sample_schema.json": "f8128420c85e35f514c5f0ab0f92bdca545a63c2428b1236bf08719064396331",
+    "selection_history_sample.jsonl": "a8e802d21afb0c3f3b17d76da8694555d1cd447bf3e2970e0f42905a036120aa",
+    "system_metrics_sample.json": "eab2274055e6c06d7d5b77985ba97b2f14efbc465c6e91d5f32d0bd891e38991"
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "gradient_descent_used": false,
+  "milestone": "E36_POCKET_ECOLOGY_LIBRARY_SELECTION_CONFIRM",
+  "pocket_ecology": true,
+  "systems": [
+    "no_library_scratch",
+    "random_library_import",
+    "unfiltered_library_import",
+    "evaluated_library_import",
+    "evaluated_library_plus_adapter",
+    "wrong_toxic_pocket_control",
+    "oracle_invalid_control"
+  ]
+}
