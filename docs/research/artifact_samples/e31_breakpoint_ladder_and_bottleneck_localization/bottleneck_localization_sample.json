@@ -1,0 +1,13 @@
+{
+  "baseline_heldout_resolution": 0.7472727272727273,
+  "baseline_heldout_trace_exact": 0.6472727272727272,
+  "capacity_flow_resolution_delta": 0.05954545454545446,
+  "capacity_flow_trace_exact_delta": 0.2781818181818182,
+  "capacity_pocket_resolution_delta": 0.0586363636363636,
+  "capacity_pocket_trace_exact_delta": 0.10136363636363643,
+  "oracle_ingress_resolution_delta": 0.048181818181818103,
+  "oracle_ingress_trace_exact_delta": 0.14409090909090916,
+  "oracle_span_resolution_delta": 0.04227272727272724,
+  "oracle_span_trace_exact_delta": 0.07545454545454555,
+  "wrong_confident_baseline": 0.04003954522985665
+}
