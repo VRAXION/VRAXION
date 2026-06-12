@@ -43,7 +43,12 @@
       }
     },
     "protocol_framing_ingress_v001": {
+      "abi_version": "PocketABI-v1",
       "archive_dir": "docs/research/pocket_archive/e35_transfer_smoke/binary_ingress/protocol_framing_ingress_v001",
+      "allowed_side_effects": [
+        "emit accepted evidence event",
+        "reject malformed/unguarded frame"
+      ],
       "compatible_families": [
         "binary_ingress",
         "start_length_crc_end stable framing"
@@ -56,6 +61,8 @@
       ],
       "load_allowed": true,
       "manifest_path": "docs/research/pocket_archive/e35_transfer_smoke/binary_ingress/protocol_framing_ingress_v001/pocket_manifest.json",
+      "input_contract": "binary stream bits plus optional requested_feature guard",
+      "output_contract": "accepted Flow Field evidence event or reject",
       "pocket_id": "ProtocolFramingIngressPocket",
       "pocket_type": "Ingress Codec / Lens Pocket",
       "promotion_source": "E36_POCKET_ECOLOGY_LIBRARY_SELECTION_CONFIRM",
@@ -92,5 +99,11 @@
       }
     }
   },
-  "schema_version": 1
+  "schema_version": 1,
+  "training_lock": {
+    "abi_version": "PocketABI-v1",
+    "lock_doc": "docs/research/POCKET_GENERATION_TRAINING_LOCK_V1.md",
+    "lock_json": "docs/research/pocket_library/training_lock_v1.json",
+    "status": "active"
+  }
 }

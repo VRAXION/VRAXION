@@ -20,6 +20,13 @@ The active registry is:
 docs/research/pocket_library/registry.json
 ```
 
+The active training/ABI lock is:
+
+```text
+docs/research/POCKET_GENERATION_TRAINING_LOCK_V1.md
+docs/research/pocket_library/training_lock_v1.json
+```
+
 The first stable pocket is:
 
 ```text
@@ -42,6 +49,18 @@ banned      toxic/negative-transfer pocket
 ```
 
 Only `stable` and `core` pockets may be loaded automatically by future probes.
+
+Stable/core pockets must declare `abi_version = PocketABI-v1`.
+
+The locked principle:
+
+```text
+Freeze the interface, not the internals.
+```
+
+Pocket internals may change across candidates, but loadable library pockets must
+keep their external call contract, adapter boundary, known bottlenecks, and
+frozen parameter digest explicit.
 
 ## Helper
 

@@ -10,6 +10,7 @@ from typing import Any
 
 ALLOWED_STATUSES = {"candidate", "staging", "stable", "core", "deprecated", "banned"}
 LOAD_ALLOWED_STATUSES = {"stable", "core"}
+ACTIVE_ABI_VERSION = "PocketABI-v1"
 REQUIRED_STABLE_FILES = [
     "pocket_manifest.json",
     "pocket_contract.md",
@@ -29,6 +30,7 @@ REPO_ROOT = repo_root()
 REGISTRY_PATH = REPO_ROOT / "docs" / "research" / "pocket_library" / "registry.json"
 ARCHIVE_ROOT = REPO_ROOT / "docs" / "research" / "pocket_archive"
 ECOLOGY_ROOT = REPO_ROOT / "docs" / "research" / "pocket_ecology"
+TRAINING_LOCK_PATH = REPO_ROOT / "docs" / "research" / "pocket_library" / "training_lock_v1.json"
 
 
 def json_digest(value: object) -> str:
@@ -133,6 +135,21 @@ def validate_registry(path: Path = REGISTRY_PATH) -> dict[str, Any]:
         failures.append("canonical archive root mismatch")
     if roots.get("ecology_root") != "docs/research/pocket_ecology":
         failures.append("canonical ecology root mismatch")
+    lock = registry.get("training_lock", {})
+    if lock.get("status") != "active" or lock.get("abi_version") != ACTIVE_ABI_VERSION:
+        failures.append("active PocketABI-v1 training lock missing")
+    if lock.get("lock_json") != "docs/research/pocket_library/training_lock_v1.json":
+        failures.append("training lock json path mismatch")
+    if not TRAINING_LOCK_PATH.exists():
+        failures.append("missing training_lock_v1.json")
+    else:
+        training_lock = read_json(TRAINING_LOCK_PATH)
+        if training_lock.get("active") is not True:
+            failures.append("training lock is not active")
+        if training_lock.get("abi_version") != ACTIVE_ABI_VERSION:
+            failures.append("training lock ABI mismatch")
+        if training_lock.get("stable_anchor_overwrite_allowed") is not False:
+            failures.append("training lock permits stable anchor overwrite")
 
     entries = registry.get("pockets", {})
     if not isinstance(entries, dict) or not entries:
@@ -148,9 +165,23 @@ def validate_registry(path: Path = REGISTRY_PATH) -> dict[str, Any]:
             failures.append(f"{pocket_id}: load_allowed true while status={status}")
         if status in LOAD_ALLOWED_STATUSES:
             stable_ids.append(pocket_id)
-            for key in ["archive_dir", "manifest_path", "frozen_params_path", "frozen_params_digest"]:
+            for key in [
+                "abi_version",
+                "archive_dir",
+                "manifest_path",
+                "frozen_params_path",
+                "frozen_params_digest",
+                "input_contract",
+                "output_contract",
+                "allowed_side_effects",
+                "compatible_families",
+                "known_bottlenecks",
+                "requires_adapter",
+            ]:
                 if not entry.get(key):
                     failures.append(f"{pocket_id}: missing {key}")
+            if entry.get("abi_version") != ACTIVE_ABI_VERSION:
+                failures.append(f"{pocket_id}: ABI version mismatch")
             archive_dir = resolve_repo_path(str(entry.get("archive_dir", "")))
             if not str(archive_dir).startswith(str(ARCHIVE_ROOT.resolve())):
                 failures.append(f"{pocket_id}: archive dir is outside canonical archive root")

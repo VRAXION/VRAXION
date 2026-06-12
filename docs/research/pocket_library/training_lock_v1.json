@@ -1,0 +1,36 @@
+{
+  "active": true,
+  "abi_version": "PocketABI-v1",
+  "boundary": "controlled pocket generation and library lifecycle; not raw language/AGI/model-scale",
+  "canonical_roots": {
+    "archive_root": "docs/research/pocket_archive",
+    "ecology_root": "docs/research/pocket_ecology",
+    "registry_path": "docs/research/pocket_library/registry.json"
+  },
+  "core_promotion_requirements": [
+    "cross-world positive or safety-useful contribution",
+    "low wrong write / wrong commit rate",
+    "clean manifest and frozen parameter hash",
+    "non-toxic cross-world behavior",
+    "clear PocketABI-v1 contract boundary",
+    "known adapter requirements",
+    "known failure modes",
+    "sample/checker/replay pass"
+  ],
+  "load_allowed_statuses": [
+    "stable",
+    "core"
+  ],
+  "locked_call_shape": "CALL(pocket_id, flow_or_payload, context) -> proposal/event/reject",
+  "must_not_auto_promote": [
+    "dirty monolithic decoders",
+    "world-specific fused pockets",
+    "oracle-dependent pockets",
+    "unknown side-effect pockets",
+    "single-run winners",
+    "passenger pockets",
+    "AFK/dormant pockets",
+    "toxic/wrong-codebook pockets"
+  ],
+  "stable_anchor_overwrite_allowed": false
+}
