@@ -57,3 +57,19 @@ The keyword regex reference wins because the labels are regex-mined; that is a d
 ## Boundary
 
 E29 compares two small learned systems on a mined real-text proxy. It does not prove open-ended chat behavior, raw language reasoning, deployed-model readiness, AGI, consciousness, or model-scale behavior.
+
+## Naming Note
+
+Future Flow/Pocket probes should use the canonical naming scheme in `FLOW_POCKET_NAMING_SCHEME.md`:
+
+```text
+Ground Field
+Flow Field
+Pocket Operator
+Lens Pocket
+Writer Pocket
+Arbiter
+Trace Ledger
+Ingress Codec
+Egress Codec
+```
