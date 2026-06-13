@@ -14,6 +14,7 @@ pub mod binary_ingress;
 pub mod bit_codec;
 pub mod body;
 pub mod egress;
+pub mod library;
 pub mod manager;
 pub mod next_mutation;
 pub mod pocket;
@@ -33,6 +34,10 @@ pub use body::{
     EXTENDED_BODY, OVERCAPACITY_AVOID_DEFAULT, PROPOSAL_WIDTH_64_CONTROL, RESEARCH_CEILING_BODY,
 };
 pub use egress::{render_output, EgressMode, RenderedOutput};
+pub use library::{
+    PocketLibraryStore, StoreDecision, StoreGuardReason, StoreMutationStats,
+    StorePromotionCandidate, StoreSnapshot, StoredPocketArtifact,
+};
 pub use manager::{
     evaluate_promotion, ChallengerEvidence, PromotionBlockReason, PromotionEvidence,
     PromotionLevel, PromotionVerdict, SafetyGate, ScoreVector,

@@ -33,3 +33,7 @@ path = "src/bin/pocket_manager_preflight.rs"
 [[bin]]
 name = "next_mutation_preflight"
 path = "src/bin/next_mutation_preflight.rs"
+
+[[bin]]
+name = "pocket_library_preflight"
+path = "src/bin/pocket_library_preflight.rs"
