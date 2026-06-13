@@ -1,0 +1,9 @@
+{
+  "aggregate_hash": "2de0168ed0a24b07f5b9a18f856af4725c7d17bd632430010c9744ac6d783a81",
+  "deterministic_replay_match_rate": 1.0,
+  "golden_registry_hash": "741affa0ca81161d497ebb8bddbf12cbdbfe8672c876c7f5f3737532cf49aed8",
+  "passed": true,
+  "replay_hash": "9a6b922c5c410aefb34b9f89caa65d3cc1052b25eecdc858c3d60ba88e9ad0d1",
+  "rows_hash": "ca119dcf0a343713aa362f6386a8bc06e8af13c797d31c133bd4f79037c12d28",
+  "system_results_hash": "d3a031e847b344b8ee084b6283a20f30edc5371b9fd01c0b4d5bdb9fe05543cb"
+}

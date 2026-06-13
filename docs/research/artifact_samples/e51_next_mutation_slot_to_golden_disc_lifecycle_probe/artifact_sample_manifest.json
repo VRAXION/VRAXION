@@ -1,0 +1,15 @@
+{
+  "files": [
+    "README.md",
+    "aggregate_metrics_sample.json",
+    "artifact_sample_manifest.json",
+    "deterministic_replay_sample_report.json",
+    "golden_registry_sample.json",
+    "lifecycle_rows_sample.jsonl",
+    "mutation_history_sample.jsonl",
+    "sample_only_checker_result.json",
+    "sample_schema.json",
+    "system_results_sample.json"
+  ],
+  "milestone": "E51_NEXT_MUTATION_SLOT_TO_GOLDEN_DISC_LIFECYCLE_PROBE"
+}

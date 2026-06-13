@@ -1,0 +1,41 @@
+{
+  "gold_21a34cb5f3": {
+    "candidate_id": "mut_missing_evidence_commit_guard_v1",
+    "content_digest": "1cbadff73504e622745e667365e205df0e24ee8bbb1f6c759b12c10a2fe075c3",
+    "frozen_anchor": true,
+    "human_alias": "missing_evidence_commit_guard",
+    "lifecycle": "golden_disc",
+    "mutable_working_copy_allowed": true,
+    "pocket_uid": "gold_21a34cb5f3",
+    "source_milestone": "E51_NEXT_MUTATION_SLOT_TO_GOLDEN_DISC_LIFECYCLE_PROBE",
+    "token": {
+      "capability_signature": "LogicAtomProposalPocket",
+      "cost_score": 0.055,
+      "descriptor_vector": [
+        1,
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        1,
+        0,
+        0,
+        1,
+        0,
+        1,
+        1,
+        1,
+        0
+      ],
+      "human_alias": "missing_evidence_commit_guard",
+      "pocket_uid": "gold_21a34cb5f3",
+      "quality_signature": 0.911,
+      "safety_score": 1.0,
+      "token_version": "t001",
+      "unique_value": 0.132,
+      "utility_score": 1.0
+    }
+  }
+}
