@@ -1,0 +1,11 @@
+{
+  "best_system": "near_28f_32g_20x80_default",
+  "best_system_net_utility": 0.7912815000000001,
+  "best_system_success": 1.0,
+  "decision": "e64_near_28f_32g_20x80_default_confirmed",
+  "deterministic": true,
+  "false_commit_rate": 0.0,
+  "milestone": "E64_FIELD_SIZE_AND_AGENCY_VIEW_SWEEP",
+  "row_count": 67584,
+  "run_id": "cf0250981306c06e"
+}

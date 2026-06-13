@@ -1,0 +1,16 @@
+{
+  "files": [
+    "README.md",
+    "aggregate_metrics_sample.json",
+    "artifact_sample_manifest.json",
+    "capacity_frontier_report_sample.json",
+    "deterministic_replay_sample_report.json",
+    "recommendation_sample.json",
+    "row_level_sample.jsonl",
+    "sample_schema.json",
+    "stage_metrics_sample.json",
+    "system_results_sample.json"
+  ],
+  "milestone": "E64_FIELD_SIZE_AND_AGENCY_VIEW_SWEEP",
+  "source_target": "target\\pilot_wave\\e64_field_size_and_agency_view_sweep"
+}

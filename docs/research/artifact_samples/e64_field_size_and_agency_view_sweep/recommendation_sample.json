@@ -1,0 +1,85 @@
+{
+  "agency_view": {
+    "bits": 896,
+    "role": "mechanical summary view, not raw monolith"
+  },
+  "clean_frontier": [
+    {
+      "agency_view_bits": 896,
+      "false_commit_rate": 0.0,
+      "flow_shape": [
+        28,
+        28
+      ],
+      "ground_shape": [
+        32,
+        32
+      ],
+      "mean_cost_multiplier": 2.58,
+      "net_utility": 0.7912815000000001,
+      "proposal_bits": 80,
+      "proposal_slots": 20,
+      "success": 1.0,
+      "system": "near_28f_32g_20x80_default",
+      "total_work_cells": 4304
+    },
+    {
+      "agency_view_bits": 1024,
+      "false_commit_rate": 0.0,
+      "flow_shape": [
+        32,
+        32
+      ],
+      "ground_shape": [
+        32,
+        32
+      ],
+      "mean_cost_multiplier": 3.18,
+      "net_utility": 0.7094049583333333,
+      "proposal_bits": 80,
+      "proposal_slots": 20,
+      "success": 1.0,
+      "system": "wide_32x32_20x80",
+      "total_work_cells": 4672
+    }
+  ],
+  "failure_mode_counts": {
+    "agency_view_bottleneck": 4693,
+    "flow_capacity_miss": 11336,
+    "ground_anchor_capacity_miss": 3795,
+    "overcapacity_decoy_false_commit": 456,
+    "proposal_slot_bottleneck": 4272,
+    "proposal_value_width_bottleneck": 3050
+  },
+  "flow_field": {
+    "cells": 784,
+    "shape": [
+      28,
+      28
+    ]
+  },
+  "ground_field": {
+    "cells": 1024,
+    "shape": [
+      32,
+      32
+    ]
+  },
+  "lock_statement": "Use 28x28 Flow plus 32x32 Ground as the default body. Keep Proposal Field at 20x80-bit slots and Agency view at 896 bits. Use 32x32 Flow as an Agency-selected extended mode, not as the universal default.",
+  "modes": {
+    "avoid_default": "oversized_64x64_32x80",
+    "default": "near_28f_32g_20x80_default",
+    "extended": "wide_32x32_20x80 when Agency selects high-capacity mode",
+    "fast_lower_bound": "compact_16x16_all for smoke/debug only",
+    "flow_24_capacity_control": "asymmetric_24f_32g_20x80_control",
+    "proposal_width_lower_bound": "proposal_width_64_control for regression only",
+    "research_ceiling": "large_48x48_24x80; do not deploy as default"
+  },
+  "proposal_field": {
+    "bits_per_slot": 80,
+    "capacity_bits": 1600,
+    "slots": 20,
+    "ttl": "one cycle"
+  },
+  "recommended_default": "near_28f_32g_20x80_default"
+}
