@@ -1,0 +1,24 @@
+{
+  "backprop_used": false,
+  "decision": "e56b_no_clean_capacity_within_3x_gate",
+  "gradient_descent_used": false,
+  "milestone": "E56B_TEXT_FIELD_MAX_CAPACITY_SEARCH_FALLOFF_SWEEP",
+  "optimizer_used": false,
+  "rows": 164640,
+  "rows_per_stage": 420,
+  "run_id": "cc93384b31ff59ca",
+  "seeds": [
+    56201,
+    56202,
+    56203,
+    56204,
+    56205,
+    56206,
+    56207,
+    56208
+  ],
+  "selected_max_trainable": "gate_edge_5x256_o64",
+  "selected_slowdown": 2.75,
+  "selected_success": 0.8571428571428571,
+  "wall_time_seconds": 2.5248685000115074
+}

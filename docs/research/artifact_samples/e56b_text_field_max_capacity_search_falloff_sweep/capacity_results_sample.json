@@ -1,0 +1,135 @@
+{
+  "fast_default_4x128_o32": {
+    "attempts_to_95": 999999,
+    "boundary_failure_rate": 0.0,
+    "cost_multiplier": 1.0,
+    "false_commit_rate": 0.0,
+    "frame_count": 4,
+    "frame_size": 128,
+    "overlap": 32,
+    "row_count": 23520,
+    "shape": [
+      4,
+      128,
+      8
+    ],
+    "slowdown_vs_fast_default": 1.0,
+    "success": 0.4173894557823129,
+    "unique_coverage": 416,
+    "work_bytes": 512
+  },
+  "gate_edge_5x256_o64": {
+    "attempts_to_95": 999999,
+    "boundary_failure_rate": 0.0,
+    "cost_multiplier": 2.75,
+    "false_commit_rate": 0.0,
+    "frame_count": 5,
+    "frame_size": 256,
+    "overlap": 64,
+    "row_count": 23520,
+    "shape": [
+      5,
+      256,
+      8
+    ],
+    "slowdown_vs_fast_default": 2.75,
+    "success": 0.8571428571428571,
+    "unique_coverage": 1024,
+    "work_bytes": 1280
+  },
+  "max_v1_8x256_o64": {
+    "attempts_to_95": 4032,
+    "boundary_failure_rate": 0.0,
+    "cost_multiplier": 5.6,
+    "false_commit_rate": 0.0,
+    "frame_count": 8,
+    "frame_size": 256,
+    "overlap": 64,
+    "row_count": 23520,
+    "shape": [
+      8,
+      256,
+      8
+    ],
+    "slowdown_vs_fast_default": 5.6,
+    "success": 1.0,
+    "unique_coverage": 1600,
+    "work_bytes": 2048
+  },
+  "normal_4x256_o64": {
+    "attempts_to_95": 999999,
+    "boundary_failure_rate": 0.0,
+    "cost_multiplier": 2.0,
+    "false_commit_rate": 0.0,
+    "frame_count": 4,
+    "frame_size": 256,
+    "overlap": 64,
+    "row_count": 23520,
+    "shape": [
+      4,
+      256,
+      8
+    ],
+    "slowdown_vs_fast_default": 2.0,
+    "success": 0.8146683673469388,
+    "unique_coverage": 832,
+    "work_bytes": 1024
+  },
+  "oversize_8x1024_o256": {
+    "attempts_to_95": 999999,
+    "boundary_failure_rate": 0.0,
+    "cost_multiplier": 92.39999999999999,
+    "false_commit_rate": 0.24604591836734693,
+    "frame_count": 8,
+    "frame_size": 1024,
+    "overlap": 256,
+    "row_count": 23520,
+    "shape": [
+      8,
+      1024,
+      8
+    ],
+    "slowdown_vs_fast_default": 92.39999999999999,
+    "success": 0.7539540816326531,
+    "unique_coverage": 6400,
+    "work_bytes": 8192
+  },
+  "wide_4x512_o128": {
+    "attempts_to_95": 3240,
+    "boundary_failure_rate": 0.0,
+    "cost_multiplier": 4.5,
+    "false_commit_rate": 0.0,
+    "frame_count": 4,
+    "frame_size": 512,
+    "overlap": 128,
+    "row_count": 23520,
+    "shape": [
+      4,
+      512,
+      8
+    ],
+    "slowdown_vs_fast_default": 4.5,
+    "success": 1.0,
+    "unique_coverage": 1664,
+    "work_bytes": 2048
+  },
+  "wide_8x512_o128": {
+    "attempts_to_95": 999999,
+    "boundary_failure_rate": 0.0,
+    "cost_multiplier": 20.999999999999996,
+    "false_commit_rate": 0.08405612244897959,
+    "frame_count": 8,
+    "frame_size": 512,
+    "overlap": 128,
+    "row_count": 23520,
+    "shape": [
+      8,
+      512,
+      8
+    ],
+    "slowdown_vs_fast_default": 20.999999999999996,
+    "success": 0.9159438775510205,
+    "unique_coverage": 3200,
+    "work_bytes": 4096
+  }
+}
