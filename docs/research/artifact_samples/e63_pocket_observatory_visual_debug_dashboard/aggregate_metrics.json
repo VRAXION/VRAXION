@@ -1,0 +1,14 @@
+{
+  "cycle_count": 12,
+  "deprecated_count": 1,
+  "false_commits": 0,
+  "mean_safety": 0.796,
+  "mean_utility": 0.718,
+  "pocket_count": 8,
+  "quarantine_count": 1,
+  "run_id": "e63_pocket_observatory_sample",
+  "schema_version": "pocket_observatory_v1",
+  "total_accepted": 65,
+  "total_calls": 71,
+  "total_rejected": 6
+}

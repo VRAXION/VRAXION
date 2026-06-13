@@ -1,0 +1,6283 @@
+{
+  "agency_decisions": [
+    {
+      "agency_action": "commit",
+      "cycle": 0,
+      "false_commit": 0,
+      "pocket_id": "p_binary_ingress_lens",
+      "proposal_id": "prop_000_p_binary_ingress_lens",
+      "reason": "trace/ground compatible proposal",
+      "run_id": "e63_pocket_observatory_sample",
+      "schema_version": "pocket_observatory_v1"
+    },
+    {
+      "agency_action": "commit",
+      "cycle": 1,
+      "false_commit": 0,
+      "pocket_id": "p_binary_ingress_lens",
+      "proposal_id": "prop_001_p_binary_ingress_lens",
+      "reason": "trace/ground compatible proposal",
+      "run_id": "e63_pocket_observatory_sample",
+      "schema_version": "pocket_observatory_v1"
+    },
+    {
+      "agency_action": "commit",
+      "cycle": 2,
+      "false_commit": 0,
+      "pocket_id": "p_binary_ingress_lens",
+      "proposal_id": "prop_002_p_binary_ingress_lens",
+      "reason": "trace/ground compatible proposal",
+      "run_id": "e63_pocket_observatory_sample",
+      "schema_version": "pocket_observatory_v1"
+    },
+    {
+      "agency_action": "commit",
+      "cycle": 3,
+      "false_commit": 0,
+      "pocket_id": "p_binary_ingress_lens",
+      "proposal_id": "prop_003_p_binary_ingress_lens",
+      "reason": "trace/ground compatible proposal",
+      "run_id": "e63_pocket_observatory_sample",
+      "schema_version": "pocket_observatory_v1"
+    },
+    {
+      "agency_action": "commit",
+      "cycle": 4,
+      "false_commit": 0,
+      "pocket_id": "p_binary_ingress_lens",
+      "proposal_id": "prop_004_p_binary_ingress_lens",
+      "reason": "trace/ground compatible proposal",
+      "run_id": "e63_pocket_observatory_sample",
+      "schema_version": "pocket_observatory_v1"
+    },
+    {
+      "agency_action": "commit",
+      "cycle": 5,
+      "false_commit": 0,
+      "pocket_id": "p_binary_ingress_lens",
+      "proposal_id": "prop_005_p_binary_ingress_lens",
+      "reason": "trace/ground compatible proposal",
+      "run_id": "e63_pocket_observatory_sample",
+      "schema_version": "pocket_observatory_v1"
+    },
+    {
+      "agency_action": "commit",
+      "cycle": 6,
+      "false_commit": 0,
+      "pocket_id": "p_binary_ingress_lens",
+      "proposal_id": "prop_006_p_binary_ingress_lens",
+      "reason": "trace/ground compatible proposal",
+      "run_id": "e63_pocket_observatory_sample",
+      "schema_version": "pocket_observatory_v1"
+    },
+    {
+      "agency_action": "commit",
+      "cycle": 7,
+      "false_commit": 0,
+      "pocket_id": "p_binary_ingress_lens",
+      "proposal_id": "prop_007_p_binary_ingress_lens",
+      "reason": "trace/ground compatible proposal",
+      "run_id": "e63_pocket_observatory_sample",
+      "schema_version": "pocket_observatory_v1"
+    },
+    {
+      "agency_action": "commit",
+      "cycle": 8,
+      "false_commit": 0,
+      "pocket_id": "p_binary_ingress_lens",
+      "proposal_id": "prop_008_p_binary_ingress_lens",
+      "reason": "trace/ground compatible proposal",
+      "run_id": "e63_pocket_observatory_sample",
+      "schema_version": "pocket_observatory_v1"
+    },
+    {
+      "agency_action": "commit",
+      "cycle": 9,
+      "false_commit": 0,
+      "pocket_id": "p_binary_ingress_lens",
+      "proposal_id": "prop_009_p_binary_ingress_lens",
+      "reason": "trace/ground compatible proposal",
+      "run_id": "e63_pocket_observatory_sample",
+      "schema_version": "pocket_observatory_v1"
+    },
+    {
+      "agency_action": "commit",
+      "cycle": 10,
+      "false_commit": 0,
+      "pocket_id": "p_binary_ingress_lens",
+      "proposal_id": "prop_010_p_binary_ingress_lens",
+      "reason": "trace/ground compatible proposal",
+      "run_id": "e63_pocket_observatory_sample",
+      "schema_version": "pocket_observatory_v1"
+    },
+    {
+      "agency_action": "commit",
+      "cycle": 11,
+      "false_commit": 0,
+      "pocket_id": "p_binary_ingress_lens",
+      "proposal_id": "prop_011_p_binary_ingress_lens",
+      "reason": "trace/ground compatible proposal",
+      "run_id": "e63_pocket_observatory_sample",
+      "schema_version": "pocket_observatory_v1"
+    },
+    {
+      "agency_action": "commit",
+      "cycle": 0,
+      "false_commit": 0,
+      "pocket_id": "p_logic_atom_and",
+      "proposal_id": "prop_000_p_logic_atom_and",
+      "reason": "trace/ground compatible proposal",
+      "run_id": "e63_pocket_observatory_sample",
+      "schema_version": "pocket_observatory_v1"
+    },
+    {
+      "agency_action": "commit",
+      "cycle": 1,
+      "false_commit": 0,
+      "pocket_id": "p_logic_atom_and",
+      "proposal_id": "prop_001_p_logic_atom_and",
+      "reason": "trace/ground compatible proposal",
+      "run_id": "e63_pocket_observatory_sample",
+      "schema_version": "pocket_observatory_v1"
+    },
+    {
+      "agency_action": "commit",
+      "cycle": 2,
+      "false_commit": 0,
+      "pocket_id": "p_logic_atom_and",
+      "proposal_id": "prop_002_p_logic_atom_and",
+      "reason": "trace/ground compatible proposal",
+      "run_id": "e63_pocket_observatory_sample",
+      "schema_version": "pocket_observatory_v1"
+    },
+    {
+      "agency_action": "commit",
+      "cycle": 3,
+      "false_commit": 0,
+      "pocket_id": "p_logic_atom_and",
+      "proposal_id": "prop_003_p_logic_atom_and",
+      "reason": "trace/ground compatible proposal",
+      "run_id": "e63_pocket_observatory_sample",
+      "schema_version": "pocket_observatory_v1"
+    },
+    {
+      "agency_action": "commit",
+      "cycle": 4,
+      "false_commit": 0,
+      "pocket_id": "p_logic_atom_and",
+      "proposal_id": "prop_004_p_logic_atom_and",
+      "reason": "trace/ground compatible proposal",
+      "run_id": "e63_pocket_observatory_sample",
+      "schema_version": "pocket_observatory_v1"
+    },
+    {
+      "agency_action": "commit",
+      "cycle": 5,
+      "false_commit": 0,
+      "pocket_id": "p_logic_atom_and",
+      "proposal_id": "prop_005_p_logic_atom_and",
+      "reason": "trace/ground compatible proposal",
+      "run_id": "e63_pocket_observatory_sample",
+      "schema_version": "pocket_observatory_v1"
+    },
+    {
+      "agency_action": "commit",
+      "cycle": 6,
+      "false_commit": 0,
+      "pocket_id": "p_logic_atom_and",
+      "proposal_id": "prop_006_p_logic_atom_and",
+      "reason": "trace/ground compatible proposal",
+      "run_id": "e63_pocket_observatory_sample",
+      "schema_version": "pocket_observatory_v1"
+    },
+    {
+      "agency_action": "commit",
+      "cycle": 7,
+      "false_commit": 0,
+      "pocket_id": "p_logic_atom_and",
+      "proposal_id": "prop_007_p_logic_atom_and",
+      "reason": "trace/ground compatible proposal",
+      "run_id": "e63_pocket_observatory_sample",
+      "schema_version": "pocket_observatory_v1"
+    },
+    {
+      "agency_action": "commit",
+      "cycle": 8,
+      "false_commit": 0,
+      "pocket_id": "p_logic_atom_and",
+      "proposal_id": "prop_008_p_logic_atom_and",
+      "reason": "trace/ground compatible proposal",
+      "run_id": "e63_pocket_observatory_sample",
+      "schema_version": "pocket_observatory_v1"
+    },
+    {
+      "agency_action": "commit",
+      "cycle": 9,
+      "false_commit": 0,
+      "pocket_id": "p_logic_atom_and",
+      "proposal_id": "prop_009_p_logic_atom_and",
+      "reason": "trace/ground compatible proposal",
+      "run_id": "e63_pocket_observatory_sample",
+      "schema_version": "pocket_observatory_v1"
+    },
+    {
+      "agency_action": "commit",
+      "cycle": 10,
+      "false_commit": 0,
+      "pocket_id": "p_logic_atom_and",
+      "proposal_id": "prop_010_p_logic_atom_and",
+      "reason": "trace/ground compatible proposal",
+      "run_id": "e63_pocket_observatory_sample",
+      "schema_version": "pocket_observatory_v1"
+    },
+    {
+      "agency_action": "commit",
+      "cycle": 11,
+      "false_commit": 0,
+      "pocket_id": "p_logic_atom_and",
+      "proposal_id": "prop_011_p_logic_atom_and",
+      "reason": "trace/ground compatible proposal",
+      "run_id": "e63_pocket_observatory_sample",
+      "schema_version": "pocket_observatory_v1"
+    },
+    {
+      "agency_action": "commit",
+      "cycle": 0,
+      "false_commit": 0,
+      "pocket_id": "p_contradiction_guard",
+      "proposal_id": "prop_000_p_contradiction_guard",
+      "reason": "trace/ground compatible proposal",
+      "run_id": "e63_pocket_observatory_sample",
+      "schema_version": "pocket_observatory_v1"
+    },
+    {
+      "agency_action": "commit",
+      "cycle": 1,
+      "false_commit": 0,
+      "pocket_id": "p_contradiction_guard",
+      "proposal_id": "prop_001_p_contradiction_guard",
+      "reason": "trace/ground compatible proposal",
+      "run_id": "e63_pocket_observatory_sample",
+      "schema_version": "pocket_observatory_v1"
+    },
+    {
+      "agency_action": "commit",
+      "cycle": 2,
+      "false_commit": 0,
+      "pocket_id": "p_contradiction_guard",
+      "proposal_id": "prop_002_p_contradiction_guard",
+      "reason": "trace/ground compatible proposal",
+      "run_id": "e63_pocket_observatory_sample",
+      "schema_version": "pocket_observatory_v1"
+    },
+    {
+      "agency_action": "commit",
+      "cycle": 3,
+      "false_commit": 0,
+      "pocket_id": "p_contradiction_guard",
+      "proposal_id": "prop_003_p_contradiction_guard",
+      "reason": "trace/ground compatible proposal",
+      "run_id": "e63_pocket_observatory_sample",
+      "schema_version": "pocket_observatory_v1"
+    },
+    {
+      "agency_action": "commit",
+      "cycle": 4,
+      "false_commit": 0,
+      "pocket_id": "p_contradiction_guard",
+      "proposal_id": "prop_004_p_contradiction_guard",
+      "reason": "trace/ground compatible proposal",
+      "run_id": "e63_pocket_observatory_sample",
+      "schema_version": "pocket_observatory_v1"
+    },
+    {
+      "agency_action": "commit",
+      "cycle": 5,
+      "false_commit": 0,
+      "pocket_id": "p_contradiction_guard",
+      "proposal_id": "prop_005_p_contradiction_guard",
+      "reason": "trace/ground compatible proposal",
+      "run_id": "e63_pocket_observatory_sample",
+      "schema_version": "pocket_observatory_v1"
+    },
+    {
+      "agency_action": "commit",
+      "cycle": 6,
+      "false_commit": 0,
+      "pocket_id": "p_contradiction_guard",
+      "proposal_id": "prop_006_p_contradiction_guard",
+      "reason": "trace/ground compatible proposal",
+      "run_id": "e63_pocket_observatory_sample",
+      "schema_version": "pocket_observatory_v1"
+    },
+    {
+      "agency_action": "commit",
+      "cycle": 7,
+      "false_commit": 0,
+      "pocket_id": "p_contradiction_guard",
+      "proposal_id": "prop_007_p_contradiction_guard",
+      "reason": "trace/ground compatible proposal",
+      "run_id": "e63_pocket_observatory_sample",
+      "schema_version": "pocket_observatory_v1"
+    },
+    {
+      "agency_action": "commit",
+      "cycle": 8,
+      "false_commit": 0,
+      "pocket_id": "p_contradiction_guard",
+      "proposal_id": "prop_008_p_contradiction_guard",
+      "reason": "trace/ground compatible proposal",
+      "run_id": "e63_pocket_observatory_sample",
+      "schema_version": "pocket_observatory_v1"
+    },
+    {
+      "agency_action": "commit",
+      "cycle": 9,
+      "false_commit": 0,
+      "pocket_id": "p_contradiction_guard",
+      "proposal_id": "prop_009_p_contradiction_guard",
+      "reason": "trace/ground compatible proposal",
+      "run_id": "e63_pocket_observatory_sample",
+      "schema_version": "pocket_observatory_v1"
+    },
+    {
+      "agency_action": "commit",
+      "cycle": 10,
+      "false_commit": 0,
+      "pocket_id": "p_contradiction_guard",
+      "proposal_id": "prop_010_p_contradiction_guard",
+      "reason": "trace/ground compatible proposal",
+      "run_id": "e63_pocket_observatory_sample",
+      "schema_version": "pocket_observatory_v1"
+    },
+    {
+      "agency_action": "commit",
+      "cycle": 11,
+      "false_commit": 0,
+      "pocket_id": "p_contradiction_guard",
+      "proposal_id": "prop_011_p_contradiction_guard",
+      "reason": "trace/ground compatible proposal",
+      "run_id": "e63_pocket_observatory_sample",
+      "schema_version": "pocket_observatory_v1"
+    },
+    {
+      "agency_action": "ask",
+      "cycle": 0,
+      "false_commit": 0,
+      "pocket_id": "p_evidence_seeker",
+      "proposal_id": "prop_000_p_evidence_seeker",
+      "reason": "unresolved dependency, evidence request preferred",
+      "run_id": "e63_pocket_observatory_sample",
+      "schema_version": "pocket_observatory_v1"
+    },
+    {
+      "agency_action": "ask",
+      "cycle": 1,
+      "false_commit": 0,
+      "pocket_id": "p_evidence_seeker",
+      "proposal_id": "prop_001_p_evidence_seeker",
+      "reason": "unresolved dependency, evidence request preferred",
+      "run_id": "e63_pocket_observatory_sample",
+      "schema_version": "pocket_observatory_v1"
+    },
+    {
+      "agency_action": "ask",
+      "cycle": 2,
+      "false_commit": 0,
+      "pocket_id": "p_evidence_seeker",
+      "proposal_id": "prop_002_p_evidence_seeker",
+      "reason": "unresolved dependency, evidence request preferred",
+      "run_id": "e63_pocket_observatory_sample",
+      "schema_version": "pocket_observatory_v1"
+    },
+    {
+      "agency_action": "ask",
+      "cycle": 3,
+      "false_commit": 0,
+      "pocket_id": "p_evidence_seeker",
+      "proposal_id": "prop_003_p_evidence_seeker",
+      "reason": "unresolved dependency, evidence request preferred",
+      "run_id": "e63_pocket_observatory_sample",
+      "schema_version": "pocket_observatory_v1"
+    },
+    {
+      "agency_action": "ask",
+      "cycle": 4,
+      "false_commit": 0,
+      "pocket_id": "p_evidence_seeker",
+      "proposal_id": "prop_004_p_evidence_seeker",
+      "reason": "unresolved dependency, evidence request preferred",
+      "run_id": "e63_pocket_observatory_sample",
+      "schema_version": "pocket_observatory_v1"
+    },
+    {
+      "agency_action": "ask",
+      "cycle": 5,
+      "false_commit": 0,
+      "pocket_id": "p_evidence_seeker",
+      "proposal_id": "prop_005_p_evidence_seeker",
+      "reason": "unresolved dependency, evidence request preferred",
+      "run_id": "e63_pocket_observatory_sample",
+      "schema_version": "pocket_observatory_v1"
+    },
+    {
+      "agency_action": "ask",
+      "cycle": 6,
+      "false_commit": 0,
+      "pocket_id": "p_evidence_seeker",
+      "proposal_id": "prop_006_p_evidence_seeker",
+      "reason": "unresolved dependency, evidence request preferred",
+      "run_id": "e63_pocket_observatory_sample",
+      "schema_version": "pocket_observatory_v1"
+    },
+    {
+      "agency_action": "ask",
+      "cycle": 7,
+      "false_commit": 0,
+      "pocket_id": "p_evidence_seeker",
+      "proposal_id": "prop_007_p_evidence_seeker",
+      "reason": "unresolved dependency, evidence request preferred",
+      "run_id": "e63_pocket_observatory_sample",
+      "schema_version": "pocket_observatory_v1"
+    },
+    {
+      "agency_action": "ask",
+      "cycle": 8,
+      "false_commit": 0,
+      "pocket_id": "p_evidence_seeker",
+      "proposal_id": "prop_008_p_evidence_seeker",
+      "reason": "unresolved dependency, evidence request preferred",
+      "run_id": "e63_pocket_observatory_sample",
+      "schema_version": "pocket_observatory_v1"
+    },
+    {
+      "agency_action": "ask",
+      "cycle": 9,
+      "false_commit": 0,
+      "pocket_id": "p_evidence_seeker",
+      "proposal_id": "prop_009_p_evidence_seeker",
+      "reason": "unresolved dependency, evidence request preferred",
+      "run_id": "e63_pocket_observatory_sample",
+      "schema_version": "pocket_observatory_v1"
+    },
+    {
+      "agency_action": "ask",
+      "cycle": 10,
+      "false_commit": 0,
+      "pocket_id": "p_evidence_seeker",
+      "proposal_id": "prop_010_p_evidence_seeker",
+      "reason": "unresolved dependency, evidence request preferred",
+      "run_id": "e63_pocket_observatory_sample",
+      "schema_version": "pocket_observatory_v1"
+    },
+    {
+      "agency_action": "ask",
+      "cycle": 11,
+      "false_commit": 0,
+      "pocket_id": "p_evidence_seeker",
+      "proposal_id": "prop_011_p_evidence_seeker",
+      "reason": "unresolved dependency, evidence request preferred",
+      "run_id": "e63_pocket_observatory_sample",
+      "schema_version": "pocket_observatory_v1"
+    },
+    {
+      "agency_action": "commit",
+      "cycle": 0,
+      "false_commit": 0,
+      "pocket_id": "p_noise_spammer",
+      "proposal_id": "prop_000_p_noise_spammer",
+      "reason": "trace/ground compatible proposal",
+      "run_id": "e63_pocket_observatory_sample",
+      "schema_version": "pocket_observatory_v1"
+    },
+    {
+      "agency_action": "commit",
+      "cycle": 1,
+      "false_commit": 0,
+      "pocket_id": "p_noise_spammer",
+      "proposal_id": "prop_001_p_noise_spammer",
+      "reason": "trace/ground compatible proposal",
+      "run_id": "e63_pocket_observatory_sample",
+      "schema_version": "pocket_observatory_v1"
+    },
+    {
+      "agency_action": "commit",
+      "cycle": 2,
+      "false_commit": 0,
+      "pocket_id": "p_noise_spammer",
+      "proposal_id": "prop_002_p_noise_spammer",
+      "reason": "trace/ground compatible proposal",
+      "run_id": "e63_pocket_observatory_sample",
+      "schema_version": "pocket_observatory_v1"
+    },
+    {
+      "agency_action": "commit",
+      "cycle": 3,
+      "false_commit": 0,
+      "pocket_id": "p_noise_spammer",
+      "proposal_id": "prop_003_p_noise_spammer",
+      "reason": "trace/ground compatible proposal",
+      "run_id": "e63_pocket_observatory_sample",
+      "schema_version": "pocket_observatory_v1"
+    },
+    {
+      "agency_action": "reject",
+      "cycle": 4,
+      "false_commit": 0,
+      "pocket_id": "p_noise_spammer",
+      "proposal_id": "prop_004_p_noise_spammer",
+      "reason": "spam or toxic proposal blocked",
+      "run_id": "e63_pocket_observatory_sample",
+      "schema_version": "pocket_observatory_v1"
+    },
+    {
+      "agency_action": "reject",
+      "cycle": 5,
+      "false_commit": 0,
+      "pocket_id": "p_noise_spammer",
+      "proposal_id": "prop_005_p_noise_spammer",
+      "reason": "spam or toxic proposal blocked",
+      "run_id": "e63_pocket_observatory_sample",
+      "schema_version": "pocket_observatory_v1"
+    },
+    {
+      "agency_action": "reject",
+      "cycle": 6,
+      "false_commit": 0,
+      "pocket_id": "p_noise_spammer",
+      "proposal_id": "prop_006_p_noise_spammer",
+      "reason": "spam or toxic proposal blocked",
+      "run_id": "e63_pocket_observatory_sample",
+      "schema_version": "pocket_observatory_v1"
+    },
+    {
+      "agency_action": "commit",
+      "cycle": 0,
+      "false_commit": 0,
+      "pocket_id": "p_stale_route_helper",
+      "proposal_id": "prop_000_p_stale_route_helper",
+      "reason": "trace/ground compatible proposal",
+      "run_id": "e63_pocket_observatory_sample",
+      "schema_version": "pocket_observatory_v1"
+    },
+    {
+      "agency_action": "commit",
+      "cycle": 1,
+      "false_commit": 0,
+      "pocket_id": "p_stale_route_helper",
+      "proposal_id": "prop_001_p_stale_route_helper",
+      "reason": "trace/ground compatible proposal",
+      "run_id": "e63_pocket_observatory_sample",
+      "schema_version": "pocket_observatory_v1"
+    },
+    {
+      "agency_action": "commit",
+      "cycle": 2,
+      "false_commit": 0,
+      "pocket_id": "p_stale_route_helper",
+      "proposal_id": "prop_002_p_stale_route_helper",
+      "reason": "trace/ground compatible proposal",
+      "run_id": "e63_pocket_observatory_sample",
+      "schema_version": "pocket_observatory_v1"
+    },
+    {
+      "agency_action": "commit",
+      "cycle": 3,
+      "false_commit": 0,
+      "pocket_id": "p_stale_route_helper",
+      "proposal_id": "prop_003_p_stale_route_helper",
+      "reason": "trace/ground compatible proposal",
+      "run_id": "e63_pocket_observatory_sample",
+      "schema_version": "pocket_observatory_v1"
+    },
+    {
+      "agency_action": "commit",
+      "cycle": 4,
+      "false_commit": 0,
+      "pocket_id": "p_stale_route_helper",
+      "proposal_id": "prop_004_p_stale_route_helper",
+      "reason": "trace/ground compatible proposal",
+      "run_id": "e63_pocket_observatory_sample",
+      "schema_version": "pocket_observatory_v1"
+    },
+    {
+      "agency_action": "defer",
+      "cycle": 5,
+      "false_commit": 0,
+      "pocket_id": "p_stale_route_helper",
+      "proposal_id": "prop_005_p_stale_route_helper",
+      "reason": "stale or insufficiently grounded proposal",
+      "run_id": "e63_pocket_observatory_sample",
+      "schema_version": "pocket_observatory_v1"
+    },
+    {
+      "agency_action": "defer",
+      "cycle": 6,
+      "false_commit": 0,
+      "pocket_id": "p_stale_route_helper",
+      "proposal_id": "prop_006_p_stale_route_helper",
+      "reason": "stale or insufficiently grounded proposal",
+      "run_id": "e63_pocket_observatory_sample",
+      "schema_version": "pocket_observatory_v1"
+    },
+    {
+      "agency_action": "defer",
+      "cycle": 7,
+      "false_commit": 0,
+      "pocket_id": "p_stale_route_helper",
+      "proposal_id": "prop_007_p_stale_route_helper",
+      "reason": "stale or insufficiently grounded proposal",
+      "run_id": "e63_pocket_observatory_sample",
+      "schema_version": "pocket_observatory_v1"
+    },
+    {
+      "agency_action": "commit",
+      "cycle": 2,
+      "false_commit": 0,
+      "pocket_id": "p_output_renderer",
+      "proposal_id": "prop_002_p_output_renderer",
+      "reason": "trace/ground compatible proposal",
+      "run_id": "e63_pocket_observatory_sample",
+      "schema_version": "pocket_observatory_v1"
+    },
+    {
+      "agency_action": "commit",
+      "cycle": 5,
+      "false_commit": 0,
+      "pocket_id": "p_output_renderer",
+      "proposal_id": "prop_005_p_output_renderer",
+      "reason": "trace/ground compatible proposal",
+      "run_id": "e63_pocket_observatory_sample",
+      "schema_version": "pocket_observatory_v1"
+    },
+    {
+      "agency_action": "commit",
+      "cycle": 9,
+      "false_commit": 0,
+      "pocket_id": "p_output_renderer",
+      "proposal_id": "prop_009_p_output_renderer",
+      "reason": "trace/ground compatible proposal",
+      "run_id": "e63_pocket_observatory_sample",
+      "schema_version": "pocket_observatory_v1"
+    },
+    {
+      "agency_action": "commit",
+      "cycle": 11,
+      "false_commit": 0,
+      "pocket_id": "p_output_renderer",
+      "proposal_id": "prop_011_p_output_renderer",
+      "reason": "trace/ground compatible proposal",
+      "run_id": "e63_pocket_observatory_sample",
+      "schema_version": "pocket_observatory_v1"
+    },
+    {
+      "agency_action": "commit",
+      "cycle": 2,
+      "false_commit": 0,
+      "pocket_id": "p_edge_adapter",
+      "proposal_id": "prop_002_p_edge_adapter",
+      "reason": "trace/ground compatible proposal",
+      "run_id": "e63_pocket_observatory_sample",
+      "schema_version": "pocket_observatory_v1"
+    },
+    {
+      "agency_action": "commit",
+      "cycle": 5,
+      "false_commit": 0,
+      "pocket_id": "p_edge_adapter",
+      "proposal_id": "prop_005_p_edge_adapter",
+      "reason": "trace/ground compatible proposal",
+      "run_id": "e63_pocket_observatory_sample",
+      "schema_version": "pocket_observatory_v1"
+    },
+    {
+      "agency_action": "commit",
+      "cycle": 9,
+      "false_commit": 0,
+      "pocket_id": "p_edge_adapter",
+      "proposal_id": "prop_009_p_edge_adapter",
+      "reason": "trace/ground compatible proposal",
+      "run_id": "e63_pocket_observatory_sample",
+      "schema_version": "pocket_observatory_v1"
+    },
+    {
+      "agency_action": "commit",
+      "cycle": 11,
+      "false_commit": 0,
+      "pocket_id": "p_edge_adapter",
+      "proposal_id": "prop_011_p_edge_adapter",
+      "reason": "trace/ground compatible proposal",
+      "run_id": "e63_pocket_observatory_sample",
+      "schema_version": "pocket_observatory_v1"
+    }
+  ],
+  "aggregate": {
+    "cycle_count": 12,
+    "deprecated_count": 1,
+    "false_commits": 0,
+    "mean_safety": 0.796,
+    "mean_utility": 0.718,
+    "pocket_count": 8,
+    "quarantine_count": 1,
+    "run_id": "e63_pocket_observatory_sample",
+    "schema_version": "pocket_observatory_v1",
+    "total_accepted": 65,
+    "total_calls": 71,
+    "total_rejected": 6
+  },
+  "boundary": "E63 is a local visual/debug dashboard for Pocket ecology artifacts. It is not a new training run, model capability claim, production API, AGI claim, consciousness claim, or model-scale behavior claim.",
+  "cycles": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11
+  ],
+  "events": [
+    {
+      "cycle": 0,
+      "event_id": "ev_000_p_binary_ingress_lens",
+      "event_type": "commit",
+      "label": "p_binary_ingress_lens commit at cycle 0",
+      "lifecycle": "stable",
+      "pocket_id": "p_binary_ingress_lens",
+      "run_id": "e63_pocket_observatory_sample",
+      "safety_delta": 0.02,
+      "schema_version": "pocket_observatory_v1",
+      "utility_delta": 0.035
+    },
+    {
+      "cycle": 1,
+      "event_id": "ev_001_p_binary_ingress_lens",
+      "event_type": "commit",
+      "label": "p_binary_ingress_lens commit at cycle 1",
+      "lifecycle": "stable",
+      "pocket_id": "p_binary_ingress_lens",
+      "run_id": "e63_pocket_observatory_sample",
+      "safety_delta": 0.02,
+      "schema_version": "pocket_observatory_v1",
+      "utility_delta": 0.035
+    },
+    {
+      "cycle": 2,
+      "event_id": "ev_002_p_binary_ingress_lens",
+      "event_type": "commit",
+      "label": "p_binary_ingress_lens commit at cycle 2",
+      "lifecycle": "stable",
+      "pocket_id": "p_binary_ingress_lens",
+      "run_id": "e63_pocket_observatory_sample",
+      "safety_delta": 0.02,
+      "schema_version": "pocket_observatory_v1",
+      "utility_delta": 0.035
+    },
+    {
+      "cycle": 3,
+      "event_id": "ev_003_p_binary_ingress_lens",
+      "event_type": "commit",
+      "label": "p_binary_ingress_lens commit at cycle 3",
+      "lifecycle": "stable",
+      "pocket_id": "p_binary_ingress_lens",
+      "run_id": "e63_pocket_observatory_sample",
+      "safety_delta": 0.02,
+      "schema_version": "pocket_observatory_v1",
+      "utility_delta": 0.035
+    },
+    {
+      "cycle": 4,
+      "event_id": "ev_004_p_binary_ingress_lens",
+      "event_type": "commit",
+      "label": "p_binary_ingress_lens commit at cycle 4",
+      "lifecycle": "stable",
+      "pocket_id": "p_binary_ingress_lens",
+      "run_id": "e63_pocket_observatory_sample",
+      "safety_delta": 0.02,
+      "schema_version": "pocket_observatory_v1",
+      "utility_delta": 0.035
+    },
+    {
+      "cycle": 5,
+      "event_id": "ev_005_p_binary_ingress_lens",
+      "event_type": "commit",
+      "label": "p_binary_ingress_lens commit at cycle 5",
+      "lifecycle": "stable",
+      "pocket_id": "p_binary_ingress_lens",
+      "run_id": "e63_pocket_observatory_sample",
+      "safety_delta": 0.02,
+      "schema_version": "pocket_observatory_v1",
+      "utility_delta": 0.035
+    },
+    {
+      "cycle": 6,
+      "event_id": "ev_006_p_binary_ingress_lens",
+      "event_type": "commit",
+      "label": "p_binary_ingress_lens commit at cycle 6",
+      "lifecycle": "stable",
+      "pocket_id": "p_binary_ingress_lens",
+      "run_id": "e63_pocket_observatory_sample",
+      "safety_delta": 0.02,
+      "schema_version": "pocket_observatory_v1",
+      "utility_delta": 0.035
+    },
+    {
+      "cycle": 7,
+      "event_id": "ev_007_p_binary_ingress_lens",
+      "event_type": "commit",
+      "label": "p_binary_ingress_lens commit at cycle 7",
+      "lifecycle": "stable",
+      "pocket_id": "p_binary_ingress_lens",
+      "run_id": "e63_pocket_observatory_sample",
+      "safety_delta": 0.02,
+      "schema_version": "pocket_observatory_v1",
+      "utility_delta": 0.035
+    },
+    {
+      "cycle": 8,
+      "event_id": "ev_008_p_binary_ingress_lens",
+      "event_type": "commit",
+      "label": "p_binary_ingress_lens commit at cycle 8",
+      "lifecycle": "stable",
+      "pocket_id": "p_binary_ingress_lens",
+      "run_id": "e63_pocket_observatory_sample",
+      "safety_delta": 0.02,
+      "schema_version": "pocket_observatory_v1",
+      "utility_delta": 0.035
+    },
+    {
+      "cycle": 9,
+      "event_id": "ev_009_p_binary_ingress_lens",
+      "event_type": "commit",
+      "label": "p_binary_ingress_lens commit at cycle 9",
+      "lifecycle": "stable",
+      "pocket_id": "p_binary_ingress_lens",
+      "run_id": "e63_pocket_observatory_sample",
+      "safety_delta": 0.02,
+      "schema_version": "pocket_observatory_v1",
+      "utility_delta": 0.035
+    },
+    {
+      "cycle": 10,
+      "event_id": "ev_010_p_binary_ingress_lens",
+      "event_type": "commit",
+      "label": "p_binary_ingress_lens commit at cycle 10",
+      "lifecycle": "stable",
+      "pocket_id": "p_binary_ingress_lens",
+      "run_id": "e63_pocket_observatory_sample",
+      "safety_delta": 0.02,
+      "schema_version": "pocket_observatory_v1",
+      "utility_delta": 0.035
+    },
+    {
+      "cycle": 11,
+      "event_id": "ev_011_p_binary_ingress_lens",
+      "event_type": "commit",
+      "label": "p_binary_ingress_lens commit at cycle 11",
+      "lifecycle": "stable",
+      "pocket_id": "p_binary_ingress_lens",
+      "run_id": "e63_pocket_observatory_sample",
+      "safety_delta": 0.02,
+      "schema_version": "pocket_observatory_v1",
+      "utility_delta": 0.035
+    },
+    {
+      "cycle": 0,
+      "event_id": "ev_000_p_logic_atom_and",
+      "event_type": "commit",
+      "label": "p_logic_atom_and commit at cycle 0",
+      "lifecycle": "active",
+      "pocket_id": "p_logic_atom_and",
+      "run_id": "e63_pocket_observatory_sample",
+      "safety_delta": 0.02,
+      "schema_version": "pocket_observatory_v1",
+      "utility_delta": 0.035
+    },
+    {
+      "cycle": 1,
+      "event_id": "ev_001_p_logic_atom_and",
+      "event_type": "commit",
+      "label": "p_logic_atom_and commit at cycle 1",
+      "lifecycle": "active",
+      "pocket_id": "p_logic_atom_and",
+      "run_id": "e63_pocket_observatory_sample",
+      "safety_delta": 0.02,
+      "schema_version": "pocket_observatory_v1",
+      "utility_delta": 0.035
+    },
+    {
+      "cycle": 2,
+      "event_id": "ev_002_p_logic_atom_and",
+      "event_type": "commit",
+      "label": "p_logic_atom_and commit at cycle 2",
+      "lifecycle": "active",
+      "pocket_id": "p_logic_atom_and",
+      "run_id": "e63_pocket_observatory_sample",
+      "safety_delta": 0.02,
+      "schema_version": "pocket_observatory_v1",
+      "utility_delta": 0.035
+    },
+    {
+      "cycle": 3,
+      "event_id": "ev_003_p_logic_atom_and",
+      "event_type": "commit",
+      "label": "p_logic_atom_and commit at cycle 3",
+      "lifecycle": "active",
+      "pocket_id": "p_logic_atom_and",
+      "run_id": "e63_pocket_observatory_sample",
+      "safety_delta": 0.02,
+      "schema_version": "pocket_observatory_v1",
+      "utility_delta": 0.035
+    },
+    {
+      "cycle": 4,
+      "event_id": "ev_004_p_logic_atom_and",
+      "event_type": "commit",
+      "label": "p_logic_atom_and commit at cycle 4",
+      "lifecycle": "active",
+      "pocket_id": "p_logic_atom_and",
+      "run_id": "e63_pocket_observatory_sample",
+      "safety_delta": 0.02,
+      "schema_version": "pocket_observatory_v1",
+      "utility_delta": 0.035
+    },
+    {
+      "cycle": 5,
+      "event_id": "ev_005_p_logic_atom_and",
+      "event_type": "commit",
+      "label": "p_logic_atom_and commit at cycle 5",
+      "lifecycle": "active",
+      "pocket_id": "p_logic_atom_and",
+      "run_id": "e63_pocket_observatory_sample",
+      "safety_delta": 0.02,
+      "schema_version": "pocket_observatory_v1",
+      "utility_delta": 0.035
+    },
+    {
+      "cycle": 6,
+      "event_id": "ev_006_p_logic_atom_and",
+      "event_type": "commit",
+      "label": "p_logic_atom_and commit at cycle 6",
+      "lifecycle": "active",
+      "pocket_id": "p_logic_atom_and",
+      "run_id": "e63_pocket_observatory_sample",
+      "safety_delta": 0.02,
+      "schema_version": "pocket_observatory_v1",
+      "utility_delta": 0.035
+    },
+    {
+      "cycle": 7,
+      "event_id": "ev_007_p_logic_atom_and",
+      "event_type": "commit",
+      "label": "p_logic_atom_and commit at cycle 7",
+      "lifecycle": "active",
+      "pocket_id": "p_logic_atom_and",
+      "run_id": "e63_pocket_observatory_sample",
+      "safety_delta": 0.02,
+      "schema_version": "pocket_observatory_v1",
+      "utility_delta": 0.035
+    },
+    {
+      "cycle": 8,
+      "event_id": "ev_008_p_logic_atom_and",
+      "event_type": "commit",
+      "label": "p_logic_atom_and commit at cycle 8",
+      "lifecycle": "active",
+      "pocket_id": "p_logic_atom_and",
+      "run_id": "e63_pocket_observatory_sample",
+      "safety_delta": 0.02,
+      "schema_version": "pocket_observatory_v1",
+      "utility_delta": 0.035
+    },
+    {
+      "cycle": 9,
+      "event_id": "ev_009_p_logic_atom_and",
+      "event_type": "commit",
+      "label": "p_logic_atom_and commit at cycle 9",
+      "lifecycle": "active",
+      "pocket_id": "p_logic_atom_and",
+      "run_id": "e63_pocket_observatory_sample",
+      "safety_delta": 0.02,
+      "schema_version": "pocket_observatory_v1",
+      "utility_delta": 0.035
+    },
+    {
+      "cycle": 10,
+      "event_id": "ev_010_p_logic_atom_and",
+      "event_type": "commit",
+      "label": "p_logic_atom_and commit at cycle 10",
+      "lifecycle": "active",
+      "pocket_id": "p_logic_atom_and",
+      "run_id": "e63_pocket_observatory_sample",
+      "safety_delta": 0.02,
+      "schema_version": "pocket_observatory_v1",
+      "utility_delta": 0.035
+    },
+    {
+      "cycle": 11,
+      "event_id": "ev_011_p_logic_atom_and",
+      "event_type": "commit",
+      "label": "p_logic_atom_and commit at cycle 11",
+      "lifecycle": "active",
+      "pocket_id": "p_logic_atom_and",
+      "run_id": "e63_pocket_observatory_sample",
+      "safety_delta": 0.02,
+      "schema_version": "pocket_observatory_v1",
+      "utility_delta": 0.035
+    },
+    {
+      "cycle": 0,
+      "event_id": "ev_000_p_contradiction_guard",
+      "event_type": "commit",
+      "label": "p_contradiction_guard commit at cycle 0",
+      "lifecycle": "stable",
+      "pocket_id": "p_contradiction_guard",
+      "run_id": "e63_pocket_observatory_sample",
+      "safety_delta": 0.02,
+      "schema_version": "pocket_observatory_v1",
+      "utility_delta": 0.035
+    },
+    {
+      "cycle": 1,
+      "event_id": "ev_001_p_contradiction_guard",
+      "event_type": "commit",
+      "label": "p_contradiction_guard commit at cycle 1",
+      "lifecycle": "stable",
+      "pocket_id": "p_contradiction_guard",
+      "run_id": "e63_pocket_observatory_sample",
+      "safety_delta": 0.02,
+      "schema_version": "pocket_observatory_v1",
+      "utility_delta": 0.035
+    },
+    {
+      "cycle": 2,
+      "event_id": "ev_002_p_contradiction_guard",
+      "event_type": "commit",
+      "label": "p_contradiction_guard commit at cycle 2",
+      "lifecycle": "stable",
+      "pocket_id": "p_contradiction_guard",
+      "run_id": "e63_pocket_observatory_sample",
+      "safety_delta": 0.02,
+      "schema_version": "pocket_observatory_v1",
+      "utility_delta": 0.035
+    },
+    {
+      "cycle": 3,
+      "event_id": "ev_003_p_contradiction_guard",
+      "event_type": "commit",
+      "label": "p_contradiction_guard commit at cycle 3",
+      "lifecycle": "stable",
+      "pocket_id": "p_contradiction_guard",
+      "run_id": "e63_pocket_observatory_sample",
+      "safety_delta": 0.02,
+      "schema_version": "pocket_observatory_v1",
+      "utility_delta": 0.035
+    },
+    {
+      "cycle": 4,
+      "event_id": "ev_004_p_contradiction_guard",
+      "event_type": "commit",
+      "label": "p_contradiction_guard commit at cycle 4",
+      "lifecycle": "stable",
+      "pocket_id": "p_contradiction_guard",
+      "run_id": "e63_pocket_observatory_sample",
+      "safety_delta": 0.02,
+      "schema_version": "pocket_observatory_v1",
+      "utility_delta": 0.035
+    },
+    {
+      "cycle": 5,
+      "event_id": "ev_005_p_contradiction_guard",
+      "event_type": "commit",
+      "label": "p_contradiction_guard commit at cycle 5",
+      "lifecycle": "stable",
+      "pocket_id": "p_contradiction_guard",
+      "run_id": "e63_pocket_observatory_sample",
+      "safety_delta": 0.02,
+      "schema_version": "pocket_observatory_v1",
+      "utility_delta": 0.035
+    },
+    {
+      "cycle": 6,
+      "event_id": "ev_006_p_contradiction_guard",
+      "event_type": "commit",
+      "label": "p_contradiction_guard commit at cycle 6",
+      "lifecycle": "stable",
+      "pocket_id": "p_contradiction_guard",
+      "run_id": "e63_pocket_observatory_sample",
+      "safety_delta": 0.02,
+      "schema_version": "pocket_observatory_v1",
+      "utility_delta": 0.035
+    },
+    {
+      "cycle": 7,
+      "event_id": "ev_007_p_contradiction_guard",
+      "event_type": "commit",
+      "label": "p_contradiction_guard commit at cycle 7",
+      "lifecycle": "core",
+      "pocket_id": "p_contradiction_guard",
+      "run_id": "e63_pocket_observatory_sample",
+      "safety_delta": 0.02,
+      "schema_version": "pocket_observatory_v1",
+      "utility_delta": 0.035
+    },
+    {
+      "cycle": 8,
+      "event_id": "ev_008_p_contradiction_guard",
+      "event_type": "commit",
+      "label": "p_contradiction_guard commit at cycle 8",
+      "lifecycle": "core",
+      "pocket_id": "p_contradiction_guard",
+      "run_id": "e63_pocket_observatory_sample",
+      "safety_delta": 0.02,
+      "schema_version": "pocket_observatory_v1",
+      "utility_delta": 0.035
+    },
+    {
+      "cycle": 9,
+      "event_id": "ev_009_p_contradiction_guard",
+      "event_type": "commit",
+      "label": "p_contradiction_guard commit at cycle 9",
+      "lifecycle": "core",
+      "pocket_id": "p_contradiction_guard",
+      "run_id": "e63_pocket_observatory_sample",
+      "safety_delta": 0.02,
+      "schema_version": "pocket_observatory_v1",
+      "utility_delta": 0.035
+    },
+    {
+      "cycle": 10,
+      "event_id": "ev_010_p_contradiction_guard",
+      "event_type": "commit",
+      "label": "p_contradiction_guard commit at cycle 10",
+      "lifecycle": "core",
+      "pocket_id": "p_contradiction_guard",
+      "run_id": "e63_pocket_observatory_sample",
+      "safety_delta": 0.02,
+      "schema_version": "pocket_observatory_v1",
+      "utility_delta": 0.035
+    },
+    {
+      "cycle": 11,
+      "event_id": "ev_011_p_contradiction_guard",
+      "event_type": "commit",
+      "label": "p_contradiction_guard commit at cycle 11",
+      "lifecycle": "core",
+      "pocket_id": "p_contradiction_guard",
+      "run_id": "e63_pocket_observatory_sample",
+      "safety_delta": 0.02,
+      "schema_version": "pocket_observatory_v1",
+      "utility_delta": 0.035
+    },
+    {
+      "cycle": 0,
+      "event_id": "ev_000_p_evidence_seeker",
+      "event_type": "ask",
+      "label": "p_evidence_seeker ask at cycle 0",
+      "lifecycle": "active",
+      "pocket_id": "p_evidence_seeker",
+      "run_id": "e63_pocket_observatory_sample",
+      "safety_delta": 0.02,
+      "schema_version": "pocket_observatory_v1",
+      "utility_delta": 0.01
+    },
+    {
+      "cycle": 1,
+      "event_id": "ev_001_p_evidence_seeker",
+      "event_type": "ask",
+      "label": "p_evidence_seeker ask at cycle 1",
+      "lifecycle": "active",
+      "pocket_id": "p_evidence_seeker",
+      "run_id": "e63_pocket_observatory_sample",
+      "safety_delta": 0.02,
+      "schema_version": "pocket_observatory_v1",
+      "utility_delta": 0.01
+    },
+    {
+      "cycle": 2,
+      "event_id": "ev_002_p_evidence_seeker",
+      "event_type": "ask",
+      "label": "p_evidence_seeker ask at cycle 2",
+      "lifecycle": "active",
+      "pocket_id": "p_evidence_seeker",
+      "run_id": "e63_pocket_observatory_sample",
+      "safety_delta": 0.02,
+      "schema_version": "pocket_observatory_v1",
+      "utility_delta": 0.01
+    },
+    {
+      "cycle": 3,
+      "event_id": "ev_003_p_evidence_seeker",
+      "event_type": "ask",
+      "label": "p_evidence_seeker ask at cycle 3",
+      "lifecycle": "active",
+      "pocket_id": "p_evidence_seeker",
+      "run_id": "e63_pocket_observatory_sample",
+      "safety_delta": 0.02,
+      "schema_version": "pocket_observatory_v1",
+      "utility_delta": 0.01
+    },
+    {
+      "cycle": 4,
+      "event_id": "ev_004_p_evidence_seeker",
+      "event_type": "ask",
+      "label": "p_evidence_seeker ask at cycle 4",
+      "lifecycle": "active",
+      "pocket_id": "p_evidence_seeker",
+      "run_id": "e63_pocket_observatory_sample",
+      "safety_delta": 0.02,
+      "schema_version": "pocket_observatory_v1",
+      "utility_delta": 0.01
+    },
+    {
+      "cycle": 5,
+      "event_id": "ev_005_p_evidence_seeker",
+      "event_type": "ask",
+      "label": "p_evidence_seeker ask at cycle 5",
+      "lifecycle": "active",
+      "pocket_id": "p_evidence_seeker",
+      "run_id": "e63_pocket_observatory_sample",
+      "safety_delta": 0.02,
+      "schema_version": "pocket_observatory_v1",
+      "utility_delta": 0.01
+    },
+    {
+      "cycle": 6,
+      "event_id": "ev_006_p_evidence_seeker",
+      "event_type": "ask",
+      "label": "p_evidence_seeker ask at cycle 6",
+      "lifecycle": "stable",
+      "pocket_id": "p_evidence_seeker",
+      "run_id": "e63_pocket_observatory_sample",
+      "safety_delta": 0.02,
+      "schema_version": "pocket_observatory_v1",
+      "utility_delta": 0.01
+    },
+    {
+      "cycle": 7,
+      "event_id": "ev_007_p_evidence_seeker",
+      "event_type": "ask",
+      "label": "p_evidence_seeker ask at cycle 7",
+      "lifecycle": "stable",
+      "pocket_id": "p_evidence_seeker",
+      "run_id": "e63_pocket_observatory_sample",
+      "safety_delta": 0.02,
+      "schema_version": "pocket_observatory_v1",
+      "utility_delta": 0.01
+    },
+    {
+      "cycle": 8,
+      "event_id": "ev_008_p_evidence_seeker",
+      "event_type": "ask",
+      "label": "p_evidence_seeker ask at cycle 8",
+      "lifecycle": "stable",
+      "pocket_id": "p_evidence_seeker",
+      "run_id": "e63_pocket_observatory_sample",
+      "safety_delta": 0.02,
+      "schema_version": "pocket_observatory_v1",
+      "utility_delta": 0.01
+    },
+    {
+      "cycle": 9,
+      "event_id": "ev_009_p_evidence_seeker",
+      "event_type": "ask",
+      "label": "p_evidence_seeker ask at cycle 9",
+      "lifecycle": "stable",
+      "pocket_id": "p_evidence_seeker",
+      "run_id": "e63_pocket_observatory_sample",
+      "safety_delta": 0.02,
+      "schema_version": "pocket_observatory_v1",
+      "utility_delta": 0.01
+    },
+    {
+      "cycle": 10,
+      "event_id": "ev_010_p_evidence_seeker",
+      "event_type": "ask",
+      "label": "p_evidence_seeker ask at cycle 10",
+      "lifecycle": "stable",
+      "pocket_id": "p_evidence_seeker",
+      "run_id": "e63_pocket_observatory_sample",
+      "safety_delta": 0.02,
+      "schema_version": "pocket_observatory_v1",
+      "utility_delta": 0.01
+    },
+    {
+      "cycle": 11,
+      "event_id": "ev_011_p_evidence_seeker",
+      "event_type": "ask",
+      "label": "p_evidence_seeker ask at cycle 11",
+      "lifecycle": "stable",
+      "pocket_id": "p_evidence_seeker",
+      "run_id": "e63_pocket_observatory_sample",
+      "safety_delta": 0.02,
+      "schema_version": "pocket_observatory_v1",
+      "utility_delta": 0.01
+    },
+    {
+      "cycle": 0,
+      "event_id": "ev_000_p_noise_spammer",
+      "event_type": "commit",
+      "label": "p_noise_spammer commit at cycle 0",
+      "lifecycle": "candidate",
+      "pocket_id": "p_noise_spammer",
+      "run_id": "e63_pocket_observatory_sample",
+      "safety_delta": 0.02,
+      "schema_version": "pocket_observatory_v1",
+      "utility_delta": 0.035
+    },
+    {
+      "cycle": 1,
+      "event_id": "ev_001_p_noise_spammer",
+      "event_type": "commit",
+      "label": "p_noise_spammer commit at cycle 1",
+      "lifecycle": "candidate",
+      "pocket_id": "p_noise_spammer",
+      "run_id": "e63_pocket_observatory_sample",
+      "safety_delta": 0.02,
+      "schema_version": "pocket_observatory_v1",
+      "utility_delta": 0.035
+    },
+    {
+      "cycle": 2,
+      "event_id": "ev_002_p_noise_spammer",
+      "event_type": "commit",
+      "label": "p_noise_spammer commit at cycle 2",
+      "lifecycle": "candidate",
+      "pocket_id": "p_noise_spammer",
+      "run_id": "e63_pocket_observatory_sample",
+      "safety_delta": 0.02,
+      "schema_version": "pocket_observatory_v1",
+      "utility_delta": 0.035
+    },
+    {
+      "cycle": 3,
+      "event_id": "ev_003_p_noise_spammer",
+      "event_type": "commit",
+      "label": "p_noise_spammer commit at cycle 3",
+      "lifecycle": "candidate",
+      "pocket_id": "p_noise_spammer",
+      "run_id": "e63_pocket_observatory_sample",
+      "safety_delta": 0.02,
+      "schema_version": "pocket_observatory_v1",
+      "utility_delta": 0.035
+    },
+    {
+      "cycle": 4,
+      "event_id": "ev_004_p_noise_spammer",
+      "event_type": "reject",
+      "label": "p_noise_spammer reject at cycle 4",
+      "lifecycle": "quarantine",
+      "pocket_id": "p_noise_spammer",
+      "run_id": "e63_pocket_observatory_sample",
+      "safety_delta": -0.08,
+      "schema_version": "pocket_observatory_v1",
+      "utility_delta": -0.04
+    },
+    {
+      "cycle": 5,
+      "event_id": "ev_005_p_noise_spammer",
+      "event_type": "reject",
+      "label": "p_noise_spammer reject at cycle 5",
+      "lifecycle": "quarantine",
+      "pocket_id": "p_noise_spammer",
+      "run_id": "e63_pocket_observatory_sample",
+      "safety_delta": -0.08,
+      "schema_version": "pocket_observatory_v1",
+      "utility_delta": -0.04
+    },
+    {
+      "cycle": 6,
+      "event_id": "ev_006_p_noise_spammer",
+      "event_type": "reject",
+      "label": "p_noise_spammer reject at cycle 6",
+      "lifecycle": "quarantine",
+      "pocket_id": "p_noise_spammer",
+      "run_id": "e63_pocket_observatory_sample",
+      "safety_delta": -0.08,
+      "schema_version": "pocket_observatory_v1",
+      "utility_delta": -0.04
+    },
+    {
+      "cycle": 0,
+      "event_id": "ev_000_p_stale_route_helper",
+      "event_type": "commit",
+      "label": "p_stale_route_helper commit at cycle 0",
+      "lifecycle": "active",
+      "pocket_id": "p_stale_route_helper",
+      "run_id": "e63_pocket_observatory_sample",
+      "safety_delta": 0.02,
+      "schema_version": "pocket_observatory_v1",
+      "utility_delta": 0.035
+    },
+    {
+      "cycle": 1,
+      "event_id": "ev_001_p_stale_route_helper",
+      "event_type": "commit",
+      "label": "p_stale_route_helper commit at cycle 1",
+      "lifecycle": "active",
+      "pocket_id": "p_stale_route_helper",
+      "run_id": "e63_pocket_observatory_sample",
+      "safety_delta": 0.02,
+      "schema_version": "pocket_observatory_v1",
+      "utility_delta": 0.035
+    },
+    {
+      "cycle": 2,
+      "event_id": "ev_002_p_stale_route_helper",
+      "event_type": "commit",
+      "label": "p_stale_route_helper commit at cycle 2",
+      "lifecycle": "active",
+      "pocket_id": "p_stale_route_helper",
+      "run_id": "e63_pocket_observatory_sample",
+      "safety_delta": 0.02,
+      "schema_version": "pocket_observatory_v1",
+      "utility_delta": 0.035
+    },
+    {
+      "cycle": 3,
+      "event_id": "ev_003_p_stale_route_helper",
+      "event_type": "commit",
+      "label": "p_stale_route_helper commit at cycle 3",
+      "lifecycle": "active",
+      "pocket_id": "p_stale_route_helper",
+      "run_id": "e63_pocket_observatory_sample",
+      "safety_delta": 0.02,
+      "schema_version": "pocket_observatory_v1",
+      "utility_delta": 0.035
+    },
+    {
+      "cycle": 4,
+      "event_id": "ev_004_p_stale_route_helper",
+      "event_type": "commit",
+      "label": "p_stale_route_helper commit at cycle 4",
+      "lifecycle": "active",
+      "pocket_id": "p_stale_route_helper",
+      "run_id": "e63_pocket_observatory_sample",
+      "safety_delta": 0.02,
+      "schema_version": "pocket_observatory_v1",
+      "utility_delta": 0.035
+    },
+    {
+      "cycle": 5,
+      "event_id": "ev_005_p_stale_route_helper",
+      "event_type": "defer",
+      "label": "p_stale_route_helper defer at cycle 5",
+      "lifecycle": "deprecated",
+      "pocket_id": "p_stale_route_helper",
+      "run_id": "e63_pocket_observatory_sample",
+      "safety_delta": -0.01,
+      "schema_version": "pocket_observatory_v1",
+      "utility_delta": 0.01
+    },
+    {
+      "cycle": 6,
+      "event_id": "ev_006_p_stale_route_helper",
+      "event_type": "defer",
+      "label": "p_stale_route_helper defer at cycle 6",
+      "lifecycle": "deprecated",
+      "pocket_id": "p_stale_route_helper",
+      "run_id": "e63_pocket_observatory_sample",
+      "safety_delta": -0.01,
+      "schema_version": "pocket_observatory_v1",
+      "utility_delta": 0.01
+    },
+    {
+      "cycle": 7,
+      "event_id": "ev_007_p_stale_route_helper",
+      "event_type": "defer",
+      "label": "p_stale_route_helper defer at cycle 7",
+      "lifecycle": "deprecated",
+      "pocket_id": "p_stale_route_helper",
+      "run_id": "e63_pocket_observatory_sample",
+      "safety_delta": -0.01,
+      "schema_version": "pocket_observatory_v1",
+      "utility_delta": 0.01
+    },
+    {
+      "cycle": 2,
+      "event_id": "ev_002_p_output_renderer",
+      "event_type": "commit",
+      "label": "p_output_renderer commit at cycle 2",
+      "lifecycle": "stable",
+      "pocket_id": "p_output_renderer",
+      "run_id": "e63_pocket_observatory_sample",
+      "safety_delta": 0.02,
+      "schema_version": "pocket_observatory_v1",
+      "utility_delta": 0.035
+    },
+    {
+      "cycle": 5,
+      "event_id": "ev_005_p_output_renderer",
+      "event_type": "commit",
+      "label": "p_output_renderer commit at cycle 5",
+      "lifecycle": "stable",
+      "pocket_id": "p_output_renderer",
+      "run_id": "e63_pocket_observatory_sample",
+      "safety_delta": 0.02,
+      "schema_version": "pocket_observatory_v1",
+      "utility_delta": 0.035
+    },
+    {
+      "cycle": 9,
+      "event_id": "ev_009_p_output_renderer",
+      "event_type": "commit",
+      "label": "p_output_renderer commit at cycle 9",
+      "lifecycle": "stable",
+      "pocket_id": "p_output_renderer",
+      "run_id": "e63_pocket_observatory_sample",
+      "safety_delta": 0.02,
+      "schema_version": "pocket_observatory_v1",
+      "utility_delta": 0.035
+    },
+    {
+      "cycle": 11,
+      "event_id": "ev_011_p_output_renderer",
+      "event_type": "commit",
+      "label": "p_output_renderer commit at cycle 11",
+      "lifecycle": "stable",
+      "pocket_id": "p_output_renderer",
+      "run_id": "e63_pocket_observatory_sample",
+      "safety_delta": 0.02,
+      "schema_version": "pocket_observatory_v1",
+      "utility_delta": 0.035
+    },
+    {
+      "cycle": 2,
+      "event_id": "ev_002_p_edge_adapter",
+      "event_type": "commit",
+      "label": "p_edge_adapter commit at cycle 2",
+      "lifecycle": "active",
+      "pocket_id": "p_edge_adapter",
+      "run_id": "e63_pocket_observatory_sample",
+      "safety_delta": 0.02,
+      "schema_version": "pocket_observatory_v1",
+      "utility_delta": 0.035
+    },
+    {
+      "cycle": 5,
+      "event_id": "ev_005_p_edge_adapter",
+      "event_type": "commit",
+      "label": "p_edge_adapter commit at cycle 5",
+      "lifecycle": "stable",
+      "pocket_id": "p_edge_adapter",
+      "run_id": "e63_pocket_observatory_sample",
+      "safety_delta": 0.02,
+      "schema_version": "pocket_observatory_v1",
+      "utility_delta": 0.035
+    },
+    {
+      "cycle": 9,
+      "event_id": "ev_009_p_edge_adapter",
+      "event_type": "commit",
+      "label": "p_edge_adapter commit at cycle 9",
+      "lifecycle": "stable",
+      "pocket_id": "p_edge_adapter",
+      "run_id": "e63_pocket_observatory_sample",
+      "safety_delta": 0.02,
+      "schema_version": "pocket_observatory_v1",
+      "utility_delta": 0.035
+    },
+    {
+      "cycle": 11,
+      "event_id": "ev_011_p_edge_adapter",
+      "event_type": "commit",
+      "label": "p_edge_adapter commit at cycle 11",
+      "lifecycle": "stable",
+      "pocket_id": "p_edge_adapter",
+      "run_id": "e63_pocket_observatory_sample",
+      "safety_delta": 0.02,
+      "schema_version": "pocket_observatory_v1",
+      "utility_delta": 0.035
+    }
+  ],
+  "flow_cells": [
+    {
+      "cell": [
+        0,
+        0
+      ],
+      "commit_id": "commit_000_p_binary_ingress_lens",
+      "cycle": 0,
+      "source_pocket": "p_binary_ingress_lens",
+      "value": 0
+    },
+    {
+      "cell": [
+        1,
+        2
+      ],
+      "commit_id": "commit_001_p_binary_ingress_lens",
+      "cycle": 1,
+      "source_pocket": "p_binary_ingress_lens",
+      "value": 1
+    },
+    {
+      "cell": [
+        2,
+        4
+      ],
+      "commit_id": "commit_002_p_binary_ingress_lens",
+      "cycle": 2,
+      "source_pocket": "p_binary_ingress_lens",
+      "value": 0
+    },
+    {
+      "cell": [
+        3,
+        6
+      ],
+      "commit_id": "commit_003_p_binary_ingress_lens",
+      "cycle": 3,
+      "source_pocket": "p_binary_ingress_lens",
+      "value": 1
+    },
+    {
+      "cell": [
+        4,
+        0
+      ],
+      "commit_id": "commit_004_p_binary_ingress_lens",
+      "cycle": 4,
+      "source_pocket": "p_binary_ingress_lens",
+      "value": 0
+    },
+    {
+      "cell": [
+        5,
+        2
+      ],
+      "commit_id": "commit_005_p_binary_ingress_lens",
+      "cycle": 5,
+      "source_pocket": "p_binary_ingress_lens",
+      "value": 1
+    },
+    {
+      "cell": [
+        6,
+        4
+      ],
+      "commit_id": "commit_006_p_binary_ingress_lens",
+      "cycle": 6,
+      "source_pocket": "p_binary_ingress_lens",
+      "value": 0
+    },
+    {
+      "cell": [
+        7,
+        6
+      ],
+      "commit_id": "commit_007_p_binary_ingress_lens",
+      "cycle": 7,
+      "source_pocket": "p_binary_ingress_lens",
+      "value": 1
+    },
+    {
+      "cell": [
+        0,
+        0
+      ],
+      "commit_id": "commit_008_p_binary_ingress_lens",
+      "cycle": 8,
+      "source_pocket": "p_binary_ingress_lens",
+      "value": 0
+    },
+    {
+      "cell": [
+        1,
+        2
+      ],
+      "commit_id": "commit_009_p_binary_ingress_lens",
+      "cycle": 9,
+      "source_pocket": "p_binary_ingress_lens",
+      "value": 1
+    },
+    {
+      "cell": [
+        2,
+        4
+      ],
+      "commit_id": "commit_010_p_binary_ingress_lens",
+      "cycle": 10,
+      "source_pocket": "p_binary_ingress_lens",
+      "value": 0
+    },
+    {
+      "cell": [
+        3,
+        6
+      ],
+      "commit_id": "commit_011_p_binary_ingress_lens",
+      "cycle": 11,
+      "source_pocket": "p_binary_ingress_lens",
+      "value": 1
+    },
+    {
+      "cell": [
+        3,
+        1
+      ],
+      "commit_id": "commit_000_p_logic_atom_and",
+      "cycle": 0,
+      "source_pocket": "p_logic_atom_and",
+      "value": 0
+    },
+    {
+      "cell": [
+        4,
+        3
+      ],
+      "commit_id": "commit_001_p_logic_atom_and",
+      "cycle": 1,
+      "source_pocket": "p_logic_atom_and",
+      "value": 1
+    },
+    {
+      "cell": [
+        5,
+        5
+      ],
+      "commit_id": "commit_002_p_logic_atom_and",
+      "cycle": 2,
+      "source_pocket": "p_logic_atom_and",
+      "value": 0
+    },
+    {
+      "cell": [
+        6,
+        7
+      ],
+      "commit_id": "commit_003_p_logic_atom_and",
+      "cycle": 3,
+      "source_pocket": "p_logic_atom_and",
+      "value": 1
+    },
+    {
+      "cell": [
+        7,
+        1
+      ],
+      "commit_id": "commit_004_p_logic_atom_and",
+      "cycle": 4,
+      "source_pocket": "p_logic_atom_and",
+      "value": 0
+    },
+    {
+      "cell": [
+        0,
+        3
+      ],
+      "commit_id": "commit_005_p_logic_atom_and",
+      "cycle": 5,
+      "source_pocket": "p_logic_atom_and",
+      "value": 1
+    },
+    {
+      "cell": [
+        1,
+        5
+      ],
+      "commit_id": "commit_006_p_logic_atom_and",
+      "cycle": 6,
+      "source_pocket": "p_logic_atom_and",
+      "value": 0
+    },
+    {
+      "cell": [
+        2,
+        7
+      ],
+      "commit_id": "commit_007_p_logic_atom_and",
+      "cycle": 7,
+      "source_pocket": "p_logic_atom_and",
+      "value": 1
+    },
+    {
+      "cell": [
+        3,
+        1
+      ],
+      "commit_id": "commit_008_p_logic_atom_and",
+      "cycle": 8,
+      "source_pocket": "p_logic_atom_and",
+      "value": 0
+    },
+    {
+      "cell": [
+        4,
+        3
+      ],
+      "commit_id": "commit_009_p_logic_atom_and",
+      "cycle": 9,
+      "source_pocket": "p_logic_atom_and",
+      "value": 1
+    },
+    {
+      "cell": [
+        5,
+        5
+      ],
+      "commit_id": "commit_010_p_logic_atom_and",
+      "cycle": 10,
+      "source_pocket": "p_logic_atom_and",
+      "value": 0
+    },
+    {
+      "cell": [
+        6,
+        7
+      ],
+      "commit_id": "commit_011_p_logic_atom_and",
+      "cycle": 11,
+      "source_pocket": "p_logic_atom_and",
+      "value": 1
+    },
+    {
+      "cell": [
+        6,
+        2
+      ],
+      "commit_id": "commit_000_p_contradiction_guard",
+      "cycle": 0,
+      "source_pocket": "p_contradiction_guard",
+      "value": 0
+    },
+    {
+      "cell": [
+        7,
+        4
+      ],
+      "commit_id": "commit_001_p_contradiction_guard",
+      "cycle": 1,
+      "source_pocket": "p_contradiction_guard",
+      "value": 1
+    },
+    {
+      "cell": [
+        0,
+        6
+      ],
+      "commit_id": "commit_002_p_contradiction_guard",
+      "cycle": 2,
+      "source_pocket": "p_contradiction_guard",
+      "value": 0
+    },
+    {
+      "cell": [
+        1,
+        0
+      ],
+      "commit_id": "commit_003_p_contradiction_guard",
+      "cycle": 3,
+      "source_pocket": "p_contradiction_guard",
+      "value": 1
+    },
+    {
+      "cell": [
+        2,
+        2
+      ],
+      "commit_id": "commit_004_p_contradiction_guard",
+      "cycle": 4,
+      "source_pocket": "p_contradiction_guard",
+      "value": 0
+    },
+    {
+      "cell": [
+        3,
+        4
+      ],
+      "commit_id": "commit_005_p_contradiction_guard",
+      "cycle": 5,
+      "source_pocket": "p_contradiction_guard",
+      "value": 1
+    },
+    {
+      "cell": [
+        4,
+        6
+      ],
+      "commit_id": "commit_006_p_contradiction_guard",
+      "cycle": 6,
+      "source_pocket": "p_contradiction_guard",
+      "value": 0
+    },
+    {
+      "cell": [
+        5,
+        0
+      ],
+      "commit_id": "commit_007_p_contradiction_guard",
+      "cycle": 7,
+      "source_pocket": "p_contradiction_guard",
+      "value": 1
+    },
+    {
+      "cell": [
+        6,
+        2
+      ],
+      "commit_id": "commit_008_p_contradiction_guard",
+      "cycle": 8,
+      "source_pocket": "p_contradiction_guard",
+      "value": 0
+    },
+    {
+      "cell": [
+        7,
+        4
+      ],
+      "commit_id": "commit_009_p_contradiction_guard",
+      "cycle": 9,
+      "source_pocket": "p_contradiction_guard",
+      "value": 1
+    },
+    {
+      "cell": [
+        0,
+        6
+      ],
+      "commit_id": "commit_010_p_contradiction_guard",
+      "cycle": 10,
+      "source_pocket": "p_contradiction_guard",
+      "value": 0
+    },
+    {
+      "cell": [
+        1,
+        0
+      ],
+      "commit_id": "commit_011_p_contradiction_guard",
+      "cycle": 11,
+      "source_pocket": "p_contradiction_guard",
+      "value": 1
+    },
+    {
+      "cell": [
+        4,
+        4
+      ],
+      "commit_id": "commit_000_p_noise_spammer",
+      "cycle": 0,
+      "source_pocket": "p_noise_spammer",
+      "value": 0
+    },
+    {
+      "cell": [
+        5,
+        6
+      ],
+      "commit_id": "commit_001_p_noise_spammer",
+      "cycle": 1,
+      "source_pocket": "p_noise_spammer",
+      "value": 1
+    },
+    {
+      "cell": [
+        6,
+        0
+      ],
+      "commit_id": "commit_002_p_noise_spammer",
+      "cycle": 2,
+      "source_pocket": "p_noise_spammer",
+      "value": 0
+    },
+    {
+      "cell": [
+        7,
+        2
+      ],
+      "commit_id": "commit_003_p_noise_spammer",
+      "cycle": 3,
+      "source_pocket": "p_noise_spammer",
+      "value": 1
+    },
+    {
+      "cell": [
+        7,
+        5
+      ],
+      "commit_id": "commit_000_p_stale_route_helper",
+      "cycle": 0,
+      "source_pocket": "p_stale_route_helper",
+      "value": 0
+    },
+    {
+      "cell": [
+        0,
+        7
+      ],
+      "commit_id": "commit_001_p_stale_route_helper",
+      "cycle": 1,
+      "source_pocket": "p_stale_route_helper",
+      "value": 1
+    },
+    {
+      "cell": [
+        1,
+        1
+      ],
+      "commit_id": "commit_002_p_stale_route_helper",
+      "cycle": 2,
+      "source_pocket": "p_stale_route_helper",
+      "value": 0
+    },
+    {
+      "cell": [
+        2,
+        3
+      ],
+      "commit_id": "commit_003_p_stale_route_helper",
+      "cycle": 3,
+      "source_pocket": "p_stale_route_helper",
+      "value": 1
+    },
+    {
+      "cell": [
+        3,
+        5
+      ],
+      "commit_id": "commit_004_p_stale_route_helper",
+      "cycle": 4,
+      "source_pocket": "p_stale_route_helper",
+      "value": 0
+    },
+    {
+      "cell": [
+        4,
+        2
+      ],
+      "commit_id": "commit_002_p_output_renderer",
+      "cycle": 2,
+      "source_pocket": "p_output_renderer",
+      "value": 0
+    },
+    {
+      "cell": [
+        7,
+        0
+      ],
+      "commit_id": "commit_005_p_output_renderer",
+      "cycle": 5,
+      "source_pocket": "p_output_renderer",
+      "value": 1
+    },
+    {
+      "cell": [
+        3,
+        0
+      ],
+      "commit_id": "commit_009_p_output_renderer",
+      "cycle": 9,
+      "source_pocket": "p_output_renderer",
+      "value": 1
+    },
+    {
+      "cell": [
+        5,
+        4
+      ],
+      "commit_id": "commit_011_p_output_renderer",
+      "cycle": 11,
+      "source_pocket": "p_output_renderer",
+      "value": 1
+    },
+    {
+      "cell": [
+        7,
+        3
+      ],
+      "commit_id": "commit_002_p_edge_adapter",
+      "cycle": 2,
+      "source_pocket": "p_edge_adapter",
+      "value": 0
+    },
+    {
+      "cell": [
+        2,
+        1
+      ],
+      "commit_id": "commit_005_p_edge_adapter",
+      "cycle": 5,
+      "source_pocket": "p_edge_adapter",
+      "value": 1
+    },
+    {
+      "cell": [
+        6,
+        1
+      ],
+      "commit_id": "commit_009_p_edge_adapter",
+      "cycle": 9,
+      "source_pocket": "p_edge_adapter",
+      "value": 1
+    },
+    {
+      "cell": [
+        0,
+        5
+      ],
+      "commit_id": "commit_011_p_edge_adapter",
+      "cycle": 11,
+      "source_pocket": "p_edge_adapter",
+      "value": 1
+    }
+  ],
+  "heatmap": [
+    {
+      "accepted": 1,
+      "action": "commit",
+      "activity": 0.28,
+      "cost": 0.08,
+      "cycle": 0,
+      "false_commit": 0,
+      "lifecycle": "stable",
+      "pocket_id": "p_binary_ingress_lens",
+      "rejected": 0,
+      "safety": 1.0,
+      "utility": 1.0
+    },
+    {
+      "accepted": 1,
+      "action": "commit",
+      "activity": 0.45,
+      "cost": 0.08,
+      "cycle": 1,
+      "false_commit": 0,
+      "lifecycle": "stable",
+      "pocket_id": "p_binary_ingress_lens",
+      "rejected": 0,
+      "safety": 1.0,
+      "utility": 1.015
+    },
+    {
+      "accepted": 1,
+      "action": "commit",
+      "activity": 0.62,
+      "cost": 0.08,
+      "cycle": 2,
+      "false_commit": 0,
+      "lifecycle": "stable",
+      "pocket_id": "p_binary_ingress_lens",
+      "rejected": 0,
+      "safety": 1.0,
+      "utility": 1.03
+    },
+    {
+      "accepted": 1,
+      "action": "commit",
+      "activity": 0.79,
+      "cost": 0.08,
+      "cycle": 3,
+      "false_commit": 0,
+      "lifecycle": "stable",
+      "pocket_id": "p_binary_ingress_lens",
+      "rejected": 0,
+      "safety": 1.0,
+      "utility": 1.045
+    },
+    {
+      "accepted": 1,
+      "action": "commit",
+      "activity": 0.96,
+      "cost": 0.08,
+      "cycle": 4,
+      "false_commit": 0,
+      "lifecycle": "stable",
+      "pocket_id": "p_binary_ingress_lens",
+      "rejected": 0,
+      "safety": 1.0,
+      "utility": 1.06
+    },
+    {
+      "accepted": 1,
+      "action": "commit",
+      "activity": 0.28,
+      "cost": 0.08,
+      "cycle": 5,
+      "false_commit": 0,
+      "lifecycle": "stable",
+      "pocket_id": "p_binary_ingress_lens",
+      "rejected": 0,
+      "safety": 1.0,
+      "utility": 1.075
+    },
+    {
+      "accepted": 1,
+      "action": "commit",
+      "activity": 0.45,
+      "cost": 0.08,
+      "cycle": 6,
+      "false_commit": 0,
+      "lifecycle": "stable",
+      "pocket_id": "p_binary_ingress_lens",
+      "rejected": 0,
+      "safety": 1.0,
+      "utility": 1.09
+    },
+    {
+      "accepted": 1,
+      "action": "commit",
+      "activity": 0.62,
+      "cost": 0.08,
+      "cycle": 7,
+      "false_commit": 0,
+      "lifecycle": "stable",
+      "pocket_id": "p_binary_ingress_lens",
+      "rejected": 0,
+      "safety": 1.0,
+      "utility": 1.105
+    },
+    {
+      "accepted": 1,
+      "action": "commit",
+      "activity": 0.79,
+      "cost": 0.08,
+      "cycle": 8,
+      "false_commit": 0,
+      "lifecycle": "stable",
+      "pocket_id": "p_binary_ingress_lens",
+      "rejected": 0,
+      "safety": 1.0,
+      "utility": 1.12
+    },
+    {
+      "accepted": 1,
+      "action": "commit",
+      "activity": 0.96,
+      "cost": 0.08,
+      "cycle": 9,
+      "false_commit": 0,
+      "lifecycle": "stable",
+      "pocket_id": "p_binary_ingress_lens",
+      "rejected": 0,
+      "safety": 1.0,
+      "utility": 1.135
+    },
+    {
+      "accepted": 1,
+      "action": "commit",
+      "activity": 0.28,
+      "cost": 0.08,
+      "cycle": 10,
+      "false_commit": 0,
+      "lifecycle": "stable",
+      "pocket_id": "p_binary_ingress_lens",
+      "rejected": 0,
+      "safety": 1.0,
+      "utility": 1.15
+    },
+    {
+      "accepted": 1,
+      "action": "commit",
+      "activity": 0.45,
+      "cost": 0.08,
+      "cycle": 11,
+      "false_commit": 0,
+      "lifecycle": "stable",
+      "pocket_id": "p_binary_ingress_lens",
+      "rejected": 0,
+      "safety": 1.0,
+      "utility": 1.165
+    },
+    {
+      "accepted": 1,
+      "action": "commit",
+      "activity": 0.52,
+      "cost": 0.04,
+      "cycle": 0,
+      "false_commit": 0,
+      "lifecycle": "active",
+      "pocket_id": "p_logic_atom_and",
+      "rejected": 0,
+      "safety": 0.97,
+      "utility": 0.74
+    },
+    {
+      "accepted": 1,
+      "action": "commit",
+      "activity": 0.69,
+      "cost": 0.04,
+      "cycle": 1,
+      "false_commit": 0,
+      "lifecycle": "active",
+      "pocket_id": "p_logic_atom_and",
+      "rejected": 0,
+      "safety": 0.97,
+      "utility": 0.755
+    },
+    {
+      "accepted": 1,
+      "action": "commit",
+      "activity": 0.86,
+      "cost": 0.04,
+      "cycle": 2,
+      "false_commit": 0,
+      "lifecycle": "active",
+      "pocket_id": "p_logic_atom_and",
+      "rejected": 0,
+      "safety": 0.97,
+      "utility": 0.77
+    },
+    {
+      "accepted": 1,
+      "action": "commit",
+      "activity": 0.18,
+      "cost": 0.04,
+      "cycle": 3,
+      "false_commit": 0,
+      "lifecycle": "active",
+      "pocket_id": "p_logic_atom_and",
+      "rejected": 0,
+      "safety": 0.97,
+      "utility": 0.785
+    },
+    {
+      "accepted": 1,
+      "action": "commit",
+      "activity": 0.35,
+      "cost": 0.04,
+      "cycle": 4,
+      "false_commit": 0,
+      "lifecycle": "active",
+      "pocket_id": "p_logic_atom_and",
+      "rejected": 0,
+      "safety": 0.97,
+      "utility": 0.8
+    },
+    {
+      "accepted": 1,
+      "action": "commit",
+      "activity": 0.52,
+      "cost": 0.04,
+      "cycle": 5,
+      "false_commit": 0,
+      "lifecycle": "active",
+      "pocket_id": "p_logic_atom_and",
+      "rejected": 0,
+      "safety": 0.97,
+      "utility": 0.815
+    },
+    {
+      "accepted": 1,
+      "action": "commit",
+      "activity": 0.69,
+      "cost": 0.04,
+      "cycle": 6,
+      "false_commit": 0,
+      "lifecycle": "active",
+      "pocket_id": "p_logic_atom_and",
+      "rejected": 0,
+      "safety": 0.97,
+      "utility": 0.83
+    },
+    {
+      "accepted": 1,
+      "action": "commit",
+      "activity": 0.86,
+      "cost": 0.04,
+      "cycle": 7,
+      "false_commit": 0,
+      "lifecycle": "active",
+      "pocket_id": "p_logic_atom_and",
+      "rejected": 0,
+      "safety": 0.97,
+      "utility": 0.845
+    },
+    {
+      "accepted": 1,
+      "action": "commit",
+      "activity": 0.18,
+      "cost": 0.04,
+      "cycle": 8,
+      "false_commit": 0,
+      "lifecycle": "active",
+      "pocket_id": "p_logic_atom_and",
+      "rejected": 0,
+      "safety": 0.97,
+      "utility": 0.86
+    },
+    {
+      "accepted": 1,
+      "action": "commit",
+      "activity": 0.35,
+      "cost": 0.04,
+      "cycle": 9,
+      "false_commit": 0,
+      "lifecycle": "active",
+      "pocket_id": "p_logic_atom_and",
+      "rejected": 0,
+      "safety": 0.97,
+      "utility": 0.875
+    },
+    {
+      "accepted": 1,
+      "action": "commit",
+      "activity": 0.52,
+      "cost": 0.04,
+      "cycle": 10,
+      "false_commit": 0,
+      "lifecycle": "active",
+      "pocket_id": "p_logic_atom_and",
+      "rejected": 0,
+      "safety": 0.97,
+      "utility": 0.89
+    },
+    {
+      "accepted": 1,
+      "action": "commit",
+      "activity": 0.69,
+      "cost": 0.04,
+      "cycle": 11,
+      "false_commit": 0,
+      "lifecycle": "active",
+      "pocket_id": "p_logic_atom_and",
+      "rejected": 0,
+      "safety": 0.97,
+      "utility": 0.905
+    },
+    {
+      "accepted": 1,
+      "action": "commit",
+      "activity": 0.96,
+      "cost": 0.05,
+      "cycle": 0,
+      "false_commit": 0,
+      "lifecycle": "stable",
+      "pocket_id": "p_contradiction_guard",
+      "rejected": 0,
+      "safety": 1.0,
+      "utility": 0.95
+    },
+    {
+      "accepted": 1,
+      "action": "commit",
+      "activity": 0.28,
+      "cost": 0.05,
+      "cycle": 1,
+      "false_commit": 0,
+      "lifecycle": "stable",
+      "pocket_id": "p_contradiction_guard",
+      "rejected": 0,
+      "safety": 1.0,
+      "utility": 0.965
+    },
+    {
+      "accepted": 1,
+      "action": "commit",
+      "activity": 0.45,
+      "cost": 0.05,
+      "cycle": 2,
+      "false_commit": 0,
+      "lifecycle": "stable",
+      "pocket_id": "p_contradiction_guard",
+      "rejected": 0,
+      "safety": 1.0,
+      "utility": 0.98
+    },
+    {
+      "accepted": 1,
+      "action": "commit",
+      "activity": 0.62,
+      "cost": 0.05,
+      "cycle": 3,
+      "false_commit": 0,
+      "lifecycle": "stable",
+      "pocket_id": "p_contradiction_guard",
+      "rejected": 0,
+      "safety": 1.0,
+      "utility": 0.995
+    },
+    {
+      "accepted": 1,
+      "action": "commit",
+      "activity": 0.79,
+      "cost": 0.05,
+      "cycle": 4,
+      "false_commit": 0,
+      "lifecycle": "stable",
+      "pocket_id": "p_contradiction_guard",
+      "rejected": 0,
+      "safety": 1.0,
+      "utility": 1.01
+    },
+    {
+      "accepted": 1,
+      "action": "commit",
+      "activity": 0.96,
+      "cost": 0.05,
+      "cycle": 5,
+      "false_commit": 0,
+      "lifecycle": "stable",
+      "pocket_id": "p_contradiction_guard",
+      "rejected": 0,
+      "safety": 1.0,
+      "utility": 1.025
+    },
+    {
+      "accepted": 1,
+      "action": "commit",
+      "activity": 0.28,
+      "cost": 0.05,
+      "cycle": 6,
+      "false_commit": 0,
+      "lifecycle": "stable",
+      "pocket_id": "p_contradiction_guard",
+      "rejected": 0,
+      "safety": 1.0,
+      "utility": 1.04
+    },
+    {
+      "accepted": 1,
+      "action": "commit",
+      "activity": 0.45,
+      "cost": 0.05,
+      "cycle": 7,
+      "false_commit": 0,
+      "lifecycle": "core",
+      "pocket_id": "p_contradiction_guard",
+      "rejected": 0,
+      "safety": 1.0,
+      "utility": 1.085
+    },
+    {
+      "accepted": 1,
+      "action": "commit",
+      "activity": 0.62,
+      "cost": 0.05,
+      "cycle": 8,
+      "false_commit": 0,
+      "lifecycle": "core",
+      "pocket_id": "p_contradiction_guard",
+      "rejected": 0,
+      "safety": 1.0,
+      "utility": 1.1
+    },
+    {
+      "accepted": 1,
+      "action": "commit",
+      "activity": 0.79,
+      "cost": 0.05,
+      "cycle": 9,
+      "false_commit": 0,
+      "lifecycle": "core",
+      "pocket_id": "p_contradiction_guard",
+      "rejected": 0,
+      "safety": 1.0,
+      "utility": 1.115
+    },
+    {
+      "accepted": 1,
+      "action": "commit",
+      "activity": 0.96,
+      "cost": 0.05,
+      "cycle": 10,
+      "false_commit": 0,
+      "lifecycle": "core",
+      "pocket_id": "p_contradiction_guard",
+      "rejected": 0,
+      "safety": 1.0,
+      "utility": 1.13
+    },
+    {
+      "accepted": 1,
+      "action": "commit",
+      "activity": 0.28,
+      "cost": 0.05,
+      "cycle": 11,
+      "false_commit": 0,
+      "lifecycle": "core",
+      "pocket_id": "p_contradiction_guard",
+      "rejected": 0,
+      "safety": 1.0,
+      "utility": 1.145
+    },
+    {
+      "accepted": 1,
+      "action": "ask",
+      "activity": 0.35,
+      "cost": 0.11,
+      "cycle": 0,
+      "false_commit": 0,
+      "lifecycle": "active",
+      "pocket_id": "p_evidence_seeker",
+      "rejected": 0,
+      "safety": 0.99,
+      "utility": 0.85
+    },
+    {
+      "accepted": 1,
+      "action": "ask",
+      "activity": 0.52,
+      "cost": 0.11,
+      "cycle": 1,
+      "false_commit": 0,
+      "lifecycle": "active",
+      "pocket_id": "p_evidence_seeker",
+      "rejected": 0,
+      "safety": 0.99,
+      "utility": 0.865
+    },
+    {
+      "accepted": 1,
+      "action": "ask",
+      "activity": 0.69,
+      "cost": 0.11,
+      "cycle": 2,
+      "false_commit": 0,
+      "lifecycle": "active",
+      "pocket_id": "p_evidence_seeker",
+      "rejected": 0,
+      "safety": 0.99,
+      "utility": 0.88
+    },
+    {
+      "accepted": 1,
+      "action": "ask",
+      "activity": 0.86,
+      "cost": 0.11,
+      "cycle": 3,
+      "false_commit": 0,
+      "lifecycle": "active",
+      "pocket_id": "p_evidence_seeker",
+      "rejected": 0,
+      "safety": 0.99,
+      "utility": 0.895
+    },
+    {
+      "accepted": 1,
+      "action": "ask",
+      "activity": 0.18,
+      "cost": 0.11,
+      "cycle": 4,
+      "false_commit": 0,
+      "lifecycle": "active",
+      "pocket_id": "p_evidence_seeker",
+      "rejected": 0,
+      "safety": 0.99,
+      "utility": 0.91
+    },
+    {
+      "accepted": 1,
+      "action": "ask",
+      "activity": 0.35,
+      "cost": 0.11,
+      "cycle": 5,
+      "false_commit": 0,
+      "lifecycle": "active",
+      "pocket_id": "p_evidence_seeker",
+      "rejected": 0,
+      "safety": 0.99,
+      "utility": 0.925
+    },
+    {
+      "accepted": 1,
+      "action": "ask",
+      "activity": 0.62,
+      "cost": 0.11,
+      "cycle": 6,
+      "false_commit": 0,
+      "lifecycle": "stable",
+      "pocket_id": "p_evidence_seeker",
+      "rejected": 0,
+      "safety": 1.0,
+      "utility": 0.97
+    },
+    {
+      "accepted": 1,
+      "action": "ask",
+      "activity": 0.79,
+      "cost": 0.11,
+      "cycle": 7,
+      "false_commit": 0,
+      "lifecycle": "stable",
+      "pocket_id": "p_evidence_seeker",
+      "rejected": 0,
+      "safety": 1.0,
+      "utility": 0.985
+    },
+    {
+      "accepted": 1,
+      "action": "ask",
+      "activity": 0.96,
+      "cost": 0.11,
+      "cycle": 8,
+      "false_commit": 0,
+      "lifecycle": "stable",
+      "pocket_id": "p_evidence_seeker",
+      "rejected": 0,
+      "safety": 1.0,
+      "utility": 1.0
+    },
+    {
+      "accepted": 1,
+      "action": "ask",
+      "activity": 0.28,
+      "cost": 0.11,
+      "cycle": 9,
+      "false_commit": 0,
+      "lifecycle": "stable",
+      "pocket_id": "p_evidence_seeker",
+      "rejected": 0,
+      "safety": 1.0,
+      "utility": 1.015
+    },
+    {
+      "accepted": 1,
+      "action": "ask",
+      "activity": 0.45,
+      "cost": 0.11,
+      "cycle": 10,
+      "false_commit": 0,
+      "lifecycle": "stable",
+      "pocket_id": "p_evidence_seeker",
+      "rejected": 0,
+      "safety": 1.0,
+      "utility": 1.03
+    },
+    {
+      "accepted": 1,
+      "action": "ask",
+      "activity": 0.62,
+      "cost": 0.11,
+      "cycle": 11,
+      "false_commit": 0,
+      "lifecycle": "stable",
+      "pocket_id": "p_evidence_seeker",
+      "rejected": 0,
+      "safety": 1.0,
+      "utility": 1.045
+    },
+    {
+      "accepted": 1,
+      "action": "commit",
+      "activity": 0.69,
+      "cost": 0.31,
+      "cycle": 0,
+      "false_commit": 0,
+      "lifecycle": "candidate",
+      "pocket_id": "p_noise_spammer",
+      "rejected": 0,
+      "safety": 0.18,
+      "utility": -0.21
+    },
+    {
+      "accepted": 1,
+      "action": "commit",
+      "activity": 0.86,
+      "cost": 0.31,
+      "cycle": 1,
+      "false_commit": 0,
+      "lifecycle": "candidate",
+      "pocket_id": "p_noise_spammer",
+      "rejected": 0,
+      "safety": 0.18,
+      "utility": -0.195
+    },
+    {
+      "accepted": 1,
+      "action": "commit",
+      "activity": 0.18,
+      "cost": 0.31,
+      "cycle": 2,
+      "false_commit": 0,
+      "lifecycle": "candidate",
+      "pocket_id": "p_noise_spammer",
+      "rejected": 0,
+      "safety": 0.18,
+      "utility": -0.18
+    },
+    {
+      "accepted": 1,
+      "action": "commit",
+      "activity": 0.35,
+      "cost": 0.31,
+      "cycle": 3,
+      "false_commit": 0,
+      "lifecycle": "candidate",
+      "pocket_id": "p_noise_spammer",
+      "rejected": 0,
+      "safety": 0.18,
+      "utility": -0.165
+    },
+    {
+      "accepted": 0,
+      "action": "reject",
+      "activity": 0.3,
+      "cost": 0.31,
+      "cycle": 4,
+      "false_commit": 0,
+      "lifecycle": "quarantine",
+      "pocket_id": "p_noise_spammer",
+      "rejected": 1,
+      "safety": 0.17,
+      "utility": -0.18
+    },
+    {
+      "accepted": 0,
+      "action": "reject",
+      "activity": 0.47,
+      "cost": 0.31,
+      "cycle": 5,
+      "false_commit": 0,
+      "lifecycle": "quarantine",
+      "pocket_id": "p_noise_spammer",
+      "rejected": 1,
+      "safety": 0.17,
+      "utility": -0.165
+    },
+    {
+      "accepted": 0,
+      "action": "reject",
+      "activity": 0.64,
+      "cost": 0.31,
+      "cycle": 6,
+      "false_commit": 0,
+      "lifecycle": "quarantine",
+      "pocket_id": "p_noise_spammer",
+      "rejected": 1,
+      "safety": 0.17,
+      "utility": -0.15
+    },
+    {
+      "accepted": 0,
+      "action": "idle",
+      "activity": 0.0,
+      "cost": 0.31,
+      "cycle": 7,
+      "false_commit": 0,
+      "lifecycle": "quarantine",
+      "pocket_id": "p_noise_spammer",
+      "rejected": 0,
+      "safety": 0.17,
+      "utility": -0.135
+    },
+    {
+      "accepted": 0,
+      "action": "idle",
+      "activity": 0.0,
+      "cost": 0.31,
+      "cycle": 8,
+      "false_commit": 0,
+      "lifecycle": "quarantine",
+      "pocket_id": "p_noise_spammer",
+      "rejected": 0,
+      "safety": 0.17,
+      "utility": -0.12
+    },
+    {
+      "accepted": 0,
+      "action": "idle",
+      "activity": 0.0,
+      "cost": 0.31,
+      "cycle": 9,
+      "false_commit": 0,
+      "lifecycle": "quarantine",
+      "pocket_id": "p_noise_spammer",
+      "rejected": 0,
+      "safety": 0.17,
+      "utility": -0.105
+    },
+    {
+      "accepted": 0,
+      "action": "idle",
+      "activity": 0.0,
+      "cost": 0.31,
+      "cycle": 10,
+      "false_commit": 0,
+      "lifecycle": "quarantine",
+      "pocket_id": "p_noise_spammer",
+      "rejected": 0,
+      "safety": 0.17,
+      "utility": -0.09
+    },
+    {
+      "accepted": 0,
+      "action": "idle",
+      "activity": 0.0,
+      "cost": 0.31,
+      "cycle": 11,
+      "false_commit": 0,
+      "lifecycle": "quarantine",
+      "pocket_id": "p_noise_spammer",
+      "rejected": 0,
+      "safety": 0.17,
+      "utility": -0.075
+    },
+    {
+      "accepted": 1,
+      "action": "commit",
+      "activity": 0.18,
+      "cost": 0.12,
+      "cycle": 0,
+      "false_commit": 0,
+      "lifecycle": "active",
+      "pocket_id": "p_stale_route_helper",
+      "rejected": 0,
+      "safety": 0.42,
+      "utility": 0.07
+    },
+    {
+      "accepted": 1,
+      "action": "commit",
+      "activity": 0.35,
+      "cost": 0.12,
+      "cycle": 1,
+      "false_commit": 0,
+      "lifecycle": "active",
+      "pocket_id": "p_stale_route_helper",
+      "rejected": 0,
+      "safety": 0.42,
+      "utility": 0.085
+    },
+    {
+      "accepted": 1,
+      "action": "commit",
+      "activity": 0.52,
+      "cost": 0.12,
+      "cycle": 2,
+      "false_commit": 0,
+      "lifecycle": "active",
+      "pocket_id": "p_stale_route_helper",
+      "rejected": 0,
+      "safety": 0.42,
+      "utility": 0.1
+    },
+    {
+      "accepted": 1,
+      "action": "commit",
+      "activity": 0.69,
+      "cost": 0.12,
+      "cycle": 3,
+      "false_commit": 0,
+      "lifecycle": "active",
+      "pocket_id": "p_stale_route_helper",
+      "rejected": 0,
+      "safety": 0.42,
+      "utility": 0.115
+    },
+    {
+      "accepted": 1,
+      "action": "commit",
+      "activity": 0.86,
+      "cost": 0.12,
+      "cycle": 4,
+      "false_commit": 0,
+      "lifecycle": "active",
+      "pocket_id": "p_stale_route_helper",
+      "rejected": 0,
+      "safety": 0.42,
+      "utility": 0.13
+    },
+    {
+      "accepted": 0,
+      "action": "defer",
+      "activity": 0.0,
+      "cost": 0.12,
+      "cycle": 5,
+      "false_commit": 0,
+      "lifecycle": "deprecated",
+      "pocket_id": "p_stale_route_helper",
+      "rejected": 1,
+      "safety": 0.39,
+      "utility": 0.055
+    },
+    {
+      "accepted": 0,
+      "action": "defer",
+      "activity": 0.13,
+      "cost": 0.12,
+      "cycle": 6,
+      "false_commit": 0,
+      "lifecycle": "deprecated",
+      "pocket_id": "p_stale_route_helper",
+      "rejected": 1,
+      "safety": 0.39,
+      "utility": 0.07
+    },
+    {
+      "accepted": 0,
+      "action": "defer",
+      "activity": 0.3,
+      "cost": 0.12,
+      "cycle": 7,
+      "false_commit": 0,
+      "lifecycle": "deprecated",
+      "pocket_id": "p_stale_route_helper",
+      "rejected": 1,
+      "safety": 0.39,
+      "utility": 0.085
+    },
+    {
+      "accepted": 0,
+      "action": "idle",
+      "activity": 0.0,
+      "cost": 0.12,
+      "cycle": 8,
+      "false_commit": 0,
+      "lifecycle": "deprecated",
+      "pocket_id": "p_stale_route_helper",
+      "rejected": 0,
+      "safety": 0.39,
+      "utility": 0.1
+    },
+    {
+      "accepted": 0,
+      "action": "idle",
+      "activity": 0.0,
+      "cost": 0.12,
+      "cycle": 9,
+      "false_commit": 0,
+      "lifecycle": "deprecated",
+      "pocket_id": "p_stale_route_helper",
+      "rejected": 0,
+      "safety": 0.39,
+      "utility": 0.115
+    },
+    {
+      "accepted": 0,
+      "action": "idle",
+      "activity": 0.0,
+      "cost": 0.12,
+      "cycle": 10,
+      "false_commit": 0,
+      "lifecycle": "deprecated",
+      "pocket_id": "p_stale_route_helper",
+      "rejected": 0,
+      "safety": 0.39,
+      "utility": 0.13
+    },
+    {
+      "accepted": 0,
+      "action": "idle",
+      "activity": 0.0,
+      "cost": 0.12,
+      "cycle": 11,
+      "false_commit": 0,
+      "lifecycle": "deprecated",
+      "pocket_id": "p_stale_route_helper",
+      "rejected": 0,
+      "safety": 0.39,
+      "utility": 0.145
+    },
+    {
+      "accepted": 0,
+      "action": "idle",
+      "activity": 0.0,
+      "cost": 0.03,
+      "cycle": 0,
+      "false_commit": 0,
+      "lifecycle": "stable",
+      "pocket_id": "p_output_renderer",
+      "rejected": 0,
+      "safety": 1.0,
+      "utility": 0.83
+    },
+    {
+      "accepted": 0,
+      "action": "idle",
+      "activity": 0.0,
+      "cost": 0.03,
+      "cycle": 1,
+      "false_commit": 0,
+      "lifecycle": "stable",
+      "pocket_id": "p_output_renderer",
+      "rejected": 0,
+      "safety": 1.0,
+      "utility": 0.845
+    },
+    {
+      "accepted": 1,
+      "action": "commit",
+      "activity": 0.96,
+      "cost": 0.03,
+      "cycle": 2,
+      "false_commit": 0,
+      "lifecycle": "stable",
+      "pocket_id": "p_output_renderer",
+      "rejected": 0,
+      "safety": 1.0,
+      "utility": 0.86
+    },
+    {
+      "accepted": 0,
+      "action": "idle",
+      "activity": 0.0,
+      "cost": 0.03,
+      "cycle": 3,
+      "false_commit": 0,
+      "lifecycle": "stable",
+      "pocket_id": "p_output_renderer",
+      "rejected": 0,
+      "safety": 1.0,
+      "utility": 0.875
+    },
+    {
+      "accepted": 0,
+      "action": "idle",
+      "activity": 0.0,
+      "cost": 0.03,
+      "cycle": 4,
+      "false_commit": 0,
+      "lifecycle": "stable",
+      "pocket_id": "p_output_renderer",
+      "rejected": 0,
+      "safety": 1.0,
+      "utility": 0.89
+    },
+    {
+      "accepted": 1,
+      "action": "commit",
+      "activity": 0.62,
+      "cost": 0.03,
+      "cycle": 5,
+      "false_commit": 0,
+      "lifecycle": "stable",
+      "pocket_id": "p_output_renderer",
+      "rejected": 0,
+      "safety": 1.0,
+      "utility": 0.905
+    },
+    {
+      "accepted": 0,
+      "action": "idle",
+      "activity": 0.0,
+      "cost": 0.03,
+      "cycle": 6,
+      "false_commit": 0,
+      "lifecycle": "stable",
+      "pocket_id": "p_output_renderer",
+      "rejected": 0,
+      "safety": 1.0,
+      "utility": 0.92
+    },
+    {
+      "accepted": 0,
+      "action": "idle",
+      "activity": 0.0,
+      "cost": 0.03,
+      "cycle": 7,
+      "false_commit": 0,
+      "lifecycle": "stable",
+      "pocket_id": "p_output_renderer",
+      "rejected": 0,
+      "safety": 1.0,
+      "utility": 0.935
+    },
+    {
+      "accepted": 0,
+      "action": "idle",
+      "activity": 0.0,
+      "cost": 0.03,
+      "cycle": 8,
+      "false_commit": 0,
+      "lifecycle": "stable",
+      "pocket_id": "p_output_renderer",
+      "rejected": 0,
+      "safety": 1.0,
+      "utility": 0.95
+    },
+    {
+      "accepted": 1,
+      "action": "commit",
+      "activity": 0.45,
+      "cost": 0.03,
+      "cycle": 9,
+      "false_commit": 0,
+      "lifecycle": "stable",
+      "pocket_id": "p_output_renderer",
+      "rejected": 0,
+      "safety": 1.0,
+      "utility": 0.965
+    },
+    {
+      "accepted": 0,
+      "action": "idle",
+      "activity": 0.0,
+      "cost": 0.03,
+      "cycle": 10,
+      "false_commit": 0,
+      "lifecycle": "stable",
+      "pocket_id": "p_output_renderer",
+      "rejected": 0,
+      "safety": 1.0,
+      "utility": 0.98
+    },
+    {
+      "accepted": 1,
+      "action": "commit",
+      "activity": 0.79,
+      "cost": 0.03,
+      "cycle": 11,
+      "false_commit": 0,
+      "lifecycle": "stable",
+      "pocket_id": "p_output_renderer",
+      "rejected": 0,
+      "safety": 1.0,
+      "utility": 0.995
+    },
+    {
+      "accepted": 0,
+      "action": "idle",
+      "activity": 0.0,
+      "cost": 0.07,
+      "cycle": 0,
+      "false_commit": 0,
+      "lifecycle": "active",
+      "pocket_id": "p_edge_adapter",
+      "rejected": 0,
+      "safety": 0.96,
+      "utility": 0.69
+    },
+    {
+      "accepted": 0,
+      "action": "idle",
+      "activity": 0.0,
+      "cost": 0.07,
+      "cycle": 1,
+      "false_commit": 0,
+      "lifecycle": "active",
+      "pocket_id": "p_edge_adapter",
+      "rejected": 0,
+      "safety": 0.96,
+      "utility": 0.705
+    },
+    {
+      "accepted": 1,
+      "action": "commit",
+      "activity": 0.35,
+      "cost": 0.07,
+      "cycle": 2,
+      "false_commit": 0,
+      "lifecycle": "active",
+      "pocket_id": "p_edge_adapter",
+      "rejected": 0,
+      "safety": 0.96,
+      "utility": 0.72
+    },
+    {
+      "accepted": 0,
+      "action": "idle",
+      "activity": 0.0,
+      "cost": 0.07,
+      "cycle": 3,
+      "false_commit": 0,
+      "lifecycle": "stable",
+      "pocket_id": "p_edge_adapter",
+      "rejected": 0,
+      "safety": 0.97,
+      "utility": 0.765
+    },
+    {
+      "accepted": 0,
+      "action": "idle",
+      "activity": 0.0,
+      "cost": 0.07,
+      "cycle": 4,
+      "false_commit": 0,
+      "lifecycle": "stable",
+      "pocket_id": "p_edge_adapter",
+      "rejected": 0,
+      "safety": 0.97,
+      "utility": 0.78
+    },
+    {
+      "accepted": 1,
+      "action": "commit",
+      "activity": 0.96,
+      "cost": 0.07,
+      "cycle": 5,
+      "false_commit": 0,
+      "lifecycle": "stable",
+      "pocket_id": "p_edge_adapter",
+      "rejected": 0,
+      "safety": 0.97,
+      "utility": 0.795
+    },
+    {
+      "accepted": 0,
+      "action": "idle",
+      "activity": 0.0,
+      "cost": 0.07,
+      "cycle": 6,
+      "false_commit": 0,
+      "lifecycle": "stable",
+      "pocket_id": "p_edge_adapter",
+      "rejected": 0,
+      "safety": 0.97,
+      "utility": 0.81
+    },
+    {
+      "accepted": 0,
+      "action": "idle",
+      "activity": 0.0,
+      "cost": 0.07,
+      "cycle": 7,
+      "false_commit": 0,
+      "lifecycle": "stable",
+      "pocket_id": "p_edge_adapter",
+      "rejected": 0,
+      "safety": 0.97,
+      "utility": 0.825
+    },
+    {
+      "accepted": 0,
+      "action": "idle",
+      "activity": 0.0,
+      "cost": 0.07,
+      "cycle": 8,
+      "false_commit": 0,
+      "lifecycle": "stable",
+      "pocket_id": "p_edge_adapter",
+      "rejected": 0,
+      "safety": 0.97,
+      "utility": 0.84
+    },
+    {
+      "accepted": 1,
+      "action": "commit",
+      "activity": 0.79,
+      "cost": 0.07,
+      "cycle": 9,
+      "false_commit": 0,
+      "lifecycle": "stable",
+      "pocket_id": "p_edge_adapter",
+      "rejected": 0,
+      "safety": 0.97,
+      "utility": 0.855
+    },
+    {
+      "accepted": 0,
+      "action": "idle",
+      "activity": 0.0,
+      "cost": 0.07,
+      "cycle": 10,
+      "false_commit": 0,
+      "lifecycle": "stable",
+      "pocket_id": "p_edge_adapter",
+      "rejected": 0,
+      "safety": 0.97,
+      "utility": 0.87
+    },
+    {
+      "accepted": 1,
+      "action": "commit",
+      "activity": 0.28,
+      "cost": 0.07,
+      "cycle": 11,
+      "false_commit": 0,
+      "lifecycle": "stable",
+      "pocket_id": "p_edge_adapter",
+      "rejected": 0,
+      "safety": 0.97,
+      "utility": 0.885
+    }
+  ],
+  "label": "E63 Pocket Observatory deterministic sample",
+  "pockets": [
+    {
+      "accepted": 12,
+      "calls": 12,
+      "cost_score": 0.08,
+      "false_commits": 0,
+      "footprint_hint": "lens",
+      "kind": "Ingress Codec",
+      "last_active_cycle": 11,
+      "lifecycle": "stable",
+      "pocket_id": "p_binary_ingress_lens",
+      "quarantined": false,
+      "rejected": 0,
+      "safety_score": 1.0,
+      "utility_score": 1.18
+    },
+    {
+      "accepted": 12,
+      "calls": 12,
+      "cost_score": 0.04,
+      "false_commits": 0,
+      "footprint_hint": "patch",
+      "kind": "Logic Atom",
+      "last_active_cycle": 11,
+      "lifecycle": "active",
+      "pocket_id": "p_logic_atom_and",
+      "quarantined": false,
+      "rejected": 0,
+      "safety_score": 1.0,
+      "utility_score": 0.95
+    },
+    {
+      "accepted": 12,
+      "calls": 12,
+      "cost_score": 0.05,
+      "false_commits": 0,
+      "footprint_hint": "patch",
+      "kind": "Agency Guard",
+      "last_active_cycle": 11,
+      "lifecycle": "core",
+      "pocket_id": "p_contradiction_guard",
+      "quarantined": false,
+      "rejected": 0,
+      "safety_score": 1.0,
+      "utility_score": 1.13
+    },
+    {
+      "accepted": 12,
+      "calls": 12,
+      "cost_score": 0.11,
+      "false_commits": 0,
+      "footprint_hint": "event",
+      "kind": "Evidence Action",
+      "last_active_cycle": 11,
+      "lifecycle": "stable",
+      "pocket_id": "p_evidence_seeker",
+      "quarantined": false,
+      "rejected": 0,
+      "safety_score": 1.0,
+      "utility_score": 1.06
+    },
+    {
+      "accepted": 4,
+      "calls": 7,
+      "cost_score": 0.31,
+      "false_commits": 0,
+      "footprint_hint": "event",
+      "kind": "Candidate",
+      "last_active_cycle": 6,
+      "lifecycle": "quarantine",
+      "pocket_id": "p_noise_spammer",
+      "quarantined": true,
+      "rejected": 3,
+      "safety_score": 0.07,
+      "utility_score": -0.22
+    },
+    {
+      "accepted": 5,
+      "calls": 8,
+      "cost_score": 0.12,
+      "false_commits": 0,
+      "footprint_hint": "event",
+      "kind": "Legacy Helper",
+      "last_active_cycle": 7,
+      "lifecycle": "deprecated",
+      "pocket_id": "p_stale_route_helper",
+      "quarantined": false,
+      "rejected": 3,
+      "safety_score": 0.31,
+      "utility_score": 0.05
+    },
+    {
+      "accepted": 4,
+      "calls": 4,
+      "cost_score": 0.03,
+      "false_commits": 0,
+      "footprint_hint": "event",
+      "kind": "Egress",
+      "last_active_cycle": 11,
+      "lifecycle": "stable",
+      "pocket_id": "p_output_renderer",
+      "quarantined": false,
+      "rejected": 0,
+      "safety_score": 1.0,
+      "utility_score": 0.85
+    },
+    {
+      "accepted": 4,
+      "calls": 4,
+      "cost_score": 0.07,
+      "false_commits": 0,
+      "footprint_hint": "event",
+      "kind": "Edge Adapter",
+      "last_active_cycle": 11,
+      "lifecycle": "stable",
+      "pocket_id": "p_edge_adapter",
+      "quarantined": false,
+      "rejected": 0,
+      "safety_score": 0.99,
+      "utility_score": 0.74
+    }
+  ],
+  "proposals": [
+    {
+      "confidence": 0.28,
+      "cycle": 0,
+      "pocket_id": "p_binary_ingress_lens",
+      "proposal_id": "prop_000_p_binary_ingress_lens",
+      "proposal_type": "write",
+      "read_footprint": [
+        [
+          0,
+          0
+        ],
+        [
+          1,
+          0
+        ],
+        [
+          0,
+          1
+        ]
+      ],
+      "run_id": "e63_pocket_observatory_sample",
+      "schema_version": "pocket_observatory_v1",
+      "target_cell": [
+        0,
+        0
+      ],
+      "trace_ref": "trace_000",
+      "value_bits": [
+        0,
+        0,
+        1
+      ],
+      "write_footprint": [
+        [
+          0,
+          0
+        ]
+      ]
+    },
+    {
+      "confidence": 0.45,
+      "cycle": 1,
+      "pocket_id": "p_binary_ingress_lens",
+      "proposal_id": "prop_001_p_binary_ingress_lens",
+      "proposal_type": "write",
+      "read_footprint": [
+        [
+          1,
+          2
+        ],
+        [
+          2,
+          2
+        ],
+        [
+          1,
+          3
+        ]
+      ],
+      "run_id": "e63_pocket_observatory_sample",
+      "schema_version": "pocket_observatory_v1",
+      "target_cell": [
+        1,
+        2
+      ],
+      "trace_ref": "trace_001",
+      "value_bits": [
+        1,
+        1,
+        1
+      ],
+      "write_footprint": [
+        [
+          1,
+          2
+        ]
+      ]
+    },
+    {
+      "confidence": 0.62,
+      "cycle": 2,
+      "pocket_id": "p_binary_ingress_lens",
+      "proposal_id": "prop_002_p_binary_ingress_lens",
+      "proposal_type": "write",
+      "read_footprint": [
+        [
+          2,
+          4
+        ],
+        [
+          3,
+          4
+        ],
+        [
+          2,
+          5
+        ]
+      ],
+      "run_id": "e63_pocket_observatory_sample",
+      "schema_version": "pocket_observatory_v1",
+      "target_cell": [
+        2,
+        4
+      ],
+      "trace_ref": "trace_002",
+      "value_bits": [
+        0,
+        0,
+        1
+      ],
+      "write_footprint": [
+        [
+          2,
+          4
+        ]
+      ]
+    },
+    {
+      "confidence": 0.79,
+      "cycle": 3,
+      "pocket_id": "p_binary_ingress_lens",
+      "proposal_id": "prop_003_p_binary_ingress_lens",
+      "proposal_type": "write",
+      "read_footprint": [
+        [
+          3,
+          6
+        ],
+        [
+          4,
+          6
+        ],
+        [
+          3,
+          7
+        ]
+      ],
+      "run_id": "e63_pocket_observatory_sample",
+      "schema_version": "pocket_observatory_v1",
+      "target_cell": [
+        3,
+        6
+      ],
+      "trace_ref": "trace_003",
+      "value_bits": [
+        1,
+        1,
+        1
+      ],
+      "write_footprint": [
+        [
+          3,
+          6
+        ]
+      ]
+    },
+    {
+      "confidence": 0.96,
+      "cycle": 4,
+      "pocket_id": "p_binary_ingress_lens",
+      "proposal_id": "prop_004_p_binary_ingress_lens",
+      "proposal_type": "write",
+      "read_footprint": [
+        [
+          4,
+          0
+        ],
+        [
+          5,
+          0
+        ],
+        [
+          4,
+          1
+        ]
+      ],
+      "run_id": "e63_pocket_observatory_sample",
+      "schema_version": "pocket_observatory_v1",
+      "target_cell": [
+        4,
+        0
+      ],
+      "trace_ref": "trace_004",
+      "value_bits": [
+        0,
+        0,
+        1
+      ],
+      "write_footprint": [
+        [
+          4,
+          0
+        ]
+      ]
+    },
+    {
+      "confidence": 0.28,
+      "cycle": 5,
+      "pocket_id": "p_binary_ingress_lens",
+      "proposal_id": "prop_005_p_binary_ingress_lens",
+      "proposal_type": "write",
+      "read_footprint": [
+        [
+          5,
+          2
+        ],
+        [
+          6,
+          2
+        ],
+        [
+          5,
+          3
+        ]
+      ],
+      "run_id": "e63_pocket_observatory_sample",
+      "schema_version": "pocket_observatory_v1",
+      "target_cell": [
+        5,
+        2
+      ],
+      "trace_ref": "trace_005",
+      "value_bits": [
+        1,
+        1,
+        1
+      ],
+      "write_footprint": [
+        [
+          5,
+          2
+        ]
+      ]
+    },
+    {
+      "confidence": 0.45,
+      "cycle": 6,
+      "pocket_id": "p_binary_ingress_lens",
+      "proposal_id": "prop_006_p_binary_ingress_lens",
+      "proposal_type": "write",
+      "read_footprint": [
+        [
+          6,
+          4
+        ],
+        [
+          7,
+          4
+        ],
+        [
+          6,
+          5
+        ]
+      ],
+      "run_id": "e63_pocket_observatory_sample",
+      "schema_version": "pocket_observatory_v1",
+      "target_cell": [
+        6,
+        4
+      ],
+      "trace_ref": "trace_006",
+      "value_bits": [
+        0,
+        0,
+        1
+      ],
+      "write_footprint": [
+        [
+          6,
+          4
+        ]
+      ]
+    },
+    {
+      "confidence": 0.62,
+      "cycle": 7,
+      "pocket_id": "p_binary_ingress_lens",
+      "proposal_id": "prop_007_p_binary_ingress_lens",
+      "proposal_type": "write",
+      "read_footprint": [
+        [
+          7,
+          6
+        ],
+        [
+          0,
+          6
+        ],
+        [
+          7,
+          7
+        ]
+      ],
+      "run_id": "e63_pocket_observatory_sample",
+      "schema_version": "pocket_observatory_v1",
+      "target_cell": [
+        7,
+        6
+      ],
+      "trace_ref": "trace_007",
+      "value_bits": [
+        1,
+        1,
+        1
+      ],
+      "write_footprint": [
+        [
+          7,
+          6
+        ]
+      ]
+    },
+    {
+      "confidence": 0.79,
+      "cycle": 8,
+      "pocket_id": "p_binary_ingress_lens",
+      "proposal_id": "prop_008_p_binary_ingress_lens",
+      "proposal_type": "write",
+      "read_footprint": [
+        [
+          0,
+          0
+        ],
+        [
+          1,
+          0
+        ],
+        [
+          0,
+          1
+        ]
+      ],
+      "run_id": "e63_pocket_observatory_sample",
+      "schema_version": "pocket_observatory_v1",
+      "target_cell": [
+        0,
+        0
+      ],
+      "trace_ref": "trace_008",
+      "value_bits": [
+        0,
+        0,
+        1
+      ],
+      "write_footprint": [
+        [
+          0,
+          0
+        ]
+      ]
+    },
+    {
+      "confidence": 0.96,
+      "cycle": 9,
+      "pocket_id": "p_binary_ingress_lens",
+      "proposal_id": "prop_009_p_binary_ingress_lens",
+      "proposal_type": "write",
+      "read_footprint": [
+        [
+          1,
+          2
+        ],
+        [
+          2,
+          2
+        ],
+        [
+          1,
+          3
+        ]
+      ],
+      "run_id": "e63_pocket_observatory_sample",
+      "schema_version": "pocket_observatory_v1",
+      "target_cell": [
+        1,
+        2
+      ],
+      "trace_ref": "trace_009",
+      "value_bits": [
+        1,
+        1,
+        1
+      ],
+      "write_footprint": [
+        [
+          1,
+          2
+        ]
+      ]
+    },
+    {
+      "confidence": 0.28,
+      "cycle": 10,
+      "pocket_id": "p_binary_ingress_lens",
+      "proposal_id": "prop_010_p_binary_ingress_lens",
+      "proposal_type": "write",
+      "read_footprint": [
+        [
+          2,
+          4
+        ],
+        [
+          3,
+          4
+        ],
+        [
+          2,
+          5
+        ]
+      ],
+      "run_id": "e63_pocket_observatory_sample",
+      "schema_version": "pocket_observatory_v1",
+      "target_cell": [
+        2,
+        4
+      ],
+      "trace_ref": "trace_010",
+      "value_bits": [
+        0,
+        0,
+        1
+      ],
+      "write_footprint": [
+        [
+          2,
+          4
+        ]
+      ]
+    },
+    {
+      "confidence": 0.45,
+      "cycle": 11,
+      "pocket_id": "p_binary_ingress_lens",
+      "proposal_id": "prop_011_p_binary_ingress_lens",
+      "proposal_type": "write",
+      "read_footprint": [
+        [
+          3,
+          6
+        ],
+        [
+          4,
+          6
+        ],
+        [
+          3,
+          7
+        ]
+      ],
+      "run_id": "e63_pocket_observatory_sample",
+      "schema_version": "pocket_observatory_v1",
+      "target_cell": [
+        3,
+        6
+      ],
+      "trace_ref": "trace_011",
+      "value_bits": [
+        1,
+        1,
+        1
+      ],
+      "write_footprint": [
+        [
+          3,
+          6
+        ]
+      ]
+    },
+    {
+      "confidence": 0.499,
+      "cycle": 0,
+      "pocket_id": "p_logic_atom_and",
+      "proposal_id": "prop_000_p_logic_atom_and",
+      "proposal_type": "write",
+      "read_footprint": [
+        [
+          3,
+          1
+        ],
+        [
+          4,
+          1
+        ],
+        [
+          3,
+          2
+        ]
+      ],
+      "run_id": "e63_pocket_observatory_sample",
+      "schema_version": "pocket_observatory_v1",
+      "target_cell": [
+        3,
+        1
+      ],
+      "trace_ref": "trace_000",
+      "value_bits": [
+        0,
+        1,
+        1
+      ],
+      "write_footprint": [
+        [
+          3,
+          1
+        ]
+      ]
+    },
+    {
+      "confidence": 0.662,
+      "cycle": 1,
+      "pocket_id": "p_logic_atom_and",
+      "proposal_id": "prop_001_p_logic_atom_and",
+      "proposal_type": "write",
+      "read_footprint": [
+        [
+          4,
+          3
+        ],
+        [
+          5,
+          3
+        ],
+        [
+          4,
+          4
+        ]
+      ],
+      "run_id": "e63_pocket_observatory_sample",
+      "schema_version": "pocket_observatory_v1",
+      "target_cell": [
+        4,
+        3
+      ],
+      "trace_ref": "trace_001",
+      "value_bits": [
+        1,
+        0,
+        1
+      ],
+      "write_footprint": [
+        [
+          4,
+          3
+        ]
+      ]
+    },
+    {
+      "confidence": 0.826,
+      "cycle": 2,
+      "pocket_id": "p_logic_atom_and",
+      "proposal_id": "prop_002_p_logic_atom_and",
+      "proposal_type": "write",
+      "read_footprint": [
+        [
+          5,
+          5
+        ],
+        [
+          6,
+          5
+        ],
+        [
+          5,
+          6
+        ]
+      ],
+      "run_id": "e63_pocket_observatory_sample",
+      "schema_version": "pocket_observatory_v1",
+      "target_cell": [
+        5,
+        5
+      ],
+      "trace_ref": "trace_002",
+      "value_bits": [
+        0,
+        1,
+        1
+      ],
+      "write_footprint": [
+        [
+          5,
+          5
+        ]
+      ]
+    },
+    {
+      "confidence": 0.173,
+      "cycle": 3,
+      "pocket_id": "p_logic_atom_and",
+      "proposal_id": "prop_003_p_logic_atom_and",
+      "proposal_type": "write",
+      "read_footprint": [
+        [
+          6,
+          7
+        ],
+        [
+          7,
+          7
+        ],
+        [
+          6,
+          0
+        ]
+      ],
+      "run_id": "e63_pocket_observatory_sample",
+      "schema_version": "pocket_observatory_v1",
+      "target_cell": [
+        6,
+        7
+      ],
+      "trace_ref": "trace_003",
+      "value_bits": [
+        1,
+        0,
+        1
+      ],
+      "write_footprint": [
+        [
+          6,
+          7
+        ]
+      ]
+    },
+    {
+      "confidence": 0.336,
+      "cycle": 4,
+      "pocket_id": "p_logic_atom_and",
+      "proposal_id": "prop_004_p_logic_atom_and",
+      "proposal_type": "write",
+      "read_footprint": [
+        [
+          7,
+          1
+        ],
+        [
+          0,
+          1
+        ],
+        [
+          7,
+          2
+        ]
+      ],
+      "run_id": "e63_pocket_observatory_sample",
+      "schema_version": "pocket_observatory_v1",
+      "target_cell": [
+        7,
+        1
+      ],
+      "trace_ref": "trace_004",
+      "value_bits": [
+        0,
+        1,
+        1
+      ],
+      "write_footprint": [
+        [
+          7,
+          1
+        ]
+      ]
+    },
+    {
+      "confidence": 0.499,
+      "cycle": 5,
+      "pocket_id": "p_logic_atom_and",
+      "proposal_id": "prop_005_p_logic_atom_and",
+      "proposal_type": "write",
+      "read_footprint": [
+        [
+          0,
+          3
+        ],
+        [
+          1,
+          3
+        ],
+        [
+          0,
+          4
+        ]
+      ],
+      "run_id": "e63_pocket_observatory_sample",
+      "schema_version": "pocket_observatory_v1",
+      "target_cell": [
+        0,
+        3
+      ],
+      "trace_ref": "trace_005",
+      "value_bits": [
+        1,
+        0,
+        1
+      ],
+      "write_footprint": [
+        [
+          0,
+          3
+        ]
+      ]
+    },
+    {
+      "confidence": 0.662,
+      "cycle": 6,
+      "pocket_id": "p_logic_atom_and",
+      "proposal_id": "prop_006_p_logic_atom_and",
+      "proposal_type": "write",
+      "read_footprint": [
+        [
+          1,
+          5
+        ],
+        [
+          2,
+          5
+        ],
+        [
+          1,
+          6
+        ]
+      ],
+      "run_id": "e63_pocket_observatory_sample",
+      "schema_version": "pocket_observatory_v1",
+      "target_cell": [
+        1,
+        5
+      ],
+      "trace_ref": "trace_006",
+      "value_bits": [
+        0,
+        1,
+        1
+      ],
+      "write_footprint": [
+        [
+          1,
+          5
+        ]
+      ]
+    },
+    {
+      "confidence": 0.826,
+      "cycle": 7,
+      "pocket_id": "p_logic_atom_and",
+      "proposal_id": "prop_007_p_logic_atom_and",
+      "proposal_type": "write",
+      "read_footprint": [
+        [
+          2,
+          7
+        ],
+        [
+          3,
+          7
+        ],
+        [
+          2,
+          0
+        ]
+      ],
+      "run_id": "e63_pocket_observatory_sample",
+      "schema_version": "pocket_observatory_v1",
+      "target_cell": [
+        2,
+        7
+      ],
+      "trace_ref": "trace_007",
+      "value_bits": [
+        1,
+        0,
+        1
+      ],
+      "write_footprint": [
+        [
+          2,
+          7
+        ]
+      ]
+    },
+    {
+      "confidence": 0.173,
+      "cycle": 8,
+      "pocket_id": "p_logic_atom_and",
+      "proposal_id": "prop_008_p_logic_atom_and",
+      "proposal_type": "write",
+      "read_footprint": [
+        [
+          3,
+          1
+        ],
+        [
+          4,
+          1
+        ],
+        [
+          3,
+          2
+        ]
+      ],
+      "run_id": "e63_pocket_observatory_sample",
+      "schema_version": "pocket_observatory_v1",
+      "target_cell": [
+        3,
+        1
+      ],
+      "trace_ref": "trace_008",
+      "value_bits": [
+        0,
+        1,
+        1
+      ],
+      "write_footprint": [
+        [
+          3,
+          1
+        ]
+      ]
+    },
+    {
+      "confidence": 0.336,
+      "cycle": 9,
+      "pocket_id": "p_logic_atom_and",
+      "proposal_id": "prop_009_p_logic_atom_and",
+      "proposal_type": "write",
+      "read_footprint": [
+        [
+          4,
+          3
+        ],
+        [
+          5,
+          3
+        ],
+        [
+          4,
+          4
+        ]
+      ],
+      "run_id": "e63_pocket_observatory_sample",
+      "schema_version": "pocket_observatory_v1",
+      "target_cell": [
+        4,
+        3
+      ],
+      "trace_ref": "trace_009",
+      "value_bits": [
+        1,
+        0,
+        1
+      ],
+      "write_footprint": [
+        [
+          4,
+          3
+        ]
+      ]
+    },
+    {
+      "confidence": 0.499,
+      "cycle": 10,
+      "pocket_id": "p_logic_atom_and",
+      "proposal_id": "prop_010_p_logic_atom_and",
+      "proposal_type": "write",
+      "read_footprint": [
+        [
+          5,
+          5
+        ],
+        [
+          6,
+          5
+        ],
+        [
+          5,
+          6
+        ]
+      ],
+      "run_id": "e63_pocket_observatory_sample",
+      "schema_version": "pocket_observatory_v1",
+      "target_cell": [
+        5,
+        5
+      ],
+      "trace_ref": "trace_010",
+      "value_bits": [
+        0,
+        1,
+        1
+      ],
+      "write_footprint": [
+        [
+          5,
+          5
+        ]
+      ]
+    },
+    {
+      "confidence": 0.662,
+      "cycle": 11,
+      "pocket_id": "p_logic_atom_and",
+      "proposal_id": "prop_011_p_logic_atom_and",
+      "proposal_type": "write",
+      "read_footprint": [
+        [
+          6,
+          7
+        ],
+        [
+          7,
+          7
+        ],
+        [
+          6,
+          0
+        ]
+      ],
+      "run_id": "e63_pocket_observatory_sample",
+      "schema_version": "pocket_observatory_v1",
+      "target_cell": [
+        6,
+        7
+      ],
+      "trace_ref": "trace_011",
+      "value_bits": [
+        1,
+        0,
+        1
+      ],
+      "write_footprint": [
+        [
+          6,
+          7
+        ]
+      ]
+    },
+    {
+      "confidence": 0.96,
+      "cycle": 0,
+      "pocket_id": "p_contradiction_guard",
+      "proposal_id": "prop_000_p_contradiction_guard",
+      "proposal_type": "write",
+      "read_footprint": [
+        [
+          6,
+          2
+        ],
+        [
+          7,
+          2
+        ],
+        [
+          6,
+          3
+        ]
+      ],
+      "run_id": "e63_pocket_observatory_sample",
+      "schema_version": "pocket_observatory_v1",
+      "target_cell": [
+        6,
+        2
+      ],
+      "trace_ref": "trace_000",
+      "value_bits": [
+        0,
+        0,
+        1
+      ],
+      "write_footprint": [
+        [
+          6,
+          2
+        ]
+      ]
+    },
+    {
+      "confidence": 0.28,
+      "cycle": 1,
+      "pocket_id": "p_contradiction_guard",
+      "proposal_id": "prop_001_p_contradiction_guard",
+      "proposal_type": "write",
+      "read_footprint": [
+        [
+          7,
+          4
+        ],
+        [
+          0,
+          4
+        ],
+        [
+          7,
+          5
+        ]
+      ],
+      "run_id": "e63_pocket_observatory_sample",
+      "schema_version": "pocket_observatory_v1",
+      "target_cell": [
+        7,
+        4
+      ],
+      "trace_ref": "trace_001",
+      "value_bits": [
+        1,
+        1,
+        1
+      ],
+      "write_footprint": [
+        [
+          7,
+          4
+        ]
+      ]
+    },
+    {
+      "confidence": 0.45,
+      "cycle": 2,
+      "pocket_id": "p_contradiction_guard",
+      "proposal_id": "prop_002_p_contradiction_guard",
+      "proposal_type": "write",
+      "read_footprint": [
+        [
+          0,
+          6
+        ],
+        [
+          1,
+          6
+        ],
+        [
+          0,
+          7
+        ]
+      ],
+      "run_id": "e63_pocket_observatory_sample",
+      "schema_version": "pocket_observatory_v1",
+      "target_cell": [
+        0,
+        6
+      ],
+      "trace_ref": "trace_002",
+      "value_bits": [
+        0,
+        0,
+        1
+      ],
+      "write_footprint": [
+        [
+          0,
+          6
+        ]
+      ]
+    },
+    {
+      "confidence": 0.62,
+      "cycle": 3,
+      "pocket_id": "p_contradiction_guard",
+      "proposal_id": "prop_003_p_contradiction_guard",
+      "proposal_type": "write",
+      "read_footprint": [
+        [
+          1,
+          0
+        ],
+        [
+          2,
+          0
+        ],
+        [
+          1,
+          1
+        ]
+      ],
+      "run_id": "e63_pocket_observatory_sample",
+      "schema_version": "pocket_observatory_v1",
+      "target_cell": [
+        1,
+        0
+      ],
+      "trace_ref": "trace_003",
+      "value_bits": [
+        1,
+        1,
+        1
+      ],
+      "write_footprint": [
+        [
+          1,
+          0
+        ]
+      ]
+    },
+    {
+      "confidence": 0.79,
+      "cycle": 4,
+      "pocket_id": "p_contradiction_guard",
+      "proposal_id": "prop_004_p_contradiction_guard",
+      "proposal_type": "write",
+      "read_footprint": [
+        [
+          2,
+          2
+        ],
+        [
+          3,
+          2
+        ],
+        [
+          2,
+          3
+        ]
+      ],
+      "run_id": "e63_pocket_observatory_sample",
+      "schema_version": "pocket_observatory_v1",
+      "target_cell": [
+        2,
+        2
+      ],
+      "trace_ref": "trace_004",
+      "value_bits": [
+        0,
+        0,
+        1
+      ],
+      "write_footprint": [
+        [
+          2,
+          2
+        ]
+      ]
+    },
+    {
+      "confidence": 0.96,
+      "cycle": 5,
+      "pocket_id": "p_contradiction_guard",
+      "proposal_id": "prop_005_p_contradiction_guard",
+      "proposal_type": "write",
+      "read_footprint": [
+        [
+          3,
+          4
+        ],
+        [
+          4,
+          4
+        ],
+        [
+          3,
+          5
+        ]
+      ],
+      "run_id": "e63_pocket_observatory_sample",
+      "schema_version": "pocket_observatory_v1",
+      "target_cell": [
+        3,
+        4
+      ],
+      "trace_ref": "trace_005",
+      "value_bits": [
+        1,
+        1,
+        1
+      ],
+      "write_footprint": [
+        [
+          3,
+          4
+        ]
+      ]
+    },
+    {
+      "confidence": 0.28,
+      "cycle": 6,
+      "pocket_id": "p_contradiction_guard",
+      "proposal_id": "prop_006_p_contradiction_guard",
+      "proposal_type": "write",
+      "read_footprint": [
+        [
+          4,
+          6
+        ],
+        [
+          5,
+          6
+        ],
+        [
+          4,
+          7
+        ]
+      ],
+      "run_id": "e63_pocket_observatory_sample",
+      "schema_version": "pocket_observatory_v1",
+      "target_cell": [
+        4,
+        6
+      ],
+      "trace_ref": "trace_006",
+      "value_bits": [
+        0,
+        0,
+        1
+      ],
+      "write_footprint": [
+        [
+          4,
+          6
+        ]
+      ]
+    },
+    {
+      "confidence": 0.45,
+      "cycle": 7,
+      "pocket_id": "p_contradiction_guard",
+      "proposal_id": "prop_007_p_contradiction_guard",
+      "proposal_type": "write",
+      "read_footprint": [
+        [
+          5,
+          0
+        ],
+        [
+          6,
+          0
+        ],
+        [
+          5,
+          1
+        ]
+      ],
+      "run_id": "e63_pocket_observatory_sample",
+      "schema_version": "pocket_observatory_v1",
+      "target_cell": [
+        5,
+        0
+      ],
+      "trace_ref": "trace_007",
+      "value_bits": [
+        1,
+        1,
+        1
+      ],
+      "write_footprint": [
+        [
+          5,
+          0
+        ]
+      ]
+    },
+    {
+      "confidence": 0.62,
+      "cycle": 8,
+      "pocket_id": "p_contradiction_guard",
+      "proposal_id": "prop_008_p_contradiction_guard",
+      "proposal_type": "write",
+      "read_footprint": [
+        [
+          6,
+          2
+        ],
+        [
+          7,
+          2
+        ],
+        [
+          6,
+          3
+        ]
+      ],
+      "run_id": "e63_pocket_observatory_sample",
+      "schema_version": "pocket_observatory_v1",
+      "target_cell": [
+        6,
+        2
+      ],
+      "trace_ref": "trace_008",
+      "value_bits": [
+        0,
+        0,
+        1
+      ],
+      "write_footprint": [
+        [
+          6,
+          2
+        ]
+      ]
+    },
+    {
+      "confidence": 0.79,
+      "cycle": 9,
+      "pocket_id": "p_contradiction_guard",
+      "proposal_id": "prop_009_p_contradiction_guard",
+      "proposal_type": "write",
+      "read_footprint": [
+        [
+          7,
+          4
+        ],
+        [
+          0,
+          4
+        ],
+        [
+          7,
+          5
+        ]
+      ],
+      "run_id": "e63_pocket_observatory_sample",
+      "schema_version": "pocket_observatory_v1",
+      "target_cell": [
+        7,
+        4
+      ],
+      "trace_ref": "trace_009",
+      "value_bits": [
+        1,
+        1,
+        1
+      ],
+      "write_footprint": [
+        [
+          7,
+          4
+        ]
+      ]
+    },
+    {
+      "confidence": 0.96,
+      "cycle": 10,
+      "pocket_id": "p_contradiction_guard",
+      "proposal_id": "prop_010_p_contradiction_guard",
+      "proposal_type": "write",
+      "read_footprint": [
+        [
+          0,
+          6
+        ],
+        [
+          1,
+          6
+        ],
+        [
+          0,
+          7
+        ]
+      ],
+      "run_id": "e63_pocket_observatory_sample",
+      "schema_version": "pocket_observatory_v1",
+      "target_cell": [
+        0,
+        6
+      ],
+      "trace_ref": "trace_010",
+      "value_bits": [
+        0,
+        0,
+        1
+      ],
+      "write_footprint": [
+        [
+          0,
+          6
+        ]
+      ]
+    },
+    {
+      "confidence": 0.28,
+      "cycle": 11,
+      "pocket_id": "p_contradiction_guard",
+      "proposal_id": "prop_011_p_contradiction_guard",
+      "proposal_type": "write",
+      "read_footprint": [
+        [
+          1,
+          0
+        ],
+        [
+          2,
+          0
+        ],
+        [
+          1,
+          1
+        ]
+      ],
+      "run_id": "e63_pocket_observatory_sample",
+      "schema_version": "pocket_observatory_v1",
+      "target_cell": [
+        1,
+        0
+      ],
+      "trace_ref": "trace_011",
+      "value_bits": [
+        1,
+        1,
+        1
+      ],
+      "write_footprint": [
+        [
+          1,
+          0
+        ]
+      ]
+    },
+    {
+      "confidence": 0.343,
+      "cycle": 0,
+      "pocket_id": "p_evidence_seeker",
+      "proposal_id": "prop_000_p_evidence_seeker",
+      "proposal_type": "ask",
+      "read_footprint": [
+        [
+          1,
+          3
+        ],
+        [
+          2,
+          3
+        ],
+        [
+          1,
+          4
+        ]
+      ],
+      "run_id": "e63_pocket_observatory_sample",
+      "schema_version": "pocket_observatory_v1",
+      "target_cell": [
+        1,
+        3
+      ],
+      "trace_ref": "trace_000",
+      "value_bits": [
+        0,
+        1,
+        0
+      ],
+      "write_footprint": [
+        [
+          1,
+          3
+        ]
+      ]
+    },
+    {
+      "confidence": 0.51,
+      "cycle": 1,
+      "pocket_id": "p_evidence_seeker",
+      "proposal_id": "prop_001_p_evidence_seeker",
+      "proposal_type": "ask",
+      "read_footprint": [
+        [
+          2,
+          5
+        ],
+        [
+          3,
+          5
+        ],
+        [
+          2,
+          6
+        ]
+      ],
+      "run_id": "e63_pocket_observatory_sample",
+      "schema_version": "pocket_observatory_v1",
+      "target_cell": [
+        2,
+        5
+      ],
+      "trace_ref": "trace_001",
+      "value_bits": [
+        1,
+        0,
+        0
+      ],
+      "write_footprint": [
+        [
+          2,
+          5
+        ]
+      ]
+    },
+    {
+      "confidence": 0.676,
+      "cycle": 2,
+      "pocket_id": "p_evidence_seeker",
+      "proposal_id": "prop_002_p_evidence_seeker",
+      "proposal_type": "ask",
+      "read_footprint": [
+        [
+          3,
+          7
+        ],
+        [
+          4,
+          7
+        ],
+        [
+          3,
+          0
+        ]
+      ],
+      "run_id": "e63_pocket_observatory_sample",
+      "schema_version": "pocket_observatory_v1",
+      "target_cell": [
+        3,
+        7
+      ],
+      "trace_ref": "trace_002",
+      "value_bits": [
+        0,
+        1,
+        0
+      ],
+      "write_footprint": [
+        [
+          3,
+          7
+        ]
+      ]
+    },
+    {
+      "confidence": 0.843,
+      "cycle": 3,
+      "pocket_id": "p_evidence_seeker",
+      "proposal_id": "prop_003_p_evidence_seeker",
+      "proposal_type": "ask",
+      "read_footprint": [
+        [
+          4,
+          1
+        ],
+        [
+          5,
+          1
+        ],
+        [
+          4,
+          2
+        ]
+      ],
+      "run_id": "e63_pocket_observatory_sample",
+      "schema_version": "pocket_observatory_v1",
+      "target_cell": [
+        4,
+        1
+      ],
+      "trace_ref": "trace_003",
+      "value_bits": [
+        1,
+        0,
+        0
+      ],
+      "write_footprint": [
+        [
+          4,
+          1
+        ]
+      ]
+    },
+    {
+      "confidence": 0.176,
+      "cycle": 4,
+      "pocket_id": "p_evidence_seeker",
+      "proposal_id": "prop_004_p_evidence_seeker",
+      "proposal_type": "ask",
+      "read_footprint": [
+        [
+          5,
+          3
+        ],
+        [
+          6,
+          3
+        ],
+        [
+          5,
+          4
+        ]
+      ],
+      "run_id": "e63_pocket_observatory_sample",
+      "schema_version": "pocket_observatory_v1",
+      "target_cell": [
+        5,
+        3
+      ],
+      "trace_ref": "trace_004",
+      "value_bits": [
+        0,
+        1,
+        0
+      ],
+      "write_footprint": [
+        [
+          5,
+          3
+        ]
+      ]
+    },
+    {
+      "confidence": 0.343,
+      "cycle": 5,
+      "pocket_id": "p_evidence_seeker",
+      "proposal_id": "prop_005_p_evidence_seeker",
+      "proposal_type": "ask",
+      "read_footprint": [
+        [
+          6,
+          5
+        ],
+        [
+          7,
+          5
+        ],
+        [
+          6,
+          6
+        ]
+      ],
+      "run_id": "e63_pocket_observatory_sample",
+      "schema_version": "pocket_observatory_v1",
+      "target_cell": [
+        6,
+        5
+      ],
+      "trace_ref": "trace_005",
+      "value_bits": [
+        1,
+        0,
+        0
+      ],
+      "write_footprint": [
+        [
+          6,
+          5
+        ]
+      ]
+    },
+    {
+      "confidence": 0.608,
+      "cycle": 6,
+      "pocket_id": "p_evidence_seeker",
+      "proposal_id": "prop_006_p_evidence_seeker",
+      "proposal_type": "ask",
+      "read_footprint": [
+        [
+          7,
+          7
+        ],
+        [
+          0,
+          7
+        ],
+        [
+          7,
+          0
+        ]
+      ],
+      "run_id": "e63_pocket_observatory_sample",
+      "schema_version": "pocket_observatory_v1",
+      "target_cell": [
+        7,
+        7
+      ],
+      "trace_ref": "trace_006",
+      "value_bits": [
+        0,
+        1,
+        0
+      ],
+      "write_footprint": [
+        [
+          7,
+          7
+        ]
+      ]
+    },
+    {
+      "confidence": 0.774,
+      "cycle": 7,
+      "pocket_id": "p_evidence_seeker",
+      "proposal_id": "prop_007_p_evidence_seeker",
+      "proposal_type": "ask",
+      "read_footprint": [
+        [
+          0,
+          1
+        ],
+        [
+          1,
+          1
+        ],
+        [
+          0,
+          2
+        ]
+      ],
+      "run_id": "e63_pocket_observatory_sample",
+      "schema_version": "pocket_observatory_v1",
+      "target_cell": [
+        0,
+        1
+      ],
+      "trace_ref": "trace_007",
+      "value_bits": [
+        1,
+        0,
+        0
+      ],
+      "write_footprint": [
+        [
+          0,
+          1
+        ]
+      ]
+    },
+    {
+      "confidence": 0.941,
+      "cycle": 8,
+      "pocket_id": "p_evidence_seeker",
+      "proposal_id": "prop_008_p_evidence_seeker",
+      "proposal_type": "ask",
+      "read_footprint": [
+        [
+          1,
+          3
+        ],
+        [
+          2,
+          3
+        ],
+        [
+          1,
+          4
+        ]
+      ],
+      "run_id": "e63_pocket_observatory_sample",
+      "schema_version": "pocket_observatory_v1",
+      "target_cell": [
+        1,
+        3
+      ],
+      "trace_ref": "trace_008",
+      "value_bits": [
+        0,
+        1,
+        0
+      ],
+      "write_footprint": [
+        [
+          1,
+          3
+        ]
+      ]
+    },
+    {
+      "confidence": 0.274,
+      "cycle": 9,
+      "pocket_id": "p_evidence_seeker",
+      "proposal_id": "prop_009_p_evidence_seeker",
+      "proposal_type": "ask",
+      "read_footprint": [
+        [
+          2,
+          5
+        ],
+        [
+          3,
+          5
+        ],
+        [
+          2,
+          6
+        ]
+      ],
+      "run_id": "e63_pocket_observatory_sample",
+      "schema_version": "pocket_observatory_v1",
+      "target_cell": [
+        2,
+        5
+      ],
+      "trace_ref": "trace_009",
+      "value_bits": [
+        1,
+        0,
+        0
+      ],
+      "write_footprint": [
+        [
+          2,
+          5
+        ]
+      ]
+    },
+    {
+      "confidence": 0.441,
+      "cycle": 10,
+      "pocket_id": "p_evidence_seeker",
+      "proposal_id": "prop_010_p_evidence_seeker",
+      "proposal_type": "ask",
+      "read_footprint": [
+        [
+          3,
+          7
+        ],
+        [
+          4,
+          7
+        ],
+        [
+          3,
+          0
+        ]
+      ],
+      "run_id": "e63_pocket_observatory_sample",
+      "schema_version": "pocket_observatory_v1",
+      "target_cell": [
+        3,
+        7
+      ],
+      "trace_ref": "trace_010",
+      "value_bits": [
+        0,
+        1,
+        0
+      ],
+      "write_footprint": [
+        [
+          3,
+          7
+        ]
+      ]
+    },
+    {
+      "confidence": 0.608,
+      "cycle": 11,
+      "pocket_id": "p_evidence_seeker",
+      "proposal_id": "prop_011_p_evidence_seeker",
+      "proposal_type": "ask",
+      "read_footprint": [
+        [
+          4,
+          1
+        ],
+        [
+          5,
+          1
+        ],
+        [
+          4,
+          2
+        ]
+      ],
+      "run_id": "e63_pocket_observatory_sample",
+      "schema_version": "pocket_observatory_v1",
+      "target_cell": [
+        4,
+        1
+      ],
+      "trace_ref": "trace_011",
+      "value_bits": [
+        1,
+        0,
+        0
+      ],
+      "write_footprint": [
+        [
+          4,
+          1
+        ]
+      ]
+    },
+    {
+      "confidence": 0.124,
+      "cycle": 0,
+      "pocket_id": "p_noise_spammer",
+      "proposal_id": "prop_000_p_noise_spammer",
+      "proposal_type": "write",
+      "read_footprint": [
+        [
+          4,
+          4
+        ],
+        [
+          5,
+          4
+        ],
+        [
+          4,
+          5
+        ]
+      ],
+      "run_id": "e63_pocket_observatory_sample",
+      "schema_version": "pocket_observatory_v1",
+      "target_cell": [
+        4,
+        4
+      ],
+      "trace_ref": "trace_000",
+      "value_bits": [
+        0,
+        0,
+        1
+      ],
+      "write_footprint": [
+        [
+          4,
+          4
+        ]
+      ]
+    },
+    {
+      "confidence": 0.155,
+      "cycle": 1,
+      "pocket_id": "p_noise_spammer",
+      "proposal_id": "prop_001_p_noise_spammer",
+      "proposal_type": "write",
+      "read_footprint": [
+        [
+          5,
+          6
+        ],
+        [
+          6,
+          6
+        ],
+        [
+          5,
+          7
+        ]
+      ],
+      "run_id": "e63_pocket_observatory_sample",
+      "schema_version": "pocket_observatory_v1",
+      "target_cell": [
+        5,
+        6
+      ],
+      "trace_ref": "trace_001",
+      "value_bits": [
+        1,
+        1,
+        1
+      ],
+      "write_footprint": [
+        [
+          5,
+          6
+        ]
+      ]
+    },
+    {
+      "confidence": 0.032,
+      "cycle": 2,
+      "pocket_id": "p_noise_spammer",
+      "proposal_id": "prop_002_p_noise_spammer",
+      "proposal_type": "write",
+      "read_footprint": [
+        [
+          6,
+          0
+        ],
+        [
+          7,
+          0
+        ],
+        [
+          6,
+          1
+        ]
+      ],
+      "run_id": "e63_pocket_observatory_sample",
+      "schema_version": "pocket_observatory_v1",
+      "target_cell": [
+        6,
+        0
+      ],
+      "trace_ref": "trace_002",
+      "value_bits": [
+        0,
+        0,
+        1
+      ],
+      "write_footprint": [
+        [
+          6,
+          0
+        ]
+      ]
+    },
+    {
+      "confidence": 0.063,
+      "cycle": 3,
+      "pocket_id": "p_noise_spammer",
+      "proposal_id": "prop_003_p_noise_spammer",
+      "proposal_type": "write",
+      "read_footprint": [
+        [
+          7,
+          2
+        ],
+        [
+          0,
+          2
+        ],
+        [
+          7,
+          3
+        ]
+      ],
+      "run_id": "e63_pocket_observatory_sample",
+      "schema_version": "pocket_observatory_v1",
+      "target_cell": [
+        7,
+        2
+      ],
+      "trace_ref": "trace_003",
+      "value_bits": [
+        1,
+        1,
+        1
+      ],
+      "write_footprint": [
+        [
+          7,
+          2
+        ]
+      ]
+    },
+    {
+      "confidence": 0.054,
+      "cycle": 4,
+      "pocket_id": "p_noise_spammer",
+      "proposal_id": "prop_004_p_noise_spammer",
+      "proposal_type": "write",
+      "read_footprint": [
+        [
+          0,
+          4
+        ],
+        [
+          1,
+          4
+        ],
+        [
+          0,
+          5
+        ]
+      ],
+      "run_id": "e63_pocket_observatory_sample",
+      "schema_version": "pocket_observatory_v1",
+      "target_cell": [
+        0,
+        4
+      ],
+      "trace_ref": "trace_004",
+      "value_bits": [
+        0,
+        0,
+        0
+      ],
+      "write_footprint": [
+        [
+          0,
+          4
+        ]
+      ]
+    },
+    {
+      "confidence": 0.085,
+      "cycle": 5,
+      "pocket_id": "p_noise_spammer",
+      "proposal_id": "prop_005_p_noise_spammer",
+      "proposal_type": "write",
+      "read_footprint": [
+        [
+          1,
+          6
+        ],
+        [
+          2,
+          6
+        ],
+        [
+          1,
+          7
+        ]
+      ],
+      "run_id": "e63_pocket_observatory_sample",
+      "schema_version": "pocket_observatory_v1",
+      "target_cell": [
+        1,
+        6
+      ],
+      "trace_ref": "trace_005",
+      "value_bits": [
+        1,
+        1,
+        0
+      ],
+      "write_footprint": [
+        [
+          1,
+          6
+        ]
+      ]
+    },
+    {
+      "confidence": 0.115,
+      "cycle": 6,
+      "pocket_id": "p_noise_spammer",
+      "proposal_id": "prop_006_p_noise_spammer",
+      "proposal_type": "write",
+      "read_footprint": [
+        [
+          2,
+          0
+        ],
+        [
+          3,
+          0
+        ],
+        [
+          2,
+          1
+        ]
+      ],
+      "run_id": "e63_pocket_observatory_sample",
+      "schema_version": "pocket_observatory_v1",
+      "target_cell": [
+        2,
+        0
+      ],
+      "trace_ref": "trace_006",
+      "value_bits": [
+        0,
+        0,
+        0
+      ],
+      "write_footprint": [
+        [
+          2,
+          0
+        ]
+      ]
+    },
+    {
+      "confidence": 0.074,
+      "cycle": 0,
+      "pocket_id": "p_stale_route_helper",
+      "proposal_id": "prop_000_p_stale_route_helper",
+      "proposal_type": "write",
+      "read_footprint": [
+        [
+          7,
+          5
+        ],
+        [
+          0,
+          5
+        ],
+        [
+          7,
+          6
+        ]
+      ],
+      "run_id": "e63_pocket_observatory_sample",
+      "schema_version": "pocket_observatory_v1",
+      "target_cell": [
+        7,
+        5
+      ],
+      "trace_ref": "trace_000",
+      "value_bits": [
+        0,
+        1,
+        1
+      ],
+      "write_footprint": [
+        [
+          7,
+          5
+        ]
+      ]
+    },
+    {
+      "confidence": 0.143,
+      "cycle": 1,
+      "pocket_id": "p_stale_route_helper",
+      "proposal_id": "prop_001_p_stale_route_helper",
+      "proposal_type": "write",
+      "read_footprint": [
+        [
+          0,
+          7
+        ],
+        [
+          1,
+          7
+        ],
+        [
+          0,
+          0
+        ]
+      ],
+      "run_id": "e63_pocket_observatory_sample",
+      "schema_version": "pocket_observatory_v1",
+      "target_cell": [
+        0,
+        7
+      ],
+      "trace_ref": "trace_001",
+      "value_bits": [
+        1,
+        0,
+        1
+      ],
+      "write_footprint": [
+        [
+          0,
+          7
+        ]
+      ]
+    },
+    {
+      "confidence": 0.213,
+      "cycle": 2,
+      "pocket_id": "p_stale_route_helper",
+      "proposal_id": "prop_002_p_stale_route_helper",
+      "proposal_type": "write",
+      "read_footprint": [
+        [
+          1,
+          1
+        ],
+        [
+          2,
+          1
+        ],
+        [
+          1,
+          2
+        ]
+      ],
+      "run_id": "e63_pocket_observatory_sample",
+      "schema_version": "pocket_observatory_v1",
+      "target_cell": [
+        1,
+        1
+      ],
+      "trace_ref": "trace_002",
+      "value_bits": [
+        0,
+        1,
+        1
+      ],
+      "write_footprint": [
+        [
+          1,
+          1
+        ]
+      ]
+    },
+    {
+      "confidence": 0.283,
+      "cycle": 3,
+      "pocket_id": "p_stale_route_helper",
+      "proposal_id": "prop_003_p_stale_route_helper",
+      "proposal_type": "write",
+      "read_footprint": [
+        [
+          2,
+          3
+        ],
+        [
+          3,
+          3
+        ],
+        [
+          2,
+          4
+        ]
+      ],
+      "run_id": "e63_pocket_observatory_sample",
+      "schema_version": "pocket_observatory_v1",
+      "target_cell": [
+        2,
+        3
+      ],
+      "trace_ref": "trace_003",
+      "value_bits": [
+        1,
+        0,
+        1
+      ],
+      "write_footprint": [
+        [
+          2,
+          3
+        ]
+      ]
+    },
+    {
+      "confidence": 0.353,
+      "cycle": 4,
+      "pocket_id": "p_stale_route_helper",
+      "proposal_id": "prop_004_p_stale_route_helper",
+      "proposal_type": "write",
+      "read_footprint": [
+        [
+          3,
+          5
+        ],
+        [
+          4,
+          5
+        ],
+        [
+          3,
+          6
+        ]
+      ],
+      "run_id": "e63_pocket_observatory_sample",
+      "schema_version": "pocket_observatory_v1",
+      "target_cell": [
+        3,
+        5
+      ],
+      "trace_ref": "trace_004",
+      "value_bits": [
+        0,
+        1,
+        1
+      ],
+      "write_footprint": [
+        [
+          3,
+          5
+        ]
+      ]
+    },
+    {
+      "confidence": 0.0,
+      "cycle": 5,
+      "pocket_id": "p_stale_route_helper",
+      "proposal_id": "prop_005_p_stale_route_helper",
+      "proposal_type": "write",
+      "read_footprint": [
+        [
+          4,
+          7
+        ],
+        [
+          5,
+          7
+        ],
+        [
+          4,
+          0
+        ]
+      ],
+      "run_id": "e63_pocket_observatory_sample",
+      "schema_version": "pocket_observatory_v1",
+      "target_cell": [
+        4,
+        7
+      ],
+      "trace_ref": "trace_005",
+      "value_bits": [
+        1,
+        0,
+        0
+      ],
+      "write_footprint": [
+        [
+          4,
+          7
+        ]
+      ]
+    },
+    {
+      "confidence": 0.053,
+      "cycle": 6,
+      "pocket_id": "p_stale_route_helper",
+      "proposal_id": "prop_006_p_stale_route_helper",
+      "proposal_type": "write",
+      "read_footprint": [
+        [
+          5,
+          1
+        ],
+        [
+          6,
+          1
+        ],
+        [
+          5,
+          2
+        ]
+      ],
+      "run_id": "e63_pocket_observatory_sample",
+      "schema_version": "pocket_observatory_v1",
+      "target_cell": [
+        5,
+        1
+      ],
+      "trace_ref": "trace_006",
+      "value_bits": [
+        0,
+        1,
+        0
+      ],
+      "write_footprint": [
+        [
+          5,
+          1
+        ]
+      ]
+    },
+    {
+      "confidence": 0.123,
+      "cycle": 7,
+      "pocket_id": "p_stale_route_helper",
+      "proposal_id": "prop_007_p_stale_route_helper",
+      "proposal_type": "write",
+      "read_footprint": [
+        [
+          6,
+          3
+        ],
+        [
+          7,
+          3
+        ],
+        [
+          6,
+          4
+        ]
+      ],
+      "run_id": "e63_pocket_observatory_sample",
+      "schema_version": "pocket_observatory_v1",
+      "target_cell": [
+        6,
+        3
+      ],
+      "trace_ref": "trace_007",
+      "value_bits": [
+        1,
+        0,
+        0
+      ],
+      "write_footprint": [
+        [
+          6,
+          3
+        ]
+      ]
+    },
+    {
+      "confidence": 0.95,
+      "cycle": 2,
+      "pocket_id": "p_output_renderer",
+      "proposal_id": "prop_002_p_output_renderer",
+      "proposal_type": "write",
+      "read_footprint": [
+        [
+          4,
+          2
+        ],
+        [
+          5,
+          2
+        ],
+        [
+          4,
+          3
+        ]
+      ],
+      "run_id": "e63_pocket_observatory_sample",
+      "schema_version": "pocket_observatory_v1",
+      "target_cell": [
+        4,
+        2
+      ],
+      "trace_ref": "trace_002",
+      "value_bits": [
+        0,
+        0,
+        1
+      ],
+      "write_footprint": [
+        [
+          4,
+          2
+        ]
+      ]
+    },
+    {
+      "confidence": 0.614,
+      "cycle": 5,
+      "pocket_id": "p_output_renderer",
+      "proposal_id": "prop_005_p_output_renderer",
+      "proposal_type": "write",
+      "read_footprint": [
+        [
+          7,
+          0
+        ],
+        [
+          0,
+          0
+        ],
+        [
+          7,
+          1
+        ]
+      ],
+      "run_id": "e63_pocket_observatory_sample",
+      "schema_version": "pocket_observatory_v1",
+      "target_cell": [
+        7,
+        0
+      ],
+      "trace_ref": "trace_005",
+      "value_bits": [
+        1,
+        1,
+        1
+      ],
+      "write_footprint": [
+        [
+          7,
+          0
+        ]
+      ]
+    },
+    {
+      "confidence": 0.445,
+      "cycle": 9,
+      "pocket_id": "p_output_renderer",
+      "proposal_id": "prop_009_p_output_renderer",
+      "proposal_type": "write",
+      "read_footprint": [
+        [
+          3,
+          0
+        ],
+        [
+          4,
+          0
+        ],
+        [
+          3,
+          1
+        ]
+      ],
+      "run_id": "e63_pocket_observatory_sample",
+      "schema_version": "pocket_observatory_v1",
+      "target_cell": [
+        3,
+        0
+      ],
+      "trace_ref": "trace_009",
+      "value_bits": [
+        1,
+        1,
+        1
+      ],
+      "write_footprint": [
+        [
+          3,
+          0
+        ]
+      ]
+    },
+    {
+      "confidence": 0.782,
+      "cycle": 11,
+      "pocket_id": "p_output_renderer",
+      "proposal_id": "prop_011_p_output_renderer",
+      "proposal_type": "write",
+      "read_footprint": [
+        [
+          5,
+          4
+        ],
+        [
+          6,
+          4
+        ],
+        [
+          5,
+          5
+        ]
+      ],
+      "run_id": "e63_pocket_observatory_sample",
+      "schema_version": "pocket_observatory_v1",
+      "target_cell": [
+        5,
+        4
+      ],
+      "trace_ref": "trace_011",
+      "value_bits": [
+        1,
+        1,
+        1
+      ],
+      "write_footprint": [
+        [
+          5,
+          4
+        ]
+      ]
+    },
+    {
+      "confidence": 0.332,
+      "cycle": 2,
+      "pocket_id": "p_edge_adapter",
+      "proposal_id": "prop_002_p_edge_adapter",
+      "proposal_type": "write",
+      "read_footprint": [
+        [
+          7,
+          3
+        ],
+        [
+          0,
+          3
+        ],
+        [
+          7,
+          4
+        ]
+      ],
+      "run_id": "e63_pocket_observatory_sample",
+      "schema_version": "pocket_observatory_v1",
+      "target_cell": [
+        7,
+        3
+      ],
+      "trace_ref": "trace_002",
+      "value_bits": [
+        0,
+        1,
+        1
+      ],
+      "write_footprint": [
+        [
+          7,
+          3
+        ]
+      ]
+    },
+    {
+      "confidence": 0.912,
+      "cycle": 5,
+      "pocket_id": "p_edge_adapter",
+      "proposal_id": "prop_005_p_edge_adapter",
+      "proposal_type": "write",
+      "read_footprint": [
+        [
+          2,
+          1
+        ],
+        [
+          3,
+          1
+        ],
+        [
+          2,
+          2
+        ]
+      ],
+      "run_id": "e63_pocket_observatory_sample",
+      "schema_version": "pocket_observatory_v1",
+      "target_cell": [
+        2,
+        1
+      ],
+      "trace_ref": "trace_005",
+      "value_bits": [
+        1,
+        0,
+        1
+      ],
+      "write_footprint": [
+        [
+          2,
+          1
+        ]
+      ]
+    },
+    {
+      "confidence": 0.75,
+      "cycle": 9,
+      "pocket_id": "p_edge_adapter",
+      "proposal_id": "prop_009_p_edge_adapter",
+      "proposal_type": "write",
+      "read_footprint": [
+        [
+          6,
+          1
+        ],
+        [
+          7,
+          1
+        ],
+        [
+          6,
+          2
+        ]
+      ],
+      "run_id": "e63_pocket_observatory_sample",
+      "schema_version": "pocket_observatory_v1",
+      "target_cell": [
+        6,
+        1
+      ],
+      "trace_ref": "trace_009",
+      "value_bits": [
+        1,
+        0,
+        1
+      ],
+      "write_footprint": [
+        [
+          6,
+          1
+        ]
+      ]
+    },
+    {
+      "confidence": 0.266,
+      "cycle": 11,
+      "pocket_id": "p_edge_adapter",
+      "proposal_id": "prop_011_p_edge_adapter",
+      "proposal_type": "write",
+      "read_footprint": [
+        [
+          0,
+          5
+        ],
+        [
+          1,
+          5
+        ],
+        [
+          0,
+          6
+        ]
+      ],
+      "run_id": "e63_pocket_observatory_sample",
+      "schema_version": "pocket_observatory_v1",
+      "target_cell": [
+        0,
+        5
+      ],
+      "trace_ref": "trace_011",
+      "value_bits": [
+        1,
+        0,
+        1
+      ],
+      "write_footprint": [
+        [
+          0,
+          5
+        ]
+      ]
+    }
+  ],
+  "refresh_files": [
+    "observatory_snapshot.json",
+    "pocket_state.json",
+    "pocket_events.jsonl",
+    "proposal_snapshot.json",
+    "agency_decisions.jsonl",
+    "flow_snapshot.json"
+  ],
+  "run_id": "e63_pocket_observatory_sample",
+  "schema_version": "pocket_observatory_v1"
+}

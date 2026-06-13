@@ -1,0 +1,540 @@
+{
+  "committed_cells": [
+    {
+      "cell": [
+        0,
+        0
+      ],
+      "commit_id": "commit_000_p_binary_ingress_lens",
+      "cycle": 0,
+      "source_pocket": "p_binary_ingress_lens",
+      "value": 0
+    },
+    {
+      "cell": [
+        1,
+        2
+      ],
+      "commit_id": "commit_001_p_binary_ingress_lens",
+      "cycle": 1,
+      "source_pocket": "p_binary_ingress_lens",
+      "value": 1
+    },
+    {
+      "cell": [
+        2,
+        4
+      ],
+      "commit_id": "commit_002_p_binary_ingress_lens",
+      "cycle": 2,
+      "source_pocket": "p_binary_ingress_lens",
+      "value": 0
+    },
+    {
+      "cell": [
+        3,
+        6
+      ],
+      "commit_id": "commit_003_p_binary_ingress_lens",
+      "cycle": 3,
+      "source_pocket": "p_binary_ingress_lens",
+      "value": 1
+    },
+    {
+      "cell": [
+        4,
+        0
+      ],
+      "commit_id": "commit_004_p_binary_ingress_lens",
+      "cycle": 4,
+      "source_pocket": "p_binary_ingress_lens",
+      "value": 0
+    },
+    {
+      "cell": [
+        5,
+        2
+      ],
+      "commit_id": "commit_005_p_binary_ingress_lens",
+      "cycle": 5,
+      "source_pocket": "p_binary_ingress_lens",
+      "value": 1
+    },
+    {
+      "cell": [
+        6,
+        4
+      ],
+      "commit_id": "commit_006_p_binary_ingress_lens",
+      "cycle": 6,
+      "source_pocket": "p_binary_ingress_lens",
+      "value": 0
+    },
+    {
+      "cell": [
+        7,
+        6
+      ],
+      "commit_id": "commit_007_p_binary_ingress_lens",
+      "cycle": 7,
+      "source_pocket": "p_binary_ingress_lens",
+      "value": 1
+    },
+    {
+      "cell": [
+        0,
+        0
+      ],
+      "commit_id": "commit_008_p_binary_ingress_lens",
+      "cycle": 8,
+      "source_pocket": "p_binary_ingress_lens",
+      "value": 0
+    },
+    {
+      "cell": [
+        1,
+        2
+      ],
+      "commit_id": "commit_009_p_binary_ingress_lens",
+      "cycle": 9,
+      "source_pocket": "p_binary_ingress_lens",
+      "value": 1
+    },
+    {
+      "cell": [
+        2,
+        4
+      ],
+      "commit_id": "commit_010_p_binary_ingress_lens",
+      "cycle": 10,
+      "source_pocket": "p_binary_ingress_lens",
+      "value": 0
+    },
+    {
+      "cell": [
+        3,
+        6
+      ],
+      "commit_id": "commit_011_p_binary_ingress_lens",
+      "cycle": 11,
+      "source_pocket": "p_binary_ingress_lens",
+      "value": 1
+    },
+    {
+      "cell": [
+        3,
+        1
+      ],
+      "commit_id": "commit_000_p_logic_atom_and",
+      "cycle": 0,
+      "source_pocket": "p_logic_atom_and",
+      "value": 0
+    },
+    {
+      "cell": [
+        4,
+        3
+      ],
+      "commit_id": "commit_001_p_logic_atom_and",
+      "cycle": 1,
+      "source_pocket": "p_logic_atom_and",
+      "value": 1
+    },
+    {
+      "cell": [
+        5,
+        5
+      ],
+      "commit_id": "commit_002_p_logic_atom_and",
+      "cycle": 2,
+      "source_pocket": "p_logic_atom_and",
+      "value": 0
+    },
+    {
+      "cell": [
+        6,
+        7
+      ],
+      "commit_id": "commit_003_p_logic_atom_and",
+      "cycle": 3,
+      "source_pocket": "p_logic_atom_and",
+      "value": 1
+    },
+    {
+      "cell": [
+        7,
+        1
+      ],
+      "commit_id": "commit_004_p_logic_atom_and",
+      "cycle": 4,
+      "source_pocket": "p_logic_atom_and",
+      "value": 0
+    },
+    {
+      "cell": [
+        0,
+        3
+      ],
+      "commit_id": "commit_005_p_logic_atom_and",
+      "cycle": 5,
+      "source_pocket": "p_logic_atom_and",
+      "value": 1
+    },
+    {
+      "cell": [
+        1,
+        5
+      ],
+      "commit_id": "commit_006_p_logic_atom_and",
+      "cycle": 6,
+      "source_pocket": "p_logic_atom_and",
+      "value": 0
+    },
+    {
+      "cell": [
+        2,
+        7
+      ],
+      "commit_id": "commit_007_p_logic_atom_and",
+      "cycle": 7,
+      "source_pocket": "p_logic_atom_and",
+      "value": 1
+    },
+    {
+      "cell": [
+        3,
+        1
+      ],
+      "commit_id": "commit_008_p_logic_atom_and",
+      "cycle": 8,
+      "source_pocket": "p_logic_atom_and",
+      "value": 0
+    },
+    {
+      "cell": [
+        4,
+        3
+      ],
+      "commit_id": "commit_009_p_logic_atom_and",
+      "cycle": 9,
+      "source_pocket": "p_logic_atom_and",
+      "value": 1
+    },
+    {
+      "cell": [
+        5,
+        5
+      ],
+      "commit_id": "commit_010_p_logic_atom_and",
+      "cycle": 10,
+      "source_pocket": "p_logic_atom_and",
+      "value": 0
+    },
+    {
+      "cell": [
+        6,
+        7
+      ],
+      "commit_id": "commit_011_p_logic_atom_and",
+      "cycle": 11,
+      "source_pocket": "p_logic_atom_and",
+      "value": 1
+    },
+    {
+      "cell": [
+        6,
+        2
+      ],
+      "commit_id": "commit_000_p_contradiction_guard",
+      "cycle": 0,
+      "source_pocket": "p_contradiction_guard",
+      "value": 0
+    },
+    {
+      "cell": [
+        7,
+        4
+      ],
+      "commit_id": "commit_001_p_contradiction_guard",
+      "cycle": 1,
+      "source_pocket": "p_contradiction_guard",
+      "value": 1
+    },
+    {
+      "cell": [
+        0,
+        6
+      ],
+      "commit_id": "commit_002_p_contradiction_guard",
+      "cycle": 2,
+      "source_pocket": "p_contradiction_guard",
+      "value": 0
+    },
+    {
+      "cell": [
+        1,
+        0
+      ],
+      "commit_id": "commit_003_p_contradiction_guard",
+      "cycle": 3,
+      "source_pocket": "p_contradiction_guard",
+      "value": 1
+    },
+    {
+      "cell": [
+        2,
+        2
+      ],
+      "commit_id": "commit_004_p_contradiction_guard",
+      "cycle": 4,
+      "source_pocket": "p_contradiction_guard",
+      "value": 0
+    },
+    {
+      "cell": [
+        3,
+        4
+      ],
+      "commit_id": "commit_005_p_contradiction_guard",
+      "cycle": 5,
+      "source_pocket": "p_contradiction_guard",
+      "value": 1
+    },
+    {
+      "cell": [
+        4,
+        6
+      ],
+      "commit_id": "commit_006_p_contradiction_guard",
+      "cycle": 6,
+      "source_pocket": "p_contradiction_guard",
+      "value": 0
+    },
+    {
+      "cell": [
+        5,
+        0
+      ],
+      "commit_id": "commit_007_p_contradiction_guard",
+      "cycle": 7,
+      "source_pocket": "p_contradiction_guard",
+      "value": 1
+    },
+    {
+      "cell": [
+        6,
+        2
+      ],
+      "commit_id": "commit_008_p_contradiction_guard",
+      "cycle": 8,
+      "source_pocket": "p_contradiction_guard",
+      "value": 0
+    },
+    {
+      "cell": [
+        7,
+        4
+      ],
+      "commit_id": "commit_009_p_contradiction_guard",
+      "cycle": 9,
+      "source_pocket": "p_contradiction_guard",
+      "value": 1
+    },
+    {
+      "cell": [
+        0,
+        6
+      ],
+      "commit_id": "commit_010_p_contradiction_guard",
+      "cycle": 10,
+      "source_pocket": "p_contradiction_guard",
+      "value": 0
+    },
+    {
+      "cell": [
+        1,
+        0
+      ],
+      "commit_id": "commit_011_p_contradiction_guard",
+      "cycle": 11,
+      "source_pocket": "p_contradiction_guard",
+      "value": 1
+    },
+    {
+      "cell": [
+        4,
+        4
+      ],
+      "commit_id": "commit_000_p_noise_spammer",
+      "cycle": 0,
+      "source_pocket": "p_noise_spammer",
+      "value": 0
+    },
+    {
+      "cell": [
+        5,
+        6
+      ],
+      "commit_id": "commit_001_p_noise_spammer",
+      "cycle": 1,
+      "source_pocket": "p_noise_spammer",
+      "value": 1
+    },
+    {
+      "cell": [
+        6,
+        0
+      ],
+      "commit_id": "commit_002_p_noise_spammer",
+      "cycle": 2,
+      "source_pocket": "p_noise_spammer",
+      "value": 0
+    },
+    {
+      "cell": [
+        7,
+        2
+      ],
+      "commit_id": "commit_003_p_noise_spammer",
+      "cycle": 3,
+      "source_pocket": "p_noise_spammer",
+      "value": 1
+    },
+    {
+      "cell": [
+        7,
+        5
+      ],
+      "commit_id": "commit_000_p_stale_route_helper",
+      "cycle": 0,
+      "source_pocket": "p_stale_route_helper",
+      "value": 0
+    },
+    {
+      "cell": [
+        0,
+        7
+      ],
+      "commit_id": "commit_001_p_stale_route_helper",
+      "cycle": 1,
+      "source_pocket": "p_stale_route_helper",
+      "value": 1
+    },
+    {
+      "cell": [
+        1,
+        1
+      ],
+      "commit_id": "commit_002_p_stale_route_helper",
+      "cycle": 2,
+      "source_pocket": "p_stale_route_helper",
+      "value": 0
+    },
+    {
+      "cell": [
+        2,
+        3
+      ],
+      "commit_id": "commit_003_p_stale_route_helper",
+      "cycle": 3,
+      "source_pocket": "p_stale_route_helper",
+      "value": 1
+    },
+    {
+      "cell": [
+        3,
+        5
+      ],
+      "commit_id": "commit_004_p_stale_route_helper",
+      "cycle": 4,
+      "source_pocket": "p_stale_route_helper",
+      "value": 0
+    },
+    {
+      "cell": [
+        4,
+        2
+      ],
+      "commit_id": "commit_002_p_output_renderer",
+      "cycle": 2,
+      "source_pocket": "p_output_renderer",
+      "value": 0
+    },
+    {
+      "cell": [
+        7,
+        0
+      ],
+      "commit_id": "commit_005_p_output_renderer",
+      "cycle": 5,
+      "source_pocket": "p_output_renderer",
+      "value": 1
+    },
+    {
+      "cell": [
+        3,
+        0
+      ],
+      "commit_id": "commit_009_p_output_renderer",
+      "cycle": 9,
+      "source_pocket": "p_output_renderer",
+      "value": 1
+    },
+    {
+      "cell": [
+        5,
+        4
+      ],
+      "commit_id": "commit_011_p_output_renderer",
+      "cycle": 11,
+      "source_pocket": "p_output_renderer",
+      "value": 1
+    },
+    {
+      "cell": [
+        7,
+        3
+      ],
+      "commit_id": "commit_002_p_edge_adapter",
+      "cycle": 2,
+      "source_pocket": "p_edge_adapter",
+      "value": 0
+    },
+    {
+      "cell": [
+        2,
+        1
+      ],
+      "commit_id": "commit_005_p_edge_adapter",
+      "cycle": 5,
+      "source_pocket": "p_edge_adapter",
+      "value": 1
+    },
+    {
+      "cell": [
+        6,
+        1
+      ],
+      "commit_id": "commit_009_p_edge_adapter",
+      "cycle": 9,
+      "source_pocket": "p_edge_adapter",
+      "value": 1
+    },
+    {
+      "cell": [
+        0,
+        5
+      ],
+      "commit_id": "commit_011_p_edge_adapter",
+      "cycle": 11,
+      "source_pocket": "p_edge_adapter",
+      "value": 1
+    }
+  ],
+  "grid_shape": [
+    8,
+    8
+  ],
+  "run_id": "e63_pocket_observatory_sample",
+  "schema_version": "pocket_observatory_v1"
+}
