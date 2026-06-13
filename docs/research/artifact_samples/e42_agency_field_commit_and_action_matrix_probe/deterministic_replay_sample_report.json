@@ -1,0 +1,11 @@
+{
+  "artifact_hashes": {
+    "agency_field_report.json": "85e8a61850c910b435a691692dddedc29b2e4d66d330cf904a2e3cdec27af83a",
+    "decision_lane_report.json": "2247726c6023d0e261c0188e046a02e2bb9b5e7d65122a5ac1e84e6cefce8324",
+    "mutation_report.json": "fd2e6313df353d298ac59013be9d78b42cdf0fc8e51c0771a5fffc32b2fa5b90",
+    "row_level_results.jsonl": "d645c30357851bf4711c545f4350f2e82f7196b46f9307129b94a1418e2f1780",
+    "system_results.json": "bbbd461312fe2351aa24feeb618f6edaf22b1ce45ebc722f31fc4a7bbaf1db79"
+  },
+  "deterministic_replay_match_rate": 1.0,
+  "passed": true
+}

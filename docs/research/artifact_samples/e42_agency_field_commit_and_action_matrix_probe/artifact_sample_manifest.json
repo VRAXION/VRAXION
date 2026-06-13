@@ -1,0 +1,26 @@
+{
+  "milestone": "E42_AGENCY_FIELD_COMMIT_AND_ACTION_MATRIX_PROBE",
+  "required_files": [
+    "README.md",
+    "artifact_sample_manifest.json",
+    "aggregate_metrics_sample.json",
+    "system_results_sample.json",
+    "row_level_sample.jsonl",
+    "mutation_history_sample.jsonl",
+    "deterministic_replay_sample_report.json",
+    "sample_only_checker_result.json",
+    "sample_schema.json"
+  ],
+  "run_id": "41f4f597caa2a21a",
+  "sample_file_hashes": {
+    "README.md": "18db42ab3edebd52ed3628db0d14b8fce4c47a92e2fdbdc1cece973e62d27e2c",
+    "aggregate_metrics_sample.json": "143a492f4c726922f878480854dff9158a519b3f0cc927ead4ee0aeaee9dcbc9",
+    "artifact_sample_manifest.json": "0dfccbf89d95c920ab00692db35e8414fb165a12131a96a842154cca05a6be08",
+    "deterministic_replay_sample_report.json": "a8df9f89a04038502d97f901068a2c4f2cdf54d517b1e9d36148dd9d9d978634",
+    "mutation_history_sample.jsonl": "bcbbc7e3e40c3f011989f30bbcedff53b27919b0115b3040446feb097daeca77",
+    "row_level_sample.jsonl": "36eb4124bd88de45f1fd1ab13a274540810de0f53333bbc88c3e8199d1a6b38f",
+    "sample_only_checker_result.json": "fd89491fd6e71287a50743f9b8c6104f0df929a3b11d8c574afa6df19d34b362",
+    "sample_schema.json": "ced66490cf36834a84a5f997857a61f05ccb4f22482d991d9553ebf11f54e536",
+    "system_results_sample.json": "bbbd461312fe2351aa24feeb618f6edaf22b1ce45ebc722f31fc4a7bbaf1db79"
+  }
+}

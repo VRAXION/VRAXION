@@ -1,0 +1,112 @@
+{
+  "decision": "e42_agency_field_positive",
+  "milestone": "E42_AGENCY_FIELD_COMMIT_AND_ACTION_MATRIX_PROBE",
+  "run_id": "41f4f597caa2a21a",
+  "system_results": {
+    "agency_field_full_views_grow_shrink": {
+      "action_accuracy": 1.0,
+      "atom_count": 8,
+      "condition_count": 13,
+      "conflict_resolution_rate": 1.0,
+      "correct_ask_rate": 1.0,
+      "correct_defer_rate": 1.0,
+      "missed_commit_rate": 0.0,
+      "row_count": 960,
+      "trace_exact_rate": 1.0,
+      "unnecessary_call_rate": 0.0,
+      "wrong_commit_rate": 0.0
+    },
+    "agency_field_without_ground": {
+      "action_accuracy": 0.9,
+      "atom_count": 5,
+      "condition_count": 8,
+      "conflict_resolution_rate": 1.0,
+      "correct_ask_rate": 1.0,
+      "correct_defer_rate": 1.0,
+      "missed_commit_rate": 0.1,
+      "row_count": 960,
+      "trace_exact_rate": 0.6,
+      "unnecessary_call_rate": 0.0,
+      "wrong_commit_rate": 0.0
+    },
+    "direct_pocket_action_baseline": {
+      "action_accuracy": 0.4,
+      "atom_count": 0,
+      "condition_count": 0,
+      "conflict_resolution_rate": 0.0,
+      "correct_ask_rate": 0.0,
+      "correct_defer_rate": 0.0,
+      "missed_commit_rate": 0.0,
+      "row_count": 960,
+      "trace_exact_rate": 0.4,
+      "unnecessary_call_rate": 0.1,
+      "wrong_commit_rate": 0.5
+    },
+    "fixed_direct_decision_lanes_reference": {
+      "action_accuracy": 1.0,
+      "atom_count": 0,
+      "condition_count": 0,
+      "conflict_resolution_rate": 1.0,
+      "correct_ask_rate": 1.0,
+      "correct_defer_rate": 1.0,
+      "missed_commit_rate": 0.0,
+      "row_count": 960,
+      "trace_exact_rate": 1.0,
+      "unnecessary_call_rate": 0.0,
+      "wrong_commit_rate": 0.0
+    },
+    "full_monolith_oracle_control": {
+      "action_accuracy": 1.0,
+      "atom_count": 0,
+      "condition_count": 0,
+      "conflict_resolution_rate": 1.0,
+      "correct_ask_rate": 1.0,
+      "correct_defer_rate": 1.0,
+      "missed_commit_rate": 0.0,
+      "row_count": 960,
+      "trace_exact_rate": 1.0,
+      "unnecessary_call_rate": 0.0,
+      "wrong_commit_rate": 0.0
+    },
+    "oracle_agency_reference_only": {
+      "action_accuracy": 1.0,
+      "atom_count": 0,
+      "condition_count": 0,
+      "conflict_resolution_rate": 1.0,
+      "correct_ask_rate": 1.0,
+      "correct_defer_rate": 1.0,
+      "missed_commit_rate": 0.0,
+      "row_count": 960,
+      "trace_exact_rate": 1.0,
+      "unnecessary_call_rate": 0.0,
+      "wrong_commit_rate": 0.0
+    },
+    "random_action_control": {
+      "action_accuracy": 0.15104166666666666,
+      "atom_count": 0,
+      "condition_count": 0,
+      "conflict_resolution_rate": 0.17708333333333334,
+      "correct_ask_rate": 0.15625,
+      "correct_defer_rate": 0.13541666666666666,
+      "missed_commit_rate": 0.17291666666666666,
+      "row_count": 960,
+      "trace_exact_rate": 0.15104166666666666,
+      "unnecessary_call_rate": 0.15208333333333332,
+      "wrong_commit_rate": 0.3104166666666667
+    },
+    "simple_priority_arbiter": {
+      "action_accuracy": 0.6,
+      "atom_count": 0,
+      "condition_count": 0,
+      "conflict_resolution_rate": 0.25,
+      "correct_ask_rate": 1.0,
+      "correct_defer_rate": 0.0,
+      "missed_commit_rate": 0.0,
+      "row_count": 960,
+      "trace_exact_rate": 0.6,
+      "unnecessary_call_rate": 0.1,
+      "wrong_commit_rate": 0.3
+    }
+  },
+  "wall_time_seconds": 66.51922590000322
+}
