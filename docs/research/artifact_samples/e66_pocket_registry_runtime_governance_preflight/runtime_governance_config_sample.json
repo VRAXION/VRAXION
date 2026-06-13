@@ -1,0 +1,9 @@
+{
+  "policy": "PocketToken + Registry + Manager/Agency Guard",
+  "identity": "pocket_uid",
+  "integrity": "content_digest",
+  "binding": "token_hash",
+  "abi": "PocketABI-v1",
+  "load_allowed_lifecycles": ["Active", "Stable", "Specialist", "Core"],
+  "blocked_lifecycles": ["Candidate", "Quarantine", "Deprecated", "Banned"]
+}

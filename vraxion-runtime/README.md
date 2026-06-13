@@ -10,6 +10,7 @@ ready to present as a homogeneous core:
 binary ingress reassembly
 text field mode selection
 locked body v1 sizing
+PocketToken registry governance
 proposal boundary
 Agency commit/reject/defer
 trace-backed egress rendering
@@ -25,6 +26,7 @@ bit_codec      shared deterministic bit helpers
 binary_ingress frame encode/reassembly + integrity/requested-feature guards
 text_field     Agency-selected text frame modes
 body           Flow/Ground/Proposal/Agency locked body v1
+pocket         PocketToken, registry, digest/ABI/lifecycle load guard
 proposal       temporary Pocket proposal ABI
 agency         commit/reject/defer/answer boundary
 egress         rendering from committed state only
@@ -53,6 +55,7 @@ modules.
 cargo test -p vraxion-runtime
 cargo run -p vraxion-runtime --bin adversarial_probe --release -- 10000
 cargo run -p vraxion-runtime --bin locked_body_preflight --release -- 10000
+cargo run -p vraxion-runtime --bin pocket_governance_preflight --release -- 10000
 ```
 
 ## Boundary

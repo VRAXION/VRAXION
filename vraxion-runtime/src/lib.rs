@@ -14,6 +14,7 @@ pub mod binary_ingress;
 pub mod bit_codec;
 pub mod body;
 pub mod egress;
+pub mod pocket;
 pub mod proposal;
 pub mod text_field;
 
@@ -30,6 +31,10 @@ pub use body::{
     EXTENDED_BODY, OVERCAPACITY_AVOID_DEFAULT, PROPOSAL_WIDTH_64_CONTROL, RESEARCH_CEILING_BODY,
 };
 pub use egress::{render_output, EgressMode, RenderedOutput};
+pub use pocket::{
+    active_pocket_set, resolve_pocket_call, ActivePocket, LoadBlockReason, LoadDecision,
+    PocketLifecycle, PocketRegistryEntry, PocketToken,
+};
 pub use proposal::{ingress_to_proposal, Proposal, ProposalKind};
 pub use text_field::{select_text_mode, TextMode, TextProfile};
 

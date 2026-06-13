@@ -1,0 +1,2 @@
+{"timestamp_ms":1781377207893,"event":"start","rounds":1000000,"policy":"PocketToken+Registry+Guard"}
+{"timestamp_ms":1781377208158,"event":"complete","passed":true,"cases":8000001,"success":8000001,"unsafe_load":0}
