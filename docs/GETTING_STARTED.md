@@ -6,6 +6,8 @@ _Last updated: 2026-06-13_
 
 ```text
 branch = main
+current_release = v5.0.0-e75.0
+release_head = 41fc0af81d1aec27220a653fdfc8666f748a228f
 runtime_slice = 3f519732949b73d5b55ae90a740381ca81143948
 runtime_subject = Add Rust final curriculum runner
 base_runtime_slice = 0879a2c004cf6a002bd5639d9cb7a759709a41aa Extract Rust final bake API

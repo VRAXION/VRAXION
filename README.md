@@ -2,12 +2,14 @@
 
 VRAXION is building **INSTNCT**: a Rust-first, gradient-free architecture whose active object is a governed computational substrate, not a fixed backprop-trained layer stack.
 
-This repository is being consolidated around the current winning mainline. Historical beta, bounded-service, byte-pipeline, and probe-era work is retained for auditability, but it is not the active sales surface unless promoted back into `main`.
+This repository has been consolidated around the current winning mainline. Historical beta, bounded-service, byte-pipeline, and probe-era work is retained for auditability, but it is not the active sales surface unless promoted back into `main`.
 
 ## Current Source Of Truth
 
 ```text
 branch = main
+current_release = v5.0.0-e75.0
+release_head = 41fc0af81d1aec27220a653fdfc8666f748a228f
 runtime_slice = 3f519732949b73d5b55ae90a740381ca81143948
 runtime_subject = Add Rust final curriculum runner
 base_runtime_slice = 0879a2c004cf6a002bd5639d9cb7a759709a41aa Extract Rust final bake API
@@ -44,6 +46,7 @@ The current engineering priority is reliability of the model lifecycle: guarded 
 ## What Is Current
 
 - Rust runtime surface: [`vraxion-runtime/`](vraxion-runtime/)
+- Current GitHub release: [`v5.0.0-e75.0`](https://github.com/VRAXION/VRAXION/releases/tag/v5.0.0-e75.0)
 - Current docs:
   - [`docs/CURRENT_STATUS.md`](docs/CURRENT_STATUS.md)
   - [`docs/GETTING_STARTED.md`](docs/GETTING_STARTED.md)

@@ -6,6 +6,8 @@ _Last updated: 2026-06-13_
 
 ```text
 Current source of truth: main
+Current GitHub release: v5.0.0-e75.0
+Current release head: 41fc0af81d1aec27220a653fdfc8666f748a228f
 Current runtime slice: 3f519732949b73d5b55ae90a740381ca81143948
 Current runtime subject: E75 Rust final curriculum pocket-generation runner
 Base runtime slice: 0879a2c004cf6a002bd5639d9cb7a759709a41aa E74 Rust final bake API extraction
@@ -59,5 +61,5 @@ Not claimed:
 ## Next Work
 
 1. Keep public docs aligned to the E75+ mainline.
-2. Remove or archive stale repo docs that describe older lines as current.
-3. Cut a new release only after the E75+ surface is verified and intentionally packaged.
+2. Treat old beta/grower/byte-pipeline releases as historical evidence unless a later slice explicitly promotes them.
+3. Cut the next release only after a newer runtime slice passes the same evidence gate.

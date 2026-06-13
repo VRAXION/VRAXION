@@ -6,14 +6,21 @@ history and archive tags.
 
 ## 2026-06-13 - E75 Final Curriculum Runner
 
+- Current GitHub release: `v5.0.0-e75.0`.
+- Current main head: `41fc0af81d1aec27220a653fdfc8666f748a228f`
+  (`Prune legacy ignore rules`).
 - Current runtime slice: `3f519732949b73d5b55ae90a740381ca81143948`
   (`Add Rust final curriculum runner`).
 - E74 runtime slice: `0879a2c004cf6a002bd5639d9cb7a759709a41aa`
   (`Extract Rust final bake API`).
 - E73 runtime slice: `51cd82a11d8f1d2b98ee3e49538c7c26afdb767b`
   (`Add Rust final bake preflight`).
-- Public docs aligned at `7742e714` (`Align public docs with E73 final bake
-  preflight`).
+- Public docs aligned at `75bac550` (`Align public docs with E75 final
+  curriculum runner`).
+- Duplicate advanced CodeQL workflow removed at `03629e06` because GitHub
+  default CodeQL setup is the active code scanning source.
+- Legacy `.gitignore` rules for removed Python/Rust SDK/instnct/output surfaces
+  pruned at `41fc0af8`.
 - GitHub branch surface reduced to `main`; 52 former branch heads preserved
   under `archive/branches/2026-06-13/*`.
 - Wiki preserved before cleanup under
