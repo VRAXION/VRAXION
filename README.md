@@ -8,14 +8,14 @@ This repository is being consolidated around the current winning mainline. Histo
 
 ```text
 branch = main
-runtime_slice = 51cd82a11d8f1d2b98ee3e49538c7c26afdb767b
-runtime_subject = Add Rust final bake preflight
-base_runtime_slice = fffc5a438078592c7ca97fd9a840fa5a7948b353 Add Rust curriculum resume preflight
+runtime_slice = 0879a2c004cf6a002bd5639d9cb7a759709a41aa
+runtime_subject = Extract Rust final bake API
+base_runtime_slice = 51cd82a11d8f1d2b98ee3e49538c7c26afdb767b Add Rust final bake preflight
 ```
 
 ## Current Mainline
 
-The active line is E73 on top of E72, E71, E70, and E69:
+The active line is E74 on top of E73, E72, E71, E70, and E69:
 
 | Slice | Commit | Purpose |
 |---|---|---|
@@ -24,6 +24,7 @@ The active line is E73 on top of E72, E71, E70, and E69:
 | E71 | `c9dcad01` | Curriculum queue preflight |
 | E72 | `fffc5a43` | Curriculum resume preflight |
 | E73 | `51cd82a1` | Unified Rust final-bake preflight |
+| E74 | `0879a2c0` | Final-bake library API extraction |
 
 ```text
 Pocket Library store
@@ -32,10 +33,11 @@ Pocket Library store
   -> queued curriculum rows
   -> resumable checkpoint/progress stream
   -> unified final-bake gate
+  -> reusable final-bake library API
   -> audited write-back only after successful promotion
 ```
 
-The current engineering priority is reliability of the model lifecycle: guarded loading, token/artifact/ledger integrity, queued execution, resumable progress, unified final-bake validation, and safe promotion.
+The current engineering priority is reliability of the model lifecycle: guarded loading, token/artifact/ledger integrity, queued execution, resumable progress, unified final-bake validation, reusable audit APIs, and safe promotion.
 
 ## What Is Current
 
@@ -54,9 +56,9 @@ Allowed current claim:
 
 > VRAXION has a Rust mainline for persistent Pocket Library governance and resumable curriculum execution preflights.
 
-Current E73 extension:
+Current E74 extension:
 
-> VRAXION has a unified Rust final-bake preflight over the locked runtime mechanics.
+> VRAXION exposes the final-bake gate through a reusable Rust library API while preserving the CLI preflight and continuous progress artifacts.
 
 Do not claim from this repo state alone:
 
@@ -81,6 +83,12 @@ The wiki pre-cleanup state is preserved under:
 
 ```text
 archive/wiki/pre-consolidation-2026-06-13
+```
+
+The pre-E74 public-surface cleanup repo state is preserved under:
+
+```text
+archive/repo/pre-e74-public-surface-cleanup-2026-06-13
 ```
 
 See [`ARCHIVE.md`](ARCHIVE.md) and the [Consolidation Archive wiki page](https://github.com/VRAXION/VRAXION/wiki/Consolidation-Archive-2026-06-13).

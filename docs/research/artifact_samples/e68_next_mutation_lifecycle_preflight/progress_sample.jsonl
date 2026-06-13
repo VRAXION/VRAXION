@@ -1,2 +1,0 @@
-{"timestamp_ms":1781378205498,"event":"start","rounds":1000000,"policy":"E51 next mutation lifecycle"}
-{"timestamp_ms":1781378205584,"event":"complete","passed":true,"cases":7000000,"success":7000000,"golden_disc_count":1000000,"bad_promotion":0,"missed_golden":0}

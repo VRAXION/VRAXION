@@ -1,5 +1,0 @@
-{
-  "edge_adapter_chain": true,
-  "gradient_descent_used": false,
-  "milestone": "E48_EDGE_ADAPTER_CHAIN_DRIFT_AND_CHECKPOINT_PROBE"
-}

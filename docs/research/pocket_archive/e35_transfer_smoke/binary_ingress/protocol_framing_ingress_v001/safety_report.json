@@ -1,6 +1,0 @@
-{
-  "frozen_anchor_mutation_allowed": false,
-  "mutable_working_copy_required_for_repair": true,
-  "negative_transfer_control_required": true,
-  "wrong_pocket_must_not_silently_improve": true
-}

@@ -1,5 +1,0 @@
-{
-  "lesson": {"requested_feature": 7, "value": 1, "source_pocket_id": 42},
-  "expected_path": "PocketToken active set -> guarded load -> Proposal Field -> Agency commit -> Flow/Ground sync -> trace egress -> safe promotion",
-  "direct_flow_write_allowed": false
-}

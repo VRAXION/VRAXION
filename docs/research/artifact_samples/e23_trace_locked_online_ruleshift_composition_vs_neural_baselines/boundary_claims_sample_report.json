@@ -1,5 +1,0 @@
-{
-  "boundary": "E23 is a controlled online ruleshift symbolic-composition proxy. It tests whether stateful Flow/Pocket-style update and trace emission can beat standard neural baselines when per-episode codebooks, support examples, rule shifts, counterfactuals, and trace-locked output are required. It does not prove raw language reasoning, production readiness, AGI, consciousness, or model-scale behavior.",
-  "forbidden_claims_present": false,
-  "passed": true
-}

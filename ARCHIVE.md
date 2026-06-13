@@ -38,6 +38,8 @@ Historical surfaces are preserved as archive tags or explicit cleanup snapshot b
 
 **Branch-head snapshots (2026-04-25 → 2026-04-28):**
 
+- `archive/repo/pre-e74-public-surface-cleanup-2026-06-13` — full `main` snapshot after E74 API extraction and before the public-surface cleanup that removed stale `instnct-core`, old Python/Rust deploy SDKs, tools/scripts/probes, tracked output artifacts, stale Pages blocks/playground, stale repo wiki mirror, product/release drafts, and non-E73/E74 research residue from active `main`.
+- `archive/repo/pre-e73-public-surface-cleanup-2026-06-13` — full `main` snapshot before E73-era public docs were cleaned up; retained as an older restore point below E74.
 - `archive/branches/2026-06-13/*` — exact heads of all 52 non-main remote branches deleted during the 2026-06-13 GitHub branch cleanup. Active branch surface after cleanup: `main` only.
 - `archive/wiki/pre-consolidation-2026-06-13` — full GitHub wiki state before the June 13 wiki page cleanup and rewrite.
 - `archive/pre-consolidation-20260519-main-snapshot` — main HEAD before the 2026-05-19 consolidation pass that removed historical scratch tools and non-current pre-bounded probe runners from active `main`. Use this branch for any removed `tools/_scratch/` script or old `scripts/probes/` runner.
@@ -58,6 +60,7 @@ git checkout <tag> -- path/to/file
 
 ## Removed from `main` (preserved only in git history)
 
+- E74 public-surface cleanup removed stale `instnct-core/`, `Python/`, `Rust/`, `tools/`, `scripts/`, tracked `output/`, AnchorWeave data scaffolds, stale Pages `docs/blocks/` and `docs/playground/`, the repo-local stale `docs/wiki/` mirror, product/release draft bundles, and non-E73/E74 research residue. Restore from `archive/repo/pre-e74-public-surface-cleanup-2026-06-13`.
 - `v4/`, `v4.2/`, `legacy/` — removed in `v5.0.0-beta.1` (preserved in git history)
 - `RESEARCH_NOTICE_V5_MISMATCH.md` — removed on 2026-03-27 (issue resolved)
 - `docs/instnct/`, `docs/byte-embedder/`, `docs/research/`, `docs/rust/`, `docs/pages/brain_replay/`, `docs/vraxion-connectome-explorer.html` — removed on 2026-04-20 as orphan legacy Pages under the pre-Blocks nav (commit `92f313b`). Content reachable via `git show 92f313b^:<path>`.

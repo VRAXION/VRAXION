@@ -1,3 +1,0 @@
-{"schema_version":"visual_snapshot_v1","run_id":"stable_loop_phase_lock_053_real_run_ingest","checkpoint":0,"graph_path":"graph/checkpoint_000.json","tick_paths":[],"summary":"049 no-grammar collapse baseline"}
-{"schema_version":"visual_snapshot_v1","run_id":"stable_loop_phase_lock_053_real_run_ingest","checkpoint":50,"graph_path":"graph/checkpoint_050.json","tick_paths":[],"summary":"048 reference partial behavior"}
-{"schema_version":"visual_snapshot_v1","run_id":"stable_loop_phase_lock_053_real_run_ingest","checkpoint":100,"graph_path":"graph/checkpoint_100.json","tick_paths":["ticks/checkpoint_100_tick_000.json","ticks/checkpoint_100_tick_001.json"],"summary":"049 route-grammar train-and-infer pass"}

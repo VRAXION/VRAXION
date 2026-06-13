@@ -1,8 +1,0 @@
-{
-  "aggregate_hash": "3366b1dab7b27cda7bfd9796bb227f8bb26403bb7fca2021721e2222edb23ba2",
-  "deterministic_replay_match_rate": 1.0,
-  "passed": true,
-  "replay_hash": "5b94868897962a1df888d4fb4f04d52d2481109bc8f3f8710fb75605dc2e1835",
-  "rows_hash": "4bc514f319ae591569235275c0f0c3c5da78537f41ebe2cc3990d2be6fbf14d7",
-  "system_results_hash": "7d1cf202cb81aaac579d1b82b86780cec1f8f9bcf92c8227f8a63431a84ec231"
-}

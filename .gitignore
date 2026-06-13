@@ -89,10 +89,6 @@ VRAXION.wiki/
 # Telemetry / probe output
 *.jsonl
 
-# Committed visual research sample bundles intentionally include JSONL.
-!docs/research/visual_samples/
-!docs/research/visual_samples/**
-
 # Log files
 *.log
 
@@ -119,20 +115,8 @@ instnct-core/results/
 /results/
 /.claude/
 
-# Local frontend dependency/build artifacts
-tools/visual_lab/node_modules/
-tools/visual_lab/.svelte-kit/
-
 # Local playwright / browser-check outputs (screenshots + test specs)
 output/*
-!output/merger_single_w_huffman_pack/
-!output/merger_single_w_huffman_pack/**
-!output/word_tokenizer_champion/
-!output/word_tokenizer_champion/**
-!output/byte_unit_champion_binary_c19_h16/
-!output/byte_unit_champion_binary_c19_h16/**
-!output/block_c_bytepair_champion/
-!output/block_c_bytepair_champion/**
 
 # Grower / lab scratch that should never leak into the public mainline
 instnct-core/*_log.txt

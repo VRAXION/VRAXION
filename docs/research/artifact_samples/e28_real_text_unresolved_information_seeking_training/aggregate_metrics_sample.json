@@ -1,7 +1,0 @@
-{
-  "best_system": "keyword_regex_reference",
-  "decision": "e28_real_text_signal_sparse_needs_synthetic_bridge",
-  "deterministic_replay_match_rate": 1.0,
-  "run_id": "cc46adbec629dd70",
-  "sample_row_count": 320
-}

@@ -1,8 +1,8 @@
 cff-version: 1.2.0
 message: "If you use this software, please cite it as below."
-title: "VRAXION Self-Wiring Graph"
-version: "5.0.0-beta.9"
-date-released: "2026-05-01"
+title: "VRAXION E74 Rust Runtime"
+version: "main-2026-06-13-e74"
+date-released: "2026-06-13"
 type: software
 authors:
   - family-names: Kenessy
@@ -11,8 +11,7 @@ repository-code: "https://github.com/VRAXION/VRAXION"
 keywords:
   - ai
   - self-wiring-graph
-  - graph-learning
-  - mutation-selection
-  - recurrent-graphs
-  - research
-  - benchmark
+  - pocket-library
+  - runtime-governance
+  - checkpoint-resume
+  - final-bake-preflight

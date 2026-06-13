@@ -1,6 +1,0 @@
-{
-  "default_body": {"name":"near_28f_32g_20x80_default","flow_shape":[28,28],"ground_shape":[32,32],"proposal_slots":20,"proposal_bits":80,"agency_view_bits":896,"total_work_cells":4304},
-  "extended_body": {"name":"wide_32x32_20x80","flow_shape":[32,32],"ground_shape":[32,32],"proposal_slots":20,"proposal_bits":80,"agency_view_bits":1024},
-  "research_ceiling_body": {"name":"large_48x48_24x80","flow_shape":[48,48],"ground_shape":[48,48]},
-  "avoid_default_body": {"name":"oversized_64x64_32x80","flow_shape":[64,64],"ground_shape":[64,64]}
-}

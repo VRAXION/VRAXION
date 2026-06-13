@@ -4,11 +4,9 @@ Describe what changed and why.
 
 ## Scope
 
-- [ ] Rust mainline (`instnct-core/`) — grower, network core, examples
-- [ ] Python deploy SDK (`Python/` — Block A + B)
-- [ ] Rust deploy SDK (`Rust/` — Block A + B)
-- [ ] Benchmark or sweep (`tools/`)
-- [ ] Docs or repo cleanup (`docs/`, `README.md`, wiki)
+- [ ] Rust runtime (`vraxion-runtime/`)
+- [ ] Final-bake or preflight behavior
+- [ ] Docs or repo cleanup (`README.md`, `docs/`, wiki)
 - [ ] CI or tooling (`.github/workflows/`)
 
 ## Validation
@@ -17,10 +15,10 @@ Commands run (or N/A):
 
 ```bash
 # example
-python -m compileall Python tools
-python -m pytest Python/ -q
-python tools/check_public_surface.py
-cargo test -p instnct-core
+cargo fmt --check -p vraxion-runtime
+cargo clippy -p vraxion-runtime --all-targets -- -D warnings
+cargo test -p vraxion-runtime
+cargo run --release -p vraxion-runtime --bin final_bake_preflight -- 1000 target/ci/e74_final_bake_smoke
 ```
 
 ## Docs / links (if applicable)

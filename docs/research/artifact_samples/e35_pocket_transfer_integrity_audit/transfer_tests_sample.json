@@ -1,9 +1,0 @@
-{
-  "bitslip_target_adapter": 0.3527777777777778,
-  "localized_ablation_drop": -0.22666666666666657,
-  "same_codebook_zero_shot": 1.0,
-  "shifted_codebook_adapter": 0.7411111111111112,
-  "shifted_codebook_frozen": 0.0,
-  "stable_target_adapter": 1.0,
-  "wrong_pocket_target": 0.0
-}

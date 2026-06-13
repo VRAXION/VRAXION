@@ -1,7 +1,0 @@
-{
-  "entries": [
-    {"pocket_uid":"pkt_base","human_alias":"renamed_base","lifecycle":"stable"},
-    {"pocket_uid":"gold_a","human_alias":"safe_promoted","lifecycle":"core"},
-    {"pocket_uid":"gold_b","human_alias":"safe_promoted","lifecycle":"core"}
-  ]
-}

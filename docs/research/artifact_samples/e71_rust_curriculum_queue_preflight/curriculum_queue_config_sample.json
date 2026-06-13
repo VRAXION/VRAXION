@@ -1,8 +1,0 @@
-{
-  "runner": "rust_curriculum_queue_preflight",
-  "queue_length": 4,
-  "lesson_families": ["frame_integrity", "requested_feature_match", "trace_commit", "reload_writeback"],
-  "body": "near_28f_32g_20x80_default",
-  "active_set_limit": 4,
-  "heartbeat_seconds": 20
-}

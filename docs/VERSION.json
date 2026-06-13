@@ -1,15 +1,15 @@
 {
-  "current_release": "main-2026-06-13-e73",
+  "current_release": "main-2026-06-13-e74",
   "current_channel": "mainline-pre-release",
   "previous_stable": "v4.2.0",
-  "internal_code_path": "instnct-core/",
+  "internal_code_path": "vraxion-runtime/",
   "architecture_line": "INSTNCT",
-  "current_runtime_head": "51cd82a11d8f1d2b98ee3e49538c7c26afdb767b",
-  "current_mainline": "E73 Rust final bake preflight on E72 resume, E71 queue, E70 runner, and E69 persistent Pocket Library store",
+  "current_runtime_head": "0879a2c004cf6a002bd5639d9cb7a759709a41aa",
+  "current_mainline": "E74 Rust final bake API extraction on E73 final bake, E72 resume, E71 queue, E70 runner, and E69 persistent Pocket Library store",
   "bounded_local_private_status": "historical evidence; not the current front-door mainline",
   "open_vocab_capability_status": "historical research evidence; not the current front-door mainline",
   "claim_boundary": "no production chat, public API, hosted SaaS, GPT-like readiness, open-domain assistant readiness, safety-alignment claim, consciousness, or sentience claim",
-  "rust_surface": "vraxion-runtime (Rust, primary)",
-  "python_surface": "archived at tag archives/python-research-20260420 (frozen 2026-04-20; was instnct/)",
-  "python_deploy_sdk": "Python/ (Block A + B numpy deploy SDK)"
+  "rust_surface": "vraxion-runtime (Rust, sole active mainline)",
+  "python_surface": "historical; removed from main in archive/repo/pre-e74-public-surface-cleanup-2026-06-13",
+  "python_deploy_sdk": "historical byte-pipeline deploy SDK; archived by the E74 public surface cleanup"
 }

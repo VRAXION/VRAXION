@@ -1,8 +1,0 @@
-{
-  "direct_eval_usage_detected_in_valid_systems": false,
-  "explicit_shift_assignment_visible": false,
-  "invalid_direct_rule_engine_control_present": true,
-  "invalid_oracle_information_seeking_control_present": true,
-  "oracle_leakage_detected_in_valid_systems": false,
-  "passed": true
-}

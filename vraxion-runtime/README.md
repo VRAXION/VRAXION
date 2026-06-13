@@ -1,6 +1,6 @@
 # VRAXION Runtime
 
-Minimal locked Rust runtime kernel for the current VRAXION probe stack.
+Minimal locked Rust runtime kernel for the current VRAXION mainline.
 
 This crate is deliberately small. It is not a training system and not a general
 assistant. It contains only the currently locked runtime mechanics that are
@@ -23,8 +23,9 @@ Agency commit/reject/defer
 trace-backed egress rendering
 ```
 
-The research probes remain in `scripts/probes/`. This crate is the deterministic
-runtime kernel those probes can converge toward.
+Older research probes were removed from active `main` during the E74 public
+surface cleanup and remain available from the archive tags. This crate is now
+the only active runtime surface.
 
 ## Module map
 
@@ -57,9 +58,8 @@ Extended mode is `32x32` Flow/Ground and remains Agency-selected only. The
 runtime keeps `48x48` as a research ceiling and treats `64x64` as an
 overcapacity control, not a default.
 
-The public API is re-exported from `lib.rs` so older probes can keep importing
-`vraxion_runtime::*` while the implementation stays split into audit-friendly
-modules.
+The public API is re-exported from `lib.rs` while the implementation stays split
+into audit-friendly modules.
 
 ## Run
 

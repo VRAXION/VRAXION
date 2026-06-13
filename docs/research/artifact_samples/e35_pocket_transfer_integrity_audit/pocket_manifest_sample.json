@@ -1,8 +1,0 @@
-{
-  "adapter_boundary": "world-specific raw feature codebook is outside frozen pocket",
-  "archive_dir": "docs\\research\\pocket_archive\\e35_transfer_smoke\\binary_ingress\\protocol_framing_ingress_v001",
-  "contract": "binary stream framing and requested-feature-safe Flow commit",
-  "frozen_params_sha256": "c55e1f9a499afdf2cd49bf2231b307efbc07a9bf3034c17bb41f30808b874090",
-  "pocket_id": "ProtocolFramingIngressPocket",
-  "version": "v001"
-}

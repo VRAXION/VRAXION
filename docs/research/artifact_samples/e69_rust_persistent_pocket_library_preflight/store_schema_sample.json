@@ -1,5 +1,0 @@
-{
-  "store": "persistent_library/rust_persistent_store_plus_adversarial_stress",
-  "files": ["registry.json", "tokens.json", "artifacts/*.json", "lifecycle_ledger.jsonl", "access_ledger.jsonl", "promotion_ledger.jsonl", "score_ledger.jsonl"],
-  "guards": ["digest", "token", "abi", "lifecycle", "stale_token", "concurrent_write", "unsafe_promotion"]
-}

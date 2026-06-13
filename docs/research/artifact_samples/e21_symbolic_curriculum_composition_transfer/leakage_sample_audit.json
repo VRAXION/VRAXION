@@ -1,8 +1,0 @@
-{
-  "direct_eval_usage_detected": false,
-  "hand_solver_primary_detected": false,
-  "oracle_answer_leakage_detected": false,
-  "oracle_parse_tree_leakage_detected": false,
-  "passed": true,
-  "sympy_usage_detected": false
-}

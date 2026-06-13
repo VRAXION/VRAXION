@@ -8,35 +8,32 @@ on:
   workflow_dispatch:
 
 jobs:
-  python-deploy-sdk-ci:
+  rust-runtime-ci:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Python
-        uses: actions/setup-python@v5
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
         with:
-          python-version: "3.11"
+          components: rustfmt, clippy
 
-      - name: Install deps
-        run: |
-          python -m pip install -U pip
-          python -m pip install -r requirements.txt
-          python -m pip install pytest
+      - name: Cache cargo artifacts
+        uses: Swatinem/rust-cache@v2
 
-      - name: Compile sanity
-        run: |
-          python -m compileall Python tools
+      - name: Rust format
+        run: cargo fmt --check -p vraxion-runtime
 
-      - name: Python deploy SDK tests (Block A + B)
-        run: |
-          python -m pytest Python/ -q
+      - name: Rust clippy
+        run: cargo clippy -p vraxion-runtime --all-targets -- -D warnings
 
-      - name: Public surface consistency
-        run: |
-          python tools/check_public_surface.py
+      - name: Rust runtime tests
+        run: cargo test -p vraxion-runtime
 
-      - name: Wiki mirror dry-run
+      - name: Final bake smoke with progress artifacts
         run: |
-          python tools/sync_wiki_from_repo.py --dry-run
+          cargo run --release -p vraxion-runtime --bin final_bake_preflight -- 1000 target/ci/e74_final_bake_smoke
+          test -f target/ci/e74_final_bake_smoke/progress.jsonl
+          test -f target/ci/e74_final_bake_smoke/final_bake_results.json
+          test -f target/ci/e74_final_bake_smoke/report.md

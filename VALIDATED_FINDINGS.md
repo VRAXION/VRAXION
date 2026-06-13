@@ -8,9 +8,9 @@ This is the active evidence summary for the current repo state. Historical findi
 
 ```text
 branch = main
-runtime_slice = 51cd82a11d8f1d2b98ee3e49538c7c26afdb767b
-current_runtime_slice = E73 Rust final bake preflight
-base_runtime_slice = fffc5a438078592c7ca97fd9a840fa5a7948b353 E72 Rust curriculum resume preflight
+runtime_slice = 0879a2c004cf6a002bd5639d9cb7a759709a41aa
+current_runtime_slice = E74 Rust final bake API extraction
+base_runtime_slice = 51cd82a11d8f1d2b98ee3e49538c7c26afdb767b E73 Rust final bake preflight
 ```
 
 ## Current Mainline Chain
@@ -22,18 +22,19 @@ base_runtime_slice = fffc5a438078592c7ca97fd9a840fa5a7948b353 E72 Rust curriculu
 | E71 | `c9dcad01` | Curriculum queue preflight on top of the runner layer. | Current mainline |
 | E72 | `fffc5a43` | Curriculum resume preflight on top of the queue layer. | Current mainline |
 | E73 | `51cd82a1` | Unified Rust final-bake preflight over the locked mechanics. | Current mainline |
+| E74 | `0879a2c0` | Final-bake logic extracted into a reusable Rust API while preserving the CLI preflight artifact contract. | Current mainline |
 
 ## Current Validated Claim
 
 > VRAXION has a Rust mainline for persistent Pocket Library governance and resumable curriculum execution preflights.
 
-Current E73 extension:
+Current E74 extension:
 
-> VRAXION has a unified Rust final-bake preflight over the locked runtime mechanics.
+> VRAXION exposes the final-bake gate through a reusable Rust library API while preserving the CLI preflight and continuous progress artifacts.
 
 ## Operational Finding
 
-Long-running work must write progress continuously and support resume. The E72 resume preflight proves the resume path; the E73 final-bake preflight proves the locked chain can be validated from one consolidated Rust entrypoint with progress artifacts.
+Long-running work must write progress continuously and support resume. The E72 resume preflight proves the resume path; the E73 final-bake preflight proves the locked chain can be validated from one consolidated Rust entrypoint with progress artifacts; E74 keeps that CLI contract and makes the final-bake gate reusable from Rust code.
 
 ## Hard Boundary
 
@@ -48,7 +49,7 @@ This file does not claim:
 
 ## Historical Evidence
 
-Previous bounded-service, open-vocab assistant, beta release, grower, byte-pipeline, and C19/EP results are historical evidence. They can still be useful for research context, but they are not the current mainline unless promoted back into E73+ code and docs.
+Previous bounded-service, open-vocab assistant, beta release, grower, byte-pipeline, and C19/EP results are historical evidence. They can still be useful for research context, but they are not the current mainline unless promoted back into E74+ code and docs.
 
 Primary archive surfaces:
 

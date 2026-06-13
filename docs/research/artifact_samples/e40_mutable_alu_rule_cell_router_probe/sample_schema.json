@@ -1,6 +1,0 @@
-{
-  "alu_rule_cell_router": true,
-  "footprint_logging_v1": true,
-  "gradient_descent_used": false,
-  "milestone": "E40_MUTABLE_ALU_RULE_CELL_ROUTER_PROBE"
-}

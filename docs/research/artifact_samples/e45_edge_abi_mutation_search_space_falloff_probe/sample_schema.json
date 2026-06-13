@@ -1,5 +1,0 @@
-{
-  "edge_abi_falloff": true,
-  "gradient_descent_used": false,
-  "milestone": "E45_EDGE_ABI_MUTATION_SEARCH_SPACE_FALLOFF_PROBE"
-}

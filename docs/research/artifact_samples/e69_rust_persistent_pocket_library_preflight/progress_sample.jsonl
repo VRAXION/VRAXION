@@ -1,2 +1,0 @@
-{"timestamp_ms":1781379104358,"event":"start","rounds":1000000,"policy":"E54 Rust persistent store"}
-{"timestamp_ms":1781379105815,"event":"complete","passed":true,"curriculum_rows":1000000,"adversarial_blocks":8000000,"unsafe_load":0}

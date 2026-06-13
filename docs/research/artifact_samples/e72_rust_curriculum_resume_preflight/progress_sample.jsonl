@@ -1,4 +1,0 @@
-{"timestamp_ms":1781381425701,"event":"start","rounds":1000000,"policy":"Rust curriculum resume"}
-{"timestamp_ms":1781381439998,"event":"reference_complete","queues":1000000,"lessons":4000000,"checksum":7802516916729865757}
-{"timestamp_ms":1781381447200,"event":"checkpoint_mid","queues":500000,"lessons":2000000,"checksum":17618983261690578895}
-{"timestamp_ms":1781381454932,"event":"complete","passed":true,"resumed_queues":1000000,"resumed_lessons":4000000,"checksum_match":true}

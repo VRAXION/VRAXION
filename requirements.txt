@@ -1,9 +1,0 @@
-# Core self-wiring graph dependencies
-numpy>=1.24
-
-# Optional benchmark helpers
-scipy>=1.10
-
-# Optional acceleration / prototype paths
-# numba>=0.58
-# torch>=2.1

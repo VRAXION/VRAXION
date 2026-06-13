@@ -1,9 +1,0 @@
-{
-  "policy": "hard safety gate -> vector score -> challenger sweep -> reload/shadow import -> scope-limited promotion",
-  "score_dimensions": ["utility", "safety", "eligible_activation", "generality", "uniqueness", "transfer", "robustness", "cost", "stability", "scope_clarity"],
-  "core_requires_challenger": true,
-  "rare_critical_activation_is_eligibility_conditioned": true,
-  "final_answer_only_allowed": false,
-  "popularity_only_allowed": false,
-  "scalar_average_only_allowed": false
-}
