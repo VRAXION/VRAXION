@@ -15,6 +15,7 @@ pub mod bit_codec;
 pub mod body;
 pub mod egress;
 pub mod manager;
+pub mod next_mutation;
 pub mod pocket;
 pub mod proposal;
 pub mod text_field;
@@ -35,6 +36,11 @@ pub use egress::{render_output, EgressMode, RenderedOutput};
 pub use manager::{
     evaluate_promotion, ChallengerEvidence, PromotionBlockReason, PromotionEvidence,
     PromotionLevel, PromotionVerdict, SafetyGate, ScoreVector,
+};
+pub use next_mutation::{
+    evaluate_next_mutation_lifecycle, GoldenDiscRecord, MutationBlockReason,
+    MutationLifecycleStage, MutationStats, NextMutationEvidence, NextMutationVerdict,
+    S_RANK_QUALITY_THRESHOLD, UNIQUE_VALUE_THRESHOLD,
 };
 pub use pocket::{
     active_pocket_set, resolve_pocket_call, ActivePocket, LoadBlockReason, LoadDecision,

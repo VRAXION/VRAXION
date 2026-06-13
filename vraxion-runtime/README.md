@@ -12,6 +12,7 @@ text field mode selection
 locked body v1 sizing
 PocketToken registry governance
 Pocket Manager promotion policy
+Next Mutation lifecycle gate
 proposal boundary
 Agency commit/reject/defer
 trace-backed egress rendering
@@ -29,6 +30,7 @@ text_field     Agency-selected text frame modes
 body           Flow/Ground/Proposal/Agency locked body v1
 pocket         PocketToken, registry, digest/ABI/lifecycle load guard
 manager        vector score + challenger promotion policy
+next_mutation  one-slot candidate -> mutation/rollback -> Golden Disc lifecycle
 proposal       temporary Pocket proposal ABI
 agency         commit/reject/defer/answer boundary
 egress         rendering from committed state only
@@ -59,6 +61,7 @@ cargo run -p vraxion-runtime --bin adversarial_probe --release -- 10000
 cargo run -p vraxion-runtime --bin locked_body_preflight --release -- 10000
 cargo run -p vraxion-runtime --bin pocket_governance_preflight --release -- 10000
 cargo run -p vraxion-runtime --bin pocket_manager_preflight --release -- 10000
+cargo run -p vraxion-runtime --bin next_mutation_preflight --release -- 10000
 ```
 
 ## Boundary

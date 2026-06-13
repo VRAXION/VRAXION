@@ -1,0 +1,11 @@
+{
+  "policy": "one Next Mutation slot -> light probe -> mutation/rollback refinement -> prune/crystallize -> uniqueness -> challenger -> Golden Disc",
+  "single_active_slot_required": true,
+  "sandbox_only_required": true,
+  "proposal_only_required": true,
+  "mutation_rollback_required": true,
+  "rollback_count_must_equal_rejected": true,
+  "unique_value_threshold": 0.05,
+  "s_rank_quality_threshold": 0.999,
+  "direct_flow_write_allowed": false
+}
