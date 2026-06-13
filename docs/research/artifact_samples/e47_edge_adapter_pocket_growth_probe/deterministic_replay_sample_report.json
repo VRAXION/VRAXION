@@ -1,0 +1,10 @@
+{
+  "deterministic_replay_match_rate": 1.0,
+  "hashes": {
+    "adapter_growth_report_hash": "0abbc89642e3c4e7100a54b0177de929d40121a2089cc47ad78586f146b08e4f",
+    "aggregate_metrics_hash": "8c10507c229f17ef4ff9e1918ce44f11d1f265ef5d27a3c21809c15d6eac128f",
+    "row_level_results_hash": "632cc4c62013de9a2b5453385139b965e674a5869a9319e592b70d9f0a62723c",
+    "system_results_hash": "b6862affc8cee7a9dfcd5805d03388acbc5f64c30a3b1f09d7aa32e94f2b04ba"
+  },
+  "passed": true
+}

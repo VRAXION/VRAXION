@@ -1,0 +1,13 @@
+{
+  "files": [
+    "README.md",
+    "adapter_curve_sample.jsonl",
+    "adapter_growth_report_sample.json",
+    "aggregate_metrics_sample.json",
+    "deterministic_replay_sample_report.json",
+    "row_level_sample.jsonl",
+    "sample_schema.json",
+    "system_results_sample.json"
+  ],
+  "milestone": "E47_EDGE_ADAPTER_POCKET_GROWTH_PROBE"
+}

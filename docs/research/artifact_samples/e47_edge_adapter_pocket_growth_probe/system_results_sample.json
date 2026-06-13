@@ -1,0 +1,162 @@
+{
+  "edge_adapter_block_growth_plus4": {
+    "overall": {
+      "active_bits": 8,
+      "adapter_parameter_count": 8,
+      "adapter_success": 1.0,
+      "adversarial_success": 1.0,
+      "bit_accuracy": 1.0,
+      "counterfactual_success": 1.0,
+      "false_ask_rate": 0.0,
+      "heldout_success": 1.0,
+      "old_intent_success": 1.0,
+      "ood_success": 1.0,
+      "physical_width": 8,
+      "row_count": 640,
+      "source_matrix_width": 8,
+      "source_to_target_transform_accuracy": 1.0,
+      "target_active_width": 8,
+      "wrong_commit_rate": 0.0
+    }
+  },
+  "edge_adapter_fixed16_to16": {
+    "overall": {
+      "active_bits": 8,
+      "adapter_parameter_count": 8,
+      "adapter_success": 1.0,
+      "adversarial_success": 1.0,
+      "bit_accuracy": 1.0,
+      "counterfactual_success": 1.0,
+      "false_ask_rate": 0.0,
+      "heldout_success": 1.0,
+      "old_intent_success": 1.0,
+      "ood_success": 1.0,
+      "physical_width": 16,
+      "row_count": 640,
+      "source_matrix_width": 16,
+      "source_to_target_transform_accuracy": 1.0,
+      "target_active_width": 8,
+      "wrong_commit_rate": 0.0
+    }
+  },
+  "edge_adapter_progressive_plus1_freeze_old": {
+    "overall": {
+      "active_bits": 8,
+      "adapter_parameter_count": 8,
+      "adapter_success": 1.0,
+      "adversarial_success": 1.0,
+      "bit_accuracy": 1.0,
+      "counterfactual_success": 1.0,
+      "false_ask_rate": 0.0,
+      "heldout_success": 1.0,
+      "old_intent_success": 1.0,
+      "ood_success": 1.0,
+      "physical_width": 8,
+      "row_count": 640,
+      "source_matrix_width": 8,
+      "source_to_target_transform_accuracy": 1.0,
+      "target_active_width": 8,
+      "wrong_commit_rate": 0.0
+    }
+  },
+  "edge_adapter_progressive_plus1_no_freeze": {
+    "overall": {
+      "active_bits": 8,
+      "adapter_parameter_count": 8,
+      "adapter_success": 1.0,
+      "adversarial_success": 1.0,
+      "bit_accuracy": 1.0,
+      "counterfactual_success": 1.0,
+      "false_ask_rate": 0.0,
+      "heldout_success": 1.0,
+      "old_intent_success": 1.0,
+      "ood_success": 1.0,
+      "physical_width": 8,
+      "row_count": 640,
+      "source_matrix_width": 8,
+      "source_to_target_transform_accuracy": 1.0,
+      "target_active_width": 8,
+      "wrong_commit_rate": 0.0
+    }
+  },
+  "identity_oracle_adapter_reference": {
+    "overall": {
+      "active_bits": 8,
+      "adapter_parameter_count": 8,
+      "adapter_success": 1.0,
+      "adversarial_success": 1.0,
+      "bit_accuracy": 1.0,
+      "counterfactual_success": 1.0,
+      "false_ask_rate": 0.0,
+      "heldout_success": 1.0,
+      "old_intent_success": 1.0,
+      "ood_success": 1.0,
+      "physical_width": 8,
+      "row_count": 640,
+      "source_matrix_width": 8,
+      "source_to_target_transform_accuracy": 1.0,
+      "target_active_width": 8,
+      "wrong_commit_rate": 0.0
+    }
+  },
+  "random_adapter_control": {
+    "overall": {
+      "active_bits": 8,
+      "adapter_parameter_count": 8,
+      "adapter_success": 0.009375,
+      "adversarial_success": 0.0078125,
+      "bit_accuracy": 0.5048828125,
+      "counterfactual_success": 0.0,
+      "false_ask_rate": 0.0,
+      "heldout_success": 0.015625,
+      "old_intent_success": 0.012195121951219513,
+      "ood_success": 0.0,
+      "physical_width": 16,
+      "row_count": 640,
+      "source_matrix_width": 16,
+      "source_to_target_transform_accuracy": 0.5048828125,
+      "target_active_width": 8,
+      "wrong_commit_rate": 0.990625
+    }
+  },
+  "raw_wire_direct_fixed16": {
+    "overall": {
+      "active_bits": 8,
+      "adapter_parameter_count": 8,
+      "adapter_success": 0.0625,
+      "adversarial_success": 0.0625,
+      "bit_accuracy": 0.6875,
+      "counterfactual_success": 0.0625,
+      "false_ask_rate": 0.0,
+      "heldout_success": 0.0625,
+      "old_intent_success": 0.07317073170731707,
+      "ood_success": 0.0625,
+      "physical_width": 16,
+      "row_count": 640,
+      "source_matrix_width": 16,
+      "source_to_target_transform_accuracy": 0.6875,
+      "target_active_width": 8,
+      "wrong_commit_rate": 0.9375
+    }
+  },
+  "raw_wire_progressive_plus1": {
+    "overall": {
+      "active_bits": 8,
+      "adapter_parameter_count": 8,
+      "adapter_success": 0.0625,
+      "adversarial_success": 0.0625,
+      "bit_accuracy": 0.6875,
+      "counterfactual_success": 0.0625,
+      "false_ask_rate": 0.0,
+      "heldout_success": 0.0625,
+      "old_intent_success": 0.07317073170731707,
+      "ood_success": 0.0625,
+      "physical_width": 8,
+      "row_count": 640,
+      "source_matrix_width": 8,
+      "source_to_target_transform_accuracy": 0.6875,
+      "target_active_width": 8,
+      "wrong_commit_rate": 0.9375
+    }
+  }
+}
