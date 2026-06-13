@@ -8,8 +8,8 @@ This is the active evidence summary for the current repo state. Historical findi
 
 ```text
 branch = main
-head = fffc5a438078592c7ca97fd9a840fa5a7948b353
-current slice = E72 Rust curriculum resume preflight
+runtime_slice = fffc5a438078592c7ca97fd9a840fa5a7948b353
+current_runtime_slice = E72 Rust curriculum resume preflight
 ```
 
 ## Current Mainline Chain

@@ -5,8 +5,9 @@ _Last updated: 2026-06-13_
 ## Start Here
 
 ```text
-main @ fffc5a438078592c7ca97fd9a840fa5a7948b353
-Add Rust curriculum resume preflight
+branch = main
+runtime_slice = fffc5a438078592c7ca97fd9a840fa5a7948b353
+runtime_subject = Add Rust curriculum resume preflight
 ```
 
 The current mainline is:

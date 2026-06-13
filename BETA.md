@@ -5,7 +5,8 @@ This file replaces the older `v5.0.0 Public Beta` front-door contract. The old b
 ## Current Target
 
 ```text
-main = fffc5a438078592c7ca97fd9a840fa5a7948b353
+branch = main
+runtime_slice = fffc5a438078592c7ca97fd9a840fa5a7948b353
 slice = E72 Rust curriculum resume preflight
 ```
 

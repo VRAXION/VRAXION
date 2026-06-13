@@ -6,8 +6,8 @@ _Last updated: 2026-06-13_
 
 ```text
 Current source of truth: main
-Current head: fffc5a438078592c7ca97fd9a840fa5a7948b353
-Current slice: E72 Rust curriculum resume preflight
+Current runtime slice: fffc5a438078592c7ca97fd9a840fa5a7948b353
+Current runtime subject: E72 Rust curriculum resume preflight
 Active branch surface: main only
 Historical branch heads: archive/branches/2026-06-13/*
 ```
