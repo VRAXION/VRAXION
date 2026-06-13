@@ -17,6 +17,7 @@ Persistent Pocket Library store
 Curriculum runner preflight glue
 Curriculum queue preflight glue
 Curriculum resume/checkpoint preflight glue
+Final bake preflight entrypoint
 proposal boundary
 Agency commit/reject/defer
 trace-backed egress rendering
@@ -72,6 +73,7 @@ cargo run -p vraxion-runtime --bin pocket_library_preflight --release -- 10000
 cargo run -p vraxion-runtime --bin curriculum_runner_preflight --release -- 10000
 cargo run -p vraxion-runtime --bin curriculum_queue_preflight --release -- 10000
 cargo run -p vraxion-runtime --bin curriculum_resume_preflight --release -- 10000
+cargo run -p vraxion-runtime --bin final_bake_preflight --release -- 10000
 ```
 
 ## Boundary

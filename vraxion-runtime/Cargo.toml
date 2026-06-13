@@ -49,3 +49,7 @@ path = "src/bin/curriculum_queue_preflight.rs"
 [[bin]]
 name = "curriculum_resume_preflight"
 path = "src/bin/curriculum_resume_preflight.rs"
+
+[[bin]]
+name = "final_bake_preflight"
+path = "src/bin/final_bake_preflight.rs"
