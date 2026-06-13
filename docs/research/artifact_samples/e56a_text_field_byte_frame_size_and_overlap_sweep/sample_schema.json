@@ -1,0 +1,5 @@
+{
+  "gradient_descent_used": false,
+  "milestone": "E56A_TEXT_FIELD_BYTE_FRAME_SIZE_AND_OVERLAP_SWEEP",
+  "shape_semantics": "frame_count x frame_bytes x 8"
+}

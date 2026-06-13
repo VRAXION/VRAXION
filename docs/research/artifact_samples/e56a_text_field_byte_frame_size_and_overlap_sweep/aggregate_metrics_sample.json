@@ -1,0 +1,26 @@
+{
+  "backprop_used": false,
+  "best_stress_success": 1.0,
+  "best_system": "text_field_single_512",
+  "decision": "e56a_overlap_required_for_boundary_robustness",
+  "gradient_descent_used": false,
+  "legacy_stress_success": 0.4248611111111111,
+  "milestone": "E56A_TEXT_FIELD_BYTE_FRAME_SIZE_AND_OVERLAP_SWEEP",
+  "optimizer_used": false,
+  "recommended_default": "text_field_4x128_overlap32",
+  "rows": 190080,
+  "rows_per_stage": 360,
+  "run_id": "d8a315e59a2b8b77",
+  "seeds": [
+    56101,
+    56102,
+    56103,
+    56104,
+    56105,
+    56106,
+    56107,
+    56108
+  ],
+  "stress_gain_vs_legacy": 0.5751388888888889,
+  "wall_time_seconds": 5.87137690000236
+}
