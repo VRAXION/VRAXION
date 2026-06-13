@@ -1,0 +1,65 @@
+{
+  "agency_committed_multi_resolution_renderer": {
+    "multi_resolution_write_success": 1.0,
+    "net_utility": 0.9705661231884057,
+    "overall_success": 1.0,
+    "stale_proposal_leak_rate": 0.0,
+    "trace_backed_output": 1.0
+  },
+  "agency_committed_single_resolution": {
+    "multi_resolution_write_success": 0.0,
+    "net_utility": 0.6480661231884057,
+    "overall_success": 0.875,
+    "stale_proposal_leak_rate": 0.0,
+    "trace_backed_output": 0.875
+  },
+  "compact_only_output": {
+    "multi_resolution_write_success": 0.0,
+    "net_utility": -0.95,
+    "overall_success": 0.25,
+    "stale_proposal_leak_rate": 0.0,
+    "trace_backed_output": 0.25
+  },
+  "direct_pocket_to_text_unsafe": {
+    "multi_resolution_write_success": 0.0,
+    "net_utility": -0.18057155797101454,
+    "overall_success": 0.625,
+    "stale_proposal_leak_rate": 0.25,
+    "trace_backed_output": 0.0
+  },
+  "long_text_only_output": {
+    "multi_resolution_write_success": 0.0,
+    "net_utility": -0.7752304121376812,
+    "overall_success": 0.375,
+    "stale_proposal_leak_rate": 0.0,
+    "trace_backed_output": 0.375
+  },
+  "naive_length_egress_router": {
+    "multi_resolution_write_success": 0.0,
+    "net_utility": -0.019800724637681233,
+    "overall_success": 0.625,
+    "stale_proposal_leak_rate": 0.0,
+    "trace_backed_output": 0.625
+  },
+  "oracle_egress_reference": {
+    "multi_resolution_write_success": 1.0,
+    "net_utility": 0.9705661231884057,
+    "overall_success": 1.0,
+    "stale_proposal_leak_rate": 0.0,
+    "trace_backed_output": 1.0
+  },
+  "random_output_control": {
+    "multi_resolution_write_success": 0.20498188405797102,
+    "net_utility": -0.6163751132246378,
+    "overall_success": 0.3571784420289855,
+    "stale_proposal_leak_rate": 0.0,
+    "trace_backed_output": 0.3571784420289855
+  },
+  "short_text_only_output": {
+    "multi_resolution_write_success": 0.0,
+    "net_utility": -1.1753509963768116,
+    "overall_success": 0.16332653985507245,
+    "stale_proposal_leak_rate": 0.0,
+    "trace_backed_output": 0.16332653985507245
+  }
+}

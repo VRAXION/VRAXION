@@ -14,6 +14,7 @@ Pocket outputs are not committed directly.
 Pocket outputs become temporary proposals.
 Agency Field decides which proposals become state, action, ask/search, or call.
 Text input uses mode selection, not one universal max Text Field.
+Output uses Agency-committed Egress modes, not direct Pocket-to-text.
 Pocket loading uses token + registry + manager governance, not filenames.
 Core promotion uses vector scoring + challenger sweep, not popularity.
 ```
@@ -63,8 +64,19 @@ flowchart LR
     REJECT["Reject proposal<br/>discard / mark unsafe"]
     DEFER["Defer<br/>keep unresolved / no stable commit"]
     ASK["Request more evidence<br/>search / inspect / ask"]
-    ANSWER["Output / external action"]
+    ANSWER["ANSWER_READY / ACT_READY<br/>Agency-approved output intent"]
     CLEAR["Clear Proposal Field<br/>or archive rejection to Trace"]
+  end
+
+  subgraph EGRESS["Egress / Output rendering"]
+    ESEL{"Egress mode policy<br/>choose output resolution from committed state"}
+    E1["COMPACT_ACTION<br/>1x32 byte action field"]
+    E2["SHORT_TEXT<br/>1x256 byte output field"]
+    E3["LONG_TEXT<br/>4x256 byte output field"]
+    E4["MULTI_RESOLUTION<br/>compact + short + long/detail fields"]
+    EASK["NEED_MORE_INFO<br/>unresolved compact output"]
+    RENDER["Output Renderer / Codec<br/>bytes -> text/action<br/>trace-backed only"]
+    OUT["External output<br/>text / action / ask"]
   end
 
   subgraph LIFE["Pocket lifecycle"]
@@ -116,6 +128,18 @@ flowchart LR
   DEFER --> CLEAR
   CLEAR --> TRACE
   ASK --> EXT
+  ANSWER --> ESEL
+  ESEL -->|"action only"| E1
+  ESEL -->|"short answer"| E2
+  ESEL -->|"long trace answer"| E3
+  ESEL -->|"compact + detail"| E4
+  ESEL -->|"unresolved"| EASK
+  E1 --> RENDER
+  E2 --> RENDER
+  E3 --> RENDER
+  E4 --> RENDER
+  EASK --> RENDER
+  RENDER --> OUT
 
   COMMIT --> EVENT
   REJECT --> EVENT
@@ -161,4 +185,31 @@ Shared Proposal Field is allowed only with cycle/source/trace/ground/evidence co
 Edge Adapter Pockets handle ABI mismatch between nodes.
 Pocket Manager governs active set, lifecycle, quarantine, mutation priority, and promotion.
 Text Field mode selection is evidence/coverage/integrity/cost based, not length-only.
+Egress Field rendering reads only Agency-committed Flow/Ground/Trace state.
+Final output must never render directly from raw Pocket proposals.
+```
+
+## Egress Field Multi-Resolution Lock From E57
+
+```text
+Render output only from Agency-committed state.
+Use compact, short, long, or multi-resolution output modes as needed.
+Direct Pocket-to-text is unsafe and remains a control only.
+```
+
+| mode | shape | role |
+|---|---:|---|
+| COMPACT_ACTION | 1x32 byte | action / ask / compact status |
+| SHORT_TEXT | 1x256 byte | short answer surface |
+| LONG_TEXT | 4x256 byte | longer answer with trace/detail |
+| MULTI_RESOLUTION | compact + short + long/detail | consistent multi-resolution output |
+| NEED_MORE_INFO | 1x32 byte | unresolved output action |
+
+E57 adversarial result:
+
+```text
+agency_committed_multi_resolution_renderer success = 1.000000
+multi_resolution_write_success = 1.000000
+false_output = 0.000000
+stale_proposal_leak = 0.000000
 ```
