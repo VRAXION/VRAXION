@@ -1,0 +1,128 @@
+{
+  "bus10_5data_3crc_2reserve": {
+    "overall": {
+      "action_accuracy": 0.9016666666666666,
+      "active_bitflip_success": 1.0,
+      "active_dropout_success": 1.0,
+      "burst_noise_success": 1.0,
+      "double_alias_success": 0.0,
+      "false_ask_rate": 0.0,
+      "false_commit_rate": 0.09833333333333333,
+      "integrity_success": 0.6666666666666666,
+      "known_permutation_success": 1.0,
+      "reserve_adversarial_success": 1.0,
+      "reserve_dropout_success": 1.0,
+      "reserve_noise_success": 1.0,
+      "reserve_success": 1.0,
+      "row_count": 600,
+      "stress_success": 0.9016666666666666,
+      "unknown_permutation_success": 0.525,
+      "wrong_commit_rate": 0.08166666666666667
+    }
+  },
+  "bus12_5data_4crc_3reserve": {
+    "overall": {
+      "action_accuracy": 1.0,
+      "active_bitflip_success": 1.0,
+      "active_dropout_success": 1.0,
+      "burst_noise_success": 1.0,
+      "double_alias_success": 1.0,
+      "false_ask_rate": 0.0,
+      "false_commit_rate": 0.0,
+      "integrity_success": 1.0,
+      "known_permutation_success": 1.0,
+      "reserve_adversarial_success": 1.0,
+      "reserve_dropout_success": 1.0,
+      "reserve_noise_success": 1.0,
+      "reserve_success": 1.0,
+      "row_count": 600,
+      "stress_success": 1.0,
+      "unknown_permutation_success": 1.0,
+      "wrong_commit_rate": 0.0
+    }
+  },
+  "bus16_5data_5ecc_6reserve": {
+    "overall": {
+      "action_accuracy": 1.0,
+      "active_bitflip_success": 1.0,
+      "active_dropout_success": 1.0,
+      "burst_noise_success": 1.0,
+      "double_alias_success": 1.0,
+      "false_ask_rate": 0.0,
+      "false_commit_rate": 0.0,
+      "integrity_success": 1.0,
+      "known_permutation_success": 1.0,
+      "reserve_adversarial_success": 1.0,
+      "reserve_dropout_success": 1.0,
+      "reserve_noise_success": 1.0,
+      "reserve_success": 1.0,
+      "row_count": 600,
+      "stress_success": 1.0,
+      "unknown_permutation_success": 1.0,
+      "wrong_commit_rate": 0.0
+    }
+  },
+  "bus8_5data_3crc": {
+    "overall": {
+      "action_accuracy": 0.7016666666666667,
+      "active_bitflip_success": 1.0,
+      "active_dropout_success": 1.0,
+      "burst_noise_success": 1.0,
+      "double_alias_success": 0.0,
+      "false_ask_rate": 0.2,
+      "false_commit_rate": 0.09833333333333333,
+      "integrity_success": 0.6666666666666666,
+      "known_permutation_success": 1.0,
+      "reserve_adversarial_success": 0.0,
+      "reserve_dropout_success": 0.0,
+      "reserve_noise_success": 0.0,
+      "reserve_success": 0.0,
+      "row_count": 600,
+      "stress_success": 0.7016666666666667,
+      "unknown_permutation_success": 0.525,
+      "wrong_commit_rate": 0.08166666666666667
+    }
+  },
+  "bus8_5data_3reserve_masked": {
+    "overall": {
+      "action_accuracy": 0.7333333333333333,
+      "active_bitflip_success": 0.0,
+      "active_dropout_success": 1.0,
+      "burst_noise_success": 0.0,
+      "double_alias_success": 0.0,
+      "false_ask_rate": 0.0,
+      "false_commit_rate": 0.26666666666666666,
+      "integrity_success": 0.0,
+      "known_permutation_success": 1.0,
+      "reserve_adversarial_success": 1.0,
+      "reserve_dropout_success": 1.0,
+      "reserve_noise_success": 1.0,
+      "reserve_success": 1.0,
+      "row_count": 600,
+      "stress_success": 0.7333333333333333,
+      "unknown_permutation_success": 0.0,
+      "wrong_commit_rate": 0.25
+    }
+  },
+  "oracle_reference": {
+    "overall": {
+      "action_accuracy": 1.0,
+      "active_bitflip_success": 1.0,
+      "active_dropout_success": 1.0,
+      "burst_noise_success": 1.0,
+      "double_alias_success": 1.0,
+      "false_ask_rate": 0.0,
+      "false_commit_rate": 0.0,
+      "integrity_success": 1.0,
+      "known_permutation_success": 1.0,
+      "reserve_adversarial_success": 1.0,
+      "reserve_dropout_success": 1.0,
+      "reserve_noise_success": 1.0,
+      "reserve_success": 1.0,
+      "row_count": 600,
+      "stress_success": 1.0,
+      "unknown_permutation_success": 1.0,
+      "wrong_commit_rate": 0.0
+    }
+  }
+}

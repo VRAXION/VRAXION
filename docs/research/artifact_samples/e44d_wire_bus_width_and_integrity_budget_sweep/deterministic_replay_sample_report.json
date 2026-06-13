@@ -1,0 +1,10 @@
+{
+  "deterministic_replay_match_rate": 1.0,
+  "hashes": {
+    "aggregate_metrics_hash": "6785373e268aae535758e7242fba843bf3e9322fc36fdc2198abece1dabf0f51",
+    "row_level_results_hash": "2690d9512d8e2d32184b974907b7b4e6ad29b7358177e78dc1ad844a55b467d1",
+    "system_results_hash": "6e8ca57256ba798c2b8a38b1142a325a81f1a8327484f9e5a051d96af9341250"
+  },
+  "passed": true,
+  "replay_note": "Deterministic replay uses stable hashes over required row-level and aggregate artifacts."
+}

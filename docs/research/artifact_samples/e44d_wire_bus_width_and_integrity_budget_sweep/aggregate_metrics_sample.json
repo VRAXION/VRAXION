@@ -1,0 +1,16 @@
+{
+  "backprop_used": false,
+  "checker_expected_failure_count": 0,
+  "data_bits": 5,
+  "decision": "e44d_bus12_sufficient",
+  "gradient_descent_used": false,
+  "intent_count": 32,
+  "milestone": "E44D_WIRE_BUS_WIDTH_AND_INTEGRITY_BUDGET_SWEEP",
+  "minimal_passing_config": "bus12_5data_4crc_3reserve",
+  "optimizer_used": false,
+  "rows_per_split": 120,
+  "run_id": "c4e7b262ba2516f5",
+  "seed": 44701,
+  "universal_selected_config": "bus12_5data_4crc_3reserve",
+  "universal_selected_payload_bits": 12
+}

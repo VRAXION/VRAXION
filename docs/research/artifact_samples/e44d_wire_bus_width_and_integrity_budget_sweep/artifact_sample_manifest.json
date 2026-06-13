@@ -1,0 +1,16 @@
+{
+  "files": [
+    "README.md",
+    "aggregate_metrics_sample.json",
+    "bus_width_sweep_report_sample.json",
+    "deterministic_replay_sample_report.json",
+    "mutation_history_sample.jsonl",
+    "row_level_sample.jsonl",
+    "sample_schema.json",
+    "stress_barrage_results_sample.json",
+    "system_results_sample.json",
+    "universal_mutation_report_sample.json"
+  ],
+  "milestone": "E44D_WIRE_BUS_WIDTH_AND_INTEGRITY_BUDGET_SWEEP",
+  "row_sample_count": 240
+}
