@@ -1,0 +1,15 @@
+{
+  "backprop_used": false,
+  "base_intent_count": 32,
+  "checker_expected_failure_count": 0,
+  "decision": "e46_block_growth_preferred",
+  "final_intent_count": 256,
+  "gradient_descent_used": false,
+  "max_width": 16,
+  "milestone": "E46_PROGRESSIVE_SINGLE_WIRE_EDGE_ABI_GROWTH_PROBE",
+  "optimizer_used": false,
+  "rows_per_split": 128,
+  "run_id": "f8069da2cac2f084",
+  "seed": 46001,
+  "start_width": 5
+}
