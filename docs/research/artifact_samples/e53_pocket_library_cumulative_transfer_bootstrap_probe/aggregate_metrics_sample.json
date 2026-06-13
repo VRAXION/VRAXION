@@ -1,0 +1,11 @@
+{
+  "backprop_used": false,
+  "checker_expected_failure_count": 0,
+  "decision": "e53_cumulative_pocket_library_bootstrap_confirmed",
+  "fresh_run_count": 10,
+  "gradient_descent_used": false,
+  "milestone": "E53_POCKET_LIBRARY_CUMULATIVE_TRANSFER_BOOTSTRAP_PROBE",
+  "optimizer_used": false,
+  "run_id": "3d3ee8a8df713225",
+  "seed": 53053
+}
