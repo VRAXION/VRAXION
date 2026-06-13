@@ -6,28 +6,31 @@ This file replaces the older `v5.0.0 Public Beta` front-door contract. The old b
 
 ```text
 branch = main
-runtime_slice = fffc5a438078592c7ca97fd9a840fa5a7948b353
-slice = E72 Rust curriculum resume preflight
+runtime_slice = 51cd82a11d8f1d2b98ee3e49538c7c26afdb767b
+slice = E73 Rust final bake preflight
+base_runtime_slice = fffc5a438078592c7ca97fd9a840fa5a7948b353 E72 Rust curriculum resume preflight
 ```
 
-The current pre-release target is the E69-E72 Rust chain:
+The current pre-release target is the E69-E73 Rust chain:
 
 ```text
 E69 persistent Pocket Library store
 E70 curriculum runner preflight
 E71 curriculum queue preflight
 E72 curriculum resume preflight
+E73 unified final-bake preflight
 ```
 
 ## Promotion Rule
 
-A future public release tag should be cut only after the E72+ surface has:
+A future public release tag should be cut only after the E73+ surface has:
 
 - clean Rust formatting, lint, and tests,
 - verified Pocket Library preflight,
 - verified runner preflight,
 - verified queue preflight,
 - verified resume preflight,
+- verified final-bake preflight,
 - continuous progress writeout for long runs,
 - documented claim boundary.
 

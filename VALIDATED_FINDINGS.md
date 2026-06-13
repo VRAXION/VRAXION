@@ -8,8 +8,9 @@ This is the active evidence summary for the current repo state. Historical findi
 
 ```text
 branch = main
-runtime_slice = fffc5a438078592c7ca97fd9a840fa5a7948b353
-current_runtime_slice = E72 Rust curriculum resume preflight
+runtime_slice = 51cd82a11d8f1d2b98ee3e49538c7c26afdb767b
+current_runtime_slice = E73 Rust final bake preflight
+base_runtime_slice = fffc5a438078592c7ca97fd9a840fa5a7948b353 E72 Rust curriculum resume preflight
 ```
 
 ## Current Mainline Chain
@@ -20,14 +21,19 @@ current_runtime_slice = E72 Rust curriculum resume preflight
 | E70 | `9accc081` | Curriculum runner preflight on top of the Pocket Library base. | Current mainline |
 | E71 | `c9dcad01` | Curriculum queue preflight on top of the runner layer. | Current mainline |
 | E72 | `fffc5a43` | Curriculum resume preflight on top of the queue layer. | Current mainline |
+| E73 | `51cd82a1` | Unified Rust final-bake preflight over the locked mechanics. | Current mainline |
 
 ## Current Validated Claim
 
 > VRAXION has a Rust mainline for persistent Pocket Library governance and resumable curriculum execution preflights.
 
+Current E73 extension:
+
+> VRAXION has a unified Rust final-bake preflight over the locked runtime mechanics.
+
 ## Operational Finding
 
-Long-running work must write progress continuously and support resume. The E72 resume preflight is the current proof surface for this operating rule.
+Long-running work must write progress continuously and support resume. The E72 resume preflight proves the resume path; the E73 final-bake preflight proves the locked chain can be validated from one consolidated Rust entrypoint with progress artifacts.
 
 ## Hard Boundary
 
@@ -42,7 +48,7 @@ This file does not claim:
 
 ## Historical Evidence
 
-Previous bounded-service, open-vocab assistant, beta release, grower, byte-pipeline, and C19/EP results are historical evidence. They can still be useful for research context, but they are not the current mainline unless promoted back into E72+ code and docs.
+Previous bounded-service, open-vocab assistant, beta release, grower, byte-pipeline, and C19/EP results are historical evidence. They can still be useful for research context, but they are not the current mainline unless promoted back into E73+ code and docs.
 
 Primary archive surfaces:
 

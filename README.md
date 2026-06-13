@@ -8,13 +8,14 @@ This repository is being consolidated around the current winning mainline. Histo
 
 ```text
 branch = main
-runtime_slice = fffc5a438078592c7ca97fd9a840fa5a7948b353
-runtime_subject = Add Rust curriculum resume preflight
+runtime_slice = 51cd82a11d8f1d2b98ee3e49538c7c26afdb767b
+runtime_subject = Add Rust final bake preflight
+base_runtime_slice = fffc5a438078592c7ca97fd9a840fa5a7948b353 Add Rust curriculum resume preflight
 ```
 
 ## Current Mainline
 
-The active line is E72 on top of E71, E70, and E69:
+The active line is E73 on top of E72, E71, E70, and E69:
 
 | Slice | Commit | Purpose |
 |---|---|---|
@@ -22,6 +23,7 @@ The active line is E72 on top of E71, E70, and E69:
 | E70 | `9accc081` | Curriculum runner preflight |
 | E71 | `c9dcad01` | Curriculum queue preflight |
 | E72 | `fffc5a43` | Curriculum resume preflight |
+| E73 | `51cd82a1` | Unified Rust final-bake preflight |
 
 ```text
 Pocket Library store
@@ -29,10 +31,11 @@ Pocket Library store
   -> curriculum runner
   -> queued curriculum rows
   -> resumable checkpoint/progress stream
+  -> unified final-bake gate
   -> audited write-back only after successful promotion
 ```
 
-The current engineering priority is reliability of the model lifecycle: guarded loading, token/artifact/ledger integrity, queued execution, resumable progress, and safe promotion.
+The current engineering priority is reliability of the model lifecycle: guarded loading, token/artifact/ledger integrity, queued execution, resumable progress, unified final-bake validation, and safe promotion.
 
 ## What Is Current
 
@@ -50,6 +53,10 @@ Current mainline claims must match code on `main`.
 Allowed current claim:
 
 > VRAXION has a Rust mainline for persistent Pocket Library governance and resumable curriculum execution preflights.
+
+Current E73 extension:
+
+> VRAXION has a unified Rust final-bake preflight over the locked runtime mechanics.
 
 Do not claim from this repo state alone:
 
@@ -94,6 +101,7 @@ cargo run --release -p vraxion-runtime --bin pocket_library_preflight -- --help
 cargo run --release -p vraxion-runtime --bin curriculum_runner_preflight -- --help
 cargo run --release -p vraxion-runtime --bin curriculum_queue_preflight -- --help
 cargo run --release -p vraxion-runtime --bin curriculum_resume_preflight -- --help
+cargo run --release -p vraxion-runtime --bin final_bake_preflight -- --help
 ```
 
 Long or expensive runs must write partial outcomes continuously. End-only reporting is not acceptable for the current operating model.

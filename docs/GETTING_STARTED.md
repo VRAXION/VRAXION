@@ -6,8 +6,9 @@ _Last updated: 2026-06-13_
 
 ```text
 branch = main
-runtime_slice = fffc5a438078592c7ca97fd9a840fa5a7948b353
-runtime_subject = Add Rust curriculum resume preflight
+runtime_slice = 51cd82a11d8f1d2b98ee3e49538c7c26afdb767b
+runtime_subject = Add Rust final bake preflight
+base_runtime_slice = fffc5a438078592c7ca97fd9a840fa5a7948b353 Add Rust curriculum resume preflight
 ```
 
 The current mainline is:
@@ -17,6 +18,7 @@ E69 Pocket Library store
 E70 curriculum runner
 E71 curriculum queue
 E72 curriculum resume
+E73 final bake
 ```
 
 ## Repository Layout
@@ -44,6 +46,7 @@ cargo run --release -p vraxion-runtime --bin pocket_library_preflight -- --help
 cargo run --release -p vraxion-runtime --bin curriculum_runner_preflight -- --help
 cargo run --release -p vraxion-runtime --bin curriculum_queue_preflight -- --help
 cargo run --release -p vraxion-runtime --bin curriculum_resume_preflight -- --help
+cargo run --release -p vraxion-runtime --bin final_bake_preflight -- --help
 ```
 
 ## Operating Rule
@@ -56,7 +59,7 @@ Long runs must continuously write partial outcomes and resumable progress. A run
 |---|---|---|
 | 1 | [`README.md`](../README.md) | Current front-door summary |
 | 2 | [`docs/CURRENT_STATUS.md`](CURRENT_STATUS.md) | Current status and claim boundary |
-| 3 | [`VALIDATED_FINDINGS.md`](../VALIDATED_FINDINGS.md) | Current validated E69-E72 chain |
+| 3 | [`VALIDATED_FINDINGS.md`](../VALIDATED_FINDINGS.md) | Current validated E69-E73 chain |
 | 4 | [Timeline Archive wiki](https://github.com/VRAXION/VRAXION/wiki/Timeline-Archive) | Chronology and cleanup record |
 | 5 | [Consolidation Archive wiki](https://github.com/VRAXION/VRAXION/wiki/Consolidation-Archive-2026-06-13) | Branch/wiki deletion manifest |
 
