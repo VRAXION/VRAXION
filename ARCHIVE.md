@@ -38,7 +38,7 @@ Historical surfaces are preserved as archive tags or explicit cleanup snapshot b
 
 **Branch-head snapshots (2026-04-25 → 2026-04-28):**
 
-- `archive/repo/pre-e74-public-surface-cleanup-2026-06-13` — full `main` snapshot after E74 API extraction and before the public-surface cleanup that removed stale `instnct-core`, old Python/Rust deploy SDKs, tools/scripts/probes, tracked output artifacts, stale Pages blocks/playground, stale repo wiki mirror, product/release drafts, and non-E73/E74 research residue from active `main`.
+- `archive/repo/pre-e74-public-surface-cleanup-2026-06-13` — full `main` snapshot after E74 API extraction and before the public-surface cleanup that removed stale `instnct-core`, old Python/Rust deploy SDKs, tools/scripts/probes, tracked output artifacts, stale Pages blocks/playground, stale repo wiki mirror, product/release drafts, and non-E73/E74 research residue from active `main`. E75 final-training runner evidence was added after this cleanup.
 - `archive/repo/pre-e73-public-surface-cleanup-2026-06-13` — full `main` snapshot before E73-era public docs were cleaned up; retained as an older restore point below E74.
 - `archive/branches/2026-06-13/*` — exact heads of all 52 non-main remote branches deleted during the 2026-06-13 GitHub branch cleanup. Active branch surface after cleanup: `main` only.
 - `archive/wiki/pre-consolidation-2026-06-13` — full GitHub wiki state before the June 13 wiki page cleanup and rewrite.

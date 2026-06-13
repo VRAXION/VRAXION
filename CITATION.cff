@@ -1,7 +1,7 @@
 cff-version: 1.2.0
 message: "If you use this software, please cite it as below."
-title: "VRAXION E74 Rust Runtime"
-version: "main-2026-06-13-e74"
+title: "VRAXION E75 Rust Runtime"
+version: "main-2026-06-13-e75"
 date-released: "2026-06-13"
 type: software
 authors:

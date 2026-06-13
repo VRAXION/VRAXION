@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>VRAXION - E74 Rust Runtime</title>
-  <meta name="description" content="VRAXION E74 is a Rust runtime for governed Pocket Library state, resumable curriculum execution, and reusable final-bake API validation.">
+  <title>VRAXION - E75 Rust Runtime</title>
+  <meta name="description" content="VRAXION E75 is a Rust runtime for governed Pocket Library state, resumable curriculum execution, reusable final-bake validation, and deterministic final curriculum running.">
   <link rel="canonical" href="https://vraxion.github.io/VRAXION/">
   <link rel="icon" href="./assets/favicon.svg" type="image/svg+xml">
   <style>
@@ -116,11 +116,12 @@
 <body>
   <section class="hero">
     <div class="wrap">
-      <div class="eyebrow">VRAXION / INSTNCT / E74 Runtime</div>
+      <div class="eyebrow">VRAXION / INSTNCT / E75 Runtime</div>
       <h1>Governed Rust runtime for the current self-wiring line.</h1>
       <p class="lead">
-        The active mainline is the E74 Rust final-bake API over the locked
-        Pocket Library, curriculum queue, resume, and promotion mechanics.
+        The active mainline is the E75 Rust final curriculum runner over the
+        locked Pocket Library, final-bake, curriculum queue, resume, and
+        promotion mechanics.
       </p>
       <div class="actions">
         <a class="button primary" href="https://github.com/VRAXION/VRAXION">Repository</a>
@@ -132,12 +133,12 @@
   <main class="wrap">
     <section class="grid" aria-label="Current proof surface">
       <article class="card">
-        <h2>E74</h2>
-        <p>Reusable Rust final-bake API over locked runtime mechanics.</p>
+        <h2>E75</h2>
+        <p>Deterministic final curriculum pocket-generation runner over locked runtime mechanics.</p>
       </article>
       <article class="card">
         <h2>Runtime Slice</h2>
-        <p class="mono">0879a2c004cf6a002bd5639d9cb7a759709a41aa</p>
+        <p class="mono">3f519732949b73d5b55ae90a740381ca81143948</p>
       </article>
       <article class="card">
         <h2>Boundary</h2>
@@ -157,6 +158,7 @@
         <tr><td>E72</td><td class="mono">fffc5a43</td><td>Curriculum resume preflight</td></tr>
         <tr><td>E73</td><td class="mono">51cd82a1</td><td>Unified final-bake preflight</td></tr>
         <tr><td>E74</td><td class="mono">0879a2c0</td><td>Final-bake library API extraction</td></tr>
+        <tr><td>E75</td><td class="mono">3f519732</td><td>Final curriculum pocket-generation runner</td></tr>
       </tbody>
     </table>
 
@@ -166,8 +168,8 @@
         <p class="mono">cargo test -p vraxion-runtime</p>
       </article>
       <article class="card">
-        <h3>Final Bake Smoke</h3>
-        <p class="mono">cargo run --release -p vraxion-runtime --bin final_bake_preflight -- 1000 target/e74_smoke</p>
+        <h3>Final Runner Smoke</h3>
+        <p class="mono">cargo run --release -p vraxion-runtime --bin final_training_runner -- 1000 target/e75_smoke --preflight-rounds 100 --checkpoint-interval 100</p>
       </article>
       <article class="card">
         <h3>Archive Policy</h3>
@@ -177,7 +179,7 @@
   </main>
   <footer>
     <div class="wrap">
-      VRAXION main is intentionally reduced to the current E74 runtime surface.
+      VRAXION main is intentionally reduced to the current E75 runtime surface.
     </div>
   </footer>
 </body>

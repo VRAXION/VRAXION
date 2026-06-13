@@ -6,9 +6,9 @@ _Last updated: 2026-06-13_
 
 ```text
 branch = main
-runtime_slice = 0879a2c004cf6a002bd5639d9cb7a759709a41aa
-runtime_subject = Extract Rust final bake API
-base_runtime_slice = 51cd82a11d8f1d2b98ee3e49538c7c26afdb767b Add Rust final bake preflight
+runtime_slice = 3f519732949b73d5b55ae90a740381ca81143948
+runtime_subject = Add Rust final curriculum runner
+base_runtime_slice = 0879a2c004cf6a002bd5639d9cb7a759709a41aa Extract Rust final bake API
 ```
 
 The current mainline is:
@@ -20,6 +20,7 @@ E71 curriculum queue
 E72 curriculum resume
 E73 final bake
 E74 final-bake API extraction
+E75 final curriculum pocket-generation runner
 ```
 
 ## Repository Layout
@@ -27,8 +28,8 @@ E74 final-bake API extraction
 | Path | Purpose |
 |---|---|
 | `vraxion-runtime/` | Active Rust runtime and preflight binaries |
-| `docs/research/E74_RUST_FINAL_BAKE_API_EXTRACTION_*.md` | Current final-bake API contract/result evidence |
-| `docs/research/artifact_samples/e74_rust_final_bake_api_extraction/` | Current sample progress/result/report artifacts |
+| `docs/research/E75_RUST_FINAL_CURRICULUM_POCKET_GENERATION_RUNNER_*.md` | Current final-training runner contract/result evidence |
+| `docs/research/artifact_samples/e75_rust_final_curriculum_pocket_generation_runner/` | Current sample progress/checkpoint/result/report artifacts |
 | `docs/` | Current public docs |
 | `target/` | Generated local evidence artifacts; ignored by Git |
 
@@ -49,6 +50,7 @@ cargo run --release -p vraxion-runtime --bin curriculum_runner_preflight -- --he
 cargo run --release -p vraxion-runtime --bin curriculum_queue_preflight -- --help
 cargo run --release -p vraxion-runtime --bin curriculum_resume_preflight -- --help
 cargo run --release -p vraxion-runtime --bin final_bake_preflight -- --help
+cargo run --release -p vraxion-runtime --bin final_training_runner -- 1000 target/ci/e75_final_training_smoke --preflight-rounds 100 --checkpoint-interval 100
 ```
 
 ## Operating Rule
@@ -61,7 +63,7 @@ Long runs must continuously write partial outcomes and resumable progress. A run
 |---|---|---|
 | 1 | [`README.md`](../README.md) | Current front-door summary |
 | 2 | [`docs/CURRENT_STATUS.md`](CURRENT_STATUS.md) | Current status and claim boundary |
-| 3 | [`VALIDATED_FINDINGS.md`](../VALIDATED_FINDINGS.md) | Current validated E69-E74 chain |
+| 3 | [`VALIDATED_FINDINGS.md`](../VALIDATED_FINDINGS.md) | Current validated E69-E75 chain |
 | 4 | [Timeline Archive wiki](https://github.com/VRAXION/VRAXION/wiki/Timeline-Archive) | Chronology and cleanup record |
 | 5 | [Consolidation Archive wiki](https://github.com/VRAXION/VRAXION/wiki/Consolidation-Archive-2026-06-13) | Branch/wiki deletion manifest |
 

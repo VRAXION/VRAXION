@@ -8,14 +8,14 @@ This repository is being consolidated around the current winning mainline. Histo
 
 ```text
 branch = main
-runtime_slice = 0879a2c004cf6a002bd5639d9cb7a759709a41aa
-runtime_subject = Extract Rust final bake API
-base_runtime_slice = 51cd82a11d8f1d2b98ee3e49538c7c26afdb767b Add Rust final bake preflight
+runtime_slice = 3f519732949b73d5b55ae90a740381ca81143948
+runtime_subject = Add Rust final curriculum runner
+base_runtime_slice = 0879a2c004cf6a002bd5639d9cb7a759709a41aa Extract Rust final bake API
 ```
 
 ## Current Mainline
 
-The active line is E74 on top of E73, E72, E71, E70, and E69:
+The active line is E75 on top of E74, E73, E72, E71, E70, and E69:
 
 | Slice | Commit | Purpose |
 |---|---|---|
@@ -25,6 +25,7 @@ The active line is E74 on top of E73, E72, E71, E70, and E69:
 | E72 | `fffc5a43` | Curriculum resume preflight |
 | E73 | `51cd82a1` | Unified Rust final-bake preflight |
 | E74 | `0879a2c0` | Final-bake library API extraction |
+| E75 | `3f519732` | Final curriculum pocket-generation runner |
 
 ```text
 Pocket Library store
@@ -34,10 +35,11 @@ Pocket Library store
   -> resumable checkpoint/progress stream
   -> unified final-bake gate
   -> reusable final-bake library API
+  -> deterministic final curriculum runner
   -> audited write-back only after successful promotion
 ```
 
-The current engineering priority is reliability of the model lifecycle: guarded loading, token/artifact/ledger integrity, queued execution, resumable progress, unified final-bake validation, reusable audit APIs, and safe promotion.
+The current engineering priority is reliability of the model lifecycle: guarded loading, token/artifact/ledger integrity, queued execution, resumable progress, unified final-bake validation, reusable audit APIs, deterministic final curriculum runs, and safe promotion.
 
 ## What Is Current
 
@@ -56,9 +58,9 @@ Allowed current claim:
 
 > VRAXION has a Rust mainline for persistent Pocket Library governance and resumable curriculum execution preflights.
 
-Current E74 extension:
+Current E75 extension:
 
-> VRAXION exposes the final-bake gate through a reusable Rust library API while preserving the CLI preflight and continuous progress artifacts.
+> VRAXION has a deterministic Rust final curriculum pocket-generation runner with preflight gating, checkpoint/progress writeout, resume behavior, Pocket Library growth, and zero bad/unsafe promotions in the recorded evidence run.
 
 Do not claim from this repo state alone:
 
@@ -110,6 +112,7 @@ cargo run --release -p vraxion-runtime --bin curriculum_runner_preflight -- --he
 cargo run --release -p vraxion-runtime --bin curriculum_queue_preflight -- --help
 cargo run --release -p vraxion-runtime --bin curriculum_resume_preflight -- --help
 cargo run --release -p vraxion-runtime --bin final_bake_preflight -- --help
+cargo run --release -p vraxion-runtime --bin final_training_runner -- 1000 target/ci/e75_final_training_smoke --preflight-rounds 100 --checkpoint-interval 100
 ```
 
 Long or expensive runs must write partial outcomes continuously. End-only reporting is not acceptable for the current operating model.
