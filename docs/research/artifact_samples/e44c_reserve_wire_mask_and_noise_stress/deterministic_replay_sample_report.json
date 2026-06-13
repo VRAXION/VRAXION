@@ -1,0 +1,9 @@
+{
+  "deterministic_replay_match_rate": 1.0,
+  "hashes": {
+    "row_results": "f6094dbe06f6b10397729dcfab19b8ad9fd2f2c8c08bb5f0159423fbc93bf768",
+    "system_results": "bb8a211d87fe668bef9a2c495dd61f8c5d506a8a8d6ddd5582f0d411bd334b20",
+    "universal_report": "d82ddd05fe8f5e0e5b3c433f2ff82b89060a4a9d4607cf1866ce722fb23a4658"
+  },
+  "passed": true
+}

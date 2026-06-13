@@ -1,0 +1,131 @@
+{
+  "systems": {
+    "active5_ignore_reserve_mask": {
+      "overall": {
+        "action_accuracy": 0.7142857142857143,
+        "active_bitflip_success": 0.0,
+        "active_dropout_success": 1.0,
+        "burst_noise_success": 0.0,
+        "false_ask_rate": 0.0,
+        "false_commit_rate": 0.2857142857142857,
+        "known_permutation_success": 0.525,
+        "reserve_adversarial_success": 1.0,
+        "reserve_noise_success": 1.0,
+        "row_count": 560,
+        "stress_success": 0.6803571428571429,
+        "unknown_permutation_success": 0.0,
+        "wrong_commit_rate": 0.2357142857142857
+      },
+      "selected_mode": "active5"
+    },
+    "active5_visible_dropout_guard": {
+      "overall": {
+        "action_accuracy": 0.7857142857142857,
+        "active_bitflip_success": 0.0,
+        "active_dropout_success": 1.0,
+        "burst_noise_success": 0.0,
+        "false_ask_rate": 0.0,
+        "false_commit_rate": 0.21428571428571427,
+        "known_permutation_success": 1.0,
+        "reserve_adversarial_success": 1.0,
+        "reserve_noise_success": 1.0,
+        "row_count": 560,
+        "stress_success": 0.7857142857142857,
+        "unknown_permutation_success": 0.0,
+        "wrong_commit_rate": 0.17857142857142858
+      },
+      "selected_mode": "active5_dropout_guard"
+    },
+    "crc3_integrity_guard": {
+      "overall": {
+        "action_accuracy": 0.7535714285714286,
+        "active_bitflip_success": 1.0,
+        "active_dropout_success": 1.0,
+        "burst_noise_success": 1.0,
+        "false_ask_rate": 0.2125,
+        "false_commit_rate": 0.033928571428571426,
+        "known_permutation_success": 1.0,
+        "reserve_adversarial_success": 0.0,
+        "reserve_noise_success": 0.025,
+        "row_count": 560,
+        "stress_success": 0.7535714285714286,
+        "unknown_permutation_success": 0.525,
+        "wrong_commit_rate": 0.017857142857142856
+      },
+      "selected_mode": "crc3_integrity"
+    },
+    "oracle_integrity_reference": {
+      "overall": {
+        "action_accuracy": 1.0,
+        "active_bitflip_success": 1.0,
+        "active_dropout_success": 1.0,
+        "burst_noise_success": 1.0,
+        "false_ask_rate": 0.0,
+        "false_commit_rate": 0.0,
+        "known_permutation_success": 1.0,
+        "reserve_adversarial_success": 1.0,
+        "reserve_noise_success": 1.0,
+        "row_count": 560,
+        "stress_success": 1.0,
+        "unknown_permutation_success": 1.0,
+        "wrong_commit_rate": 0.0
+      },
+      "selected_mode": "oracle"
+    },
+    "random_policy_control": {
+      "overall": {
+        "action_accuracy": 0.6017857142857143,
+        "active_bitflip_success": 0.65,
+        "active_dropout_success": 0.4,
+        "burst_noise_success": 0.35,
+        "false_ask_rate": 0.08571428571428572,
+        "false_commit_rate": 0.15892857142857142,
+        "known_permutation_success": 0.0,
+        "reserve_adversarial_success": 0.0,
+        "reserve_noise_success": 0.0,
+        "row_count": 560,
+        "stress_success": 0.4357142857142857,
+        "unknown_permutation_success": 0.35,
+        "wrong_commit_rate": 0.325
+      },
+      "selected_mode": "random"
+    },
+    "universal_mutated_wire_setup": {
+      "overall": {
+        "action_accuracy": 0.7535714285714286,
+        "active_bitflip_success": 1.0,
+        "active_dropout_success": 1.0,
+        "burst_noise_success": 1.0,
+        "false_ask_rate": 0.2125,
+        "false_commit_rate": 0.033928571428571426,
+        "known_permutation_success": 1.0,
+        "reserve_adversarial_success": 0.0,
+        "reserve_noise_success": 0.025,
+        "row_count": 560,
+        "stress_success": 0.7535714285714286,
+        "unknown_permutation_success": 0.525,
+        "wrong_commit_rate": 0.017857142857142856
+      },
+      "selected_mode": "crc3_integrity"
+    },
+    "unmasked8_full_payload_decoder": {
+      "overall": {
+        "action_accuracy": 0.6428571428571429,
+        "active_bitflip_success": 0.0,
+        "active_dropout_success": 1.0,
+        "burst_noise_success": 0.0,
+        "false_ask_rate": 0.07142857142857142,
+        "false_commit_rate": 0.2857142857142857,
+        "known_permutation_success": 0.125,
+        "reserve_adversarial_success": 0.125,
+        "reserve_noise_success": 0.0,
+        "row_count": 560,
+        "stress_success": 0.38392857142857145,
+        "unknown_permutation_success": 0.0,
+        "wrong_commit_rate": 0.5285714285714286
+      },
+      "selected_mode": "unmasked8"
+    }
+  },
+  "table": "| system | stress_success | reserve_noise_success | active_dropout_success | active_bitflip_success | burst_noise_success | known_permutation_success | unknown_permutation_success | false_commit_rate | wrong_commit_rate | false_ask_rate |\n|---|---|---|---|---|---|---|---|---|---|---|\n| oracle_integrity_reference | 1.000 | 1.000 | 1.000 | 1.000 | 1.000 | 1.000 | 1.000 | 0.000 | 0.000 | 0.000 |\n| unmasked8_full_payload_decoder | 0.384 | 0.000 | 1.000 | 0.000 | 0.000 | 0.125 | 0.000 | 0.286 | 0.529 | 0.071 |\n| active5_ignore_reserve_mask | 0.680 | 1.000 | 1.000 | 0.000 | 0.000 | 0.525 | 0.000 | 0.286 | 0.236 | 0.000 |\n| active5_visible_dropout_guard | 0.786 | 1.000 | 1.000 | 0.000 | 0.000 | 1.000 | 0.000 | 0.214 | 0.179 | 0.000 |\n| crc3_integrity_guard | 0.754 | 0.025 | 1.000 | 1.000 | 1.000 | 1.000 | 0.525 | 0.034 | 0.018 | 0.212 |\n| universal_mutated_wire_setup | 0.754 | 0.025 | 1.000 | 1.000 | 1.000 | 1.000 | 0.525 | 0.034 | 0.018 | 0.212 |\n| random_policy_control | 0.436 | 0.000 | 0.400 | 0.650 | 0.350 | 0.000 | 0.350 | 0.159 | 0.325 | 0.086 |\n"
+}

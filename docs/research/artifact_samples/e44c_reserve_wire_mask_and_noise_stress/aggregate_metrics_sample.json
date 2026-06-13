@@ -1,0 +1,16 @@
+{
+  "crc_stress_success": 0.7535714285714286,
+  "data_bits": 5,
+  "decision": "e44c_eight_bit_not_universal_under_silent_noise",
+  "default_mask_stress_success": 0.7857142857142857,
+  "deterministic_replay_hashes": {
+    "row_results": "f6094dbe06f6b10397729dcfab19b8ad9fd2f2c8c08bb5f0159423fbc93bf768",
+    "system_results": "bb8a211d87fe668bef9a2c495dd61f8c5d506a8a8d6ddd5582f0d411bd334b20",
+    "universal_report": "d82ddd05fe8f5e0e5b3c433f2ff82b89060a4a9d4607cf1866ce722fb23a4658"
+  },
+  "milestone": "E44C_RESERVE_WIRE_MASK_AND_NOISE_STRESS",
+  "payload_bits": 8,
+  "reserve_bits": 3,
+  "run_id": "51637219aff9d55f",
+  "universal_selected_mode": "crc3_integrity"
+}

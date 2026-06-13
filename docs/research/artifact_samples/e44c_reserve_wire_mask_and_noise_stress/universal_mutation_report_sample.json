@@ -1,0 +1,17 @@
+{
+  "accepted": 970,
+  "final_mode": "crc3_integrity",
+  "history_rows": 1920,
+  "initial_mode": "active5_dropout_guard",
+  "mutation_attempts": 1920,
+  "parameter_diff_hash": "9d0fbe88fc4f965589fa64d8e6669b77fc701d516639eae49b121905c525d73e",
+  "parameter_diff_written": true,
+  "rejected": 950,
+  "rollback_count": 950,
+  "rollback_mismatch": false,
+  "selected_candidate": {
+    "candidate_hash": "fbd2bce2662adb5e2d9e7a32d170994674b3f212b67116777056b24b6e26ad89",
+    "mode": "crc3_integrity"
+  },
+  "system": "universal_mutated_wire_setup"
+}
