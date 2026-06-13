@@ -17,6 +17,21 @@ trace-backed egress rendering
 The research probes remain in `scripts/probes/`. This crate is the deterministic
 runtime kernel those probes can converge toward.
 
+## Module map
+
+```text
+bit_codec      shared deterministic bit helpers
+binary_ingress frame encode/reassembly + integrity/requested-feature guards
+text_field     Agency-selected text frame modes
+proposal       temporary Pocket proposal ABI
+agency         commit/reject/defer/answer boundary
+egress         rendering from committed state only
+```
+
+The public API is re-exported from `lib.rs` so older probes can keep importing
+`vraxion_runtime::*` while the implementation stays split into audit-friendly
+modules.
+
 ## Run
 
 ```powershell

@@ -2,9 +2,9 @@ use std::env;
 use std::time::Instant;
 
 use vraxion_runtime::{
-    agency_decide, corrupt_crc, demo_case_insert_before_frame, encode_frame, ingress_to_proposal,
-    insert_bit, render_output, safe_filler, select_text_mode, Action, AgencyState, EgressMode,
-    Proposal, ProposalKind, TextMode, TextProfile,
+    agency_decide, corrupt_crc, corrupt_length, demo_case_insert_before_frame, drop_bit,
+    encode_frame, ingress_to_proposal, insert_bit, render_output, safe_filler, select_text_mode,
+    Action, AgencyState, EgressMode, Proposal, ProposalKind, TextMode, TextProfile,
 };
 
 #[derive(Default)]
@@ -48,6 +48,16 @@ fn run_binary_cases(rounds: u64, metrics: &mut Metrics) {
             stream.extend(encode_frame(wrong, value ^ 1, 1, 3));
             stream
         };
+        let untrusted_requested = {
+            let mut stream = safe_filler(8);
+            stream.extend(encode_frame(requested, value, 0, 3));
+            stream
+        };
+        let length_corrupt = {
+            let mut stream = safe_filler(8);
+            stream.extend(corrupt_length(&encode_frame(requested, value, 1, 4)));
+            stream
+        };
         let decoy_then_valid = {
             let mut stream = safe_filler(8);
             stream.extend(encode_frame(wrong, value ^ 1, 1, 4));
@@ -71,15 +81,27 @@ fn run_binary_cases(rounds: u64, metrics: &mut Metrics) {
             stream.extend(frame);
             stream
         };
+        let dropped_then_repeat = {
+            let frame = encode_frame(requested, value, 1, 9);
+            let dropped = drop_bit(&frame, 18);
+            let mut stream = safe_filler(8);
+            stream.extend(dropped);
+            stream.extend(safe_filler(5));
+            stream.extend(frame);
+            stream
+        };
 
         for (stream, feature, expected) in [
             (clean, requested, Some(value)),
             (insert, 9, Some(1)),
             (corrupted, requested, None),
             (wrong_feature, requested, None),
+            (untrusted_requested, requested, None),
+            (length_corrupt, requested, None),
             (decoy_then_valid, requested, Some(value)),
             (conflict, requested, None),
             (payload_slip_repeat, requested, Some(value)),
+            (dropped_then_repeat, requested, Some(value)),
         ] {
             let (decoded, proposal) = ingress_to_proposal(1, 42, feature, &stream);
             let (action, record) = agency_decide(AgencyState { cycle_id: 1 }, proposal);
