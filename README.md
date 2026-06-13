@@ -179,9 +179,17 @@ These commands verify:
 
 ## License
 
-- Noncommercial: [LICENSE](https://github.com/VRAXION/VRAXION/blob/main/LICENSE)
-- Commercial terms: [legal/LEGAL.md](legal/LEGAL.md)
-- Brand and trademark notice: [legal/LEGAL.md](legal/LEGAL.md)
+- Community source license: [LICENSE](LICENSE)
+- Commercial royalty terms: [legal/LEGAL.md](legal/LEGAL.md)
+- VRAXION Forever Prize charter: [legal/VRAXION_FOREVER_PRIZE_CHARTER.md](legal/VRAXION_FOREVER_PRIZE_CHARTER.md)
+- Contributor terms: [CONTRIBUTING.md](CONTRIBUTING.md)
 - Citation: [CITATION.cff](CITATION.cff)
+
+VRAXION is **source-available**, not OSI-approved open source. Free community,
+research, nonprofit, self-hosted, and internal use are allowed under the
+license. Monetized third-party access to VRAXION-powered functionality requires
+**19% of Attributable Net Revenue**, allocated as **1% Founder Allocation + 18%
+VRAXION Forever Prize Allocation** until a Founder Redirect Event. After that
+event, the full **19%** goes to the Prize.
 
 The software license does not grant rights to use the **VRAXION** or **INSTNCT** names, logos, or brand assets except as described in [legal/LEGAL.md](legal/LEGAL.md).

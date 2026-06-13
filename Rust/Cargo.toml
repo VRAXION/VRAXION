@@ -6,7 +6,7 @@ name = "vraxion"
 version = "0.1.0"
 edition = "2021"
 description = "VRAXION Rust deploy SDK — byte-level pipeline (Block A frozen)"
-license = "LicenseRef-PolyForm-Noncommercial-1.0.0"
+license = "LicenseRef-VRAXION-Community-Source-1.0"
 repository = "https://github.com/VRAXION/VRAXION"
 readme = "README.md"
 

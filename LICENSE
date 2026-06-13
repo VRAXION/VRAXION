@@ -1,138 +1,394 @@
-# PolyForm Noncommercial License 1.0.0
+# VRAXION Community Source License 1.0
 
-<https://polyformproject.org/licenses/noncommercial/1.0.0>
+SPDX-License-Identifier: LicenseRef-VRAXION-Community-Source-1.0
 
-## Acceptance
+Effective date: 2026-06-13
+Project: VRAXION / INSTNCT
+Copyright: Copyright (c) 2026 Daniel Kenessy and the VRAXION contributors.
 
-In order to get any license under these terms, you must agree
-to them as both strict obligations and conditions to all
-your licenses.
+This is a custom source-available community license. It is not an OSI-approved open source license.
 
-## Copyright License
+## 0. Plain-language summary
 
-The licensor grants you a copyright license for the
-software to do everything you might do with the software
-that would otherwise infringe the licensor's copyright
-in it for any permitted purpose.  However, you may
-only distribute the software according to [Distribution
-License](#distribution-license) and make changes or new works
-based on the software according to [Changes and New Works
-License](#changes-and-new-works-license).
+You may use, study, modify, fork, self-host, test, and share VRAXION for free.
 
-## Distribution License
+You owe no royalty for:
+- personal use;
+- research;
+- education;
+- nonprofit use;
+- community forks;
+- free public demos with no monetization;
+- internal use inside a company, provided you are not selling third-party access to VRAXION-powered functionality.
 
-The licensor grants you an additional copyright license
-to distribute copies of the software.  Your license
-to distribute covers distributing the software with
-changes and new works permitted by [Changes and New Works
-License](#changes-and-new-works-license).
+You must pay the royalty if you monetize third-party access to VRAXION-powered functionality, including paid hosted services, paid APIs, paid subscriptions, paid managed deployments, paid embedded AI features, or resale of VRAXION-powered models, agents, inference, training, or similar functionality.
 
-## Notices
+Royalty: 19% of Net Revenue from Royalty Use.
 
-You must ensure that anyone who gets a copy of any part of
-the software from you also gets a copy of these terms or the
-URL for them above, as well as copies of any plain-text lines
-beginning with `Required Notice:` that the licensor provided
-with the software.  For example:
+Default distribution:
+- 1% Founder Allocation;
+- 18% VRAXION Forever Prize Allocation.
 
-> Required Notice: Copyright Yoyodyne, Inc. (http://example.com)
+After a Founder Redirect Event, the Founder Allocation also redirects to the VRAXION Forever Prize Allocation, so the full 19% goes to the Prize.
 
-## Changes and New Works License
+This summary is only a guide. The legal terms below control.
 
-The licensor grants you an additional copyright license to
-make changes and new works based on the software for any
-permitted purpose.
+## 1. Definitions
 
-## Patent License
+### 1.1 Project Materials
 
-The licensor grants you a patent license for the software that
-covers patent claims the licensor can license, or becomes able
-to license, that you would infringe by using the software.
+"Project Materials" means the software, source code, object code, scripts, tools, model weights, checkpoints, configurations, documentation, examples, evaluation harnesses, benchmark code, and other materials made available by the Licensor under this License.
 
-## Noncommercial Purposes
+Project Materials do not include third-party dependencies, datasets, models, files, or services that are governed by separate terms.
 
-Any noncommercial purpose is a permitted purpose.
+### 1.2 Licensor
 
-## Personal Uses
+"Licensor" means the person or legal entity offering the Project Materials under this License.
 
-Personal use for research, experiment, and testing for
-the benefit of public knowledge, personal study, private
-entertainment, hobby projects, amateur pursuits, or religious
-observance, without any anticipated commercial application,
-is use for a permitted purpose.
+Until a formal project entity or foundation is designated, the Licensor is Daniel Kenessy and/or the VRAXION project owner of record.
 
-## Noncommercial Organizations
+### 1.3 You
 
-Use by any charitable organization, educational institution,
-public research organization, public safety or health
-organization, environmental protection organization,
-or government institution is use for a permitted purpose
-regardless of the source of funding or obligations resulting
-from the funding.
+"You" means the individual or legal entity exercising rights under this License. If you act for a company, organization, client, employer, affiliate, or other principal, "You" includes that entity and its affiliates.
 
-## Fair Use
+### 1.4 Affiliate
 
-You may have "fair use" rights for the software under the
-law. These terms do not limit them.
+"Affiliate" means any entity that controls, is controlled by, or is under common control with another entity. "Control" means ownership of more than 50% of voting power or the practical ability to direct management or policy.
 
-## No Other Rights
+### 1.5 VRAXION-Powered Functionality
 
-These terms do not allow you to sublicense or transfer any of
-your licenses to anyone else, or prevent the licensor from
-granting licenses to anyone else.  These terms do not imply
-any other licenses.
+"VRAXION-Powered Functionality" means any functionality that is materially enabled by the Project Materials, including:
 
-## Patent Defense
+- inference;
+- training;
+- fine-tuning;
+- model serving;
+- model routing;
+- agent behavior;
+- graph/self-wiring architecture behavior;
+- generated model checkpoints or derivatives;
+- APIs or applications exposing outputs substantially produced by the Project Materials;
+- derivatives, adaptations, ports, conversions, distillations, or modified versions of the Project Materials.
 
-If you make any written claim that the software infringes or
-contributes to infringement of any patent, your patent license
-for the software granted under these terms ends immediately. If
-your company makes such a claim, your patent license ends
-immediately for work on behalf of your company.
+A clean-room implementation that does not copy, adapt, use, link to, derive from, or otherwise incorporate Project Materials is not VRAXION-Powered Functionality merely because it uses a similar general idea.
 
-## Violations
+### 1.6 Community Use
 
-The first time you are notified in writing that you have
-violated any of these terms, or done anything with the software
-not covered by your licenses, your licenses can nonetheless
-continue if you come into full compliance with these terms,
-and take practical steps to correct past violations, within
-32 days of receiving notice.  Otherwise, all your licenses
-end immediately.
+"Community Use" means use of the Project Materials that is not Royalty Use.
 
-## No Liability
+Community Use includes personal, research, educational, nonprofit, internal company use, evaluation, benchmarking, modification, forking, self-hosting, free redistribution, and free public demos, provided the use does not monetize third-party access to VRAXION-Powered Functionality.
 
-***As far as the law allows, the software comes as is, without
-any warranty or condition, and the licensor will not be liable
-to you for any damages arising out of these terms or the use
-or nature of the software, under any kind of legal claim.***
+### 1.7 Royalty Use
 
-## Definitions
+"Royalty Use" means receiving revenue, fees, subscriptions, usage fees, advertising revenue, sponsorship revenue, commissions, platform fees, non-cash consideration, or other commercial consideration in exchange for third-party access to VRAXION-Powered Functionality.
 
-The **licensor** is the individual or entity offering these
-terms, and the **software** is the software the licensor makes
-available under these terms.
+Royalty Use includes, without limitation:
 
-**You** refers to the individual or entity agreeing to these
-terms.
+- paid hosted services;
+- paid APIs;
+- paid subscriptions;
+- paid SaaS products;
+- paid managed deployments;
+- paid enterprise access;
+- paid model-as-a-service or agent-as-a-service;
+- paid applications where VRAXION-Powered Functionality is a material feature;
+- paid resale, white-labeling, or sublicensing of VRAXION-Powered Functionality;
+- bundling VRAXION-Powered Functionality into a paid tier, paid product, or paid platform;
+- monetized free access, including advertising-supported, sponsored, data-resale, lead-generation, or affiliate-revenue models.
 
-**Your company** is any legal entity, sole proprietorship,
-or other kind of organization that you work for, plus all
-organizations that have control over, are under the control of,
-or are under common control with that organization.  **Control**
-means ownership of substantially all the assets of an entity,
-or the power to direct its management and policies by vote,
-contract, or otherwise.  Control can be direct or indirect.
+Royalty Use does not include ordinary internal use where no third party receives access to VRAXION-Powered Functionality as a paid or monetized product, service, feature, API, or deployment.
 
-**Your licenses** are all the licenses granted to you for the
-software under these terms.
+### 1.8 Net Revenue
 
-**Use** means anything you do with the software requiring one
-of your licenses.
+"Net Revenue" means all revenue and non-cash consideration received from Royalty Use, less only the following deductions actually incurred and documented:
 
----
+- refunds;
+- chargebacks;
+- VAT, sales tax, GST, or similar transaction taxes collected from customers and remitted to a tax authority;
+- payment processor fees;
+- app-store or platform distribution fees, capped at 30% of the relevant customer payment;
+- user-facing discounts, credits, and coupons applied at the time of sale.
 
-Required Notice: PRIME C-19 — Phase-Recurring Infinite Manifold Engine (Project David)
-Copyright (c) 2026 Dani Kenessy
-Commercial use requires a separate written license. Contact: kenessy.dani@gmail.com
+No other deductions are allowed unless the Licensor agrees in a separate signed writing.
 
+Not deductible:
+- cloud compute;
+- hosting;
+- salaries;
+- contractor costs;
+- research and development;
+- training data costs;
+- model licensing costs;
+- marketing;
+- sales commissions;
+- office costs;
+- legal costs;
+- insurance;
+- financing costs;
+- depreciation;
+- amortization;
+- internal transfer pricing;
+- affiliate charges;
+- general overhead;
+- losses from other products or business units.
+
+### 1.9 Attributable Net Revenue
+
+"Attributable Net Revenue" means the Net Revenue reasonably attributable to Royalty Use.
+
+If VRAXION-Powered Functionality is sold separately, Attributable Net Revenue is the Net Revenue from that separate product, service, API, feature, tier, or deployment.
+
+If VRAXION-Powered Functionality is bundled with other functionality and not separately priced, Attributable Net Revenue is the greatest of:
+
+1. the amount allocated to VRAXION-Powered Functionality in your ordinary books and records, if that allocation is reasonable, consistent, and auditable;
+2. Net Revenue multiplied by the share of active users, calls, tokens, inference requests, compute time, sessions, or feature usage attributable to VRAXION-Powered Functionality;
+3. 30% of Net Revenue from the paid product, service, tier, or deployment in which VRAXION-Powered Functionality is a material feature.
+
+Affiliate transfers, internal reseller arrangements, bundling, credits, free trials, or below-market transactions may not be used to avoid or reduce Attributable Net Revenue. Non-cash consideration is valued at fair market value.
+
+### 1.10 Founder Allocation
+
+"Founder Allocation" means 1 percentage point of the 19% Royalty, payable to the Founder Payee unless and until a Founder Redirect Event occurs.
+
+### 1.11 Founder Payee
+
+"Founder Payee" means Daniel Kenessy, or any successor payee designated by Daniel Kenessy in a signed written instruction, notarized instruction, cryptographically signed public instruction, will, trust, foundation document, or other legally effective designation.
+
+### 1.12 VRAXION Forever Prize Allocation
+
+"VRAXION Forever Prize Allocation" means 18 percentage points of the 19% Royalty before a Founder Redirect Event, and 19 percentage points of the 19% Royalty after a Founder Redirect Event.
+
+The Prize objective is:
+
+> Preserve, protect, expand, and responsibly sustain consciousness, subjective experience, and conscious-capable substrates across the longest feasible time horizons, including biological, digital, hybrid, and future substrates.
+
+The short motto is:
+
+> Ensure consciousness in the universe and beyond. End of duty: Forever.
+
+### 1.13 Founder Redirect Event
+
+"Founder Redirect Event" means the earliest of:
+
+- Daniel Kenessy's death;
+- a date, condition, or event designated by Daniel Kenessy in a signed written instruction, notarized instruction, cryptographically signed public instruction, will, trust, foundation document, or other legally effective designation;
+- a public repository notice or release notice signed or published from the official VRAXION project account stating that the Founder Allocation has redirected.
+
+After a Founder Redirect Event, the Founder Allocation becomes part of the VRAXION Forever Prize Allocation, and 100% of the 19% Royalty is payable for the VRAXION Forever Prize purpose.
+
+### 1.14 AI Allocator
+
+"AI Allocator" means a VRAXION AI system or related system used to evaluate, rank, recommend, or help distribute Prize funds.
+
+Unless applicable law clearly allows direct autonomous control, the AI Allocator acts as an advisory, scoring, recommendation, and audit system. Legal execution of payments must be performed by a human, fiduciary, foundation, trust, company, or other legally recognized person or entity.
+
+## 2. Community license grant
+
+Subject to this License, the Licensor grants You a worldwide, royalty-free, non-exclusive, non-transferable copyright license to:
+
+- use the Project Materials;
+- copy the Project Materials;
+- modify the Project Materials;
+- create derivative works from the Project Materials;
+- run the Project Materials locally, privately, or publicly;
+- self-host the Project Materials;
+- study, benchmark, evaluate, and test the Project Materials;
+- distribute copies of the Project Materials and modified versions of them;
+- use the Project Materials for Community Use.
+
+You may exercise these rights for Community Use without paying royalties.
+
+## 3. Royalty Use license grant
+
+Subject to this License, the Licensor grants You a worldwide, non-exclusive, non-transferable license to make Royalty Use of the Project Materials only if You comply with all Royalty Use requirements in this section.
+
+### 3.1 Royalty
+
+For Royalty Use, You must pay 19% of Attributable Net Revenue.
+
+Before a Founder Redirect Event, the 19% Royalty is allocated as follows:
+
+- 1% of Attributable Net Revenue to the Founder Allocation;
+- 18% of Attributable Net Revenue to the VRAXION Forever Prize Allocation.
+
+After a Founder Redirect Event, the full 19% of Attributable Net Revenue is allocated to the VRAXION Forever Prize Allocation.
+
+The total royalty is always 19%, not 20%.
+
+### 3.2 Registration
+
+You must notify the Licensor in writing within 30 days after first Royalty Use.
+
+The notice must include:
+
+- your legal name;
+- billing contact;
+- product or service name;
+- description of the VRAXION-Powered Functionality;
+- start date of Royalty Use;
+- reporting contact;
+- payment contact.
+
+### 3.3 Reporting
+
+You must provide a royalty report within 45 days after the end of each calendar quarter in which You make Royalty Use.
+
+Each report must state:
+
+- gross receipts from Royalty Use;
+- deductions used to calculate Net Revenue;
+- Attributable Net Revenue;
+- royalty due;
+- allocation between Founder Allocation and VRAXION Forever Prize Allocation;
+- methodology used for bundled products or mixed services;
+- number of active users, calls, tokens, requests, sessions, or other usage metrics reasonably needed to audit attribution.
+
+### 3.4 Payment
+
+Royalty payments are due within 45 days after the end of each calendar quarter.
+
+Payments must be made in EUR unless the Licensor agrees otherwise in writing.
+
+If payment details for one allocation are not available, You must pay the available allocation on time and hold the unavailable allocation in segregated escrow or reserve until the Licensor provides valid payment instructions.
+
+### 3.5 Audit
+
+You must keep complete and accurate records relating to Royalty Use for at least 5 years.
+
+No more than once per calendar year, the Licensor may appoint an independent accountant or auditor to audit those records on reasonable notice and under reasonable confidentiality terms.
+
+If an audit finds an underpayment of more than 5% for any audited period, You must promptly pay the underpayment, reasonable audit costs, and interest at 1% per month or the maximum allowed by law, whichever is lower.
+
+### 3.6 No avoidance
+
+You may not avoid, reduce, or disguise Royalty Use by:
+
+- routing revenue through affiliates;
+- bundling VRAXION-Powered Functionality without reasonable attribution;
+- calling fees "support", "compute", "platform", "membership", "donation", "credit", or another label while providing monetized access;
+- giving away VRAXION-Powered Functionality while monetizing it through ads, sponsorship, data resale, affiliate fees, lead generation, or similar consideration;
+- selling through an affiliate, reseller, partner, marketplace, or white-label arrangement at below-market transfer prices;
+- using credits, coupons, or free trials that are funded by third-party commercial consideration.
+
+## 4. Redistribution and downstream terms
+
+If You distribute Project Materials or modified versions, You must:
+
+- include a copy of this License;
+- preserve copyright, patent, trademark, and attribution notices;
+- state that the project is source-available and not OSI-approved open source;
+- identify material modifications You made;
+- ensure downstream recipients receive the Project Materials under this License or a license no less protective of the Licensor's rights.
+
+You may not remove or alter legal notices except to add accurate notices for your own modifications.
+
+## 5. Outputs
+
+The Licensor does not claim ownership of outputs generated by your lawful use of the Project Materials.
+
+You are responsible for your outputs, your use of outputs, and your compliance with applicable law.
+
+The Licensor gives no warranty that outputs are accurate, safe, non-infringing, private, compliant, or fit for any purpose.
+
+## 6. Patents
+
+The Licensor grants You a non-exclusive, worldwide, royalty-free patent license to make Community Use of the Project Materials under patent claims the Licensor can license and that would necessarily be infringed by using the Project Materials as provided.
+
+For Royalty Use, the patent license is included only while You comply with the Royalty Use requirements.
+
+If You or your affiliate bring a patent claim alleging that the Project Materials or any use of them infringes a patent, your patent license under this License terminates immediately.
+
+## 7. Trademarks and brand
+
+This License does not grant rights to use VRAXION, INSTNCT, project logos, icons, visual identity, domain names, social handles, or other brand assets.
+
+You may make truthful, non-misleading nominative references to the project for compatibility notes, academic citation, benchmarking, commentary, provenance, and attribution.
+
+You may not suggest that your fork, product, service, API, model, deployment, or organization is official, endorsed, sponsored, or controlled by VRAXION unless You have separate written permission.
+
+## 8. Compliance with law
+
+You are responsible for complying with all laws and regulations that apply to your use, deployment, distribution, exports, imports, data processing, security, consumer protection, AI systems, and AI models.
+
+This License does not authorize any illegal activity.
+
+## 9. High-risk deployment notice
+
+The Project Materials are research and engineering materials. They are not warranted for high-stakes or safety-critical use.
+
+You are solely responsible for evaluation, monitoring, risk management, human oversight, cybersecurity, privacy, incident response, and legal compliance for any deployment.
+
+## 10. Termination
+
+Your rights under this License terminate automatically if You materially breach this License.
+
+For a first non-willful breach, your rights may be reinstated if You cure the breach within 30 days after receiving written notice.
+
+Willful non-payment, fraudulent reporting, hiding Royalty Use, removing notices, or unauthorized trademark use may terminate rights immediately unless the Licensor chooses to allow cure.
+
+After termination, You must stop using, distributing, hosting, and monetizing the Project Materials and VRAXION-Powered Functionality unless the Licensor agrees otherwise in writing.
+
+Sections that by their nature should survive termination survive, including royalty obligations accrued before termination, audit rights, warranty disclaimers, liability limits, trademark restrictions, and governing law.
+
+## 11. No warranty
+
+The Project Materials are provided "as is" and "as available" without warranties of any kind.
+
+To the maximum extent allowed by law, the Licensor disclaims all warranties, including warranties of merchantability, fitness for a particular purpose, title, non-infringement, accuracy, security, availability, and regulatory compliance.
+
+## 12. Limitation of liability
+
+To the maximum extent allowed by law, the Licensor is not liable for any indirect, incidental, special, consequential, exemplary, punitive, or lost-profit damages arising from the Project Materials or this License.
+
+To the maximum extent allowed by law, the Licensor's total liability for all claims relating to the Project Materials or this License is limited to the greater of:
+
+- EUR 100; or
+- the amount You paid directly to the Licensor under this License in the 12 months before the claim.
+
+## 13. No sublicensing except as stated
+
+You may not sublicense the Project Materials except as necessary to distribute the Project Materials or modified versions under this License to downstream recipients.
+
+No commercial sublicensing, white-labeling, managed service rights, resale rights, or hosted-service rights are granted except through compliance with the Royalty Use terms or a separate written agreement.
+
+## 14. Contributor and third-party rights
+
+This License only grants rights the Licensor has authority to grant.
+
+Contributions are accepted only under the VRAXION Contributor Terms or another written agreement accepted by the Licensor.
+
+Third-party materials remain governed by their own licenses and terms.
+
+## 15. Later versions
+
+The Licensor may publish later versions of this License.
+
+A later version applies to You only if:
+
+- the Project Materials You received expressly say they are licensed under that later version;
+- You choose to use Project Materials released under that later version; or
+- You enter into a separate written agreement adopting that later version.
+
+## 16. Governing law and venue
+
+Unless a separate written agreement says otherwise, this License is governed by the laws of the Slovak Republic, excluding conflict-of-law rules.
+
+The courts of Bratislava, Slovakia have exclusive jurisdiction, unless applicable law requires another venue.
+
+## 17. Severability
+
+If any part of this License is unenforceable, the rest remains effective.
+
+The unenforceable part must be interpreted or replaced to most closely achieve its intended economic and legal effect while remaining enforceable.
+
+## 18. Entire license
+
+This License is the entire public license for the Project Materials unless a separate signed written agreement says otherwise.
+
+A separate signed written agreement may grant additional rights, change commercial terms, or override parts of this License for the parties to that agreement only.
+
+## Required notice
+
+Required Notice: VRAXION / INSTNCT — source-available community project.
+Required Notice: Commercial monetization of third-party access to VRAXION-Powered Functionality requires 19% of Attributable Net Revenue under this License or a separate written agreement.
+Required Notice: Default royalty allocation is 1% Founder Allocation and 18% VRAXION Forever Prize Allocation. After a Founder Redirect Event, the full 19% goes to the VRAXION Forever Prize Allocation.

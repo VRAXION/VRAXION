@@ -1,0 +1,14 @@
+{
+  "created_at": "2026-06-13T06:22:47.486508Z",
+  "package": "vraxion_license_v1_package",
+  "files": [
+    "CONTRIBUTING.md",
+    "LICENSE",
+    "PUBLISH_COMMANDS.md",
+    "README_LICENSE_SECTION.md",
+    "docs/legal/VRAXION_LICENSE_ADVERSARIAL_REVIEW.md",
+    "install_vraxion_license_v1.sh",
+    "legal/LEGAL.md",
+    "legal/VRAXION_FOREVER_PRIZE_CHARTER.md"
+  ]
+}

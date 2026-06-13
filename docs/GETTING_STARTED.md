@@ -98,6 +98,7 @@ Use it for old scratch tools and non-current probe runners that were removed fro
 
 ## License
 
-- Noncommercial: [`LICENSE`](../LICENSE)
-- Commercial terms and brand rights: [`legal/LEGAL.md`](../legal/LEGAL.md)
+- Community source license: [`LICENSE`](../LICENSE)
+- Commercial royalty terms and brand rights: [`legal/LEGAL.md`](../legal/LEGAL.md)
+- VRAXION Forever Prize charter: [`legal/VRAXION_FOREVER_PRIZE_CHARTER.md`](../legal/VRAXION_FOREVER_PRIZE_CHARTER.md)
 - Citation: [`CITATION.cff`](../CITATION.cff)
