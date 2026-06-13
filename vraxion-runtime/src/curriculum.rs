@@ -44,6 +44,40 @@ pub struct CurriculumVerdict {
     pub promoted: bool,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct CurriculumQueueLesson {
+    pub family: &'static str,
+    pub lesson: CurriculumLesson,
+    pub candidate: StorePromotionCandidate,
+    pub lifecycle_evidence: NextMutationEvidence,
+    pub promotion_evidence: PromotionEvidence,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct CurriculumQueueReport {
+    pub lesson_count: usize,
+    pub passed_count: usize,
+    pub promoted_count: usize,
+    pub flow_ground_sync_count: usize,
+    pub proposal_boundary_count: usize,
+    pub reload_match: bool,
+    pub quality_delta: f32,
+    pub first_failure: CurriculumBlockReason,
+}
+
+impl CurriculumQueueReport {
+    pub fn passed(self) -> bool {
+        self.lesson_count > 0
+            && self.lesson_count == self.passed_count
+            && self.lesson_count == self.promoted_count
+            && self.lesson_count == self.flow_ground_sync_count
+            && self.lesson_count == self.proposal_boundary_count
+            && self.reload_match
+            && self.quality_delta > 0.0
+            && self.first_failure == CurriculumBlockReason::None
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct RustCurriculumRunner {
     pub body: LockedBodyRuntime,
@@ -229,6 +263,44 @@ impl RustCurriculumRunner {
             promoted: true,
         }
     }
+
+    pub fn run_queue(&mut self, lessons: &[CurriculumQueueLesson]) -> CurriculumQueueReport {
+        let mut passed_count = 0;
+        let mut promoted_count = 0;
+        let mut flow_ground_sync_count = 0;
+        let mut proposal_boundary_count = 0;
+        let mut first_failure = CurriculumBlockReason::None;
+
+        for queue_lesson in lessons {
+            let verdict = self.run_binary_lesson(
+                queue_lesson.lesson,
+                queue_lesson.candidate,
+                queue_lesson.lifecycle_evidence,
+                queue_lesson.promotion_evidence,
+            );
+            passed_count += verdict.passed as usize;
+            promoted_count += verdict.promoted as usize;
+            flow_ground_sync_count += (verdict.flow_value == verdict.ground_value
+                && verdict.flow_value == Some(queue_lesson.lesson.value))
+                as usize;
+            proposal_boundary_count += (verdict.proposal_slots_used == 1) as usize;
+            if first_failure == CurriculumBlockReason::None && !verdict.passed {
+                first_failure = verdict.reason;
+            }
+        }
+
+        let snapshot = self.store.snapshot();
+        CurriculumQueueReport {
+            lesson_count: lessons.len(),
+            passed_count,
+            promoted_count,
+            flow_ground_sync_count,
+            proposal_boundary_count,
+            reload_match: self.store.reload_matches(snapshot),
+            quality_delta: self.store.quality_delta(),
+            first_failure,
+        }
+    }
 }
 
 #[cfg(test)]
@@ -364,6 +436,21 @@ mod tests {
         }
     }
 
+    fn queue_lesson(uid: &'static str, feature: u8, value: u8) -> CurriculumQueueLesson {
+        CurriculumQueueLesson {
+            family: "binary_ingress_queue",
+            lesson: CurriculumLesson {
+                requested_feature: feature,
+                value,
+                source_pocket_id: 42,
+                nonce: feature.wrapping_mul(3),
+            },
+            candidate: candidate(uid),
+            lifecycle_evidence: lifecycle(),
+            promotion_evidence: promotion(),
+        }
+    }
+
     #[test]
     fn curriculum_row_loads_commits_renders_and_promotes() {
         let mut runner = RustCurriculumRunner::default_body(store(PocketLifecycle::Stable));
@@ -425,5 +512,22 @@ mod tests {
         assert!(!verdict.passed);
         assert_eq!(verdict.reason, CurriculumBlockReason::RuntimeDidNotCommit);
         assert_eq!(runner.store.snapshot().artifact_count, 1);
+    }
+
+    #[test]
+    fn curriculum_queue_promotes_multiple_lessons_with_reload_match() {
+        let mut runner = RustCurriculumRunner::default_body(store(PocketLifecycle::Stable));
+        let lessons = [
+            queue_lesson("gold_queue_a", 3, 1),
+            queue_lesson("gold_queue_b", 4, 0),
+            queue_lesson("gold_queue_c", 9, 1),
+        ];
+        let report = runner.run_queue(&lessons);
+        assert!(report.passed());
+        assert_eq!(report.lesson_count, 3);
+        assert_eq!(report.promoted_count, 3);
+        assert!(report.reload_match);
+        assert!(report.quality_delta > 0.0);
+        assert_eq!(runner.store.snapshot().artifact_count, 4);
     }
 }

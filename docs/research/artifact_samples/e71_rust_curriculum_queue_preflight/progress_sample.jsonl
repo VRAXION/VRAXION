@@ -1,0 +1,3 @@
+{"timestamp_ms":1781380366940,"event":"start","rounds":1000000,"policy":"Rust curriculum queue"}
+{"timestamp_ms":1781380386941,"event":"progress","round":742612,"queues":742612,"lessons":2970448,"adversarial_blocks":3713060,"bad_commit":0,"unsafe_promotion":0}
+{"timestamp_ms":1781380393741,"event":"complete","passed":true,"queues":1000000,"lessons":4000000,"adversarial_blocks":5000000,"bad_commit":0,"unsafe_promotion":0}

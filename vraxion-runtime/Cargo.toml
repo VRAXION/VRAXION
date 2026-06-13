@@ -41,3 +41,7 @@ path = "src/bin/pocket_library_preflight.rs"
 [[bin]]
 name = "curriculum_runner_preflight"
 path = "src/bin/curriculum_runner_preflight.rs"
+
+[[bin]]
+name = "curriculum_queue_preflight"
+path = "src/bin/curriculum_queue_preflight.rs"
