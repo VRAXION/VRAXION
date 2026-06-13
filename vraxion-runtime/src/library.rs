@@ -103,9 +103,19 @@ impl PocketLibraryStore {
         token: PocketToken,
         artifact: StoredPocketArtifact,
     ) {
-        self.registry.push(entry);
-        self.tokens.push(token);
-        self.artifacts.push(artifact);
+        if let Some(position) = self
+            .registry
+            .iter()
+            .position(|existing| existing.pocket_uid == entry.pocket_uid)
+        {
+            self.registry[position] = entry;
+            self.tokens[position] = token;
+            self.artifacts[position] = artifact;
+        } else {
+            self.registry.push(entry);
+            self.tokens.push(token);
+            self.artifacts.push(artifact);
+        }
         self.generation += 1;
         self.ledgers.lifecycle_rows += 1;
         self.ledgers.score_rows += 1;
@@ -467,6 +477,27 @@ mod tests {
         assert!(snapshot.ledger_complete);
         assert!(store.reload_matches(snapshot));
         assert!(store.quality_delta() > 0.0);
+    }
+
+    #[test]
+    fn repeated_uid_insert_updates_canonical_record_without_duplicate_growth() {
+        let mut store = PocketLibraryStore::new();
+        store.insert_pocket(
+            entry("pkt_a", PocketLifecycle::Stable),
+            token("pkt_a"),
+            artifact("pkt_a"),
+        );
+        let mut updated = entry("pkt_a", PocketLifecycle::Core);
+        updated.human_alias = "updated_alias";
+        store.insert_pocket(updated, token("pkt_a"), artifact("pkt_a"));
+
+        let snapshot = store.snapshot();
+        assert_eq!(snapshot.registry_entry_count, 1);
+        assert_eq!(snapshot.token_count, 1);
+        assert_eq!(snapshot.artifact_count, 1);
+        assert_eq!(snapshot.generation, 2);
+        assert_eq!(store.registry[0].human_alias, "updated_alias");
+        assert_eq!(store.registry[0].lifecycle, PocketLifecycle::Core);
     }
 
     #[test]

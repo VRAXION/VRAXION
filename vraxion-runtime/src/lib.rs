@@ -35,8 +35,9 @@ pub use body::{
     EXTENDED_BODY, OVERCAPACITY_AVOID_DEFAULT, PROPOSAL_WIDTH_64_CONTROL, RESEARCH_CEILING_BODY,
 };
 pub use curriculum::{
-    CurriculumBlockReason, CurriculumLesson, CurriculumQueueLesson, CurriculumQueueReport,
-    CurriculumVerdict, RustCurriculumRunner,
+    audit_resume, CurriculumBlockReason, CurriculumCheckpoint, CurriculumLesson,
+    CurriculumQueueLesson, CurriculumQueueReport, CurriculumResumeAudit, CurriculumVerdict,
+    RustCurriculumRunner,
 };
 pub use egress::{render_output, EgressMode, RenderedOutput};
 pub use library::{

@@ -1,0 +1,8 @@
+{
+  "runner": "rust_curriculum_resume_preflight",
+  "rounds": 1000000,
+  "split": 500000,
+  "queue_length": 4,
+  "heartbeat_seconds": 20,
+  "checkpoint_files": ["checkpoint_mid.json", "checkpoint_final.json"]
+}

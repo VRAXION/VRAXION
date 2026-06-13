@@ -1,0 +1,19 @@
+{
+  "passed": true,
+  "rounds": 1000000,
+  "split": 500000,
+  "reference_queues": 1000000,
+  "resumed_queues": 1000000,
+  "reference_lessons": 4000000,
+  "resumed_lessons": 4000000,
+  "checkpoint_resume_compatible": true,
+  "final_checksum_match": true,
+  "final_queue_match": true,
+  "final_lesson_match": true,
+  "final_promotion_match": true,
+  "bad_commit_rate": 0.000000,
+  "unsafe_promotion_rate": 0.000000,
+  "seconds": 29.228364300,
+  "queues_per_sec": 68426.682,
+  "lessons_per_sec": 273706.729
+}

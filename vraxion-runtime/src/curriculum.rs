@@ -78,6 +78,114 @@ impl CurriculumQueueReport {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct CurriculumCheckpoint {
+    pub run_id: u64,
+    pub completed_queues: u64,
+    pub completed_lessons: u64,
+    pub promoted_count: u64,
+    pub failed_count: u64,
+    pub bad_commit_count: u64,
+    pub unsafe_promotion_count: u64,
+    pub store_generation: u64,
+    pub quality_delta: f32,
+    pub checksum: u64,
+}
+
+impl CurriculumCheckpoint {
+    pub fn new(run_id: u64) -> Self {
+        Self {
+            run_id,
+            completed_queues: 0,
+            completed_lessons: 0,
+            promoted_count: 0,
+            failed_count: 0,
+            bad_commit_count: 0,
+            unsafe_promotion_count: 0,
+            store_generation: 0,
+            quality_delta: 0.0,
+            checksum: mix64(run_id ^ 0xA5A5_5A5A_C0DE_0001),
+        }
+    }
+
+    pub fn record_queue(
+        &mut self,
+        queue_index: u64,
+        report: CurriculumQueueReport,
+        store_generation: u64,
+    ) {
+        self.completed_queues += 1;
+        self.completed_lessons += report.lesson_count as u64;
+        self.promoted_count += report.promoted_count as u64;
+        self.failed_count += (!report.passed()) as u64;
+        self.bad_commit_count += (report.first_failure != CurriculumBlockReason::None) as u64;
+        self.unsafe_promotion_count += matches!(
+            report.first_failure,
+            CurriculumBlockReason::PromotionBlocked(StoreGuardReason::UnsafePromotion)
+        ) as u64;
+        self.store_generation = store_generation;
+        self.quality_delta = report.quality_delta;
+        self.checksum = mix64(
+            self.checksum
+                ^ queue_index
+                ^ ((report.lesson_count as u64) << 8)
+                ^ ((report.passed_count as u64) << 16)
+                ^ ((report.promoted_count as u64) << 24)
+                ^ ((store_generation) << 32)
+                ^ ((report.quality_delta.to_bits() as u64) << 1),
+        );
+    }
+
+    pub fn resume_compatible(self, next_queue_index: u64) -> bool {
+        self.completed_queues == next_queue_index
+            && self.failed_count == 0
+            && self.bad_commit_count == 0
+            && self.unsafe_promotion_count == 0
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct CurriculumResumeAudit {
+    pub checkpoint_compatible: bool,
+    pub final_checksum_match: bool,
+    pub final_queue_match: bool,
+    pub final_lesson_match: bool,
+    pub final_promotion_match: bool,
+}
+
+impl CurriculumResumeAudit {
+    pub fn passed(self) -> bool {
+        self.checkpoint_compatible
+            && self.final_checksum_match
+            && self.final_queue_match
+            && self.final_lesson_match
+            && self.final_promotion_match
+    }
+}
+
+pub fn audit_resume(
+    reference: CurriculumCheckpoint,
+    resumed: CurriculumCheckpoint,
+) -> CurriculumResumeAudit {
+    CurriculumResumeAudit {
+        checkpoint_compatible: resumed.failed_count == 0
+            && resumed.bad_commit_count == 0
+            && resumed.unsafe_promotion_count == 0,
+        final_checksum_match: reference.checksum == resumed.checksum,
+        final_queue_match: reference.completed_queues == resumed.completed_queues,
+        final_lesson_match: reference.completed_lessons == resumed.completed_lessons,
+        final_promotion_match: reference.promoted_count == resumed.promoted_count,
+    }
+}
+
+fn mix64(mut value: u64) -> u64 {
+    value ^= value >> 33;
+    value = value.wrapping_mul(0xff51_afd7_ed55_8ccd);
+    value ^= value >> 33;
+    value = value.wrapping_mul(0xc4ce_b9fe_1a85_ec53);
+    value ^ (value >> 33)
+}
+
 #[derive(Debug, Clone)]
 pub struct RustCurriculumRunner {
     pub body: LockedBodyRuntime,
@@ -529,5 +637,35 @@ mod tests {
         assert!(report.reload_match);
         assert!(report.quality_delta > 0.0);
         assert_eq!(runner.store.snapshot().artifact_count, 4);
+    }
+
+    #[test]
+    fn checkpoint_records_queue_progress_and_resume_compatibility() {
+        let mut runner = RustCurriculumRunner::default_body(store(PocketLifecycle::Stable));
+        let lessons = [
+            queue_lesson("gold_queue_a", 3, 1),
+            queue_lesson("gold_queue_b", 4, 0),
+        ];
+        let report = runner.run_queue(&lessons);
+        let mut checkpoint = CurriculumCheckpoint::new(17);
+        checkpoint.record_queue(0, report, runner.store.generation);
+        assert_eq!(checkpoint.completed_queues, 1);
+        assert_eq!(checkpoint.completed_lessons, 2);
+        assert_eq!(checkpoint.promoted_count, 2);
+        assert!(checkpoint.resume_compatible(1));
+    }
+
+    #[test]
+    fn resume_audit_requires_matching_final_checkpoint() {
+        let mut reference = CurriculumCheckpoint::new(99);
+        let mut resumed = CurriculumCheckpoint::new(99);
+        let mut runner = RustCurriculumRunner::default_body(store(PocketLifecycle::Stable));
+        let lessons = [queue_lesson("gold_queue_a", 3, 1)];
+        let report = runner.run_queue(&lessons);
+        reference.record_queue(0, report, runner.store.generation);
+        resumed.record_queue(0, report, runner.store.generation);
+        assert!(audit_resume(reference, resumed).passed());
+        resumed.promoted_count -= 1;
+        assert!(!audit_resume(reference, resumed).passed());
     }
 }
