@@ -1,0 +1,14 @@
+{
+  "passed": true,
+  "rounds": 1000000,
+  "cases": 3000002,
+  "success": 3000002,
+  "false_commit": 0,
+  "missed_commit": 0,
+  "clean_commit_success": 1000000,
+  "invalid_reject_success": 2000000,
+  "proposal_width_reject_success": 1,
+  "proposal_overflow_reject_success": 1,
+  "seconds": 8.308887100,
+  "rows_per_sec": 361059.425
+}

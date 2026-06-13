@@ -12,6 +12,7 @@
 pub mod agency;
 pub mod binary_ingress;
 pub mod bit_codec;
+pub mod body;
 pub mod egress;
 pub mod proposal;
 pub mod text_field;
@@ -23,6 +24,11 @@ pub use binary_ingress::{
     START_SYNC,
 };
 pub use bit_codec::{bits_from_int, checksum, drop_bit, insert_bit, int_from_bits, safe_filler};
+pub use body::{
+    flow_cell_for, ground_cell_for, proposal_record_bits, AgencyView, BodyConfig, FieldKind,
+    FieldMatrix, LockedBodyRuntime, ProposalField, ProposalFieldError, RuntimeStep, DEFAULT_BODY,
+    EXTENDED_BODY, OVERCAPACITY_AVOID_DEFAULT, PROPOSAL_WIDTH_64_CONTROL, RESEARCH_CEILING_BODY,
+};
 pub use egress::{render_output, EgressMode, RenderedOutput};
 pub use proposal::{ingress_to_proposal, Proposal, ProposalKind};
 pub use text_field::{select_text_mode, TextMode, TextProfile};
@@ -199,5 +205,101 @@ mod tests {
             .long
             .as_deref()
             .is_some_and(|text| text.contains("Agency committed")));
+    }
+
+    #[test]
+    fn default_body_matches_e64_lock() {
+        assert_eq!(DEFAULT_BODY.flow_side, 28);
+        assert_eq!(DEFAULT_BODY.ground_side, 32);
+        assert_eq!(DEFAULT_BODY.proposal_slots, 20);
+        assert_eq!(DEFAULT_BODY.proposal_bits, 80);
+        assert_eq!(DEFAULT_BODY.agency_view_bits, 896);
+        assert_eq!(DEFAULT_BODY.flow_cells(), 784);
+        assert_eq!(DEFAULT_BODY.ground_cells(), 1024);
+        assert_eq!(DEFAULT_BODY.proposal_capacity_bits(), 1600);
+    }
+
+    #[test]
+    fn proposal_width_64_control_is_too_narrow_for_full_evidence_record() {
+        let proposal = Proposal {
+            kind: ProposalKind::EvidenceWrite,
+            cycle_id: 1,
+            source_pocket_id: 42,
+            trace_valid: true,
+            ground_compatible: true,
+            target_feature: Some(7),
+            value: Some(1),
+        };
+        assert!(proposal_record_bits(&proposal) > PROPOSAL_WIDTH_64_CONTROL.proposal_bits);
+        let mut field = ProposalField::new(PROPOSAL_WIDTH_64_CONTROL);
+        assert_eq!(
+            field.push(proposal),
+            Err(ProposalFieldError::SlotWidthTooSmall)
+        );
+    }
+
+    #[test]
+    fn default_body_runs_full_ingress_to_egress_cycle() {
+        let mut runtime = LockedBodyRuntime::default_body();
+        let requested = 9;
+        let value = 1;
+        let stream = framed_stream(requested, value);
+        let step = runtime.process_binary_evidence(42, requested, &stream);
+        assert_eq!(step.action, Action::CommitEvidence);
+        assert_eq!(
+            step.committed.map(|record| record.feature_id),
+            Some(requested)
+        );
+        assert_eq!(step.committed.map(|record| record.value), Some(value));
+        assert_eq!(step.proposal_slots_used, 1);
+        assert_eq!(
+            runtime.flow.read(flow_cell_for(requested, DEFAULT_BODY)),
+            Some(value)
+        );
+        assert_eq!(
+            runtime
+                .ground
+                .read(ground_cell_for(requested, DEFAULT_BODY)),
+            Some(value)
+        );
+        assert_eq!(step.rendered.compact, "COMMIT_EVIDENCE");
+        assert!(step
+            .rendered
+            .long
+            .as_deref()
+            .is_some_and(|text| text.contains("Agency committed")));
+    }
+
+    #[test]
+    fn default_body_rejects_invalid_ingress_without_field_mutation() {
+        let mut runtime = LockedBodyRuntime::default_body();
+        let requested = 4;
+        let wrong = 5;
+        let mut stream = safe_filler(8);
+        stream.extend(encode_frame(wrong, 1, 1, 1));
+        let step = runtime.process_binary_evidence(42, requested, &stream);
+        assert_ne!(step.action, Action::CommitEvidence);
+        assert_eq!(step.committed, None);
+        assert_eq!(runtime.flow.active_count(), 0);
+        assert_eq!(runtime.ground.active_count(), 0);
+        assert_eq!(step.rendered.compact, "NEED_MORE_INFO");
+    }
+
+    #[test]
+    fn proposal_field_enforces_slot_capacity() {
+        let mut field = ProposalField::new(DEFAULT_BODY);
+        let proposal = Proposal {
+            kind: ProposalKind::EvidenceWrite,
+            cycle_id: 1,
+            source_pocket_id: 42,
+            trace_valid: true,
+            ground_compatible: true,
+            target_feature: Some(1),
+            value: Some(1),
+        };
+        for _ in 0..DEFAULT_BODY.proposal_slots {
+            assert_eq!(field.push(proposal), Ok(()));
+        }
+        assert_eq!(field.push(proposal), Err(ProposalFieldError::SlotOverflow));
     }
 }

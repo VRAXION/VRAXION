@@ -9,6 +9,7 @@ ready to present as a homogeneous core:
 ```text
 binary ingress reassembly
 text field mode selection
+locked body v1 sizing
 proposal boundary
 Agency commit/reject/defer
 trace-backed egress rendering
@@ -23,10 +24,24 @@ runtime kernel those probes can converge toward.
 bit_codec      shared deterministic bit helpers
 binary_ingress frame encode/reassembly + integrity/requested-feature guards
 text_field     Agency-selected text frame modes
+body           Flow/Ground/Proposal/Agency locked body v1
 proposal       temporary Pocket proposal ABI
 agency         commit/reject/defer/answer boundary
 egress         rendering from committed state only
 ```
+
+## Locked body v1
+
+```text
+Flow Field      = 28x28 cells
+Ground Field    = 32x32 cells
+Proposal Field  = 20 slots x 80 bits
+Agency View     = 896 mechanical summary bits
+```
+
+Extended mode is `32x32` Flow/Ground and remains Agency-selected only. The
+runtime keeps `48x48` as a research ceiling and treats `64x64` as an
+overcapacity control, not a default.
 
 The public API is re-exported from `lib.rs` so older probes can keep importing
 `vraxion_runtime::*` while the implementation stays split into audit-friendly
@@ -37,6 +52,7 @@ modules.
 ```powershell
 cargo test -p vraxion-runtime
 cargo run -p vraxion-runtime --bin adversarial_probe --release -- 10000
+cargo run -p vraxion-runtime --bin locked_body_preflight --release -- 10000
 ```
 
 ## Boundary

@@ -17,3 +17,7 @@ path = "src/lib.rs"
 [[bin]]
 name = "adversarial_probe"
 path = "src/bin/adversarial_probe.rs"
+
+[[bin]]
+name = "locked_body_preflight"
+path = "src/bin/locked_body_preflight.rs"
