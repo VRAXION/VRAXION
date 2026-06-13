@@ -1,0 +1,21 @@
+{
+  "passed": true,
+  "rounds": 1000000,
+  "cases": 12000000,
+  "success": 12000000,
+  "promotion_accuracy": 1.000000,
+  "bad_core_promotion_rate": 0.000000,
+  "missed_core_rate": 0.000000,
+  "rare_critical_preservation": 1.000000,
+  "unsafe_high_utility_block_rate": 1.000000,
+  "credit_hijack_block_rate": 1.000000,
+  "delayed_poison_detection": 1.000000,
+  "negative_transfer_detection": 1.000000,
+  "redundant_clone_rejection": 1.000000,
+  "scope_violation_block_rate": 1.000000,
+  "challenger_required_block_rate": 1.000000,
+  "reload_transfer_success": 1.000000,
+  "long_horizon_no_harm": 1.000000,
+  "seconds": 0.209737800,
+  "rows_per_sec": 57214293.275
+}

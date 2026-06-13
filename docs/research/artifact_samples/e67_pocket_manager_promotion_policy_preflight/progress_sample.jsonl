@@ -1,0 +1,2 @@
+{"timestamp_ms":1781377766240,"event":"start","rounds":1000000,"policy":"E52 vector+challenger"}
+{"timestamp_ms":1781377766451,"event":"complete","passed":true,"cases":12000000,"success":12000000,"bad_core_promotion":0,"missed_core":0}

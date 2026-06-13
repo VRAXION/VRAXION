@@ -25,3 +25,7 @@ path = "src/bin/locked_body_preflight.rs"
 [[bin]]
 name = "pocket_governance_preflight"
 path = "src/bin/pocket_governance_preflight.rs"
+
+[[bin]]
+name = "pocket_manager_preflight"
+path = "src/bin/pocket_manager_preflight.rs"
