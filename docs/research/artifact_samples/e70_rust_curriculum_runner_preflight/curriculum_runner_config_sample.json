@@ -1,0 +1,7 @@
+{
+  "runner": "rust_curriculum_runner_preflight",
+  "body": "near_28f_32g_20x80_default",
+  "active_set_limit": 4,
+  "path": ["active_set", "guarded_load", "locked_body_commit", "trace_egress", "next_mutation", "safe_promotion", "reload_snapshot"],
+  "heartbeat_seconds": 20
+}

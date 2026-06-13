@@ -13,6 +13,7 @@ pub mod agency;
 pub mod binary_ingress;
 pub mod bit_codec;
 pub mod body;
+pub mod curriculum;
 pub mod egress;
 pub mod library;
 pub mod manager;
@@ -32,6 +33,9 @@ pub use body::{
     flow_cell_for, ground_cell_for, proposal_record_bits, AgencyView, BodyConfig, FieldKind,
     FieldMatrix, LockedBodyRuntime, ProposalField, ProposalFieldError, RuntimeStep, DEFAULT_BODY,
     EXTENDED_BODY, OVERCAPACITY_AVOID_DEFAULT, PROPOSAL_WIDTH_64_CONTROL, RESEARCH_CEILING_BODY,
+};
+pub use curriculum::{
+    CurriculumBlockReason, CurriculumLesson, CurriculumVerdict, RustCurriculumRunner,
 };
 pub use egress::{render_output, EgressMode, RenderedOutput};
 pub use library::{

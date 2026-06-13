@@ -1,0 +1,2 @@
+{"timestamp_ms":1781379807582,"event":"start","rounds":1000000,"policy":"Rust curriculum runner"}
+{"timestamp_ms":1781379820411,"event":"complete","passed":true,"curriculum_rows":1000000,"adversarial_blocks":5000000,"bad_commit":0,"unsafe_promotion":0}
