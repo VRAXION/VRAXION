@@ -1,0 +1,13 @@
+{
+  "files": [
+    "README.md",
+    "adversarial_stress_rows_sample.jsonl",
+    "aggregate_metrics_sample.json",
+    "curriculum_rows_sample.jsonl",
+    "deterministic_replay_sample_report.json",
+    "sample_schema.json",
+    "store_integrity_sample_report.json",
+    "system_results_sample.json"
+  ],
+  "milestone": "E54_PERSISTENT_POCKET_LIBRARY_STORE_AND_CURRICULUM_RUNNER_BOOTSTRAP"
+}

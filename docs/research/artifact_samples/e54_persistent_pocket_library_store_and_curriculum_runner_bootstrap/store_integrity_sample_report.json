@@ -1,0 +1,9 @@
+{
+  "access_ledger_hash": "72836678fb429ea7740e5f91d307a7f5345c014b8736a57a3b54777062300359",
+  "artifact_files": 8,
+  "primary_store_path": "persistent_library\\python_persistent_store_plus_adversarial_stress",
+  "promotion_ledger_hash": "9112fab2673e29c2e86948af0a1d54760b95cefe9d228045f33f2ff6a452f4bf",
+  "registry_entries": 8,
+  "registry_hash": "58eea7286496a526a3dc29477f7ecf6833dfed40d3f53613d02876d585d16ddc",
+  "tokens_hash": "b576558f7699441ae46e978755974085614a565aa110fd09b3236c13ec6f1c32"
+}
