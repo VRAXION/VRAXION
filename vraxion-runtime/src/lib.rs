@@ -15,6 +15,7 @@ pub mod bit_codec;
 pub mod body;
 pub mod curriculum;
 pub mod egress;
+pub mod final_bake;
 pub mod library;
 pub mod manager;
 pub mod next_mutation;
@@ -40,6 +41,7 @@ pub use curriculum::{
     RustCurriculumRunner,
 };
 pub use egress::{render_output, EgressMode, RenderedOutput};
+pub use final_bake::{run_final_bake_preflight, FinalBakeSummary};
 pub use library::{
     PocketLibraryStore, StoreDecision, StoreGuardReason, StoreMutationStats,
     StorePromotionCandidate, StoreSnapshot, StoredPocketArtifact,

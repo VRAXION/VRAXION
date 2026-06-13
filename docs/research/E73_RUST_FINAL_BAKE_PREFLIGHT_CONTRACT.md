@@ -17,9 +17,10 @@ raw language/model-scale claim.
 
 ## Runtime Surface
 
-Binary:
+Library API and binary:
 
 ```text
+vraxion-runtime/src/final_bake.rs
 vraxion-runtime/src/bin/final_bake_preflight.rs
 ```
 
@@ -31,6 +32,15 @@ cargo run --release -p vraxion-runtime --bin final_bake_preflight -- 1000000 tar
 
 The binary directly calls `vraxion_runtime::*` APIs. It must not shell out to
 the older preflight binaries as an orchestration shortcut.
+
+The public API is:
+
+```text
+vraxion_runtime::run_final_bake_preflight(rounds, out)
+```
+
+The CLI is intentionally thin: it parses arguments, calls the library API, and
+prints the returned summary.
 
 ## Gates
 

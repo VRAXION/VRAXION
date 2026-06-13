@@ -6,8 +6,8 @@
 decision = e73_rust_final_bake_preflight_confirmed
 ```
 
-E73 confirms the first one-command Rust final-bake preflight over the current
-locked runtime stack.
+E73 confirms the first reusable Rust final-bake API plus one-command CLI over
+the current locked runtime stack.
 
 ## Evidence Run
 
@@ -61,8 +61,14 @@ Curriculum queue
 Curriculum resume
 ```
 
-E73 adds a single Rust binary that validates the current locked chain through
-the public runtime API:
+E73 adds a public Rust final-bake API and a thin CLI wrapper:
+
+```text
+vraxion_runtime::run_final_bake_preflight(rounds, out)
+cargo run --release -p vraxion-runtime --bin final_bake_preflight -- ...
+```
+
+The final-bake API validates the current locked chain:
 
 ```text
 body/text/registry/manager+mutation/library gates
@@ -71,7 +77,7 @@ body/text/registry/manager+mutation/library gates
 ```
 
 The E73 runner does not shell out to the older binaries. It is a consolidated
-Rust entrypoint for the current final-bake preflight.
+Rust runtime API and CLI entrypoint for the current final-bake preflight.
 
 ## Artifact Samples
 

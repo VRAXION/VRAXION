@@ -1,0 +1,5 @@
+{"timestamp_ms":1781384251313,"event":"start","rounds":1000000,"policy":"Rust final bake preflight"}
+{"timestamp_ms":1781384251314,"event":"component_gates_complete","body_passed":true,"text_passed":true,"registry_passed":true,"manager_mutation_passed":true,"library_passed":true}
+{"timestamp_ms":1781384266063,"event":"reference_complete","queues":1000000,"lessons":4000000,"checksum":1209679704174965084}
+{"timestamp_ms":1781384273871,"event":"checkpoint_mid","queues":500000,"lessons":2000000,"checksum":5580298944823571385}
+{"timestamp_ms":1781384281597,"event":"complete","passed":true,"resumed_queues":1000000,"resumed_lessons":4000000,"checksum_match":true}

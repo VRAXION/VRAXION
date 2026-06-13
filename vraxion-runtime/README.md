@@ -38,6 +38,7 @@ manager        vector score + challenger promotion policy
 next_mutation  one-slot candidate -> mutation/rollback -> Golden Disc lifecycle
 library        persistent registry/tokens/artifacts/ledgers store model
 curriculum     active-set -> guarded-load -> body commit -> promotion row loop
+final_bake     unified body/text/registry/manager/library/curriculum bake gate
 proposal       temporary Pocket proposal ABI
 agency         commit/reject/defer/answer boundary
 egress         rendering from committed state only
