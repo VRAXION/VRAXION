@@ -1,0 +1,37 @@
+{
+  "backprop_used": false,
+  "gradient_descent_used": false,
+  "milestone": "E59_BITSLIP_TOLERANT_REASSEMBLY_LOCK",
+  "optimizer_used": false,
+  "required_fields": [
+    "system",
+    "stage",
+    "closed_loop_success",
+    "false_frame_commit",
+    "wrong_feature_write",
+    "candidate_count",
+    "decision_reason"
+  ],
+  "stages": [
+    "P0_clean_packet",
+    "P1_noise_with_crc",
+    "P2_continuous_decoy_false_start",
+    "P3_single_bit_insert_before_frame",
+    "P4_single_bit_drop_before_frame",
+    "P5_payload_slip_with_repeated_frame",
+    "P6_adversarial_sync_decoy_before_valid",
+    "P7_wrong_feature_valid_crc_only",
+    "P8_truncated_packet_must_defer",
+    "P9_conflicting_duplicate_frames_must_defer"
+  ],
+  "systems": [
+    "strict_single_offset_full_guard",
+    "end_marker_only_decoder",
+    "loose_start_only_decoder",
+    "multi_offset_crc_no_feature_guard",
+    "multi_offset_crc_requested_no_ambiguity_guard",
+    "bitslip_tolerant_reassembly_lock",
+    "oracle_frame_reference",
+    "random_control"
+  ]
+}

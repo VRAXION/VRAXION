@@ -1,0 +1,20 @@
+{
+  "backprop_used": false,
+  "decision": "e59_bitslip_tolerant_reassembly_locked",
+  "elapsed_seconds": 30.786152899992885,
+  "gradient_descent_used": false,
+  "locked_bitslip_recovery": 1.0,
+  "locked_closed_loop_success": 1.0,
+  "locked_false_frame_commit_rate": 0.0,
+  "loose_false_frame_commit_rate": 0.5022135416666667,
+  "milestone": "E59_BITSLIP_TOLERANT_REASSEMBLY_LOCK",
+  "no_ambiguity_false_commit_rate": 0.1,
+  "no_feature_wrong_feature_write_rate": 0.2,
+  "optimizer_used": false,
+  "recommended_architecture_lock": "bitstream -> multi-hypothesis reassembly -> requested-feature/CRC/END guard -> Agency commit",
+  "row_count": 184320,
+  "run_id": "613b5e9f6cfcdee2",
+  "stage_count": 10,
+  "strict_bitslip_recovery": 0.0,
+  "system_count": 8
+}

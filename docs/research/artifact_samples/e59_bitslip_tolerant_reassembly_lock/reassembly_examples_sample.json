@@ -1,0 +1,34 @@
+[
+  {
+    "case_id": "insert_before_frame_recovered",
+    "commit": "COMMIT_EVIDENCE",
+    "example_hash": "820ac12f31d11a73",
+    "input_shape": "one extra bit appears before START_SYNC",
+    "locked_reassembly": "slides offsets, finds START/LENGTH/CRC/END at offset+1, checks requested_feature, commits",
+    "strict_decoder": "reads nominal offset and misses START_SYNC"
+  },
+  {
+    "case_id": "wrong_feature_decoy_rejected",
+    "commit": "REJECT_DECOY_OR_DEFER",
+    "example_hash": "f573acbf61c32709",
+    "input_shape": "valid CRC frame appears first but feature_id is not the requested feature",
+    "locked_reassembly": "keeps scanning until requested_feature matches, or defers if none exists",
+    "unsafe_decoder": "commits the first valid CRC frame"
+  },
+  {
+    "case_id": "conflicting_duplicate_deferred",
+    "commit": "DEFER_AMBIGUOUS",
+    "example_hash": "13b734bc1b6e3a99",
+    "input_shape": "two valid requested-feature frames disagree on value",
+    "locked_reassembly": "detects conflicting requested frames and defers instead of writing Flow",
+    "unsafe_decoder": "commits whichever frame appears first"
+  },
+  {
+    "case_id": "truncated_packet_deferred",
+    "commit": "DEFER_TRUNCATED",
+    "example_hash": "893953b0a98f9b95",
+    "input_shape": "START and LENGTH exist but payload/CRC/END is incomplete",
+    "locked_reassembly": "requires full length, CRC, END, trust, and requested_feature before commit",
+    "unsafe_decoder": "may treat END-like nearby bits as enough"
+  }
+]

@@ -1,6 +1,6 @@
 # VRAXION Current Architecture Flowchart
 
-Status: current architecture sketch after E56C.
+Status: current architecture sketch after E59.
 
 Boundary: this is an engineering flowchart for the controlled symbolic/numeric
 VRAXION probe stack. It is not a claim about AGI, consciousness, raw language
@@ -14,6 +14,7 @@ Pocket outputs are not committed directly.
 Pocket outputs become temporary proposals.
 Agency Field decides which proposals become state, action, ask/search, or call.
 Text input uses mode selection, not one universal max Text Field.
+Binary bitstream input uses guarded reassembly/resync, not one trusted boundary.
 Output uses Agency-committed Egress modes, not direct Pocket-to-text.
 Pocket loading uses token + registry + manager governance, not filenames.
 Core promotion uses vector scoring + challenger sweep, not popularity.
@@ -31,7 +32,8 @@ flowchart LR
     TF2["LONG_CAPPED<br/>5x256 overlap64<br/>1024 unique byte / 1280 work byte<br/>2.75x cap"]
     TF3["CLEAN_LONG<br/>4x512 overlap128<br/>1664 unique byte / 2048 work byte<br/>4.5x clean mode"]
     TASK["ASK_OR_MULTI_CYCLE<br/>insufficient evidence or one-frame capacity"]
-    TLENS["Ingress Codec / Text Lens Pockets<br/>read bytes, propose evidence"]
+    BRS["Binary Frame Reassembly / Resync<br/>multi-offset START/LENGTH/CRC/END<br/>requested_feature + ambiguity guard"]
+    TLENS["Ingress Codec / Text/Binary Lens Pockets<br/>read bytes/frames, propose evidence"]
   end
 
   subgraph LIB["Pocket library governance"]
@@ -87,11 +89,13 @@ flowchart LR
   end
 
   EXT --> TSEL
+  EXT -->|"binary bitstream"| BRS
   TSEL -->|"local evidence"| TF1
   TSEL -->|"within 3x cap"| TF2
   TSEL -->|"clean long required"| TF3
   TSEL -->|"missing / oversize"| TASK
   TASK --> ASK
+  BRS --> TLENS
   TF1 --> TLENS
   TF2 --> TLENS
   TF3 --> TLENS
@@ -185,6 +189,7 @@ Shared Proposal Field is allowed only with cycle/source/trace/ground/evidence co
 Edge Adapter Pockets handle ABI mismatch between nodes.
 Pocket Manager governs active set, lifecycle, quarantine, mutation priority, and promotion.
 Text Field mode selection is evidence/coverage/integrity/cost based, not length-only.
+Binary ingress requires multi-hypothesis reassembly plus requested-feature and ambiguity guards.
 Egress Field rendering reads only Agency-committed Flow/Ground/Trace state.
 Final output must never render directly from raw Pocket proposals.
 ```
@@ -212,4 +217,31 @@ agency_committed_multi_resolution_renderer success = 1.000000
 multi_resolution_write_success = 1.000000
 false_output = 0.000000
 stale_proposal_leak = 0.000000
+```
+
+## Binary Bit-Slip Reassembly Lock From E59
+
+```text
+Do not trust one nominal bit boundary.
+Do not treat EOF/END as enough.
+Do not treat CRC as enough.
+Commit binary evidence only after structure + integrity + requested-feature +
+ambiguity guards pass.
+```
+
+| system/control | bit-slip recovery | false-frame commit | wrong-feature write | role |
+|---|---:|---:|---:|---|
+| strict single-offset full guard | 0.000000 | 0.000000 | 0.000000 | exposes missing resync |
+| end-marker only decoder | 0.003762 | 0.900000 | 0.866840 | proves EOF is insufficient |
+| CRC without feature guard | 1.000000 | 0.200000 | 0.200000 | proves CRC alone is insufficient |
+| requested feature without ambiguity guard | 1.000000 | 0.000000 | 0.000000 | fails conflicting duplicates |
+| bitslip tolerant reassembly lock | 1.000000 | 0.000000 | 0.000000 | locked path |
+
+E59 checked result:
+
+```text
+decision = e59_bitslip_tolerant_reassembly_locked
+locked_closed_loop_success = 1.000000
+locked_bitslip_recovery = 1.000000
+locked_false_frame_commit_rate = 0.000000
 ```
