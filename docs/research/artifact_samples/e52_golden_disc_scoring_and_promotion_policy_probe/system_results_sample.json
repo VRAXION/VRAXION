@@ -1,0 +1,142 @@
+{
+  "final_answer_only_promotion": {
+    "overall": {
+      "bad_core_promotion_rate": 0.3333333333333333,
+      "credit_hijack_block_rate": 0.0,
+      "delayed_poison_detection": 0.0,
+      "demotion_correctness": 0.0,
+      "long_horizon_no_harm": 0.6,
+      "missed_core_rate": 0.3333333333333333,
+      "negative_transfer_detection": 0.5,
+      "pocket_count": 12,
+      "promotion_accuracy": 0.25,
+      "prune_false_positive": 0.08333333333333333,
+      "rare_critical_preservation": 0.0,
+      "redundant_clone_rejection": 0.0,
+      "reload_transfer_success": 0.7230000000000001,
+      "scope_violation_block_rate": 0.5,
+      "unsafe_high_utility_block_rate": 0.0,
+      "weighted_lifecycle_credit": 0.4124999999999999
+    }
+  },
+  "full_vector_policy": {
+    "overall": {
+      "bad_core_promotion_rate": 0.08333333333333333,
+      "credit_hijack_block_rate": 1.0,
+      "delayed_poison_detection": 1.0,
+      "demotion_correctness": 1.0,
+      "long_horizon_no_harm": 1.0,
+      "missed_core_rate": 0.0,
+      "negative_transfer_detection": 1.0,
+      "pocket_count": 12,
+      "promotion_accuracy": 0.8333333333333334,
+      "prune_false_positive": 0.0,
+      "rare_critical_preservation": 1.0,
+      "redundant_clone_rejection": 0.0,
+      "reload_transfer_success": 0.9271428571428572,
+      "scope_violation_block_rate": 1.0,
+      "unsafe_high_utility_block_rate": 1.0,
+      "weighted_lifecycle_credit": 0.9
+    }
+  },
+  "full_vector_policy_plus_challenger": {
+    "overall": {
+      "bad_core_promotion_rate": 0.0,
+      "credit_hijack_block_rate": 1.0,
+      "delayed_poison_detection": 1.0,
+      "demotion_correctness": 1.0,
+      "long_horizon_no_harm": 1.0,
+      "missed_core_rate": 0.0,
+      "negative_transfer_detection": 1.0,
+      "pocket_count": 12,
+      "promotion_accuracy": 0.9166666666666666,
+      "prune_false_positive": 0.0,
+      "rare_critical_preservation": 1.0,
+      "redundant_clone_rejection": 1.0,
+      "reload_transfer_success": 0.935,
+      "scope_violation_block_rate": 1.0,
+      "unsafe_high_utility_block_rate": 1.0,
+      "weighted_lifecycle_credit": 0.9833333333333334
+    }
+  },
+  "immediate_only_promotion": {
+    "overall": {
+      "bad_core_promotion_rate": 0.16666666666666666,
+      "credit_hijack_block_rate": 0.0,
+      "delayed_poison_detection": 0.0,
+      "demotion_correctness": 0.0,
+      "long_horizon_no_harm": 0.6,
+      "missed_core_rate": 0.6666666666666666,
+      "negative_transfer_detection": 0.25,
+      "pocket_count": 12,
+      "promotion_accuracy": 0.25,
+      "prune_false_positive": 0.08333333333333333,
+      "rare_critical_preservation": 0.0,
+      "redundant_clone_rejection": 0.0,
+      "reload_transfer_success": 0.7230000000000001,
+      "scope_violation_block_rate": 0.5,
+      "unsafe_high_utility_block_rate": 0.0,
+      "weighted_lifecycle_credit": 0.41250000000000003
+    }
+  },
+  "oracle_lifecycle_reference": {
+    "overall": {
+      "bad_core_promotion_rate": 0.0,
+      "credit_hijack_block_rate": 1.0,
+      "delayed_poison_detection": 1.0,
+      "demotion_correctness": 1.0,
+      "long_horizon_no_harm": 1.0,
+      "missed_core_rate": 0.0,
+      "negative_transfer_detection": 1.0,
+      "pocket_count": 12,
+      "promotion_accuracy": 1.0,
+      "prune_false_positive": 0.0,
+      "rare_critical_preservation": 1.0,
+      "redundant_clone_rejection": 1.0,
+      "reload_transfer_success": 0.935,
+      "scope_violation_block_rate": 1.0,
+      "unsafe_high_utility_block_rate": 1.0,
+      "weighted_lifecycle_credit": 1.0
+    }
+  },
+  "popularity_promotion": {
+    "overall": {
+      "bad_core_promotion_rate": 0.08333333333333333,
+      "credit_hijack_block_rate": 0.0,
+      "delayed_poison_detection": 0.0,
+      "demotion_correctness": 0.0,
+      "long_horizon_no_harm": 0.6,
+      "missed_core_rate": 1.0,
+      "negative_transfer_detection": 0.25,
+      "pocket_count": 12,
+      "promotion_accuracy": 0.08333333333333333,
+      "prune_false_positive": 0.08333333333333333,
+      "rare_critical_preservation": 0.0,
+      "redundant_clone_rejection": 0.0,
+      "reload_transfer_success": 0.7230000000000001,
+      "scope_violation_block_rate": 0.25,
+      "unsafe_high_utility_block_rate": 1.0,
+      "weighted_lifecycle_credit": 0.3
+    }
+  },
+  "scalar_average_score_promotion": {
+    "overall": {
+      "bad_core_promotion_rate": 0.25,
+      "credit_hijack_block_rate": 0.0,
+      "delayed_poison_detection": 0.0,
+      "demotion_correctness": 0.0,
+      "long_horizon_no_harm": 0.7,
+      "missed_core_rate": 0.0,
+      "negative_transfer_detection": 0.75,
+      "pocket_count": 12,
+      "promotion_accuracy": 0.25,
+      "prune_false_positive": 0.0,
+      "rare_critical_preservation": 1.0,
+      "redundant_clone_rejection": 0.0,
+      "reload_transfer_success": 0.7929999999999999,
+      "scope_violation_block_rate": 0.75,
+      "unsafe_high_utility_block_rate": 0.0,
+      "weighted_lifecycle_credit": 0.4666666666666666
+    }
+  }
+}
