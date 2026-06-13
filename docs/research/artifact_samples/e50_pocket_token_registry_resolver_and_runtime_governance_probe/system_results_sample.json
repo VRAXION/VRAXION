@@ -1,0 +1,154 @@
+{
+  "descriptor_token_router_no_guard": {
+    "overall": {
+      "abi_mismatch_block_rate": 0.0,
+      "active_set_reduction": 0.0,
+      "alias_rename_survival": 1.0,
+      "avg_active_set_size": 12.0,
+      "avg_cost": 0.2596562499999999,
+      "banned_quarantine_block_rate": 0.0,
+      "cost_adjusted_utility": 0.082628125,
+      "digest_mismatch_block_rate": 0.0,
+      "full_library_size": 12.0,
+      "governance_success": 0.3703125,
+      "route_accuracy": 1.0,
+      "row_count": 640,
+      "stale_token_reaudit_rate": 0.0,
+      "token_swap_block_rate": 0.0,
+      "unsafe_load_rate": 0.5234375
+    }
+  },
+  "filename_alias_router_control": {
+    "overall": {
+      "abi_mismatch_block_rate": 0.0,
+      "active_set_reduction": 0.0,
+      "alias_rename_survival": 0.0,
+      "avg_active_set_size": 12.0,
+      "avg_cost": 0.2466718750000004,
+      "banned_quarantine_block_rate": 0.0,
+      "cost_adjusted_utility": -0.04107343750000005,
+      "digest_mismatch_block_rate": 0.0,
+      "full_library_size": 12.0,
+      "governance_success": 0.2453125,
+      "route_accuracy": 0.6624472573839663,
+      "row_count": 640,
+      "stale_token_reaudit_rate": 0.0,
+      "token_swap_block_rate": 0.0,
+      "unsafe_load_rate": 0.5234375
+    }
+  },
+  "full_library_scan_control": {
+    "overall": {
+      "abi_mismatch_block_rate": 1.0,
+      "active_set_reduction": 0.0,
+      "alias_rename_survival": 1.0,
+      "avg_active_set_size": 12.0,
+      "avg_cost": 0.2371249999999995,
+      "banned_quarantine_block_rate": 1.0,
+      "cost_adjusted_utility": 0.9762875000000001,
+      "digest_mismatch_block_rate": 1.0,
+      "full_library_size": 12.0,
+      "governance_success": 1.0,
+      "route_accuracy": 1.0,
+      "row_count": 640,
+      "stale_token_reaudit_rate": 1.0,
+      "token_swap_block_rate": 1.0,
+      "unsafe_load_rate": 0.0
+    }
+  },
+  "oracle_registry_reference": {
+    "overall": {
+      "abi_mismatch_block_rate": 1.0,
+      "active_set_reduction": 0.9166666666666684,
+      "alias_rename_survival": 1.0,
+      "avg_active_set_size": 1.0,
+      "avg_cost": 0.07212500000000066,
+      "banned_quarantine_block_rate": 1.0,
+      "cost_adjusted_utility": 1.0661208333333334,
+      "digest_mismatch_block_rate": 1.0,
+      "full_library_size": 12.0,
+      "governance_success": 1.0,
+      "route_accuracy": 1.0,
+      "row_count": 640,
+      "stale_token_reaudit_rate": 1.0,
+      "token_swap_block_rate": 1.0,
+      "unsafe_load_rate": 0.0
+    }
+  },
+  "registry_guard_only_static_active_set": {
+    "overall": {
+      "abi_mismatch_block_rate": 1.0,
+      "active_set_reduction": 0.41666666666666374,
+      "alias_rename_survival": 1.0,
+      "avg_active_set_size": 7.0,
+      "avg_cost": 0.16212500000000105,
+      "banned_quarantine_block_rate": 1.0,
+      "cost_adjusted_utility": 1.017120833333333,
+      "digest_mismatch_block_rate": 1.0,
+      "full_library_size": 12.0,
+      "governance_success": 1.0,
+      "route_accuracy": 1.0,
+      "row_count": 640,
+      "stale_token_reaudit_rate": 1.0,
+      "token_swap_block_rate": 1.0,
+      "unsafe_load_rate": 0.0
+    }
+  },
+  "token_registry_manager_active_set": {
+    "overall": {
+      "abi_mismatch_block_rate": 1.0,
+      "accepted": 6,
+      "accepted_rate": 0.01171875,
+      "active_set_reduction": 0.7141927083333359,
+      "alias_rename_survival": 1.0,
+      "attempts_to_95": 17,
+      "avg_active_set_size": 3.4296875,
+      "avg_cost": 0.10857031250000093,
+      "banned_quarantine_block_rate": 1.0,
+      "cost_adjusted_utility": 1.0462783854166668,
+      "digest_mismatch_block_rate": 1.0,
+      "enabled_guards": [
+        "abi",
+        "active_set",
+        "alias_independent",
+        "digest",
+        "lifecycle",
+        "stale",
+        "token_binding"
+      ],
+      "final_score": 0.7016647135416667,
+      "full_library_size": 12.0,
+      "governance_success": 1.0,
+      "mutation_attempts": 512,
+      "parameter_diff_hash": "e9a1f05ba017d77d08e64df036cf9fb7f009ab5ff727f637903c1cf291f4c28f",
+      "parameter_diff_written": true,
+      "rejected": 506,
+      "rollback_count": 506,
+      "rollback_mismatch": false,
+      "route_accuracy": 1.0,
+      "row_count": 640,
+      "stale_token_reaudit_rate": 1.0,
+      "token_swap_block_rate": 1.0,
+      "unsafe_load_rate": 0.0
+    }
+  },
+  "uid_only_no_descriptor_control": {
+    "overall": {
+      "abi_mismatch_block_rate": 0.0,
+      "active_set_reduction": 0.0,
+      "alias_rename_survival": 0.075,
+      "avg_active_set_size": 12.0,
+      "avg_cost": 0.24526562499999965,
+      "banned_quarantine_block_rate": 0.0,
+      "cost_adjusted_utility": -0.33702656249999996,
+      "digest_mismatch_block_rate": 0.0,
+      "full_library_size": 12.0,
+      "governance_success": 0.03125,
+      "route_accuracy": 0.08438818565400844,
+      "row_count": 640,
+      "stale_token_reaudit_rate": 0.0,
+      "token_swap_block_rate": 0.0,
+      "unsafe_load_rate": 0.6875
+    }
+  }
+}

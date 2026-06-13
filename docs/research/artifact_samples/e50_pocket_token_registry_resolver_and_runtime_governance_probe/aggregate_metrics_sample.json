@@ -1,0 +1,13 @@
+{
+  "backprop_used": false,
+  "checker_expected_failure_count": 0,
+  "decision": "e50_pocket_token_registry_governance_positive",
+  "event_count": 4480,
+  "gradient_descent_used": false,
+  "milestone": "E50_POCKET_TOKEN_REGISTRY_RESOLVER_AND_RUNTIME_GOVERNANCE_PROBE",
+  "optimizer_used": false,
+  "pocket_count": 12,
+  "rows_per_split": 128,
+  "run_id": "10e4a5d41612d4c0",
+  "seed": 50050
+}
