@@ -1,0 +1,982 @@
+{
+  "current_standard_with_bitslip_reassembly_candidate": {
+    "by_stage": {
+      "B0_binary_packet_clean": {
+        "closed_loop_success": 1.0,
+        "false_ask_rate": 0.0,
+        "false_commit_rate": 0.0,
+        "multi_resolution_consistency": 1.0,
+        "net_utility": 1.0,
+        "row_count": 14720,
+        "stale_output_leak_rate": 0.0,
+        "trace_exact": 1.0,
+        "wrong_confident_rate": 0.0
+      },
+      "B1_binary_packet_noise_10": {
+        "closed_loop_success": 1.0,
+        "false_ask_rate": 0.0,
+        "false_commit_rate": 0.0,
+        "multi_resolution_consistency": 1.0,
+        "net_utility": 1.0,
+        "row_count": 14720,
+        "stale_output_leak_rate": 0.0,
+        "trace_exact": 1.0,
+        "wrong_confident_rate": 0.0
+      },
+      "B2_binary_continuous_decoy": {
+        "closed_loop_success": 1.0,
+        "false_ask_rate": 0.0,
+        "false_commit_rate": 0.0,
+        "multi_resolution_consistency": 1.0,
+        "net_utility": 1.0,
+        "row_count": 14720,
+        "stale_output_leak_rate": 0.0,
+        "trace_exact": 1.0,
+        "wrong_confident_rate": 0.0
+      },
+      "B3_binary_bit_insert_slip": {
+        "closed_loop_success": 1.0,
+        "false_ask_rate": 0.0,
+        "false_commit_rate": 0.0,
+        "multi_resolution_consistency": 1.0,
+        "net_utility": 1.0,
+        "row_count": 14720,
+        "stale_output_leak_rate": 0.0,
+        "trace_exact": 1.0,
+        "wrong_confident_rate": 0.0
+      },
+      "B4_binary_bit_drop_slip": {
+        "closed_loop_success": 1.0,
+        "false_ask_rate": 0.0,
+        "false_commit_rate": 0.0,
+        "multi_resolution_consistency": 1.0,
+        "net_utility": 1.0,
+        "row_count": 14720,
+        "stale_output_leak_rate": 0.0,
+        "trace_exact": 1.0,
+        "wrong_confident_rate": 0.0
+      },
+      "O0_multires_output_consistency": {
+        "closed_loop_success": 1.0,
+        "false_ask_rate": 0.0,
+        "false_commit_rate": 0.0,
+        "multi_resolution_consistency": 1.0,
+        "net_utility": 1.0,
+        "row_count": 14720,
+        "stale_output_leak_rate": 0.0,
+        "trace_exact": 1.0,
+        "wrong_confident_rate": 0.0
+      },
+      "O1_stale_proposal_output_attack": {
+        "closed_loop_success": 1.0,
+        "false_ask_rate": 0.0,
+        "false_commit_rate": 0.0,
+        "multi_resolution_consistency": 1.0,
+        "net_utility": 1.0,
+        "row_count": 14720,
+        "stale_output_leak_rate": 0.0,
+        "trace_exact": 1.0,
+        "wrong_confident_rate": 0.0
+      },
+      "T0_noisy_text_answerable": {
+        "closed_loop_success": 1.0,
+        "false_ask_rate": 0.0,
+        "false_commit_rate": 0.0,
+        "multi_resolution_consistency": 1.0,
+        "net_utility": 1.0,
+        "row_count": 14720,
+        "stale_output_leak_rate": 0.0,
+        "trace_exact": 1.0,
+        "wrong_confident_rate": 0.0
+      },
+      "T1_text_unresolved_must_ask": {
+        "closed_loop_success": 1.0,
+        "false_ask_rate": 0.0,
+        "false_commit_rate": 0.0,
+        "multi_resolution_consistency": 1.0,
+        "net_utility": 1.0,
+        "row_count": 14720,
+        "stale_output_leak_rate": 0.0,
+        "trace_exact": 1.0,
+        "wrong_confident_rate": 0.0
+      },
+      "T2_text_boundary_multiframe": {
+        "closed_loop_success": 1.0,
+        "false_ask_rate": 0.0,
+        "false_commit_rate": 0.0,
+        "multi_resolution_consistency": 1.0,
+        "net_utility": 1.0,
+        "row_count": 14720,
+        "stale_output_leak_rate": 0.0,
+        "trace_exact": 1.0,
+        "wrong_confident_rate": 0.0
+      },
+      "T3_real_like_weak_contrast": {
+        "closed_loop_success": 1.0,
+        "false_ask_rate": 0.0,
+        "false_commit_rate": 0.0,
+        "multi_resolution_consistency": 1.0,
+        "net_utility": 1.0,
+        "row_count": 14720,
+        "stale_output_leak_rate": 0.0,
+        "trace_exact": 1.0,
+        "wrong_confident_rate": 0.0
+      }
+    },
+    "overall": {
+      "binary_success": 1.0,
+      "bitslip_success": 1.0,
+      "closed_loop_success": 1.0,
+      "egress_success": 1.0,
+      "false_ask_rate": 0.0,
+      "false_commit_rate": 0.0,
+      "multi_resolution_consistency": 1.0,
+      "net_utility": 1.0,
+      "row_count": 161920,
+      "stale_output_leak_rate": 0.0,
+      "text_success": 1.0,
+      "trace_exact": 1.0,
+      "wrong_confident_rate": 0.0
+    }
+  },
+  "current_standard_without_bitslip_reassembly": {
+    "by_stage": {
+      "B0_binary_packet_clean": {
+        "closed_loop_success": 1.0,
+        "false_ask_rate": 0.0,
+        "false_commit_rate": 0.0,
+        "multi_resolution_consistency": 1.0,
+        "net_utility": 1.0,
+        "row_count": 14720,
+        "stale_output_leak_rate": 0.0,
+        "trace_exact": 1.0,
+        "wrong_confident_rate": 0.0
+      },
+      "B1_binary_packet_noise_10": {
+        "closed_loop_success": 1.0,
+        "false_ask_rate": 0.0,
+        "false_commit_rate": 0.0,
+        "multi_resolution_consistency": 1.0,
+        "net_utility": 1.0,
+        "row_count": 14720,
+        "stale_output_leak_rate": 0.0,
+        "trace_exact": 1.0,
+        "wrong_confident_rate": 0.0
+      },
+      "B2_binary_continuous_decoy": {
+        "closed_loop_success": 1.0,
+        "false_ask_rate": 0.0,
+        "false_commit_rate": 0.0,
+        "multi_resolution_consistency": 1.0,
+        "net_utility": 1.0,
+        "row_count": 14720,
+        "stale_output_leak_rate": 0.0,
+        "trace_exact": 1.0,
+        "wrong_confident_rate": 0.0
+      },
+      "B3_binary_bit_insert_slip": {
+        "closed_loop_success": 0.0,
+        "false_ask_rate": 0.0,
+        "false_commit_rate": 0.0,
+        "multi_resolution_consistency": 0.0,
+        "net_utility": -0.45,
+        "row_count": 14720,
+        "stale_output_leak_rate": 0.0,
+        "trace_exact": 0.0,
+        "wrong_confident_rate": 0.0
+      },
+      "B4_binary_bit_drop_slip": {
+        "closed_loop_success": 0.0,
+        "false_ask_rate": 0.0,
+        "false_commit_rate": 0.0,
+        "multi_resolution_consistency": 0.0,
+        "net_utility": -0.45,
+        "row_count": 14720,
+        "stale_output_leak_rate": 0.0,
+        "trace_exact": 0.0,
+        "wrong_confident_rate": 0.0
+      },
+      "O0_multires_output_consistency": {
+        "closed_loop_success": 1.0,
+        "false_ask_rate": 0.0,
+        "false_commit_rate": 0.0,
+        "multi_resolution_consistency": 1.0,
+        "net_utility": 1.0,
+        "row_count": 14720,
+        "stale_output_leak_rate": 0.0,
+        "trace_exact": 1.0,
+        "wrong_confident_rate": 0.0
+      },
+      "O1_stale_proposal_output_attack": {
+        "closed_loop_success": 1.0,
+        "false_ask_rate": 0.0,
+        "false_commit_rate": 0.0,
+        "multi_resolution_consistency": 1.0,
+        "net_utility": 1.0,
+        "row_count": 14720,
+        "stale_output_leak_rate": 0.0,
+        "trace_exact": 1.0,
+        "wrong_confident_rate": 0.0
+      },
+      "T0_noisy_text_answerable": {
+        "closed_loop_success": 1.0,
+        "false_ask_rate": 0.0,
+        "false_commit_rate": 0.0,
+        "multi_resolution_consistency": 1.0,
+        "net_utility": 1.0,
+        "row_count": 14720,
+        "stale_output_leak_rate": 0.0,
+        "trace_exact": 1.0,
+        "wrong_confident_rate": 0.0
+      },
+      "T1_text_unresolved_must_ask": {
+        "closed_loop_success": 1.0,
+        "false_ask_rate": 0.0,
+        "false_commit_rate": 0.0,
+        "multi_resolution_consistency": 1.0,
+        "net_utility": 1.0,
+        "row_count": 14720,
+        "stale_output_leak_rate": 0.0,
+        "trace_exact": 1.0,
+        "wrong_confident_rate": 0.0
+      },
+      "T2_text_boundary_multiframe": {
+        "closed_loop_success": 1.0,
+        "false_ask_rate": 0.0,
+        "false_commit_rate": 0.0,
+        "multi_resolution_consistency": 1.0,
+        "net_utility": 1.0,
+        "row_count": 14720,
+        "stale_output_leak_rate": 0.0,
+        "trace_exact": 1.0,
+        "wrong_confident_rate": 0.0
+      },
+      "T3_real_like_weak_contrast": {
+        "closed_loop_success": 1.0,
+        "false_ask_rate": 0.0,
+        "false_commit_rate": 0.0,
+        "multi_resolution_consistency": 1.0,
+        "net_utility": 1.0,
+        "row_count": 14720,
+        "stale_output_leak_rate": 0.0,
+        "trace_exact": 1.0,
+        "wrong_confident_rate": 0.0
+      }
+    },
+    "overall": {
+      "binary_success": 0.6,
+      "bitslip_success": 0.0,
+      "closed_loop_success": 0.8181818181818182,
+      "egress_success": 1.0,
+      "false_ask_rate": 0.0,
+      "false_commit_rate": 0.0,
+      "multi_resolution_consistency": 1.0,
+      "net_utility": 0.7363636363636363,
+      "row_count": 161920,
+      "stale_output_leak_rate": 0.0,
+      "text_success": 1.0,
+      "trace_exact": 0.8181818181818182,
+      "wrong_confident_rate": 0.0
+    }
+  },
+  "direct_pocket_output_unsafe": {
+    "by_stage": {
+      "B0_binary_packet_clean": {
+        "closed_loop_success": 1.0,
+        "false_ask_rate": 0.0,
+        "false_commit_rate": 0.0,
+        "multi_resolution_consistency": 1.0,
+        "net_utility": 1.0,
+        "row_count": 14720,
+        "stale_output_leak_rate": 0.0,
+        "trace_exact": 1.0,
+        "wrong_confident_rate": 0.0
+      },
+      "B1_binary_packet_noise_10": {
+        "closed_loop_success": 1.0,
+        "false_ask_rate": 0.0,
+        "false_commit_rate": 0.0,
+        "multi_resolution_consistency": 1.0,
+        "net_utility": 1.0,
+        "row_count": 14720,
+        "stale_output_leak_rate": 0.0,
+        "trace_exact": 1.0,
+        "wrong_confident_rate": 0.0
+      },
+      "B2_binary_continuous_decoy": {
+        "closed_loop_success": 1.0,
+        "false_ask_rate": 0.0,
+        "false_commit_rate": 0.0,
+        "multi_resolution_consistency": 1.0,
+        "net_utility": 1.0,
+        "row_count": 14720,
+        "stale_output_leak_rate": 0.0,
+        "trace_exact": 1.0,
+        "wrong_confident_rate": 0.0
+      },
+      "B3_binary_bit_insert_slip": {
+        "closed_loop_success": 1.0,
+        "false_ask_rate": 0.0,
+        "false_commit_rate": 0.0,
+        "multi_resolution_consistency": 1.0,
+        "net_utility": 1.0,
+        "row_count": 14720,
+        "stale_output_leak_rate": 0.0,
+        "trace_exact": 1.0,
+        "wrong_confident_rate": 0.0
+      },
+      "B4_binary_bit_drop_slip": {
+        "closed_loop_success": 1.0,
+        "false_ask_rate": 0.0,
+        "false_commit_rate": 0.0,
+        "multi_resolution_consistency": 1.0,
+        "net_utility": 1.0,
+        "row_count": 14720,
+        "stale_output_leak_rate": 0.0,
+        "trace_exact": 1.0,
+        "wrong_confident_rate": 0.0
+      },
+      "O0_multires_output_consistency": {
+        "closed_loop_success": 1.0,
+        "false_ask_rate": 0.0,
+        "false_commit_rate": 0.0,
+        "multi_resolution_consistency": 1.0,
+        "net_utility": 1.0,
+        "row_count": 14720,
+        "stale_output_leak_rate": 0.0,
+        "trace_exact": 1.0,
+        "wrong_confident_rate": 0.0
+      },
+      "O1_stale_proposal_output_attack": {
+        "closed_loop_success": 0.0,
+        "false_ask_rate": 0.0,
+        "false_commit_rate": 1.0,
+        "multi_resolution_consistency": 0.0,
+        "net_utility": -1.85,
+        "row_count": 14720,
+        "stale_output_leak_rate": 1.0,
+        "trace_exact": 0.0,
+        "wrong_confident_rate": 1.0
+      },
+      "T0_noisy_text_answerable": {
+        "closed_loop_success": 1.0,
+        "false_ask_rate": 0.0,
+        "false_commit_rate": 0.0,
+        "multi_resolution_consistency": 1.0,
+        "net_utility": 1.0,
+        "row_count": 14720,
+        "stale_output_leak_rate": 0.0,
+        "trace_exact": 1.0,
+        "wrong_confident_rate": 0.0
+      },
+      "T1_text_unresolved_must_ask": {
+        "closed_loop_success": 1.0,
+        "false_ask_rate": 0.0,
+        "false_commit_rate": 0.0,
+        "multi_resolution_consistency": 1.0,
+        "net_utility": 1.0,
+        "row_count": 14720,
+        "stale_output_leak_rate": 0.0,
+        "trace_exact": 1.0,
+        "wrong_confident_rate": 0.0
+      },
+      "T2_text_boundary_multiframe": {
+        "closed_loop_success": 1.0,
+        "false_ask_rate": 0.0,
+        "false_commit_rate": 0.0,
+        "multi_resolution_consistency": 1.0,
+        "net_utility": 1.0,
+        "row_count": 14720,
+        "stale_output_leak_rate": 0.0,
+        "trace_exact": 1.0,
+        "wrong_confident_rate": 0.0
+      },
+      "T3_real_like_weak_contrast": {
+        "closed_loop_success": 1.0,
+        "false_ask_rate": 0.0,
+        "false_commit_rate": 0.0,
+        "multi_resolution_consistency": 1.0,
+        "net_utility": 1.0,
+        "row_count": 14720,
+        "stale_output_leak_rate": 0.0,
+        "trace_exact": 1.0,
+        "wrong_confident_rate": 0.0
+      }
+    },
+    "overall": {
+      "binary_success": 1.0,
+      "bitslip_success": 1.0,
+      "closed_loop_success": 0.9090909090909091,
+      "egress_success": 0.5,
+      "false_ask_rate": 0.0,
+      "false_commit_rate": 0.09090909090909091,
+      "multi_resolution_consistency": 1.0,
+      "net_utility": 0.740909090909091,
+      "row_count": 161920,
+      "stale_output_leak_rate": 0.09090909090909091,
+      "text_success": 1.0,
+      "trace_exact": 0.9090909090909091,
+      "wrong_confident_rate": 0.09090909090909091
+    }
+  },
+  "legacy_standard_before_io_locks": {
+    "by_stage": {
+      "B0_binary_packet_clean": {
+        "closed_loop_success": 0.7593070652173913,
+        "false_ask_rate": 0.0,
+        "false_commit_rate": 0.0,
+        "multi_resolution_consistency": 0.7593070652173913,
+        "net_utility": 0.7593070652173913,
+        "row_count": 14720,
+        "stale_output_leak_rate": 0.0,
+        "trace_exact": 0.7593070652173913,
+        "wrong_confident_rate": 0.0
+      },
+      "B1_binary_packet_noise_10": {
+        "closed_loop_success": 0.0,
+        "false_ask_rate": 0.0,
+        "false_commit_rate": 0.0,
+        "multi_resolution_consistency": 0.0,
+        "net_utility": 0.0,
+        "row_count": 14720,
+        "stale_output_leak_rate": 0.0,
+        "trace_exact": 0.0,
+        "wrong_confident_rate": 0.0
+      },
+      "B2_binary_continuous_decoy": {
+        "closed_loop_success": 0.0,
+        "false_ask_rate": 0.0,
+        "false_commit_rate": 0.0,
+        "multi_resolution_consistency": 0.0,
+        "net_utility": 0.0,
+        "row_count": 14720,
+        "stale_output_leak_rate": 0.0,
+        "trace_exact": 0.0,
+        "wrong_confident_rate": 0.0
+      },
+      "B3_binary_bit_insert_slip": {
+        "closed_loop_success": 0.0,
+        "false_ask_rate": 0.0,
+        "false_commit_rate": 0.0,
+        "multi_resolution_consistency": 0.0,
+        "net_utility": -0.45,
+        "row_count": 14720,
+        "stale_output_leak_rate": 0.0,
+        "trace_exact": 0.0,
+        "wrong_confident_rate": 0.0
+      },
+      "B4_binary_bit_drop_slip": {
+        "closed_loop_success": 0.0,
+        "false_ask_rate": 0.0,
+        "false_commit_rate": 0.0,
+        "multi_resolution_consistency": 0.0,
+        "net_utility": -0.45,
+        "row_count": 14720,
+        "stale_output_leak_rate": 0.0,
+        "trace_exact": 0.0,
+        "wrong_confident_rate": 0.0
+      },
+      "O0_multires_output_consistency": {
+        "closed_loop_success": 0.0,
+        "false_ask_rate": 0.0,
+        "false_commit_rate": 0.0,
+        "multi_resolution_consistency": 0.0,
+        "net_utility": 0.0,
+        "row_count": 14720,
+        "stale_output_leak_rate": 0.0,
+        "trace_exact": 0.0,
+        "wrong_confident_rate": 0.0
+      },
+      "O1_stale_proposal_output_attack": {
+        "closed_loop_success": 0.0,
+        "false_ask_rate": 0.0,
+        "false_commit_rate": 1.0,
+        "multi_resolution_consistency": 0.0,
+        "net_utility": -1.85,
+        "row_count": 14720,
+        "stale_output_leak_rate": 1.0,
+        "trace_exact": 0.0,
+        "wrong_confident_rate": 1.0
+      },
+      "T0_noisy_text_answerable": {
+        "closed_loop_success": 0.0,
+        "false_ask_rate": 0.0,
+        "false_commit_rate": 0.0,
+        "multi_resolution_consistency": 0.0,
+        "net_utility": 0.0,
+        "row_count": 14720,
+        "stale_output_leak_rate": 0.0,
+        "trace_exact": 0.0,
+        "wrong_confident_rate": 0.0
+      },
+      "T1_text_unresolved_must_ask": {
+        "closed_loop_success": 0.0,
+        "false_ask_rate": 0.0,
+        "false_commit_rate": 1.0,
+        "multi_resolution_consistency": 0.0,
+        "net_utility": -1.25,
+        "row_count": 14720,
+        "stale_output_leak_rate": 0.0,
+        "trace_exact": 0.0,
+        "wrong_confident_rate": 1.0
+      },
+      "T2_text_boundary_multiframe": {
+        "closed_loop_success": 0.0,
+        "false_ask_rate": 0.0,
+        "false_commit_rate": 0.0,
+        "multi_resolution_consistency": 0.0,
+        "net_utility": 0.0,
+        "row_count": 14720,
+        "stale_output_leak_rate": 0.0,
+        "trace_exact": 0.0,
+        "wrong_confident_rate": 0.0
+      },
+      "T3_real_like_weak_contrast": {
+        "closed_loop_success": 0.0,
+        "false_ask_rate": 0.0,
+        "false_commit_rate": 0.0,
+        "multi_resolution_consistency": 0.0,
+        "net_utility": 0.0,
+        "row_count": 14720,
+        "stale_output_leak_rate": 0.0,
+        "trace_exact": 0.0,
+        "wrong_confident_rate": 0.0
+      }
+    },
+    "overall": {
+      "binary_success": 0.15186141304347825,
+      "bitslip_success": 0.0,
+      "closed_loop_success": 0.06902791501976284,
+      "egress_success": 0.0,
+      "false_ask_rate": 0.0,
+      "false_commit_rate": 0.18181818181818182,
+      "multi_resolution_consistency": 0.0,
+      "net_utility": -0.2946084486166008,
+      "row_count": 161920,
+      "stale_output_leak_rate": 0.09090909090909091,
+      "text_success": 0.0,
+      "trace_exact": 0.06902791501976284,
+      "wrong_confident_rate": 0.18181818181818182
+    }
+  },
+  "loose_start_only_unsafe": {
+    "by_stage": {
+      "B0_binary_packet_clean": {
+        "closed_loop_success": 1.0,
+        "false_ask_rate": 0.0,
+        "false_commit_rate": 0.0,
+        "multi_resolution_consistency": 1.0,
+        "net_utility": 1.0,
+        "row_count": 14720,
+        "stale_output_leak_rate": 0.0,
+        "trace_exact": 1.0,
+        "wrong_confident_rate": 0.0
+      },
+      "B1_binary_packet_noise_10": {
+        "closed_loop_success": 1.0,
+        "false_ask_rate": 0.0,
+        "false_commit_rate": 0.0,
+        "multi_resolution_consistency": 1.0,
+        "net_utility": 1.0,
+        "row_count": 14720,
+        "stale_output_leak_rate": 0.0,
+        "trace_exact": 1.0,
+        "wrong_confident_rate": 0.0
+      },
+      "B2_binary_continuous_decoy": {
+        "closed_loop_success": 0.9568614130434783,
+        "false_ask_rate": 0.0,
+        "false_commit_rate": 0.043138586956521736,
+        "multi_resolution_consistency": 0.9568614130434783,
+        "net_utility": 0.902938179347826,
+        "row_count": 14720,
+        "stale_output_leak_rate": 0.0,
+        "trace_exact": 0.9568614130434783,
+        "wrong_confident_rate": 0.043138586956521736
+      },
+      "B3_binary_bit_insert_slip": {
+        "closed_loop_success": 1.0,
+        "false_ask_rate": 0.0,
+        "false_commit_rate": 0.0,
+        "multi_resolution_consistency": 1.0,
+        "net_utility": 1.0,
+        "row_count": 14720,
+        "stale_output_leak_rate": 0.0,
+        "trace_exact": 1.0,
+        "wrong_confident_rate": 0.0
+      },
+      "B4_binary_bit_drop_slip": {
+        "closed_loop_success": 1.0,
+        "false_ask_rate": 0.0,
+        "false_commit_rate": 0.0,
+        "multi_resolution_consistency": 1.0,
+        "net_utility": 1.0,
+        "row_count": 14720,
+        "stale_output_leak_rate": 0.0,
+        "trace_exact": 1.0,
+        "wrong_confident_rate": 0.0
+      },
+      "O0_multires_output_consistency": {
+        "closed_loop_success": 1.0,
+        "false_ask_rate": 0.0,
+        "false_commit_rate": 0.0,
+        "multi_resolution_consistency": 1.0,
+        "net_utility": 1.0,
+        "row_count": 14720,
+        "stale_output_leak_rate": 0.0,
+        "trace_exact": 1.0,
+        "wrong_confident_rate": 0.0
+      },
+      "O1_stale_proposal_output_attack": {
+        "closed_loop_success": 1.0,
+        "false_ask_rate": 0.0,
+        "false_commit_rate": 0.0,
+        "multi_resolution_consistency": 1.0,
+        "net_utility": 1.0,
+        "row_count": 14720,
+        "stale_output_leak_rate": 0.0,
+        "trace_exact": 1.0,
+        "wrong_confident_rate": 0.0
+      },
+      "T0_noisy_text_answerable": {
+        "closed_loop_success": 1.0,
+        "false_ask_rate": 0.0,
+        "false_commit_rate": 0.0,
+        "multi_resolution_consistency": 1.0,
+        "net_utility": 1.0,
+        "row_count": 14720,
+        "stale_output_leak_rate": 0.0,
+        "trace_exact": 1.0,
+        "wrong_confident_rate": 0.0
+      },
+      "T1_text_unresolved_must_ask": {
+        "closed_loop_success": 1.0,
+        "false_ask_rate": 0.0,
+        "false_commit_rate": 0.0,
+        "multi_resolution_consistency": 1.0,
+        "net_utility": 1.0,
+        "row_count": 14720,
+        "stale_output_leak_rate": 0.0,
+        "trace_exact": 1.0,
+        "wrong_confident_rate": 0.0
+      },
+      "T2_text_boundary_multiframe": {
+        "closed_loop_success": 1.0,
+        "false_ask_rate": 0.0,
+        "false_commit_rate": 0.0,
+        "multi_resolution_consistency": 1.0,
+        "net_utility": 1.0,
+        "row_count": 14720,
+        "stale_output_leak_rate": 0.0,
+        "trace_exact": 1.0,
+        "wrong_confident_rate": 0.0
+      },
+      "T3_real_like_weak_contrast": {
+        "closed_loop_success": 1.0,
+        "false_ask_rate": 0.0,
+        "false_commit_rate": 0.0,
+        "multi_resolution_consistency": 1.0,
+        "net_utility": 1.0,
+        "row_count": 14720,
+        "stale_output_leak_rate": 0.0,
+        "trace_exact": 1.0,
+        "wrong_confident_rate": 0.0
+      }
+    },
+    "overall": {
+      "binary_success": 0.9913722826086957,
+      "bitslip_success": 1.0,
+      "closed_loop_success": 0.9960783102766798,
+      "egress_success": 1.0,
+      "false_ask_rate": 0.0,
+      "false_commit_rate": 0.003921689723320158,
+      "multi_resolution_consistency": 1.0,
+      "net_utility": 0.9911761981225297,
+      "row_count": 161920,
+      "stale_output_leak_rate": 0.0,
+      "text_success": 1.0,
+      "trace_exact": 0.9960783102766798,
+      "wrong_confident_rate": 0.003921689723320158
+    }
+  },
+  "oracle_reference": {
+    "by_stage": {
+      "B0_binary_packet_clean": {
+        "closed_loop_success": 1.0,
+        "false_ask_rate": 0.0,
+        "false_commit_rate": 0.0,
+        "multi_resolution_consistency": 1.0,
+        "net_utility": 1.0,
+        "row_count": 14720,
+        "stale_output_leak_rate": 0.0,
+        "trace_exact": 1.0,
+        "wrong_confident_rate": 0.0
+      },
+      "B1_binary_packet_noise_10": {
+        "closed_loop_success": 1.0,
+        "false_ask_rate": 0.0,
+        "false_commit_rate": 0.0,
+        "multi_resolution_consistency": 1.0,
+        "net_utility": 1.0,
+        "row_count": 14720,
+        "stale_output_leak_rate": 0.0,
+        "trace_exact": 1.0,
+        "wrong_confident_rate": 0.0
+      },
+      "B2_binary_continuous_decoy": {
+        "closed_loop_success": 1.0,
+        "false_ask_rate": 0.0,
+        "false_commit_rate": 0.0,
+        "multi_resolution_consistency": 1.0,
+        "net_utility": 1.0,
+        "row_count": 14720,
+        "stale_output_leak_rate": 0.0,
+        "trace_exact": 1.0,
+        "wrong_confident_rate": 0.0
+      },
+      "B3_binary_bit_insert_slip": {
+        "closed_loop_success": 1.0,
+        "false_ask_rate": 0.0,
+        "false_commit_rate": 0.0,
+        "multi_resolution_consistency": 1.0,
+        "net_utility": 1.0,
+        "row_count": 14720,
+        "stale_output_leak_rate": 0.0,
+        "trace_exact": 1.0,
+        "wrong_confident_rate": 0.0
+      },
+      "B4_binary_bit_drop_slip": {
+        "closed_loop_success": 1.0,
+        "false_ask_rate": 0.0,
+        "false_commit_rate": 0.0,
+        "multi_resolution_consistency": 1.0,
+        "net_utility": 1.0,
+        "row_count": 14720,
+        "stale_output_leak_rate": 0.0,
+        "trace_exact": 1.0,
+        "wrong_confident_rate": 0.0
+      },
+      "O0_multires_output_consistency": {
+        "closed_loop_success": 1.0,
+        "false_ask_rate": 0.0,
+        "false_commit_rate": 0.0,
+        "multi_resolution_consistency": 1.0,
+        "net_utility": 1.0,
+        "row_count": 14720,
+        "stale_output_leak_rate": 0.0,
+        "trace_exact": 1.0,
+        "wrong_confident_rate": 0.0
+      },
+      "O1_stale_proposal_output_attack": {
+        "closed_loop_success": 1.0,
+        "false_ask_rate": 0.0,
+        "false_commit_rate": 0.0,
+        "multi_resolution_consistency": 1.0,
+        "net_utility": 1.0,
+        "row_count": 14720,
+        "stale_output_leak_rate": 0.0,
+        "trace_exact": 1.0,
+        "wrong_confident_rate": 0.0
+      },
+      "T0_noisy_text_answerable": {
+        "closed_loop_success": 1.0,
+        "false_ask_rate": 0.0,
+        "false_commit_rate": 0.0,
+        "multi_resolution_consistency": 1.0,
+        "net_utility": 1.0,
+        "row_count": 14720,
+        "stale_output_leak_rate": 0.0,
+        "trace_exact": 1.0,
+        "wrong_confident_rate": 0.0
+      },
+      "T1_text_unresolved_must_ask": {
+        "closed_loop_success": 1.0,
+        "false_ask_rate": 0.0,
+        "false_commit_rate": 0.0,
+        "multi_resolution_consistency": 1.0,
+        "net_utility": 1.0,
+        "row_count": 14720,
+        "stale_output_leak_rate": 0.0,
+        "trace_exact": 1.0,
+        "wrong_confident_rate": 0.0
+      },
+      "T2_text_boundary_multiframe": {
+        "closed_loop_success": 1.0,
+        "false_ask_rate": 0.0,
+        "false_commit_rate": 0.0,
+        "multi_resolution_consistency": 1.0,
+        "net_utility": 1.0,
+        "row_count": 14720,
+        "stale_output_leak_rate": 0.0,
+        "trace_exact": 1.0,
+        "wrong_confident_rate": 0.0
+      },
+      "T3_real_like_weak_contrast": {
+        "closed_loop_success": 1.0,
+        "false_ask_rate": 0.0,
+        "false_commit_rate": 0.0,
+        "multi_resolution_consistency": 1.0,
+        "net_utility": 1.0,
+        "row_count": 14720,
+        "stale_output_leak_rate": 0.0,
+        "trace_exact": 1.0,
+        "wrong_confident_rate": 0.0
+      }
+    },
+    "overall": {
+      "binary_success": 1.0,
+      "bitslip_success": 1.0,
+      "closed_loop_success": 1.0,
+      "egress_success": 1.0,
+      "false_ask_rate": 0.0,
+      "false_commit_rate": 0.0,
+      "multi_resolution_consistency": 1.0,
+      "net_utility": 1.0,
+      "row_count": 161920,
+      "stale_output_leak_rate": 0.0,
+      "text_success": 1.0,
+      "trace_exact": 1.0,
+      "wrong_confident_rate": 0.0
+    }
+  },
+  "random_control": {
+    "by_stage": {
+      "B0_binary_packet_clean": {
+        "closed_loop_success": 0.2824048913043478,
+        "false_ask_rate": 0.3015625,
+        "false_commit_rate": 0.35597826086956524,
+        "multi_resolution_consistency": 0.2824048913043478,
+        "net_utility": -0.2530366847826087,
+        "row_count": 14720,
+        "stale_output_leak_rate": 0.0,
+        "trace_exact": 0.2824048913043478,
+        "wrong_confident_rate": 0.35597826086956524
+      },
+      "B1_binary_packet_noise_10": {
+        "closed_loop_success": 0.2824048913043478,
+        "false_ask_rate": 0.3015625,
+        "false_commit_rate": 0.35597826086956524,
+        "multi_resolution_consistency": 0.2824048913043478,
+        "net_utility": -0.2530366847826087,
+        "row_count": 14720,
+        "stale_output_leak_rate": 0.0,
+        "trace_exact": 0.2824048913043478,
+        "wrong_confident_rate": 0.35597826086956524
+      },
+      "B2_binary_continuous_decoy": {
+        "closed_loop_success": 0.2824048913043478,
+        "false_ask_rate": 0.3015625,
+        "false_commit_rate": 0.35597826086956524,
+        "multi_resolution_consistency": 0.2824048913043478,
+        "net_utility": -0.2530366847826087,
+        "row_count": 14720,
+        "stale_output_leak_rate": 0.0,
+        "trace_exact": 0.2824048913043478,
+        "wrong_confident_rate": 0.35597826086956524
+      },
+      "B3_binary_bit_insert_slip": {
+        "closed_loop_success": 0.2824048913043478,
+        "false_ask_rate": 0.3015625,
+        "false_commit_rate": 0.35597826086956524,
+        "multi_resolution_consistency": 0.2824048913043478,
+        "net_utility": -0.5759544836956522,
+        "row_count": 14720,
+        "stale_output_leak_rate": 0.0,
+        "trace_exact": 0.2824048913043478,
+        "wrong_confident_rate": 0.35597826086956524
+      },
+      "B4_binary_bit_drop_slip": {
+        "closed_loop_success": 0.2824048913043478,
+        "false_ask_rate": 0.3015625,
+        "false_commit_rate": 0.35597826086956524,
+        "multi_resolution_consistency": 0.2824048913043478,
+        "net_utility": -0.5759544836956522,
+        "row_count": 14720,
+        "stale_output_leak_rate": 0.0,
+        "trace_exact": 0.2824048913043478,
+        "wrong_confident_rate": 0.35597826086956524
+      },
+      "O0_multires_output_consistency": {
+        "closed_loop_success": 0.2824048913043478,
+        "false_ask_rate": 0.3015625,
+        "false_commit_rate": 0.35597826086956524,
+        "multi_resolution_consistency": 0.0,
+        "net_utility": -0.2530366847826087,
+        "row_count": 14720,
+        "stale_output_leak_rate": 0.0,
+        "trace_exact": 0.2824048913043478,
+        "wrong_confident_rate": 0.35597826086956524
+      },
+      "O1_stale_proposal_output_attack": {
+        "closed_loop_success": 0.2824048913043478,
+        "false_ask_rate": 0.0,
+        "false_commit_rate": 0.35597826086956524,
+        "multi_resolution_consistency": 0.2824048913043478,
+        "net_utility": -0.27266304347826087,
+        "row_count": 14720,
+        "stale_output_leak_rate": 0.18349184782608696,
+        "trace_exact": 0.2824048913043478,
+        "wrong_confident_rate": 0.35597826086956524
+      },
+      "T0_noisy_text_answerable": {
+        "closed_loop_success": 0.2824048913043478,
+        "false_ask_rate": 0.3015625,
+        "false_commit_rate": 0.35597826086956524,
+        "multi_resolution_consistency": 0.2824048913043478,
+        "net_utility": -0.2530366847826087,
+        "row_count": 14720,
+        "stale_output_leak_rate": 0.0,
+        "trace_exact": 0.2824048913043478,
+        "wrong_confident_rate": 0.35597826086956524
+      },
+      "T1_text_unresolved_must_ask": {
+        "closed_loop_success": 0.2824048913043478,
+        "false_ask_rate": 0.0,
+        "false_commit_rate": 0.35597826086956524,
+        "multi_resolution_consistency": 0.2824048913043478,
+        "net_utility": -0.1625679347826087,
+        "row_count": 14720,
+        "stale_output_leak_rate": 0.0,
+        "trace_exact": 0.2824048913043478,
+        "wrong_confident_rate": 0.35597826086956524
+      },
+      "T2_text_boundary_multiframe": {
+        "closed_loop_success": 0.2824048913043478,
+        "false_ask_rate": 0.3015625,
+        "false_commit_rate": 0.35597826086956524,
+        "multi_resolution_consistency": 0.2824048913043478,
+        "net_utility": -0.2530366847826087,
+        "row_count": 14720,
+        "stale_output_leak_rate": 0.0,
+        "trace_exact": 0.2824048913043478,
+        "wrong_confident_rate": 0.35597826086956524
+      },
+      "T3_real_like_weak_contrast": {
+        "closed_loop_success": 0.2824048913043478,
+        "false_ask_rate": 0.3015625,
+        "false_commit_rate": 0.35597826086956524,
+        "multi_resolution_consistency": 0.2824048913043478,
+        "net_utility": -0.2530366847826087,
+        "row_count": 14720,
+        "stale_output_leak_rate": 0.0,
+        "trace_exact": 0.2824048913043478,
+        "wrong_confident_rate": 0.35597826086956524
+      }
+    },
+    "overall": {
+      "binary_success": 0.2824048913043478,
+      "bitslip_success": 0.2824048913043478,
+      "closed_loop_success": 0.2824048913043478,
+      "egress_success": 0.2824048913043478,
+      "false_ask_rate": 0.24673295454545455,
+      "false_commit_rate": 0.35597826086956524,
+      "multi_resolution_consistency": 0.0,
+      "net_utility": -0.30530879446640313,
+      "row_count": 161920,
+      "stale_output_leak_rate": 0.016681077075098815,
+      "text_success": 0.2824048913043478,
+      "trace_exact": 0.2824048913043478,
+      "wrong_confident_rate": 0.35597826086956524
+    }
+  }
+}
