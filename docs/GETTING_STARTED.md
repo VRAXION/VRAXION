@@ -1,104 +1,74 @@
 # Getting Started with VRAXION
 
-_Last updated: 2026-05-19_
+_Last updated: 2026-06-13_
 
-## Current Status
+## Start Here
 
 ```text
-Local/private bounded AI stack: release-ready
-GPT-like / open-domain assistant: not ready
-Production/public service: not claimed
+main @ fffc5a438078592c7ca97fd9a840fa5a7948b353
+Add Rust curriculum resume preflight
 ```
 
-Start with [`docs/CURRENT_STATUS.md`](CURRENT_STATUS.md) for the current status and claim boundary.
+The current mainline is:
+
+```text
+E69 Pocket Library store
+E70 curriculum runner
+E71 curriculum queue
+E72 curriculum resume
+```
 
 ## Repository Layout
 
 | Path | Purpose |
 |---|---|
-| `instnct-core/` | Rust architecture research surface |
-| `tools/instnct_service_alpha/` | Localhost/private bounded chat API alpha |
-| `tools/instnct_deploy/` | Local/private deployment harness |
-| `scripts/probes/` | Retained 078-100 proof/eval runners and checkers |
-| `docs/research/` | Contract/result evidence for the research runway |
-| `docs/wiki/` | Repo-tracked source mirror for the GitHub wiki |
-| `Python/` | Historical/reference deploy SDK blocks |
+| `vraxion-runtime/` | Active Rust runtime and preflight binaries |
+| `docs/research/` | Contracts/results for research and preflight evidence |
+| `docs/` | Current public docs and historical docs pending cleanup |
 | `target/` | Generated local evidence artifacts; ignored by Git |
 
-## Claim Boundary
-
-Allowed wording:
-
-> VRAXION has a hash-checked, audited, localhost/private bounded-domain AI stack that passed artifact, runtime, API, harness, OOD/red-team, long-run, package, generation-repair, and clean local/private deploy-readiness gates.
-
-Do not claim:
-
-- production-ready public AI
-- public API
-- hosted SaaS
-- GPT-like assistant readiness
-- open-domain chat readiness
-- safety-aligned production system
-- proof that INSTNCT/AnchorRoute is an open-domain LM winner
-
-## Quick Verification
-
-If the local generated `target/` evidence is present, run:
+## Quick Checks
 
 ```powershell
-python scripts/probes/run_stable_loop_phase_lock_099_bounded_local_private_clean_deploy_ready_gate_check.py --check-only
-python scripts/probes/run_stable_loop_phase_lock_100_open_vocab_assistant_capability_scale_check.py --check-only
+cargo fmt --check -p vraxion-runtime
+cargo clippy -p vraxion-runtime --all-targets -- -D warnings
+cargo test -p vraxion-runtime
+cargo test --workspace
 ```
 
-For source-level sanity:
+Current preflight entrypoints:
 
 ```powershell
-python -m py_compile scripts/probes/run_stable_loop_phase_lock_099_bounded_local_private_clean_deploy_ready_gate.py
-python -m py_compile scripts/probes/run_stable_loop_phase_lock_100_open_vocab_assistant_capability_scale.py
-python -m compileall Python tools
-cargo test -p instnct-core
+cargo run --release -p vraxion-runtime --bin pocket_library_preflight -- --help
+cargo run --release -p vraxion-runtime --bin curriculum_runner_preflight -- --help
+cargo run --release -p vraxion-runtime --bin curriculum_queue_preflight -- --help
+cargo run --release -p vraxion-runtime --bin curriculum_resume_preflight -- --help
 ```
 
-Generated packages/checkpoints are not committed. If a checker reports missing `target/` artifacts in a fresh clone, regenerate the relevant smoke run or obtain the private evaluation bundle.
+## Operating Rule
 
-## Main Evidence Chain
-
-Bounded local/private release-ready:
-
-```text
-083 -> 084 -> 085 -> 086 -> 087 -> 088 -> 089 -> 089B -> 096 -> 097 -> 098 -> 099
-```
-
-Open-vocab assistant capability research:
-
-```text
-091 -> 092 -> 093 -> 094 -> 094B -> 095 -> 096 -> 097 -> 100
-```
+Long runs must continuously write partial outcomes and resumable progress. A run that only writes a result at the end is not acceptable.
 
 ## Reading Order
 
 | Step | Document | Why |
 |---|---|---|
-| 1 | [`README.md`](../README.md) | Front-door summary and claim boundary |
-| 2 | [`docs/CURRENT_STATUS.md`](CURRENT_STATUS.md) | Current official state |
-| 3 | [`docs/research/STABLE_LOOP_PHASE_LOCK_099_BOUNDED_LOCAL_PRIVATE_CLEAN_DEPLOY_READY_GATE_RESULT.md`](research/STABLE_LOOP_PHASE_LOCK_099_BOUNDED_LOCAL_PRIVATE_CLEAN_DEPLOY_READY_GATE_RESULT.md) | Bounded release-ready result |
-| 4 | [`docs/research/STABLE_LOOP_PHASE_LOCK_100_OPEN_VOCAB_ASSISTANT_CAPABILITY_SCALE_RESULT.md`](research/STABLE_LOOP_PHASE_LOCK_100_OPEN_VOCAB_ASSISTANT_CAPABILITY_SCALE_RESULT.md) | Current capability-scale research result |
-| 5 | [`VALIDATED_FINDINGS.md`](../VALIDATED_FINDINGS.md) | Historical evidence summary |
-| 6 | [`docs/REPO_CONSOLIDATION_2026_05_19.md`](REPO_CONSOLIDATION_2026_05_19.md) | What was archived/removed from active main |
+| 1 | [`README.md`](../README.md) | Current front-door summary |
+| 2 | [`docs/CURRENT_STATUS.md`](CURRENT_STATUS.md) | Current status and claim boundary |
+| 3 | [`VALIDATED_FINDINGS.md`](../VALIDATED_FINDINGS.md) | Current validated E69-E72 chain |
+| 4 | [Timeline Archive wiki](https://github.com/VRAXION/VRAXION/wiki/Timeline-Archive) | Chronology and cleanup record |
+| 5 | [Consolidation Archive wiki](https://github.com/VRAXION/VRAXION/wiki/Consolidation-Archive-2026-06-13) | Branch/wiki deletion manifest |
 
-## Archive Branch
+## Archive
 
-The pre-cleanup source tree is preserved at:
+The active branch surface is `main` only. Historical branch heads are preserved under:
 
 ```text
-archive/pre-consolidation-20260519-main-snapshot
+archive/branches/2026-06-13/*
 ```
 
-Use it for old scratch tools and non-current probe runners that were removed from active `main`.
+The pre-cleanup wiki is preserved under:
 
-## License
-
-- Community source license: [`LICENSE`](../LICENSE)
-- Commercial royalty terms and brand rights: [`legal/LEGAL.md`](../legal/LEGAL.md)
-- VRAXION Forever Prize charter: [`legal/VRAXION_FOREVER_PRIZE_CHARTER.md`](../legal/VRAXION_FOREVER_PRIZE_CHARTER.md)
-- Citation: [`CITATION.cff`](../CITATION.cff)
+```text
+archive/wiki/pre-consolidation-2026-06-13
+```

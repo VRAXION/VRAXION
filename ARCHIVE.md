@@ -38,6 +38,8 @@ Historical surfaces are preserved as archive tags or explicit cleanup snapshot b
 
 **Branch-head snapshots (2026-04-25 → 2026-04-28):**
 
+- `archive/branches/2026-06-13/*` — exact heads of all 52 non-main remote branches deleted during the 2026-06-13 GitHub branch cleanup. Active branch surface after cleanup: `main` only.
+- `archive/wiki/pre-consolidation-2026-06-13` — full GitHub wiki state before the June 13 wiki page cleanup and rewrite.
 - `archive/pre-consolidation-20260519-main-snapshot` — main HEAD before the 2026-05-19 consolidation pass that removed historical scratch tools and non-current pre-bounded probe runners from active `main`. Use this branch for any removed `tools/_scratch/` script or old `scripts/probes/` runner.
 - `archive/main-pre-cleanup-20260425`, `archive/main-pre-cleanup-20260426`, `archive/main-pre-cleanup-20260427`, `archive/main-pre-cleanup-20260428` — main HEAD before each successive cleanup pass (the 2026-04-28 snapshot at HEAD `88f9421` is the pre-`v5.0.0-beta.6` Phase D6/D7/D8 checkpoint + doc-drift correction baseline).
 - `archive/codex-phase-b-logging-smoke-20260425` — codex/phase-b-logging-smoke branch (merged into main 2026-04-25).

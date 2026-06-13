@@ -1,89 +1,53 @@
 # VRAXION Current Status
 
-_Last updated: 2026-05-19_
+_Last updated: 2026-06-13_
 
 ## Official Status
 
 ```text
-Local/private bounded AI stack: release-ready
-GPT-like / open-domain assistant: not ready
-Production/public service: not claimed
+Current source of truth: main
+Current head: fffc5a438078592c7ca97fd9a840fa5a7948b353
+Current slice: E72 Rust curriculum resume preflight
+Active branch surface: main only
+Historical branch heads: archive/branches/2026-06-13/*
 ```
 
-## What Is Release-Ready
-
-The bounded local/private stack has passed the clean deploy-readiness runway:
+## Current Mainline
 
 ```text
-083 model artifact RC
--> 084 local inference runtime
--> 085 localhost/private bounded chat API alpha
--> 086 deployment harness integration
--> 087 OOD/red-team service eval
--> 088 long-run/concurrency stability
--> 089 private evaluation RC package
--> 089B packaged winner reproducibility proof
--> 096 fresh chat generation eval
--> 097 multi-seed decoder/OOD/retention confirm
--> 098 private evaluation RC refresh
--> 099 clean local/private deploy-ready gate
+E69 persistent Pocket Library store
+-> E70 curriculum runner preflight
+-> E71 curriculum queue preflight
+-> E72 curriculum resume preflight
 ```
 
-The safe claim is:
+## What Is Current
 
-> VRAXION has a hash-checked, audited, localhost/private bounded-domain AI stack that passed artifact, runtime, API, harness, OOD/red-team, long-run, package, generation-repair, and clean local/private deploy-readiness gates.
+- `vraxion-runtime/` is the active Rust runtime surface.
+- The current Pocket Library layer handles registry, tokens, artifacts, ledgers, guarded load, reload snapshot, alias survival, safety blockers, and safe promotion.
+- The current curriculum layer has runner, queue, and resume preflights.
+- Long-running work must emit continuous partial progress and checkpoint data.
 
-## What Is Research-Only
+## What Is Historical
 
-The open-vocab / assistant-like capability line is separate from the bounded release baseline:
+The old bounded-service, open-vocab assistant, beta release, byte-pipeline, and grower-era materials are historical evidence unless explicitly promoted into the E72+ mainline.
 
-```text
-091 open-vocab byte-LM foundation
--> 092 FineWeb slice confirm
--> 093 FineWeb margin/scale confirm
--> 094 chat SFT mix PoC
--> 094B free-generation gap analysis
--> 095 decoder generation repair
--> 096 fresh generation eval
--> 097 multi-seed OOD/retention confirm
--> 100 assistant capability scale probe
-```
+## Claim Boundary
 
-The safe claim is:
+Allowed current claim:
 
-> Runner-local open-vocab assistant capability probes improved under bounded retention gates.
+> VRAXION has a Rust mainline for persistent Pocket Library governance and resumable curriculum execution preflights.
 
-That does not mean GPT-like readiness.
+Not claimed:
 
-## Frozen Baseline
+- hosted production service
+- public API readiness
+- GPT-like/open-domain assistant readiness
+- safety-aligned production deployment
+- consciousness or sentience
 
-The 099 bounded release stack is the frozen baseline for future work:
+## Next Work
 
-- no mutation of 083/089/098 packages
-- no mutation of the packaged bounded winner checkpoint
-- no mutation of service API or deployment harness behavior during capability experiments
-- no public API, hosted SaaS, production chat, open-domain assistant, or safety-alignment claim
-
-## Current Caveats
-
-- The bounded release is local/private and bounded-domain only.
-- The open-vocab work is runner-local PyTorch research, not proof that INSTNCT/AnchorRoute is an open-domain LM winner.
-- Raw free generation improved, but the reliable path is still decoder/rubric-bounded.
-- Hungarian capability is not established as assistant readiness.
-- Generated private evaluation artifacts live under `target/` and are not committed.
-
-## Next Reasonable Work
-
-If continuing capability training:
-
-```text
-101_FRESH_ASSISTANT_EVAL_AND_FAILURE_MAP
-```
-
-If pausing for repo/product polish:
-
-```text
-docs/wiki cleanup
-public claim-boundary polish
-private evaluation handoff review
-```
+1. Keep public docs aligned to the E72+ mainline.
+2. Remove or archive stale repo docs that describe older lines as current.
+3. Cut a new release only after the E72+ surface is verified and intentionally packaged.
