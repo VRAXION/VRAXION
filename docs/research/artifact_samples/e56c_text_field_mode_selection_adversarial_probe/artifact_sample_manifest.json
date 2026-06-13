@@ -1,0 +1,16 @@
+{
+  "files": [
+    "README.md",
+    "artifact_sample_manifest.json",
+    "aggregate_metrics_sample.json",
+    "system_results_sample.json",
+    "stage_metrics_sample.json",
+    "row_level_sample.jsonl",
+    "adversarial_report_sample.json",
+    "deterministic_replay_sample_report.json",
+    "sample_only_checker_result.json",
+    "sample_schema.json"
+  ],
+  "milestone": "E56C_TEXT_FIELD_MODE_SELECTION_ADVERSARIAL_PROBE",
+  "run_id": "99f178f7ba8036c9"
+}

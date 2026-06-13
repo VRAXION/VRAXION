@@ -1,0 +1,24 @@
+{
+  "gradient_descent_used": false,
+  "milestone": "E56C_TEXT_FIELD_MODE_SELECTION_ADVERSARIAL_PROBE",
+  "stages": [
+    "A0_short_answerable",
+    "A1_boundary_overlap_answerable",
+    "A2_medium_needs_long_capped",
+    "A3_long_clean_required",
+    "A4_long_lure_relevant_early",
+    "A5_missing_evidence_must_ask",
+    "A6_oversize_requires_multi_cycle",
+    "A7_adversarial_decoy_requires_clean"
+  ],
+  "systems": [
+    "always_fast_default",
+    "always_long_capped",
+    "always_clean_long",
+    "naive_length_router",
+    "clean_long_without_cost_guard",
+    "three_mode_agency_router",
+    "oracle_mode_selector",
+    "random_mode_control"
+  ]
+}

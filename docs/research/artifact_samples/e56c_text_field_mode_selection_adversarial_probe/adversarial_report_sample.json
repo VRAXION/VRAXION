@@ -1,0 +1,58 @@
+{
+  "always_clean_long": {
+    "adversarial_false_commit_rate": 0.5,
+    "adversarial_mode_accuracy": 0.25,
+    "adversarial_success": 0.5,
+    "mean_cost": 4.5,
+    "overall_net_utility": 0.015000000000000012
+  },
+  "always_fast_default": {
+    "adversarial_false_commit_rate": 0.75,
+    "adversarial_mode_accuracy": 0.25,
+    "adversarial_success": 0.25,
+    "mean_cost": 1.0,
+    "overall_net_utility": -0.53125
+  },
+  "always_long_capped": {
+    "adversarial_false_commit_rate": 0.75,
+    "adversarial_mode_accuracy": 0.0,
+    "adversarial_success": 0.25,
+    "mean_cost": 2.75,
+    "overall_net_utility": -0.45625
+  },
+  "clean_long_without_cost_guard": {
+    "adversarial_false_commit_rate": 0.0,
+    "adversarial_mode_accuracy": 0.75,
+    "adversarial_success": 1.0,
+    "mean_cost": 3.5375,
+    "overall_net_utility": 0.6756249999999999
+  },
+  "naive_length_router": {
+    "adversarial_false_commit_rate": 0.7358695652173913,
+    "adversarial_mode_accuracy": 0.014130434782608696,
+    "adversarial_success": 0.26413043478260867,
+    "mean_cost": 2.9580502717391304,
+    "overall_net_utility": -0.06308814538043474
+  },
+  "oracle_mode_selector": {
+    "adversarial_false_commit_rate": 0.0,
+    "adversarial_mode_accuracy": 1.0,
+    "adversarial_success": 1.0,
+    "mean_cost": 2.00625,
+    "overall_net_utility": 0.93984375
+  },
+  "random_mode_control": {
+    "adversarial_false_commit_rate": 0.5013134057971015,
+    "adversarial_mode_accuracy": 0.24961503623188405,
+    "adversarial_success": 0.37350543478260867,
+    "mean_cost": 2.2176488903985505,
+    "overall_net_utility": -0.27617674365942024
+  },
+  "three_mode_agency_router": {
+    "adversarial_false_commit_rate": 0.0,
+    "adversarial_mode_accuracy": 1.0,
+    "adversarial_success": 1.0,
+    "mean_cost": 2.00625,
+    "overall_net_utility": 0.93984375
+  }
+}
