@@ -1,6 +1,6 @@
 # VRAXION Current Architecture Flowchart
 
-Status: current architecture sketch after E59.
+Status: current architecture sketch after E60.
 
 Boundary: this is an engineering flowchart for the controlled symbolic/numeric
 VRAXION probe stack. It is not a claim about AGI, consciousness, raw language
@@ -18,6 +18,7 @@ Binary bitstream input uses guarded reassembly/resync, not one trusted boundary.
 Output uses Agency-committed Egress modes, not direct Pocket-to-text.
 Pocket loading uses token + registry + manager governance, not filenames.
 Core promotion uses vector scoring + challenger sweep, not popularity.
+Minimal Rust runtime kernel exists in `vraxion-runtime/` for the locked E56C-E59 mechanics.
 ```
 
 ## Flowchart
@@ -192,6 +193,26 @@ Text Field mode selection is evidence/coverage/integrity/cost based, not length-
 Binary ingress requires multi-hypothesis reassembly plus requested-feature and ambiguity guards.
 Egress Field rendering reads only Agency-committed Flow/Ground/Trace state.
 Final output must never render directly from raw Pocket proposals.
+```
+
+## Minimal Runtime Kernel From E60
+
+```text
+crate = vraxion-runtime
+purpose = deterministic locked runtime kernel
+scope = binary ingress + text mode selection + proposal/Agency + egress
+not included = training / pocket ecology / raw language generation
+```
+
+E60 final-bake preflight:
+
+```text
+decision = e60_rust_core_runtime_ready_for_full_bake
+checker_failure_count = 0
+rust_probe_cases = 175007
+rust_probe_false_commit = 0
+rust_probe_false_frame = 0
+rust_probe_wrong_feature = 0
 ```
 
 ## Egress Field Multi-Resolution Lock From E57

@@ -1,0 +1,19 @@
+[package]
+name = "vraxion-runtime"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+description = "Minimal locked VRAXION runtime kernel: ingress, proposal, agency, egress"
+repository.workspace = true
+homepage.workspace = true
+documentation.workspace = true
+rust-version.workspace = true
+
+[lib]
+name = "vraxion_runtime"
+path = "src/lib.rs"
+
+[[bin]]
+name = "adversarial_probe"
+path = "src/bin/adversarial_probe.rs"
