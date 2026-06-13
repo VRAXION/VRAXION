@@ -16,6 +16,7 @@ pub mod body;
 pub mod curriculum;
 pub mod egress;
 pub mod final_bake;
+pub mod final_training;
 pub mod library;
 pub mod manager;
 pub mod next_mutation;
@@ -42,6 +43,9 @@ pub use curriculum::{
 };
 pub use egress::{render_output, EgressMode, RenderedOutput};
 pub use final_bake::{run_final_bake_preflight, FinalBakeSummary};
+pub use final_training::{
+    run_final_curriculum_pocket_generation, FinalTrainingConfig, FinalTrainingSummary,
+};
 pub use library::{
     PocketLibraryStore, StoreDecision, StoreGuardReason, StoreMutationStats,
     StorePromotionCandidate, StoreSnapshot, StoredPocketArtifact,

@@ -2,9 +2,9 @@
 
 Minimal locked Rust runtime kernel for the current VRAXION mainline.
 
-This crate is deliberately small. It is not a training system and not a general
-assistant. It contains only the currently locked runtime mechanics that are
-ready to present as a homogeneous core:
+This crate is deliberately small. It is not a general assistant. It contains
+the currently locked runtime mechanics and the first final curriculum runner
+that are ready to present as a homogeneous core:
 
 ```text
 binary ingress reassembly
@@ -18,6 +18,7 @@ Curriculum runner preflight glue
 Curriculum queue preflight glue
 Curriculum resume/checkpoint preflight glue
 Final bake preflight entrypoint
+Final curriculum pocket-generation runner
 proposal boundary
 Agency commit/reject/defer
 trace-backed egress rendering
@@ -40,6 +41,7 @@ next_mutation  one-slot candidate -> mutation/rollback -> Golden Disc lifecycle
 library        persistent registry/tokens/artifacts/ledgers store model
 curriculum     active-set -> guarded-load -> body commit -> promotion row loop
 final_bake     unified body/text/registry/manager/library/curriculum bake gate
+final_training final curriculum runner with checkpoints/progress/library growth
 proposal       temporary Pocket proposal ABI
 agency         commit/reject/defer/answer boundary
 egress         rendering from committed state only
@@ -75,6 +77,7 @@ cargo run -p vraxion-runtime --bin curriculum_runner_preflight --release -- 1000
 cargo run -p vraxion-runtime --bin curriculum_queue_preflight --release -- 10000
 cargo run -p vraxion-runtime --bin curriculum_resume_preflight --release -- 10000
 cargo run -p vraxion-runtime --bin final_bake_preflight --release -- 10000
+cargo run -p vraxion-runtime --bin final_training_runner --release -- 10000
 ```
 
 ## Boundary

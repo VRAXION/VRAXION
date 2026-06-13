@@ -1,0 +1,17 @@
+{
+  "passed": true,
+  "rounds": 12000,
+  "completed_queues": 12000,
+  "completed_lessons": 48000,
+  "promoted_count": 48000,
+  "failed_count": 0,
+  "generated_pocket_count": 16,
+  "registry_entry_count": 17,
+  "bad_commit_rate": 0.000000,
+  "unsafe_promotion_rate": 0.000000,
+  "preflight_gate_passed": true,
+  "checkpoint_written": true,
+  "seconds": 0.286121900,
+  "queues_per_sec": 41940.166,
+  "lessons_per_sec": 167760.664
+}

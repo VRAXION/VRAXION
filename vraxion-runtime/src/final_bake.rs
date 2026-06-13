@@ -43,14 +43,14 @@ impl GateMetrics {
     }
 }
 
-fn now_millis() -> u128 {
+pub(crate) fn now_millis() -> u128 {
     SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .unwrap_or(Duration::from_secs(0))
         .as_millis()
 }
 
-fn append_jsonl(path: &PathBuf, line: &str) {
+pub(crate) fn append_jsonl(path: &PathBuf, line: &str) {
     if let Some(parent) = path.parent() {
         fs::create_dir_all(parent).expect("create progress parent");
     }
@@ -111,7 +111,7 @@ fn artifact(
     }
 }
 
-fn base_store() -> PocketLibraryStore {
+pub(crate) fn base_store() -> PocketLibraryStore {
     let mut store = PocketLibraryStore::new();
     store.insert_pocket(
         entry(
@@ -134,7 +134,7 @@ fn base_store() -> PocketLibraryStore {
     store
 }
 
-fn lifecycle() -> NextMutationEvidence {
+pub(crate) fn lifecycle() -> NextMutationEvidence {
     NextMutationEvidence {
         active_slot_count: 1,
         sandbox_only: true,
@@ -162,7 +162,7 @@ fn lifecycle() -> NextMutationEvidence {
     }
 }
 
-fn promotion(global_scope_allowed: bool) -> PromotionEvidence {
+pub(crate) fn promotion(global_scope_allowed: bool) -> PromotionEvidence {
     PromotionEvidence {
         score: ScoreVector {
             utility: 0.96,
@@ -235,7 +235,7 @@ fn candidate(slot: usize) -> StorePromotionCandidate {
     }
 }
 
-fn queue_lessons(round: u64) -> [CurriculumQueueLesson; 4] {
+pub(crate) fn queue_lessons(round: u64) -> [CurriculumQueueLesson; 4] {
     let families = [
         "frame_integrity",
         "requested_feature_match",
@@ -256,7 +256,7 @@ fn queue_lessons(round: u64) -> [CurriculumQueueLesson; 4] {
     })
 }
 
-fn run_range(
+pub(crate) fn run_range(
     runner: &mut RustCurriculumRunner,
     checkpoint: &mut CurriculumCheckpoint,
     start: u64,
