@@ -1,14 +1,8 @@
-# Large local datasets
-**/data/
-!/data/
-/data/*
-!/data/anchorweave/
-!/data/anchorweave/**
-/data/anchorweave/private/
-/data/anchorweave/cells/*.private.jsonl
-/data/anchorweave/outcomes/*.private.jsonl
-/local_data/anchorweave/
+# Local datasets and private inputs
+/data/
+/local_data/
 
+# Python caches from local tooling
 __pycache__/
 *.py[cod]
 *.pyo
@@ -17,45 +11,12 @@ __pycache__/
 .mypy_cache/
 .ruff_cache/
 .tox/
+
+# Local binaries and model-weight artifacts
 *.exe
 *.dll
 *.bin
-!output/merger_single_w_huffman_pack/packed_model.bin
-!output/block_c_bytepair_champion/packed.bin
 _probe_bins/
-
-# Compiled C binaries
-graph_dense
-graph_v3
-mutation_strategy_bench
-rewire_intensity_bench
-
-# Virtual envs
-.venv/
-venv/
-
-# Local runtime artifacts (keep out of Git)
-logs/
-/traces/
-bench_vault/
-checkpoints/
-hibernation*/
-summaries/
-mlruns/
-
-# Local-only archives / run DB
-vault/
-
-# Internal integration notes (not useful for end users)
-reports/
-
-# Local state for vrx_sync_linear_projects.py
-.vrx_sync_state.json
-
-# Local Linear export snapshots (first-run fallback; do not commit)
-.vrx_sync_*export*.json
-
-# Checkpoint binaries / ML weight formats
 *.pt
 *.pth
 *.safetensors
@@ -63,9 +24,23 @@ reports/
 *.h5
 *.ckpt
 
-# ML logs / tracking
-wandb/
-.mlflow/
+# Virtual envs
+.venv/
+venv/
+
+# Local runtime outputs, checkpoints, and telemetry
+/logs/
+/traces/
+/bench_vault/
+/checkpoints/
+/hibernation*/
+/summaries/
+/mlruns/
+/wandb/
+/.mlflow/
+/vault/
+/reports/
+/results/
 
 # OS cruft
 .DS_Store
@@ -83,16 +58,10 @@ desktop.ini
 NUL
 nul
 
-# Wiki submodule
-VRAXION.wiki/
-
-# Telemetry / probe output
-*.jsonl
-
 # Log files
 *.log
 
-# Misc legacy / build byproducts
+# Misc build byproducts
 *.traindat
 *.mask
 *.drawio.bkp
@@ -101,34 +70,6 @@ VRAXION.wiki/
 # Local telemetry credentials
 **/.influx_token
 
-# Local historical workspace extracted from main
-Diamond Code/
-proofread_connections_783.feather
-proofread_root_ids_783.npy
-
 # Rust build artifacts
-/target
-/Rust/target
-instnct-core/target/
-instnct-core/checkpoints/
-instnct-core/results/
-/results/
+target/
 /.claude/
-
-# Local playwright / browser-check outputs (screenshots + test specs)
-output/*
-
-# Grower / lab scratch that should never leak into the public mainline
-instnct-core/*_log.txt
-instnct-core/*_console.txt
-instnct-core/checkpoint*.json
-instnct-core/ckpt_v2_*.json
-instnct-core/grow_*.json
-instnct-core/*_playground.html
-instnct-core/overnight.sh
-instnct-core/overnight2.sh
-instnct-core/sweep_runner.sh
-instnct-core/examples/neuron_overnight_v2.rs
-instnct-core/examples/neuron_random_ab.rs
-instnct-core/benchmark_c19_ckpt.json
-instnct-core/gate_mux_console.txt
