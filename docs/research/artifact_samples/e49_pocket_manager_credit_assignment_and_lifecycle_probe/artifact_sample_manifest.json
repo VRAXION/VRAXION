@@ -1,0 +1,17 @@
+{
+  "files": [
+    "README.md",
+    "aggregate_metrics_sample.json",
+    "artifact_sample_manifest.json",
+    "credit_assignment_report_sample.json",
+    "deterministic_replay_sample_report.json",
+    "lifecycle_decision_rows_sample.jsonl",
+    "manager_mutation_history_sample.jsonl",
+    "pocket_evaluation_events_sample.jsonl",
+    "pocket_feature_report_sample.json",
+    "sample_only_checker_result.json",
+    "sample_schema.json",
+    "system_results_sample.json"
+  ],
+  "milestone": "E49_POCKET_MANAGER_CREDIT_ASSIGNMENT_AND_LIFECYCLE_PROBE"
+}

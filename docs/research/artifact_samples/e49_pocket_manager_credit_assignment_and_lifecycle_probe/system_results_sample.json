@@ -1,0 +1,110 @@
+{
+  "call_count_popularity_score": {
+    "overall": {
+      "OOD_survival": 0.48625000000000007,
+      "adversarial_survival": 0.41624999999999973,
+      "avoid_credit_hijack": 0.0,
+      "cost_adjusted_utility": -0.3514097690035264,
+      "delayed_harm_detection": 0.0,
+      "lifecycle_accuracy": 0.09090909090909091,
+      "pocket_count": 11,
+      "promote_correct_core": 0.5,
+      "prune_false_positive": 0.6,
+      "quarantine_dangerous_specialist": 0.0,
+      "route_quality_delta": -0.3514097690035264,
+      "selected_pocket_count": 8,
+      "weighted_lifecycle_credit": 0.15454545454545454,
+      "wrong_commit_delta": 0.36318677822618717
+    }
+  },
+  "final_answer_only_score": {
+    "overall": {
+      "OOD_survival": 0.5722222222222224,
+      "adversarial_survival": 0.5055555555555552,
+      "avoid_credit_hijack": 0.0,
+      "cost_adjusted_utility": -0.15898826313827022,
+      "delayed_harm_detection": 0.0,
+      "lifecycle_accuracy": 0.18181818181818182,
+      "pocket_count": 11,
+      "promote_correct_core": 1.0,
+      "prune_false_positive": 0.2,
+      "quarantine_dangerous_specialist": 0.0,
+      "route_quality_delta": -0.15898826313827022,
+      "selected_pocket_count": 9,
+      "weighted_lifecycle_credit": 0.3090909090909091,
+      "wrong_commit_delta": 0.23943269175661086
+    }
+  },
+  "full_event_credit_manager": {
+    "overall": {
+      "OOD_survival": 0.7239999999999999,
+      "adversarial_survival": 0.6959999999999995,
+      "avoid_credit_hijack": 1.0,
+      "cost_adjusted_utility": 0.2981031556385327,
+      "delayed_harm_detection": 1.0,
+      "lifecycle_accuracy": 0.9090909090909091,
+      "pocket_count": 11,
+      "promote_correct_core": 1.0,
+      "prune_false_positive": 0.0,
+      "quarantine_dangerous_specialist": 1.0,
+      "route_quality_delta": 0.2981031556385327,
+      "selected_pocket_count": 5,
+      "weighted_lifecycle_credit": 0.9863636363636363,
+      "wrong_commit_delta": 0.0
+    }
+  },
+  "immediate_score_only": {
+    "overall": {
+      "OOD_survival": 0.56625,
+      "adversarial_survival": 0.4962499999999997,
+      "avoid_credit_hijack": 0.0,
+      "cost_adjusted_utility": -0.19783476900352687,
+      "delayed_harm_detection": 0.0,
+      "lifecycle_accuracy": 0.18181818181818182,
+      "pocket_count": 11,
+      "promote_correct_core": 1.0,
+      "prune_false_positive": 0.4,
+      "quarantine_dangerous_specialist": 0.25,
+      "route_quality_delta": -0.19783476900352687,
+      "selected_pocket_count": 8,
+      "weighted_lifecycle_credit": 0.3227272727272727,
+      "wrong_commit_delta": 0.26936177822618723
+    }
+  },
+  "no_manager_random_reuse": {
+    "overall": {
+      "OOD_survival": 0.5766666666666668,
+      "adversarial_survival": 0.518333333333333,
+      "avoid_credit_hijack": 1.0,
+      "cost_adjusted_utility": -0.11759896503495794,
+      "delayed_harm_detection": 1.0,
+      "lifecycle_accuracy": 0.18181818181818182,
+      "pocket_count": 11,
+      "promote_correct_core": 0.0,
+      "prune_false_positive": 0.4,
+      "quarantine_dangerous_specialist": 0.5,
+      "route_quality_delta": -0.11759896503495794,
+      "selected_pocket_count": 6,
+      "weighted_lifecycle_credit": 0.45,
+      "wrong_commit_delta": 0.2139322746291358
+    }
+  },
+  "oracle_lifecycle_reference": {
+    "overall": {
+      "OOD_survival": 0.7239999999999999,
+      "adversarial_survival": 0.6959999999999995,
+      "avoid_credit_hijack": 1.0,
+      "cost_adjusted_utility": 0.2981031556385327,
+      "delayed_harm_detection": 1.0,
+      "lifecycle_accuracy": 1.0,
+      "pocket_count": 11,
+      "promote_correct_core": 1.0,
+      "prune_false_positive": 0.0,
+      "quarantine_dangerous_specialist": 1.0,
+      "route_quality_delta": 0.2981031556385327,
+      "selected_pocket_count": 5,
+      "weighted_lifecycle_credit": 1.0,
+      "wrong_commit_delta": 0.0
+    }
+  }
+}
