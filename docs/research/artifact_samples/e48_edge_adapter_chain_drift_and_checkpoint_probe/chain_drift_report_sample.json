@@ -1,0 +1,1462 @@
+{
+  "adapter_chain_no_checkpoint": {
+    "accepted": 10,
+    "adapter_parameter_count": 40,
+    "attempts_to_95": null,
+    "canonical_reset": false,
+    "chain_depth_max": 5,
+    "checkpoint": false,
+    "edge_reports": [],
+    "edge_type": "adapter_chain_no_checkpoint",
+    "final_mappings": [
+      [
+        0,
+        3,
+        4,
+        2,
+        7,
+        6,
+        5,
+        1
+      ],
+      [
+        7,
+        2,
+        5,
+        3,
+        1,
+        6,
+        4,
+        0
+      ],
+      [
+        3,
+        7,
+        1,
+        0,
+        4,
+        2,
+        6,
+        5
+      ],
+      [
+        1,
+        0,
+        2,
+        5,
+        4,
+        7,
+        3,
+        6
+      ],
+      [
+        2,
+        0,
+        6,
+        4,
+        1,
+        7,
+        5,
+        3
+      ]
+    ],
+    "mutation_attempts": 1056,
+    "old_intent_regression": 0.6022727272727273,
+    "oracle_mappings": [
+      [
+        3,
+        2,
+        0,
+        4,
+        1,
+        5,
+        6,
+        7
+      ],
+      [
+        4,
+        3,
+        0,
+        2,
+        1,
+        6,
+        5,
+        7
+      ],
+      [
+        4,
+        3,
+        1,
+        0,
+        2,
+        5,
+        7,
+        6
+      ],
+      [
+        2,
+        4,
+        3,
+        0,
+        1,
+        7,
+        6,
+        5
+      ],
+      [
+        0,
+        2,
+        4,
+        1,
+        3,
+        6,
+        5,
+        7
+      ]
+    ],
+    "parameter_diff_hash": "3b1bf738402681f00cc2351b4f21000e6a7e45a4fad5e345069d862822488ed0",
+    "parameter_diff_written": true,
+    "per_edge_adapter_success": 0.15,
+    "rejected": 1046,
+    "rollback_count": 1046,
+    "rollback_mismatch": false,
+    "system": "adapter_chain_no_checkpoint",
+    "trace_validation": false
+  },
+  "adapter_chain_plus_trace_validation": {
+    "accepted": 25,
+    "adapter_parameter_count": 40,
+    "attempts_to_95": 545,
+    "canonical_reset": false,
+    "chain_depth_max": 5,
+    "checkpoint": true,
+    "edge_reports": [
+      {
+        "accepted": 3,
+        "attempts": 1056,
+        "attempts_to_95": 233,
+        "edge": 0,
+        "final_mapping": [
+          3,
+          2,
+          0,
+          4,
+          1,
+          5,
+          6,
+          7
+        ],
+        "mapping_match_rate": 1.0,
+        "oracle_mapping": [
+          3,
+          2,
+          0,
+          4,
+          1,
+          5,
+          6,
+          7
+        ],
+        "rejected": 1053,
+        "rollback_count": 1053
+      },
+      {
+        "accepted": 5,
+        "attempts": 1056,
+        "attempts_to_95": 69,
+        "edge": 1,
+        "final_mapping": [
+          4,
+          3,
+          0,
+          2,
+          1,
+          6,
+          5,
+          7
+        ],
+        "mapping_match_rate": 1.0,
+        "oracle_mapping": [
+          4,
+          3,
+          0,
+          2,
+          1,
+          6,
+          5,
+          7
+        ],
+        "rejected": 1051,
+        "rollback_count": 1051
+      },
+      {
+        "accepted": 4,
+        "attempts": 1056,
+        "attempts_to_95": 108,
+        "edge": 2,
+        "final_mapping": [
+          4,
+          3,
+          1,
+          0,
+          2,
+          5,
+          7,
+          6
+        ],
+        "mapping_match_rate": 1.0,
+        "oracle_mapping": [
+          4,
+          3,
+          1,
+          0,
+          2,
+          5,
+          7,
+          6
+        ],
+        "rejected": 1052,
+        "rollback_count": 1052
+      },
+      {
+        "accepted": 7,
+        "attempts": 1056,
+        "attempts_to_95": 73,
+        "edge": 3,
+        "final_mapping": [
+          2,
+          4,
+          3,
+          0,
+          1,
+          7,
+          6,
+          5
+        ],
+        "mapping_match_rate": 1.0,
+        "oracle_mapping": [
+          2,
+          4,
+          3,
+          0,
+          1,
+          7,
+          6,
+          5
+        ],
+        "rejected": 1049,
+        "rollback_count": 1049
+      },
+      {
+        "accepted": 6,
+        "attempts": 1056,
+        "attempts_to_95": 62,
+        "edge": 4,
+        "final_mapping": [
+          0,
+          2,
+          4,
+          1,
+          3,
+          6,
+          5,
+          7
+        ],
+        "mapping_match_rate": 1.0,
+        "oracle_mapping": [
+          0,
+          2,
+          4,
+          1,
+          3,
+          6,
+          5,
+          7
+        ],
+        "rejected": 1050,
+        "rollback_count": 1050
+      }
+    ],
+    "edge_type": "adapter_chain_with_checkpoint_and_trace",
+    "final_mappings": [
+      [
+        3,
+        2,
+        0,
+        4,
+        1,
+        5,
+        6,
+        7
+      ],
+      [
+        4,
+        3,
+        0,
+        2,
+        1,
+        6,
+        5,
+        7
+      ],
+      [
+        4,
+        3,
+        1,
+        0,
+        2,
+        5,
+        7,
+        6
+      ],
+      [
+        2,
+        4,
+        3,
+        0,
+        1,
+        7,
+        6,
+        5
+      ],
+      [
+        0,
+        2,
+        4,
+        1,
+        3,
+        6,
+        5,
+        7
+      ]
+    ],
+    "mutation_attempts": 5280,
+    "old_intent_regression": 0.0,
+    "oracle_mappings": [
+      [
+        3,
+        2,
+        0,
+        4,
+        1,
+        5,
+        6,
+        7
+      ],
+      [
+        4,
+        3,
+        0,
+        2,
+        1,
+        6,
+        5,
+        7
+      ],
+      [
+        4,
+        3,
+        1,
+        0,
+        2,
+        5,
+        7,
+        6
+      ],
+      [
+        2,
+        4,
+        3,
+        0,
+        1,
+        7,
+        6,
+        5
+      ],
+      [
+        0,
+        2,
+        4,
+        1,
+        3,
+        6,
+        5,
+        7
+      ]
+    ],
+    "parameter_diff_hash": "598156353087ab81a7bef0d145b198799772c35149808cb575174aa66bc8daa0",
+    "parameter_diff_written": true,
+    "per_edge_adapter_success": 1.0,
+    "rejected": 5255,
+    "rollback_count": 5255,
+    "rollback_mismatch": false,
+    "system": "adapter_chain_plus_trace_validation",
+    "trace_validation": true
+  },
+  "adapter_chain_with_agency_checkpoint": {
+    "accepted": 26,
+    "adapter_parameter_count": 40,
+    "attempts_to_95": 400,
+    "canonical_reset": false,
+    "chain_depth_max": 5,
+    "checkpoint": true,
+    "edge_reports": [
+      {
+        "accepted": 3,
+        "attempts": 1056,
+        "attempts_to_95": 46,
+        "edge": 0,
+        "final_mapping": [
+          3,
+          2,
+          0,
+          4,
+          1,
+          5,
+          6,
+          7
+        ],
+        "mapping_match_rate": 1.0,
+        "oracle_mapping": [
+          3,
+          2,
+          0,
+          4,
+          1,
+          5,
+          6,
+          7
+        ],
+        "rejected": 1053,
+        "rollback_count": 1053
+      },
+      {
+        "accepted": 7,
+        "attempts": 1056,
+        "attempts_to_95": 68,
+        "edge": 1,
+        "final_mapping": [
+          4,
+          3,
+          0,
+          2,
+          1,
+          6,
+          5,
+          7
+        ],
+        "mapping_match_rate": 1.0,
+        "oracle_mapping": [
+          4,
+          3,
+          0,
+          2,
+          1,
+          6,
+          5,
+          7
+        ],
+        "rejected": 1049,
+        "rollback_count": 1049
+      },
+      {
+        "accepted": 5,
+        "attempts": 1056,
+        "attempts_to_95": 109,
+        "edge": 2,
+        "final_mapping": [
+          4,
+          3,
+          1,
+          0,
+          2,
+          5,
+          7,
+          6
+        ],
+        "mapping_match_rate": 1.0,
+        "oracle_mapping": [
+          4,
+          3,
+          1,
+          0,
+          2,
+          5,
+          7,
+          6
+        ],
+        "rejected": 1051,
+        "rollback_count": 1051
+      },
+      {
+        "accepted": 5,
+        "attempts": 1056,
+        "attempts_to_95": 80,
+        "edge": 3,
+        "final_mapping": [
+          2,
+          4,
+          3,
+          0,
+          1,
+          7,
+          6,
+          5
+        ],
+        "mapping_match_rate": 1.0,
+        "oracle_mapping": [
+          2,
+          4,
+          3,
+          0,
+          1,
+          7,
+          6,
+          5
+        ],
+        "rejected": 1051,
+        "rollback_count": 1051
+      },
+      {
+        "accepted": 6,
+        "attempts": 1056,
+        "attempts_to_95": 97,
+        "edge": 4,
+        "final_mapping": [
+          0,
+          2,
+          4,
+          1,
+          3,
+          6,
+          5,
+          7
+        ],
+        "mapping_match_rate": 1.0,
+        "oracle_mapping": [
+          0,
+          2,
+          4,
+          1,
+          3,
+          6,
+          5,
+          7
+        ],
+        "rejected": 1050,
+        "rollback_count": 1050
+      }
+    ],
+    "edge_type": "adapter_chain_with_checkpoint",
+    "final_mappings": [
+      [
+        3,
+        2,
+        0,
+        4,
+        1,
+        5,
+        6,
+        7
+      ],
+      [
+        4,
+        3,
+        0,
+        2,
+        1,
+        6,
+        5,
+        7
+      ],
+      [
+        4,
+        3,
+        1,
+        0,
+        2,
+        5,
+        7,
+        6
+      ],
+      [
+        2,
+        4,
+        3,
+        0,
+        1,
+        7,
+        6,
+        5
+      ],
+      [
+        0,
+        2,
+        4,
+        1,
+        3,
+        6,
+        5,
+        7
+      ]
+    ],
+    "mutation_attempts": 5280,
+    "old_intent_regression": 0.10227272727272729,
+    "oracle_mappings": [
+      [
+        3,
+        2,
+        0,
+        4,
+        1,
+        5,
+        6,
+        7
+      ],
+      [
+        4,
+        3,
+        0,
+        2,
+        1,
+        6,
+        5,
+        7
+      ],
+      [
+        4,
+        3,
+        1,
+        0,
+        2,
+        5,
+        7,
+        6
+      ],
+      [
+        2,
+        4,
+        3,
+        0,
+        1,
+        7,
+        6,
+        5
+      ],
+      [
+        0,
+        2,
+        4,
+        1,
+        3,
+        6,
+        5,
+        7
+      ]
+    ],
+    "parameter_diff_hash": "0b05625eddec0bbe930f3634df68480a1eb055feca5e999f96d1b3f147322bec",
+    "parameter_diff_written": true,
+    "per_edge_adapter_success": 1.0,
+    "rejected": 5254,
+    "rollback_count": 5254,
+    "rollback_mismatch": false,
+    "system": "adapter_chain_with_agency_checkpoint",
+    "trace_validation": false
+  },
+  "adapter_chain_with_canonical_bus_reset": {
+    "accepted": 26,
+    "adapter_parameter_count": 40,
+    "attempts_to_95": 435,
+    "canonical_reset": true,
+    "chain_depth_max": 5,
+    "checkpoint": true,
+    "edge_reports": [
+      {
+        "accepted": 6,
+        "attempts": 1056,
+        "attempts_to_95": 76,
+        "edge": 0,
+        "final_mapping": [
+          3,
+          2,
+          0,
+          4,
+          1,
+          5,
+          6,
+          7
+        ],
+        "mapping_match_rate": 1.0,
+        "oracle_mapping": [
+          3,
+          2,
+          0,
+          4,
+          1,
+          5,
+          6,
+          7
+        ],
+        "rejected": 1050,
+        "rollback_count": 1050
+      },
+      {
+        "accepted": 5,
+        "attempts": 1056,
+        "attempts_to_95": 148,
+        "edge": 1,
+        "final_mapping": [
+          4,
+          3,
+          0,
+          2,
+          1,
+          6,
+          5,
+          7
+        ],
+        "mapping_match_rate": 1.0,
+        "oracle_mapping": [
+          4,
+          3,
+          0,
+          2,
+          1,
+          6,
+          5,
+          7
+        ],
+        "rejected": 1051,
+        "rollback_count": 1051
+      },
+      {
+        "accepted": 4,
+        "attempts": 1056,
+        "attempts_to_95": 33,
+        "edge": 2,
+        "final_mapping": [
+          4,
+          3,
+          1,
+          0,
+          2,
+          5,
+          7,
+          6
+        ],
+        "mapping_match_rate": 1.0,
+        "oracle_mapping": [
+          4,
+          3,
+          1,
+          0,
+          2,
+          5,
+          7,
+          6
+        ],
+        "rejected": 1052,
+        "rollback_count": 1052
+      },
+      {
+        "accepted": 6,
+        "attempts": 1056,
+        "attempts_to_95": 137,
+        "edge": 3,
+        "final_mapping": [
+          2,
+          4,
+          3,
+          0,
+          1,
+          7,
+          6,
+          5
+        ],
+        "mapping_match_rate": 1.0,
+        "oracle_mapping": [
+          2,
+          4,
+          3,
+          0,
+          1,
+          7,
+          6,
+          5
+        ],
+        "rejected": 1050,
+        "rollback_count": 1050
+      },
+      {
+        "accepted": 5,
+        "attempts": 1056,
+        "attempts_to_95": 41,
+        "edge": 4,
+        "final_mapping": [
+          0,
+          2,
+          4,
+          1,
+          3,
+          6,
+          5,
+          7
+        ],
+        "mapping_match_rate": 1.0,
+        "oracle_mapping": [
+          0,
+          2,
+          4,
+          1,
+          3,
+          6,
+          5,
+          7
+        ],
+        "rejected": 1051,
+        "rollback_count": 1051
+      }
+    ],
+    "edge_type": "adapter_chain_with_canonical_reset",
+    "final_mappings": [
+      [
+        3,
+        2,
+        0,
+        4,
+        1,
+        5,
+        6,
+        7
+      ],
+      [
+        4,
+        3,
+        0,
+        2,
+        1,
+        6,
+        5,
+        7
+      ],
+      [
+        4,
+        3,
+        1,
+        0,
+        2,
+        5,
+        7,
+        6
+      ],
+      [
+        2,
+        4,
+        3,
+        0,
+        1,
+        7,
+        6,
+        5
+      ],
+      [
+        0,
+        2,
+        4,
+        1,
+        3,
+        6,
+        5,
+        7
+      ]
+    ],
+    "mutation_attempts": 5280,
+    "old_intent_regression": 0.10227272727272729,
+    "oracle_mappings": [
+      [
+        3,
+        2,
+        0,
+        4,
+        1,
+        5,
+        6,
+        7
+      ],
+      [
+        4,
+        3,
+        0,
+        2,
+        1,
+        6,
+        5,
+        7
+      ],
+      [
+        4,
+        3,
+        1,
+        0,
+        2,
+        5,
+        7,
+        6
+      ],
+      [
+        2,
+        4,
+        3,
+        0,
+        1,
+        7,
+        6,
+        5
+      ],
+      [
+        0,
+        2,
+        4,
+        1,
+        3,
+        6,
+        5,
+        7
+      ]
+    ],
+    "parameter_diff_hash": "baa35b864799a499b05a2976d0342f19a1b7626d1b9b6c3c96e02bc13c768092",
+    "parameter_diff_written": true,
+    "per_edge_adapter_success": 1.0,
+    "rejected": 5254,
+    "rollback_count": 5254,
+    "rollback_mismatch": false,
+    "system": "adapter_chain_with_canonical_bus_reset",
+    "trace_validation": false
+  },
+  "oracle_adapter_chain_reference": {
+    "accepted": 0,
+    "adapter_parameter_count": 40,
+    "attempts_to_95": 0,
+    "canonical_reset": false,
+    "chain_depth_max": 5,
+    "checkpoint": true,
+    "edge_reports": [],
+    "edge_type": "oracle_adapter_chain_reference",
+    "final_mappings": [
+      [
+        3,
+        2,
+        0,
+        4,
+        1,
+        5,
+        6,
+        7
+      ],
+      [
+        4,
+        3,
+        0,
+        2,
+        1,
+        6,
+        5,
+        7
+      ],
+      [
+        4,
+        3,
+        1,
+        0,
+        2,
+        5,
+        7,
+        6
+      ],
+      [
+        2,
+        4,
+        3,
+        0,
+        1,
+        7,
+        6,
+        5
+      ],
+      [
+        0,
+        2,
+        4,
+        1,
+        3,
+        6,
+        5,
+        7
+      ]
+    ],
+    "mutation_attempts": 0,
+    "old_intent_regression": 0.0,
+    "oracle_mappings": [
+      [
+        3,
+        2,
+        0,
+        4,
+        1,
+        5,
+        6,
+        7
+      ],
+      [
+        4,
+        3,
+        0,
+        2,
+        1,
+        6,
+        5,
+        7
+      ],
+      [
+        4,
+        3,
+        1,
+        0,
+        2,
+        5,
+        7,
+        6
+      ],
+      [
+        2,
+        4,
+        3,
+        0,
+        1,
+        7,
+        6,
+        5
+      ],
+      [
+        0,
+        2,
+        4,
+        1,
+        3,
+        6,
+        5,
+        7
+      ]
+    ],
+    "parameter_diff_hash": "0743a1970782a0148b93a3bd04f594ea45e2cece1ac7adfdb9ae66938524b815",
+    "parameter_diff_written": true,
+    "per_edge_adapter_success": 1.0,
+    "rejected": 0,
+    "rollback_count": 0,
+    "rollback_mismatch": false,
+    "system": "oracle_adapter_chain_reference",
+    "trace_validation": true
+  },
+  "random_adapter_chain_control": {
+    "accepted": 0,
+    "adapter_parameter_count": 40,
+    "attempts_to_95": null,
+    "canonical_reset": false,
+    "chain_depth_max": 5,
+    "checkpoint": false,
+    "edge_reports": [],
+    "edge_type": "random_adapter_chain_control",
+    "final_mappings": [
+      [
+        4,
+        0,
+        5,
+        3,
+        2,
+        1,
+        7,
+        6
+      ],
+      [
+        7,
+        3,
+        5,
+        2,
+        6,
+        1,
+        4,
+        0
+      ],
+      [
+        2,
+        7,
+        4,
+        3,
+        6,
+        1,
+        0,
+        5
+      ],
+      [
+        0,
+        1,
+        5,
+        4,
+        3,
+        2,
+        6,
+        7
+      ],
+      [
+        5,
+        7,
+        2,
+        4,
+        3,
+        1,
+        6,
+        0
+      ]
+    ],
+    "mutation_attempts": 0,
+    "old_intent_regression": 0.9545454545454546,
+    "oracle_mappings": [
+      [
+        3,
+        2,
+        0,
+        4,
+        1,
+        5,
+        6,
+        7
+      ],
+      [
+        4,
+        3,
+        0,
+        2,
+        1,
+        6,
+        5,
+        7
+      ],
+      [
+        4,
+        3,
+        1,
+        0,
+        2,
+        5,
+        7,
+        6
+      ],
+      [
+        2,
+        4,
+        3,
+        0,
+        1,
+        7,
+        6,
+        5
+      ],
+      [
+        0,
+        2,
+        4,
+        1,
+        3,
+        6,
+        5,
+        7
+      ]
+    ],
+    "parameter_diff_hash": "e8c0950ecd2091720ff2e14f854ba041c1e14dfefc23bc3e622cedad01b2a5df",
+    "parameter_diff_written": true,
+    "per_edge_adapter_success": 0.1,
+    "rejected": 0,
+    "rollback_count": 0,
+    "rollback_mismatch": false,
+    "system": "random_adapter_chain_control",
+    "trace_validation": false
+  },
+  "raw_wire_chain": {
+    "accepted": 0,
+    "adapter_parameter_count": 40,
+    "attempts_to_95": null,
+    "canonical_reset": false,
+    "chain_depth_max": 5,
+    "checkpoint": false,
+    "edge_reports": [],
+    "edge_type": "raw_wire_chain",
+    "final_mappings": [
+      [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ]
+    ],
+    "mutation_attempts": 0,
+    "old_intent_regression": 0.9318181818181819,
+    "oracle_mappings": [
+      [
+        3,
+        2,
+        0,
+        4,
+        1,
+        5,
+        6,
+        7
+      ],
+      [
+        4,
+        3,
+        0,
+        2,
+        1,
+        6,
+        5,
+        7
+      ],
+      [
+        4,
+        3,
+        1,
+        0,
+        2,
+        5,
+        7,
+        6
+      ],
+      [
+        2,
+        4,
+        3,
+        0,
+        1,
+        7,
+        6,
+        5
+      ],
+      [
+        0,
+        2,
+        4,
+        1,
+        3,
+        6,
+        5,
+        7
+      ]
+    ],
+    "parameter_diff_hash": "1048d09edc6f24ab0635c4c6bb52b189c3f281c7c2456f8ba001dde7ea933d32",
+    "parameter_diff_written": true,
+    "per_edge_adapter_success": 0.2,
+    "rejected": 0,
+    "rollback_count": 0,
+    "rollback_mismatch": false,
+    "system": "raw_wire_chain",
+    "trace_validation": false
+  },
+  "single_edge_adapter_only": {
+    "accepted": 6,
+    "adapter_parameter_count": 40,
+    "attempts_to_95": 32,
+    "canonical_reset": false,
+    "chain_depth_max": 5,
+    "checkpoint": false,
+    "edge_reports": [
+      {
+        "accepted": 6,
+        "attempts": 1056,
+        "attempts_to_95": 32,
+        "edge": 0,
+        "final_mapping": [
+          3,
+          2,
+          0,
+          4,
+          1,
+          5,
+          6,
+          7
+        ],
+        "mapping_match_rate": 1.0,
+        "oracle_mapping": [
+          3,
+          2,
+          0,
+          4,
+          1,
+          5,
+          6,
+          7
+        ],
+        "rejected": 1050,
+        "rollback_count": 1050
+      }
+    ],
+    "edge_type": "single_adapter_then_raw",
+    "final_mappings": [
+      [
+        3,
+        2,
+        0,
+        4,
+        1,
+        5,
+        6,
+        7
+      ],
+      [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ]
+    ],
+    "mutation_attempts": 1056,
+    "old_intent_regression": 0.7045454545454546,
+    "oracle_mappings": [
+      [
+        3,
+        2,
+        0,
+        4,
+        1,
+        5,
+        6,
+        7
+      ],
+      [
+        4,
+        3,
+        0,
+        2,
+        1,
+        6,
+        5,
+        7
+      ],
+      [
+        4,
+        3,
+        1,
+        0,
+        2,
+        5,
+        7,
+        6
+      ],
+      [
+        2,
+        4,
+        3,
+        0,
+        1,
+        7,
+        6,
+        5
+      ],
+      [
+        0,
+        2,
+        4,
+        1,
+        3,
+        6,
+        5,
+        7
+      ]
+    ],
+    "parameter_diff_hash": "6fc192ddaa758c46f581b0eeb01c17baa7d0aeffb43abd416ec1de8c6da1fd4e",
+    "parameter_diff_written": true,
+    "per_edge_adapter_success": 0.325,
+    "rejected": 1050,
+    "rollback_count": 1050,
+    "rollback_mismatch": false,
+    "system": "single_edge_adapter_only",
+    "trace_validation": false
+  }
+}

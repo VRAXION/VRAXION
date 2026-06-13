@@ -1,0 +1,10 @@
+{
+  "deterministic_replay_match_rate": 1.0,
+  "hashes": {
+    "aggregate_metrics_hash": "5086f6a755e227dc1e323b773c18e32e6ad727d991bfb2ce2798a7b5d780bdd5",
+    "chain_drift_report_hash": "dd9201c25dd8bc930b38fdd4d54e9894128f9e6786d2b77f7b959e41edcc7b19",
+    "row_level_results_hash": "ed39a0972dd4d086fe24cadfbd373ba90cf01354f0932644559af70f7041737f",
+    "system_results_hash": "61087bfef1f38ce65bc54dfae6cb29fdcd692c0ef09bbac1d6676d9b216d1065"
+  },
+  "passed": true
+}
