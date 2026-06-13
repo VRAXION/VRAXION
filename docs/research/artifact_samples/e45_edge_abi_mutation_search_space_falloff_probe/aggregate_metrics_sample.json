@@ -1,0 +1,30 @@
+{
+  "backprop_used": false,
+  "checker_expected_failure_count": 0,
+  "decision": "e45_anonymous_wide_bus_learning_falloff_detected",
+  "gradient_descent_used": false,
+  "milestone": "E45_EDGE_ABI_MUTATION_SEARCH_SPACE_FALLOFF_PROBE",
+  "optimizer_used": false,
+  "rows_per_split": 128,
+  "run_id": "64109f3cb2e00668",
+  "seed": 45001,
+  "systems": [
+    "structured_w16_i32_reference",
+    "structured_w64_i256_reference",
+    "structured_w128_i1024_reference",
+    "anonymous_w8_i32",
+    "anonymous_w12_i32",
+    "anonymous_w16_i32",
+    "anonymous_w24_i32",
+    "anonymous_w32_i32",
+    "anonymous_w64_i32",
+    "anonymous_w16_i256",
+    "anonymous_w32_i256",
+    "anonymous_w64_i256",
+    "anonymous_w96_i256",
+    "anonymous_w128_i256",
+    "anonymous_w64_i1024",
+    "anonymous_w128_i1024",
+    "random_w16_i32_control"
+  ]
+}

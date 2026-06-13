@@ -1,0 +1,291 @@
+{
+  "anonymous_w128_i1024": {
+    "overall": {
+      "adversarial_success": 0.0,
+      "bus_width": 128,
+      "counterfactual_success": 0.0,
+      "data_bits": 10,
+      "edge_success": 0.00625,
+      "false_ask_rate": 0.0,
+      "heldout_success": 0.0,
+      "intent_count": 1024,
+      "ood_success": 0.015625,
+      "pass_gate": false,
+      "row_count": 640,
+      "search_space_log10": 20.91549445376243,
+      "wrong_commit_rate": 0.99375
+    }
+  },
+  "anonymous_w128_i256": {
+    "overall": {
+      "adversarial_success": 0.0,
+      "bus_width": 128,
+      "counterfactual_success": 0.0078125,
+      "data_bits": 8,
+      "edge_success": 0.0203125,
+      "false_ask_rate": 0.0,
+      "heldout_success": 0.0,
+      "intent_count": 256,
+      "ood_success": 0.0078125,
+      "pass_gate": false,
+      "row_count": 640,
+      "search_space_log10": 16.760766246322277,
+      "wrong_commit_rate": 0.9796875
+    }
+  },
+  "anonymous_w12_i32": {
+    "overall": {
+      "adversarial_success": 1.0,
+      "bus_width": 12,
+      "counterfactual_success": 1.0,
+      "data_bits": 5,
+      "edge_success": 1.0,
+      "false_ask_rate": 0.0,
+      "heldout_success": 1.0,
+      "intent_count": 32,
+      "ood_success": 1.0,
+      "pass_gate": true,
+      "row_count": 640,
+      "search_space_log10": 4.9779064276371185,
+      "wrong_commit_rate": 0.0
+    }
+  },
+  "anonymous_w16_i256": {
+    "overall": {
+      "adversarial_success": 1.0,
+      "bus_width": 16,
+      "counterfactual_success": 1.0,
+      "data_bits": 8,
+      "edge_success": 1.0,
+      "false_ask_rate": 0.0,
+      "heldout_success": 1.0,
+      "intent_count": 256,
+      "ood_success": 1.0,
+      "pass_gate": true,
+      "row_count": 640,
+      "search_space_log10": 8.715099070341857,
+      "wrong_commit_rate": 0.0
+    }
+  },
+  "anonymous_w16_i32": {
+    "overall": {
+      "adversarial_success": 1.0,
+      "bus_width": 16,
+      "counterfactual_success": 1.0,
+      "data_bits": 5,
+      "edge_success": 1.0,
+      "false_ask_rate": 0.0,
+      "heldout_success": 1.0,
+      "intent_count": 32,
+      "ood_success": 1.0,
+      "pass_gate": true,
+      "row_count": 640,
+      "search_space_log10": 5.719463875744307,
+      "wrong_commit_rate": 0.0
+    }
+  },
+  "anonymous_w24_i32": {
+    "overall": {
+      "adversarial_success": 1.0,
+      "bus_width": 24,
+      "counterfactual_success": 1.0,
+      "data_bits": 5,
+      "edge_success": 1.0,
+      "false_ask_rate": 0.0,
+      "heldout_success": 1.0,
+      "intent_count": 32,
+      "ood_success": 1.0,
+      "pass_gate": true,
+      "row_count": 640,
+      "search_space_log10": 6.707611048949305,
+      "wrong_commit_rate": 0.0
+    }
+  },
+  "anonymous_w32_i256": {
+    "overall": {
+      "adversarial_success": 1.0,
+      "bus_width": 32,
+      "counterfactual_success": 1.0,
+      "data_bits": 8,
+      "edge_success": 1.0,
+      "false_ask_rate": 0.0,
+      "heldout_success": 1.0,
+      "intent_count": 256,
+      "ood_success": 1.0,
+      "pass_gate": true,
+      "row_count": 640,
+      "search_space_log10": 11.62746607691686,
+      "wrong_commit_rate": 0.0
+    }
+  },
+  "anonymous_w32_i32": {
+    "overall": {
+      "adversarial_success": 1.0,
+      "bus_width": 32,
+      "counterfactual_success": 1.0,
+      "data_bits": 5,
+      "edge_success": 1.0,
+      "false_ask_rate": 0.0,
+      "heldout_success": 1.0,
+      "intent_count": 32,
+      "ood_success": 1.0,
+      "pass_gate": true,
+      "row_count": 640,
+      "search_space_log10": 7.383188956115017,
+      "wrong_commit_rate": 0.0
+    }
+  },
+  "anonymous_w64_i1024": {
+    "overall": {
+      "adversarial_success": 0.4765625,
+      "bus_width": 64,
+      "counterfactual_success": 0.640625,
+      "data_bits": 10,
+      "edge_success": 0.553125,
+      "false_ask_rate": 0.0,
+      "heldout_success": 0.5,
+      "intent_count": 1024,
+      "ood_success": 0.5859375,
+      "pass_gate": false,
+      "row_count": 640,
+      "search_space_log10": 17.74009887570815,
+      "wrong_commit_rate": 0.446875
+    }
+  },
+  "anonymous_w64_i256": {
+    "overall": {
+      "adversarial_success": 1.0,
+      "bus_width": 64,
+      "counterfactual_success": 1.0,
+      "data_bits": 8,
+      "edge_success": 1.0,
+      "false_ask_rate": 0.0,
+      "heldout_success": 1.0,
+      "intent_count": 256,
+      "ood_success": 1.0,
+      "pass_gate": true,
+      "row_count": 640,
+      "search_space_log10": 14.251548159207706,
+      "wrong_commit_rate": 0.0
+    }
+  },
+  "anonymous_w64_i32": {
+    "overall": {
+      "adversarial_success": 1.0,
+      "bus_width": 64,
+      "counterfactual_success": 1.0,
+      "data_bits": 5,
+      "edge_success": 1.0,
+      "false_ask_rate": 0.0,
+      "heldout_success": 1.0,
+      "intent_count": 32,
+      "ood_success": 1.0,
+      "pass_gate": true,
+      "row_count": 640,
+      "search_space_log10": 8.961393298330133,
+      "wrong_commit_rate": 0.0
+    }
+  },
+  "anonymous_w8_i32": {
+    "overall": {
+      "adversarial_success": 1.0,
+      "bus_width": 8,
+      "counterfactual_success": 1.0,
+      "data_bits": 5,
+      "edge_success": 1.0,
+      "false_ask_rate": 0.0,
+      "heldout_success": 1.0,
+      "intent_count": 32,
+      "ood_success": 1.0,
+      "pass_gate": true,
+      "row_count": 640,
+      "search_space_log10": 3.827369273053825,
+      "wrong_commit_rate": 0.0
+    }
+  },
+  "anonymous_w96_i256": {
+    "overall": {
+      "adversarial_success": 0.234375,
+      "bus_width": 96,
+      "counterfactual_success": 0.2890625,
+      "data_bits": 8,
+      "edge_success": 0.2625,
+      "false_ask_rate": 0.0,
+      "heldout_success": 0.2578125,
+      "intent_count": 256,
+      "ood_success": 0.171875,
+      "pass_gate": false,
+      "row_count": 640,
+      "search_space_log10": 15.728067376232937,
+      "wrong_commit_rate": 0.7375
+    }
+  },
+  "random_w16_i32_control": {
+    "overall": {
+      "adversarial_success": 0.0234375,
+      "bus_width": 16,
+      "counterfactual_success": 0.046875,
+      "data_bits": 5,
+      "edge_success": 0.04375,
+      "false_ask_rate": 0.0,
+      "heldout_success": 0.0390625,
+      "intent_count": 32,
+      "ood_success": 0.046875,
+      "pass_gate": false,
+      "row_count": 640,
+      "search_space_log10": 5.719463875744307,
+      "wrong_commit_rate": 0.95625
+    }
+  },
+  "structured_w128_i1024_reference": {
+    "overall": {
+      "adversarial_success": 1.0,
+      "bus_width": 128,
+      "counterfactual_success": 1.0,
+      "data_bits": 10,
+      "edge_success": 1.0,
+      "false_ask_rate": 0.0,
+      "heldout_success": 1.0,
+      "intent_count": 1024,
+      "ood_success": 1.0,
+      "pass_gate": true,
+      "row_count": 640,
+      "search_space_log10": 20.91549445376243,
+      "wrong_commit_rate": 0.0
+    }
+  },
+  "structured_w16_i32_reference": {
+    "overall": {
+      "adversarial_success": 1.0,
+      "bus_width": 16,
+      "counterfactual_success": 1.0,
+      "data_bits": 5,
+      "edge_success": 1.0,
+      "false_ask_rate": 0.0,
+      "heldout_success": 1.0,
+      "intent_count": 32,
+      "ood_success": 1.0,
+      "pass_gate": true,
+      "row_count": 640,
+      "search_space_log10": 5.719463875744307,
+      "wrong_commit_rate": 0.0
+    }
+  },
+  "structured_w64_i256_reference": {
+    "overall": {
+      "adversarial_success": 1.0,
+      "bus_width": 64,
+      "counterfactual_success": 1.0,
+      "data_bits": 8,
+      "edge_success": 1.0,
+      "false_ask_rate": 0.0,
+      "heldout_success": 1.0,
+      "intent_count": 256,
+      "ood_success": 1.0,
+      "pass_gate": true,
+      "row_count": 640,
+      "search_space_log10": 14.251548159207706,
+      "wrong_commit_rate": 0.0
+    }
+  }
+}
