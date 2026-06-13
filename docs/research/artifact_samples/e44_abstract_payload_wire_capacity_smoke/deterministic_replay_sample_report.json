@@ -1,0 +1,11 @@
+{
+  "artifact_hashes": {
+    "abstract_wire_diagnostics.json": "d441b1701b7891b779a72fd065dc2936d1d83ff827048395b6e7c103b2696a54",
+    "mutation_history.jsonl": "67a570e63f0e95a67d9afa40e574c38536feea2e96986f9ff802b2b7680ca154",
+    "row_level_results.jsonl": "eb20750c1936ac518f08ae6232667e2eca37b341840e877136985af9ac04a368",
+    "system_results.json": "4f20e1465d33a6091ae5590c3629a2d013b8c69ddad4c4699ff2689010164b8d",
+    "wire_sweep_results.json": "f3e7f5ff1ae615dd505d325cb1c9d59bae7432c73416918e39e2ba60478452a8"
+  },
+  "deterministic_replay_match_rate": 1.0,
+  "passed": true
+}

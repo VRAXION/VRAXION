@@ -1,0 +1,1773 @@
+{
+  "abstract_payload_w1": {
+    "candidate": {
+      "decoder": {},
+      "kind": "abstract_decoder",
+      "system": "abstract_payload_w1",
+      "width": 1
+    },
+    "mutation": {
+      "accepted_mutations": 0,
+      "final_score": 0.7685714285714287,
+      "final_state": {
+        "decoder": {},
+        "kind": "abstract_decoder",
+        "system": "abstract_payload_w1",
+        "width": 1
+      },
+      "initial_score": 0.7685714285714287,
+      "initial_state": {
+        "decoder": {},
+        "kind": "abstract_decoder",
+        "system": "abstract_payload_w1",
+        "width": 1
+      },
+      "parameter_diff": {},
+      "parameter_hash": "fa4cff5c1ea1417b070483b070be8fd7e07a063cd980e98da3c7c763e80e8243",
+      "rejected_mutations": 1440,
+      "rollback_count": 1440
+    },
+    "overall": {
+      "action_accuracy": 0.5714285714285714,
+      "agency_decision_success": 0.5714285714285714,
+      "commit_target_value_accuracy": 1.0,
+      "expected_commit_recovery": 0.0,
+      "false_commit_rate": 0.0,
+      "ground_conflict_rejection": 1.0,
+      "missed_commit_rate": 0.42857142857142855,
+      "no_valid_defer_accuracy": 1.0,
+      "partial_support_ask_accuracy": 1.0,
+      "payload_collision_rate": 1.0,
+      "row_count": 672,
+      "stale_rejection_accuracy": 0.0,
+      "toxic_rejection_accuracy": 0.0,
+      "trace_exact_rate": 0.5714285714285714,
+      "trace_mismatch_rejection": 1.0,
+      "uses_fixed_header_rate": 1.0,
+      "wire_width": 1
+    },
+    "splits": {
+      "adversarial_payload": {
+        "action_accuracy": 0.5714285714285714,
+        "agency_decision_success": 0.5714285714285714,
+        "commit_target_value_accuracy": 1.0,
+        "expected_commit_recovery": 0.0,
+        "false_commit_rate": 0.0,
+        "ground_conflict_rejection": 1.0,
+        "missed_commit_rate": 0.42857142857142855,
+        "no_valid_defer_accuracy": 1.0,
+        "partial_support_ask_accuracy": 1.0,
+        "payload_collision_rate": 1.0,
+        "row_count": 224,
+        "stale_rejection_accuracy": 0.0,
+        "toxic_rejection_accuracy": 0.0,
+        "trace_exact_rate": 0.5714285714285714,
+        "trace_mismatch_rejection": 1.0,
+        "uses_fixed_header_rate": 1.0,
+        "wire_width": 1
+      },
+      "heldout": {
+        "action_accuracy": 0.5714285714285714,
+        "agency_decision_success": 0.5714285714285714,
+        "commit_target_value_accuracy": 1.0,
+        "expected_commit_recovery": 0.0,
+        "false_commit_rate": 0.0,
+        "ground_conflict_rejection": 1.0,
+        "missed_commit_rate": 0.42857142857142855,
+        "no_valid_defer_accuracy": 1.0,
+        "partial_support_ask_accuracy": 1.0,
+        "payload_collision_rate": 1.0,
+        "row_count": 224,
+        "stale_rejection_accuracy": 0.0,
+        "toxic_rejection_accuracy": 0.0,
+        "trace_exact_rate": 0.5714285714285714,
+        "trace_mismatch_rejection": 1.0,
+        "uses_fixed_header_rate": 1.0,
+        "wire_width": 1
+      },
+      "ood_counterfactual": {
+        "action_accuracy": 0.5714285714285714,
+        "agency_decision_success": 0.5714285714285714,
+        "commit_target_value_accuracy": 1.0,
+        "expected_commit_recovery": 0.0,
+        "false_commit_rate": 0.0,
+        "ground_conflict_rejection": 1.0,
+        "missed_commit_rate": 0.42857142857142855,
+        "no_valid_defer_accuracy": 1.0,
+        "partial_support_ask_accuracy": 1.0,
+        "payload_collision_rate": 1.0,
+        "row_count": 224,
+        "stale_rejection_accuracy": 0.0,
+        "toxic_rejection_accuracy": 0.0,
+        "trace_exact_rate": 0.5714285714285714,
+        "trace_mismatch_rejection": 1.0,
+        "uses_fixed_header_rate": 1.0,
+        "wire_width": 1
+      }
+    }
+  },
+  "abstract_payload_w2": {
+    "candidate": {
+      "decoder": {},
+      "kind": "abstract_decoder",
+      "system": "abstract_payload_w2",
+      "width": 2
+    },
+    "mutation": {
+      "accepted_mutations": 0,
+      "final_score": 0.7685714285714287,
+      "final_state": {
+        "decoder": {},
+        "kind": "abstract_decoder",
+        "system": "abstract_payload_w2",
+        "width": 2
+      },
+      "initial_score": 0.7685714285714287,
+      "initial_state": {
+        "decoder": {},
+        "kind": "abstract_decoder",
+        "system": "abstract_payload_w2",
+        "width": 2
+      },
+      "parameter_diff": {},
+      "parameter_hash": "19026b7fab8837c1e2e99135c71f382159510e5d364e28374f632437f33ef39d",
+      "rejected_mutations": 1440,
+      "rollback_count": 1440
+    },
+    "overall": {
+      "action_accuracy": 0.5714285714285714,
+      "agency_decision_success": 0.5714285714285714,
+      "commit_target_value_accuracy": 1.0,
+      "expected_commit_recovery": 0.0,
+      "false_commit_rate": 0.0,
+      "ground_conflict_rejection": 1.0,
+      "missed_commit_rate": 0.42857142857142855,
+      "no_valid_defer_accuracy": 1.0,
+      "partial_support_ask_accuracy": 1.0,
+      "payload_collision_rate": 1.0,
+      "row_count": 672,
+      "stale_rejection_accuracy": 0.0,
+      "toxic_rejection_accuracy": 0.0,
+      "trace_exact_rate": 0.5714285714285714,
+      "trace_mismatch_rejection": 1.0,
+      "uses_fixed_header_rate": 1.0,
+      "wire_width": 2
+    },
+    "splits": {
+      "adversarial_payload": {
+        "action_accuracy": 0.5714285714285714,
+        "agency_decision_success": 0.5714285714285714,
+        "commit_target_value_accuracy": 1.0,
+        "expected_commit_recovery": 0.0,
+        "false_commit_rate": 0.0,
+        "ground_conflict_rejection": 1.0,
+        "missed_commit_rate": 0.42857142857142855,
+        "no_valid_defer_accuracy": 1.0,
+        "partial_support_ask_accuracy": 1.0,
+        "payload_collision_rate": 1.0,
+        "row_count": 224,
+        "stale_rejection_accuracy": 0.0,
+        "toxic_rejection_accuracy": 0.0,
+        "trace_exact_rate": 0.5714285714285714,
+        "trace_mismatch_rejection": 1.0,
+        "uses_fixed_header_rate": 1.0,
+        "wire_width": 2
+      },
+      "heldout": {
+        "action_accuracy": 0.5714285714285714,
+        "agency_decision_success": 0.5714285714285714,
+        "commit_target_value_accuracy": 1.0,
+        "expected_commit_recovery": 0.0,
+        "false_commit_rate": 0.0,
+        "ground_conflict_rejection": 1.0,
+        "missed_commit_rate": 0.42857142857142855,
+        "no_valid_defer_accuracy": 1.0,
+        "partial_support_ask_accuracy": 1.0,
+        "payload_collision_rate": 1.0,
+        "row_count": 224,
+        "stale_rejection_accuracy": 0.0,
+        "toxic_rejection_accuracy": 0.0,
+        "trace_exact_rate": 0.5714285714285714,
+        "trace_mismatch_rejection": 1.0,
+        "uses_fixed_header_rate": 1.0,
+        "wire_width": 2
+      },
+      "ood_counterfactual": {
+        "action_accuracy": 0.5714285714285714,
+        "agency_decision_success": 0.5714285714285714,
+        "commit_target_value_accuracy": 1.0,
+        "expected_commit_recovery": 0.0,
+        "false_commit_rate": 0.0,
+        "ground_conflict_rejection": 1.0,
+        "missed_commit_rate": 0.42857142857142855,
+        "no_valid_defer_accuracy": 1.0,
+        "partial_support_ask_accuracy": 1.0,
+        "payload_collision_rate": 1.0,
+        "row_count": 224,
+        "stale_rejection_accuracy": 0.0,
+        "toxic_rejection_accuracy": 0.0,
+        "trace_exact_rate": 0.5714285714285714,
+        "trace_mismatch_rejection": 1.0,
+        "uses_fixed_header_rate": 1.0,
+        "wire_width": 2
+      }
+    }
+  },
+  "abstract_payload_w3": {
+    "candidate": {
+      "decoder": {},
+      "kind": "abstract_decoder",
+      "system": "abstract_payload_w3",
+      "width": 3
+    },
+    "mutation": {
+      "accepted_mutations": 0,
+      "final_score": 0.7685714285714287,
+      "final_state": {
+        "decoder": {},
+        "kind": "abstract_decoder",
+        "system": "abstract_payload_w3",
+        "width": 3
+      },
+      "initial_score": 0.7685714285714287,
+      "initial_state": {
+        "decoder": {},
+        "kind": "abstract_decoder",
+        "system": "abstract_payload_w3",
+        "width": 3
+      },
+      "parameter_diff": {},
+      "parameter_hash": "f88e55877d52197d957fbfd0fa1c1f253a33f56e717c593d3bf2a9a8fe0a8923",
+      "rejected_mutations": 1440,
+      "rollback_count": 1440
+    },
+    "overall": {
+      "action_accuracy": 0.5714285714285714,
+      "agency_decision_success": 0.5714285714285714,
+      "commit_target_value_accuracy": 1.0,
+      "expected_commit_recovery": 0.0,
+      "false_commit_rate": 0.0,
+      "ground_conflict_rejection": 1.0,
+      "missed_commit_rate": 0.42857142857142855,
+      "no_valid_defer_accuracy": 1.0,
+      "partial_support_ask_accuracy": 1.0,
+      "payload_collision_rate": 1.0,
+      "row_count": 672,
+      "stale_rejection_accuracy": 0.0,
+      "toxic_rejection_accuracy": 0.0,
+      "trace_exact_rate": 0.5714285714285714,
+      "trace_mismatch_rejection": 1.0,
+      "uses_fixed_header_rate": 1.0,
+      "wire_width": 3
+    },
+    "splits": {
+      "adversarial_payload": {
+        "action_accuracy": 0.5714285714285714,
+        "agency_decision_success": 0.5714285714285714,
+        "commit_target_value_accuracy": 1.0,
+        "expected_commit_recovery": 0.0,
+        "false_commit_rate": 0.0,
+        "ground_conflict_rejection": 1.0,
+        "missed_commit_rate": 0.42857142857142855,
+        "no_valid_defer_accuracy": 1.0,
+        "partial_support_ask_accuracy": 1.0,
+        "payload_collision_rate": 1.0,
+        "row_count": 224,
+        "stale_rejection_accuracy": 0.0,
+        "toxic_rejection_accuracy": 0.0,
+        "trace_exact_rate": 0.5714285714285714,
+        "trace_mismatch_rejection": 1.0,
+        "uses_fixed_header_rate": 1.0,
+        "wire_width": 3
+      },
+      "heldout": {
+        "action_accuracy": 0.5714285714285714,
+        "agency_decision_success": 0.5714285714285714,
+        "commit_target_value_accuracy": 1.0,
+        "expected_commit_recovery": 0.0,
+        "false_commit_rate": 0.0,
+        "ground_conflict_rejection": 1.0,
+        "missed_commit_rate": 0.42857142857142855,
+        "no_valid_defer_accuracy": 1.0,
+        "partial_support_ask_accuracy": 1.0,
+        "payload_collision_rate": 1.0,
+        "row_count": 224,
+        "stale_rejection_accuracy": 0.0,
+        "toxic_rejection_accuracy": 0.0,
+        "trace_exact_rate": 0.5714285714285714,
+        "trace_mismatch_rejection": 1.0,
+        "uses_fixed_header_rate": 1.0,
+        "wire_width": 3
+      },
+      "ood_counterfactual": {
+        "action_accuracy": 0.5714285714285714,
+        "agency_decision_success": 0.5714285714285714,
+        "commit_target_value_accuracy": 1.0,
+        "expected_commit_recovery": 0.0,
+        "false_commit_rate": 0.0,
+        "ground_conflict_rejection": 1.0,
+        "missed_commit_rate": 0.42857142857142855,
+        "no_valid_defer_accuracy": 1.0,
+        "partial_support_ask_accuracy": 1.0,
+        "payload_collision_rate": 1.0,
+        "row_count": 224,
+        "stale_rejection_accuracy": 0.0,
+        "toxic_rejection_accuracy": 0.0,
+        "trace_exact_rate": 0.5714285714285714,
+        "trace_mismatch_rejection": 1.0,
+        "uses_fixed_header_rate": 1.0,
+        "wire_width": 3
+      }
+    }
+  },
+  "abstract_payload_w4": {
+    "candidate": {
+      "decoder": {
+        "0000": [
+          0,
+          0
+        ],
+        "0001": [
+          0,
+          1
+        ],
+        "0010": [
+          1,
+          0
+        ],
+        "0011": [
+          1,
+          1
+        ],
+        "0100": [
+          2,
+          0
+        ],
+        "0101": [
+          2,
+          1
+        ],
+        "0110": [
+          3,
+          0
+        ],
+        "0111": [
+          3,
+          1
+        ],
+        "1000": [
+          4,
+          0
+        ],
+        "1001": [
+          4,
+          1
+        ],
+        "1010": [
+          5,
+          0
+        ],
+        "1011": [
+          5,
+          1
+        ],
+        "1100": [
+          6,
+          0
+        ],
+        "1101": [
+          6,
+          1
+        ],
+        "1110": [
+          7,
+          0
+        ],
+        "1111": [
+          7,
+          1
+        ]
+      },
+      "kind": "abstract_decoder",
+      "system": "abstract_payload_w4",
+      "width": 4
+    },
+    "mutation": {
+      "accepted_mutations": 76,
+      "final_score": 0.9936,
+      "final_state": {
+        "decoder": {
+          "0000": [
+            0,
+            0
+          ],
+          "0001": [
+            0,
+            1
+          ],
+          "0010": [
+            1,
+            0
+          ],
+          "0011": [
+            1,
+            1
+          ],
+          "0100": [
+            2,
+            0
+          ],
+          "0101": [
+            2,
+            1
+          ],
+          "0110": [
+            3,
+            0
+          ],
+          "0111": [
+            3,
+            1
+          ],
+          "1000": [
+            4,
+            0
+          ],
+          "1001": [
+            4,
+            1
+          ],
+          "1010": [
+            5,
+            0
+          ],
+          "1011": [
+            5,
+            1
+          ],
+          "1100": [
+            6,
+            0
+          ],
+          "1101": [
+            6,
+            1
+          ],
+          "1110": [
+            7,
+            0
+          ],
+          "1111": [
+            7,
+            1
+          ]
+        },
+        "kind": "abstract_decoder",
+        "system": "abstract_payload_w4",
+        "width": 4
+      },
+      "initial_score": 0.7685714285714287,
+      "initial_state": {
+        "decoder": {},
+        "kind": "abstract_decoder",
+        "system": "abstract_payload_w4",
+        "width": 4
+      },
+      "parameter_diff": {
+        "decoder": {
+          "final": {
+            "0000": [
+              0,
+              0
+            ],
+            "0001": [
+              0,
+              1
+            ],
+            "0010": [
+              1,
+              0
+            ],
+            "0011": [
+              1,
+              1
+            ],
+            "0100": [
+              2,
+              0
+            ],
+            "0101": [
+              2,
+              1
+            ],
+            "0110": [
+              3,
+              0
+            ],
+            "0111": [
+              3,
+              1
+            ],
+            "1000": [
+              4,
+              0
+            ],
+            "1001": [
+              4,
+              1
+            ],
+            "1010": [
+              5,
+              0
+            ],
+            "1011": [
+              5,
+              1
+            ],
+            "1100": [
+              6,
+              0
+            ],
+            "1101": [
+              6,
+              1
+            ],
+            "1110": [
+              7,
+              0
+            ],
+            "1111": [
+              7,
+              1
+            ]
+          },
+          "initial": {}
+        }
+      },
+      "parameter_hash": "6a330af82cbc899a743bb95bd5b349c83e550ed502ee7be17bfc98f64a8244e5",
+      "rejected_mutations": 1364,
+      "rollback_count": 1364
+    },
+    "overall": {
+      "action_accuracy": 1.0,
+      "agency_decision_success": 1.0,
+      "commit_target_value_accuracy": 1.0,
+      "expected_commit_recovery": 1.0,
+      "false_commit_rate": 0.0,
+      "ground_conflict_rejection": 1.0,
+      "missed_commit_rate": 0.0,
+      "no_valid_defer_accuracy": 1.0,
+      "partial_support_ask_accuracy": 1.0,
+      "payload_collision_rate": 0.0,
+      "row_count": 672,
+      "stale_rejection_accuracy": 1.0,
+      "toxic_rejection_accuracy": 1.0,
+      "trace_exact_rate": 1.0,
+      "trace_mismatch_rejection": 1.0,
+      "uses_fixed_header_rate": 1.0,
+      "wire_width": 4
+    },
+    "splits": {
+      "adversarial_payload": {
+        "action_accuracy": 1.0,
+        "agency_decision_success": 1.0,
+        "commit_target_value_accuracy": 1.0,
+        "expected_commit_recovery": 1.0,
+        "false_commit_rate": 0.0,
+        "ground_conflict_rejection": 1.0,
+        "missed_commit_rate": 0.0,
+        "no_valid_defer_accuracy": 1.0,
+        "partial_support_ask_accuracy": 1.0,
+        "payload_collision_rate": 0.0,
+        "row_count": 224,
+        "stale_rejection_accuracy": 1.0,
+        "toxic_rejection_accuracy": 1.0,
+        "trace_exact_rate": 1.0,
+        "trace_mismatch_rejection": 1.0,
+        "uses_fixed_header_rate": 1.0,
+        "wire_width": 4
+      },
+      "heldout": {
+        "action_accuracy": 1.0,
+        "agency_decision_success": 1.0,
+        "commit_target_value_accuracy": 1.0,
+        "expected_commit_recovery": 1.0,
+        "false_commit_rate": 0.0,
+        "ground_conflict_rejection": 1.0,
+        "missed_commit_rate": 0.0,
+        "no_valid_defer_accuracy": 1.0,
+        "partial_support_ask_accuracy": 1.0,
+        "payload_collision_rate": 0.0,
+        "row_count": 224,
+        "stale_rejection_accuracy": 1.0,
+        "toxic_rejection_accuracy": 1.0,
+        "trace_exact_rate": 1.0,
+        "trace_mismatch_rejection": 1.0,
+        "uses_fixed_header_rate": 1.0,
+        "wire_width": 4
+      },
+      "ood_counterfactual": {
+        "action_accuracy": 1.0,
+        "agency_decision_success": 1.0,
+        "commit_target_value_accuracy": 1.0,
+        "expected_commit_recovery": 1.0,
+        "false_commit_rate": 0.0,
+        "ground_conflict_rejection": 1.0,
+        "missed_commit_rate": 0.0,
+        "no_valid_defer_accuracy": 1.0,
+        "partial_support_ask_accuracy": 1.0,
+        "payload_collision_rate": 0.0,
+        "row_count": 224,
+        "stale_rejection_accuracy": 1.0,
+        "toxic_rejection_accuracy": 1.0,
+        "trace_exact_rate": 1.0,
+        "trace_mismatch_rejection": 1.0,
+        "uses_fixed_header_rate": 1.0,
+        "wire_width": 4
+      }
+    }
+  },
+  "abstract_payload_w6": {
+    "candidate": {
+      "decoder": {
+        "000000": [
+          0,
+          0
+        ],
+        "000110": [
+          0,
+          1
+        ],
+        "001010": [
+          1,
+          0
+        ],
+        "001100": [
+          1,
+          1
+        ],
+        "010011": [
+          2,
+          0
+        ],
+        "010101": [
+          2,
+          1
+        ],
+        "011010": [
+          3,
+          0
+        ],
+        "011110": [
+          3,
+          1
+        ],
+        "100001": [
+          4,
+          0
+        ],
+        "100111": [
+          4,
+          1
+        ],
+        "101011": [
+          5,
+          0
+        ],
+        "101110": [
+          5,
+          1
+        ],
+        "110000": [
+          6,
+          0
+        ],
+        "110111": [
+          6,
+          1
+        ],
+        "111011": [
+          7,
+          0
+        ],
+        "111100": [
+          7,
+          1
+        ]
+      },
+      "kind": "abstract_decoder",
+      "system": "abstract_payload_w6",
+      "width": 6
+    },
+    "mutation": {
+      "accepted_mutations": 76,
+      "final_score": 0.9936,
+      "final_state": {
+        "decoder": {
+          "000000": [
+            0,
+            0
+          ],
+          "000110": [
+            0,
+            1
+          ],
+          "001010": [
+            1,
+            0
+          ],
+          "001100": [
+            1,
+            1
+          ],
+          "010011": [
+            2,
+            0
+          ],
+          "010101": [
+            2,
+            1
+          ],
+          "011010": [
+            3,
+            0
+          ],
+          "011110": [
+            3,
+            1
+          ],
+          "100001": [
+            4,
+            0
+          ],
+          "100111": [
+            4,
+            1
+          ],
+          "101011": [
+            5,
+            0
+          ],
+          "101110": [
+            5,
+            1
+          ],
+          "110000": [
+            6,
+            0
+          ],
+          "110111": [
+            6,
+            1
+          ],
+          "111011": [
+            7,
+            0
+          ],
+          "111100": [
+            7,
+            1
+          ]
+        },
+        "kind": "abstract_decoder",
+        "system": "abstract_payload_w6",
+        "width": 6
+      },
+      "initial_score": 0.7685714285714287,
+      "initial_state": {
+        "decoder": {},
+        "kind": "abstract_decoder",
+        "system": "abstract_payload_w6",
+        "width": 6
+      },
+      "parameter_diff": {
+        "decoder": {
+          "final": {
+            "000000": [
+              0,
+              0
+            ],
+            "000110": [
+              0,
+              1
+            ],
+            "001010": [
+              1,
+              0
+            ],
+            "001100": [
+              1,
+              1
+            ],
+            "010011": [
+              2,
+              0
+            ],
+            "010101": [
+              2,
+              1
+            ],
+            "011010": [
+              3,
+              0
+            ],
+            "011110": [
+              3,
+              1
+            ],
+            "100001": [
+              4,
+              0
+            ],
+            "100111": [
+              4,
+              1
+            ],
+            "101011": [
+              5,
+              0
+            ],
+            "101110": [
+              5,
+              1
+            ],
+            "110000": [
+              6,
+              0
+            ],
+            "110111": [
+              6,
+              1
+            ],
+            "111011": [
+              7,
+              0
+            ],
+            "111100": [
+              7,
+              1
+            ]
+          },
+          "initial": {}
+        }
+      },
+      "parameter_hash": "5a0d67c454693e2912d0d4ef1f9eafdd3a7c6506d8527fbd818c9a5aaebe38c7",
+      "rejected_mutations": 1364,
+      "rollback_count": 1364
+    },
+    "overall": {
+      "action_accuracy": 1.0,
+      "agency_decision_success": 1.0,
+      "commit_target_value_accuracy": 1.0,
+      "expected_commit_recovery": 1.0,
+      "false_commit_rate": 0.0,
+      "ground_conflict_rejection": 1.0,
+      "missed_commit_rate": 0.0,
+      "no_valid_defer_accuracy": 1.0,
+      "partial_support_ask_accuracy": 1.0,
+      "payload_collision_rate": 0.0,
+      "row_count": 672,
+      "stale_rejection_accuracy": 1.0,
+      "toxic_rejection_accuracy": 1.0,
+      "trace_exact_rate": 1.0,
+      "trace_mismatch_rejection": 1.0,
+      "uses_fixed_header_rate": 1.0,
+      "wire_width": 6
+    },
+    "splits": {
+      "adversarial_payload": {
+        "action_accuracy": 1.0,
+        "agency_decision_success": 1.0,
+        "commit_target_value_accuracy": 1.0,
+        "expected_commit_recovery": 1.0,
+        "false_commit_rate": 0.0,
+        "ground_conflict_rejection": 1.0,
+        "missed_commit_rate": 0.0,
+        "no_valid_defer_accuracy": 1.0,
+        "partial_support_ask_accuracy": 1.0,
+        "payload_collision_rate": 0.0,
+        "row_count": 224,
+        "stale_rejection_accuracy": 1.0,
+        "toxic_rejection_accuracy": 1.0,
+        "trace_exact_rate": 1.0,
+        "trace_mismatch_rejection": 1.0,
+        "uses_fixed_header_rate": 1.0,
+        "wire_width": 6
+      },
+      "heldout": {
+        "action_accuracy": 1.0,
+        "agency_decision_success": 1.0,
+        "commit_target_value_accuracy": 1.0,
+        "expected_commit_recovery": 1.0,
+        "false_commit_rate": 0.0,
+        "ground_conflict_rejection": 1.0,
+        "missed_commit_rate": 0.0,
+        "no_valid_defer_accuracy": 1.0,
+        "partial_support_ask_accuracy": 1.0,
+        "payload_collision_rate": 0.0,
+        "row_count": 224,
+        "stale_rejection_accuracy": 1.0,
+        "toxic_rejection_accuracy": 1.0,
+        "trace_exact_rate": 1.0,
+        "trace_mismatch_rejection": 1.0,
+        "uses_fixed_header_rate": 1.0,
+        "wire_width": 6
+      },
+      "ood_counterfactual": {
+        "action_accuracy": 1.0,
+        "agency_decision_success": 1.0,
+        "commit_target_value_accuracy": 1.0,
+        "expected_commit_recovery": 1.0,
+        "false_commit_rate": 0.0,
+        "ground_conflict_rejection": 1.0,
+        "missed_commit_rate": 0.0,
+        "no_valid_defer_accuracy": 1.0,
+        "partial_support_ask_accuracy": 1.0,
+        "payload_collision_rate": 0.0,
+        "row_count": 224,
+        "stale_rejection_accuracy": 1.0,
+        "toxic_rejection_accuracy": 1.0,
+        "trace_exact_rate": 1.0,
+        "trace_mismatch_rejection": 1.0,
+        "uses_fixed_header_rate": 1.0,
+        "wire_width": 6
+      }
+    }
+  },
+  "abstract_payload_w8": {
+    "candidate": {
+      "decoder": {
+        "00000010": [
+          0,
+          0
+        ],
+        "00011011": [
+          0,
+          1
+        ],
+        "00101011": [
+          1,
+          0
+        ],
+        "00110000": [
+          1,
+          1
+        ],
+        "01001100": [
+          2,
+          0
+        ],
+        "01010111": [
+          2,
+          1
+        ],
+        "01101010": [
+          3,
+          0
+        ],
+        "01111011": [
+          3,
+          1
+        ],
+        "10000111": [
+          4,
+          0
+        ],
+        "10011100": [
+          4,
+          1
+        ],
+        "10101101": [
+          5,
+          0
+        ],
+        "10111010": [
+          5,
+          1
+        ],
+        "11000011": [
+          6,
+          0
+        ],
+        "11011100": [
+          6,
+          1
+        ],
+        "11101110": [
+          7,
+          0
+        ],
+        "11110010": [
+          7,
+          1
+        ]
+      },
+      "kind": "abstract_decoder",
+      "system": "abstract_payload_w8",
+      "width": 8
+    },
+    "mutation": {
+      "accepted_mutations": 76,
+      "final_score": 0.9936,
+      "final_state": {
+        "decoder": {
+          "00000010": [
+            0,
+            0
+          ],
+          "00011011": [
+            0,
+            1
+          ],
+          "00101011": [
+            1,
+            0
+          ],
+          "00110000": [
+            1,
+            1
+          ],
+          "01001100": [
+            2,
+            0
+          ],
+          "01010111": [
+            2,
+            1
+          ],
+          "01101010": [
+            3,
+            0
+          ],
+          "01111011": [
+            3,
+            1
+          ],
+          "10000111": [
+            4,
+            0
+          ],
+          "10011100": [
+            4,
+            1
+          ],
+          "10101101": [
+            5,
+            0
+          ],
+          "10111010": [
+            5,
+            1
+          ],
+          "11000011": [
+            6,
+            0
+          ],
+          "11011100": [
+            6,
+            1
+          ],
+          "11101110": [
+            7,
+            0
+          ],
+          "11110010": [
+            7,
+            1
+          ]
+        },
+        "kind": "abstract_decoder",
+        "system": "abstract_payload_w8",
+        "width": 8
+      },
+      "initial_score": 0.7685714285714287,
+      "initial_state": {
+        "decoder": {},
+        "kind": "abstract_decoder",
+        "system": "abstract_payload_w8",
+        "width": 8
+      },
+      "parameter_diff": {
+        "decoder": {
+          "final": {
+            "00000010": [
+              0,
+              0
+            ],
+            "00011011": [
+              0,
+              1
+            ],
+            "00101011": [
+              1,
+              0
+            ],
+            "00110000": [
+              1,
+              1
+            ],
+            "01001100": [
+              2,
+              0
+            ],
+            "01010111": [
+              2,
+              1
+            ],
+            "01101010": [
+              3,
+              0
+            ],
+            "01111011": [
+              3,
+              1
+            ],
+            "10000111": [
+              4,
+              0
+            ],
+            "10011100": [
+              4,
+              1
+            ],
+            "10101101": [
+              5,
+              0
+            ],
+            "10111010": [
+              5,
+              1
+            ],
+            "11000011": [
+              6,
+              0
+            ],
+            "11011100": [
+              6,
+              1
+            ],
+            "11101110": [
+              7,
+              0
+            ],
+            "11110010": [
+              7,
+              1
+            ]
+          },
+          "initial": {}
+        }
+      },
+      "parameter_hash": "60ba65e2b1f4b0fbe6192500926c4218edbba992d04e114800a80506b2547079",
+      "rejected_mutations": 1364,
+      "rollback_count": 1364
+    },
+    "overall": {
+      "action_accuracy": 1.0,
+      "agency_decision_success": 1.0,
+      "commit_target_value_accuracy": 1.0,
+      "expected_commit_recovery": 1.0,
+      "false_commit_rate": 0.0,
+      "ground_conflict_rejection": 1.0,
+      "missed_commit_rate": 0.0,
+      "no_valid_defer_accuracy": 1.0,
+      "partial_support_ask_accuracy": 1.0,
+      "payload_collision_rate": 0.0,
+      "row_count": 672,
+      "stale_rejection_accuracy": 1.0,
+      "toxic_rejection_accuracy": 1.0,
+      "trace_exact_rate": 1.0,
+      "trace_mismatch_rejection": 1.0,
+      "uses_fixed_header_rate": 1.0,
+      "wire_width": 8
+    },
+    "splits": {
+      "adversarial_payload": {
+        "action_accuracy": 1.0,
+        "agency_decision_success": 1.0,
+        "commit_target_value_accuracy": 1.0,
+        "expected_commit_recovery": 1.0,
+        "false_commit_rate": 0.0,
+        "ground_conflict_rejection": 1.0,
+        "missed_commit_rate": 0.0,
+        "no_valid_defer_accuracy": 1.0,
+        "partial_support_ask_accuracy": 1.0,
+        "payload_collision_rate": 0.0,
+        "row_count": 224,
+        "stale_rejection_accuracy": 1.0,
+        "toxic_rejection_accuracy": 1.0,
+        "trace_exact_rate": 1.0,
+        "trace_mismatch_rejection": 1.0,
+        "uses_fixed_header_rate": 1.0,
+        "wire_width": 8
+      },
+      "heldout": {
+        "action_accuracy": 1.0,
+        "agency_decision_success": 1.0,
+        "commit_target_value_accuracy": 1.0,
+        "expected_commit_recovery": 1.0,
+        "false_commit_rate": 0.0,
+        "ground_conflict_rejection": 1.0,
+        "missed_commit_rate": 0.0,
+        "no_valid_defer_accuracy": 1.0,
+        "partial_support_ask_accuracy": 1.0,
+        "payload_collision_rate": 0.0,
+        "row_count": 224,
+        "stale_rejection_accuracy": 1.0,
+        "toxic_rejection_accuracy": 1.0,
+        "trace_exact_rate": 1.0,
+        "trace_mismatch_rejection": 1.0,
+        "uses_fixed_header_rate": 1.0,
+        "wire_width": 8
+      },
+      "ood_counterfactual": {
+        "action_accuracy": 1.0,
+        "agency_decision_success": 1.0,
+        "commit_target_value_accuracy": 1.0,
+        "expected_commit_recovery": 1.0,
+        "false_commit_rate": 0.0,
+        "ground_conflict_rejection": 1.0,
+        "missed_commit_rate": 0.0,
+        "no_valid_defer_accuracy": 1.0,
+        "partial_support_ask_accuracy": 1.0,
+        "payload_collision_rate": 0.0,
+        "row_count": 224,
+        "stale_rejection_accuracy": 1.0,
+        "toxic_rejection_accuracy": 1.0,
+        "trace_exact_rate": 1.0,
+        "trace_mismatch_rejection": 1.0,
+        "uses_fixed_header_rate": 1.0,
+        "wire_width": 8
+      }
+    }
+  },
+  "fixed_header_no_payload_w0": {
+    "candidate": {
+      "decoder": {},
+      "kind": "abstract_decoder",
+      "system": "fixed_header_no_payload_w0",
+      "width": 0
+    },
+    "mutation": {
+      "accepted_mutations": 0,
+      "final_score": 0.7685714285714287,
+      "final_state": {
+        "decoder": {},
+        "kind": "abstract_decoder",
+        "system": "fixed_header_no_payload_w0",
+        "width": 0
+      },
+      "initial_score": 0.7685714285714287,
+      "initial_state": {
+        "decoder": {},
+        "kind": "abstract_decoder",
+        "system": "fixed_header_no_payload_w0",
+        "width": 0
+      },
+      "parameter_diff": {},
+      "parameter_hash": "04c2c5a59066e13b7ceffe4bedde151c6805f4d2aa478789389856bb748f1147",
+      "rejected_mutations": 1440,
+      "rollback_count": 1440
+    },
+    "overall": {
+      "action_accuracy": 0.5714285714285714,
+      "agency_decision_success": 0.5714285714285714,
+      "commit_target_value_accuracy": 1.0,
+      "expected_commit_recovery": 0.0,
+      "false_commit_rate": 0.0,
+      "ground_conflict_rejection": 1.0,
+      "missed_commit_rate": 0.42857142857142855,
+      "no_valid_defer_accuracy": 1.0,
+      "partial_support_ask_accuracy": 1.0,
+      "payload_collision_rate": 1.0,
+      "row_count": 672,
+      "stale_rejection_accuracy": 0.0,
+      "toxic_rejection_accuracy": 0.0,
+      "trace_exact_rate": 0.5714285714285714,
+      "trace_mismatch_rejection": 1.0,
+      "uses_fixed_header_rate": 1.0,
+      "wire_width": 0
+    },
+    "splits": {
+      "adversarial_payload": {
+        "action_accuracy": 0.5714285714285714,
+        "agency_decision_success": 0.5714285714285714,
+        "commit_target_value_accuracy": 1.0,
+        "expected_commit_recovery": 0.0,
+        "false_commit_rate": 0.0,
+        "ground_conflict_rejection": 1.0,
+        "missed_commit_rate": 0.42857142857142855,
+        "no_valid_defer_accuracy": 1.0,
+        "partial_support_ask_accuracy": 1.0,
+        "payload_collision_rate": 1.0,
+        "row_count": 224,
+        "stale_rejection_accuracy": 0.0,
+        "toxic_rejection_accuracy": 0.0,
+        "trace_exact_rate": 0.5714285714285714,
+        "trace_mismatch_rejection": 1.0,
+        "uses_fixed_header_rate": 1.0,
+        "wire_width": 0
+      },
+      "heldout": {
+        "action_accuracy": 0.5714285714285714,
+        "agency_decision_success": 0.5714285714285714,
+        "commit_target_value_accuracy": 1.0,
+        "expected_commit_recovery": 0.0,
+        "false_commit_rate": 0.0,
+        "ground_conflict_rejection": 1.0,
+        "missed_commit_rate": 0.42857142857142855,
+        "no_valid_defer_accuracy": 1.0,
+        "partial_support_ask_accuracy": 1.0,
+        "payload_collision_rate": 1.0,
+        "row_count": 224,
+        "stale_rejection_accuracy": 0.0,
+        "toxic_rejection_accuracy": 0.0,
+        "trace_exact_rate": 0.5714285714285714,
+        "trace_mismatch_rejection": 1.0,
+        "uses_fixed_header_rate": 1.0,
+        "wire_width": 0
+      },
+      "ood_counterfactual": {
+        "action_accuracy": 0.5714285714285714,
+        "agency_decision_success": 0.5714285714285714,
+        "commit_target_value_accuracy": 1.0,
+        "expected_commit_recovery": 0.0,
+        "false_commit_rate": 0.0,
+        "ground_conflict_rejection": 1.0,
+        "missed_commit_rate": 0.42857142857142855,
+        "no_valid_defer_accuracy": 1.0,
+        "partial_support_ask_accuracy": 1.0,
+        "payload_collision_rate": 1.0,
+        "row_count": 224,
+        "stale_rejection_accuracy": 0.0,
+        "toxic_rejection_accuracy": 0.0,
+        "trace_exact_rate": 0.5714285714285714,
+        "trace_mismatch_rejection": 1.0,
+        "uses_fixed_header_rate": 1.0,
+        "wire_width": 0
+      }
+    }
+  },
+  "literal_target_value_header_reference": {
+    "candidate": {
+      "decoder": {},
+      "kind": "abstract_decoder",
+      "system": "literal_target_value_header_reference",
+      "width": 8
+    },
+    "mutation": {
+      "accepted_mutations": 0,
+      "final_state": {
+        "decoder": {},
+        "kind": "abstract_decoder",
+        "system": "literal_target_value_header_reference",
+        "width": 8
+      },
+      "initial_state": {
+        "decoder": {},
+        "kind": "abstract_decoder",
+        "system": "literal_target_value_header_reference",
+        "width": 8
+      },
+      "parameter_diff": {},
+      "parameter_hash": "48326d9d5005346a7fb4f65f3149104c329d36a29c2eac97c49b832b4aab8b76",
+      "rejected_mutations": 0,
+      "rollback_count": 0
+    },
+    "overall": {
+      "action_accuracy": 1.0,
+      "agency_decision_success": 0.5714285714285714,
+      "commit_target_value_accuracy": 1.0,
+      "expected_commit_recovery": 1.0,
+      "false_commit_rate": 0.0,
+      "ground_conflict_rejection": 1.0,
+      "missed_commit_rate": 0.0,
+      "no_valid_defer_accuracy": 1.0,
+      "partial_support_ask_accuracy": 1.0,
+      "payload_collision_rate": 0.0,
+      "row_count": 672,
+      "stale_rejection_accuracy": 1.0,
+      "toxic_rejection_accuracy": 1.0,
+      "trace_exact_rate": 0.5714285714285714,
+      "trace_mismatch_rejection": 1.0,
+      "uses_fixed_header_rate": 1.0,
+      "wire_width": 8
+    },
+    "splits": {
+      "adversarial_payload": {
+        "action_accuracy": 1.0,
+        "agency_decision_success": 0.5714285714285714,
+        "commit_target_value_accuracy": 1.0,
+        "expected_commit_recovery": 1.0,
+        "false_commit_rate": 0.0,
+        "ground_conflict_rejection": 1.0,
+        "missed_commit_rate": 0.0,
+        "no_valid_defer_accuracy": 1.0,
+        "partial_support_ask_accuracy": 1.0,
+        "payload_collision_rate": 0.0,
+        "row_count": 224,
+        "stale_rejection_accuracy": 1.0,
+        "toxic_rejection_accuracy": 1.0,
+        "trace_exact_rate": 0.5714285714285714,
+        "trace_mismatch_rejection": 1.0,
+        "uses_fixed_header_rate": 1.0,
+        "wire_width": 8
+      },
+      "heldout": {
+        "action_accuracy": 1.0,
+        "agency_decision_success": 0.5714285714285714,
+        "commit_target_value_accuracy": 1.0,
+        "expected_commit_recovery": 1.0,
+        "false_commit_rate": 0.0,
+        "ground_conflict_rejection": 1.0,
+        "missed_commit_rate": 0.0,
+        "no_valid_defer_accuracy": 1.0,
+        "partial_support_ask_accuracy": 1.0,
+        "payload_collision_rate": 0.0,
+        "row_count": 224,
+        "stale_rejection_accuracy": 1.0,
+        "toxic_rejection_accuracy": 1.0,
+        "trace_exact_rate": 0.5714285714285714,
+        "trace_mismatch_rejection": 1.0,
+        "uses_fixed_header_rate": 1.0,
+        "wire_width": 8
+      },
+      "ood_counterfactual": {
+        "action_accuracy": 1.0,
+        "agency_decision_success": 0.5714285714285714,
+        "commit_target_value_accuracy": 1.0,
+        "expected_commit_recovery": 1.0,
+        "false_commit_rate": 0.0,
+        "ground_conflict_rejection": 1.0,
+        "missed_commit_rate": 0.0,
+        "no_valid_defer_accuracy": 1.0,
+        "partial_support_ask_accuracy": 1.0,
+        "payload_collision_rate": 0.0,
+        "row_count": 224,
+        "stale_rejection_accuracy": 1.0,
+        "toxic_rejection_accuracy": 1.0,
+        "trace_exact_rate": 0.5714285714285714,
+        "trace_mismatch_rejection": 1.0,
+        "uses_fixed_header_rate": 1.0,
+        "wire_width": 8
+      }
+    }
+  },
+  "no_fixed_header_payload_only_w4": {
+    "candidate": {
+      "decoder": {},
+      "kind": "abstract_decoder",
+      "system": "no_fixed_header_payload_only_w4",
+      "width": 4
+    },
+    "mutation": {
+      "accepted_mutations": 580,
+      "final_score": 0.41714285714285715,
+      "final_state": {
+        "decoder": {},
+        "kind": "abstract_decoder",
+        "system": "no_fixed_header_payload_only_w4",
+        "width": 4
+      },
+      "initial_score": 0.41714285714285715,
+      "initial_state": {
+        "decoder": {},
+        "kind": "abstract_decoder",
+        "system": "no_fixed_header_payload_only_w4",
+        "width": 4
+      },
+      "parameter_diff": {},
+      "parameter_hash": "4404da23e14c6be7e007cf454a5fcdb0b1b26afab985d90d799a7d00d1b01e69",
+      "rejected_mutations": 860,
+      "rollback_count": 860
+    },
+    "overall": {
+      "action_accuracy": 0.14285714285714285,
+      "agency_decision_success": 0.0,
+      "commit_target_value_accuracy": 1.0,
+      "expected_commit_recovery": 0.0,
+      "false_commit_rate": 0.0,
+      "ground_conflict_rejection": 0.0,
+      "missed_commit_rate": 0.42857142857142855,
+      "no_valid_defer_accuracy": 1.0,
+      "partial_support_ask_accuracy": 0.0,
+      "payload_collision_rate": 0.0,
+      "row_count": 672,
+      "stale_rejection_accuracy": 0.0,
+      "toxic_rejection_accuracy": 0.0,
+      "trace_exact_rate": 0.0,
+      "trace_mismatch_rejection": 0.0,
+      "uses_fixed_header_rate": 0.0,
+      "wire_width": 4
+    },
+    "splits": {
+      "adversarial_payload": {
+        "action_accuracy": 0.14285714285714285,
+        "agency_decision_success": 0.0,
+        "commit_target_value_accuracy": 1.0,
+        "expected_commit_recovery": 0.0,
+        "false_commit_rate": 0.0,
+        "ground_conflict_rejection": 0.0,
+        "missed_commit_rate": 0.42857142857142855,
+        "no_valid_defer_accuracy": 1.0,
+        "partial_support_ask_accuracy": 0.0,
+        "payload_collision_rate": 0.0,
+        "row_count": 224,
+        "stale_rejection_accuracy": 0.0,
+        "toxic_rejection_accuracy": 0.0,
+        "trace_exact_rate": 0.0,
+        "trace_mismatch_rejection": 0.0,
+        "uses_fixed_header_rate": 0.0,
+        "wire_width": 4
+      },
+      "heldout": {
+        "action_accuracy": 0.14285714285714285,
+        "agency_decision_success": 0.0,
+        "commit_target_value_accuracy": 1.0,
+        "expected_commit_recovery": 0.0,
+        "false_commit_rate": 0.0,
+        "ground_conflict_rejection": 0.0,
+        "missed_commit_rate": 0.42857142857142855,
+        "no_valid_defer_accuracy": 1.0,
+        "partial_support_ask_accuracy": 0.0,
+        "payload_collision_rate": 0.0,
+        "row_count": 224,
+        "stale_rejection_accuracy": 0.0,
+        "toxic_rejection_accuracy": 0.0,
+        "trace_exact_rate": 0.0,
+        "trace_mismatch_rejection": 0.0,
+        "uses_fixed_header_rate": 0.0,
+        "wire_width": 4
+      },
+      "ood_counterfactual": {
+        "action_accuracy": 0.14285714285714285,
+        "agency_decision_success": 0.0,
+        "commit_target_value_accuracy": 1.0,
+        "expected_commit_recovery": 0.0,
+        "false_commit_rate": 0.0,
+        "ground_conflict_rejection": 0.0,
+        "missed_commit_rate": 0.42857142857142855,
+        "no_valid_defer_accuracy": 1.0,
+        "partial_support_ask_accuracy": 0.0,
+        "payload_collision_rate": 0.0,
+        "row_count": 224,
+        "stale_rejection_accuracy": 0.0,
+        "toxic_rejection_accuracy": 0.0,
+        "trace_exact_rate": 0.0,
+        "trace_mismatch_rejection": 0.0,
+        "uses_fixed_header_rate": 0.0,
+        "wire_width": 4
+      }
+    }
+  },
+  "oracle_abstract_wire_reference": {
+    "candidate": {
+      "decoder": {},
+      "kind": "abstract_decoder",
+      "system": "oracle_abstract_wire_reference",
+      "width": 8
+    },
+    "mutation": {
+      "accepted_mutations": 0,
+      "final_state": {
+        "decoder": {},
+        "kind": "abstract_decoder",
+        "system": "oracle_abstract_wire_reference",
+        "width": 8
+      },
+      "initial_state": {
+        "decoder": {},
+        "kind": "abstract_decoder",
+        "system": "oracle_abstract_wire_reference",
+        "width": 8
+      },
+      "parameter_diff": {},
+      "parameter_hash": "e176c1d0b9ef27733f8f8ef6ad084bc0c7ca2afb9372768f2d03a8f72b70a172",
+      "rejected_mutations": 0,
+      "rollback_count": 0
+    },
+    "overall": {
+      "action_accuracy": 1.0,
+      "agency_decision_success": 1.0,
+      "commit_target_value_accuracy": 1.0,
+      "expected_commit_recovery": 1.0,
+      "false_commit_rate": 0.0,
+      "ground_conflict_rejection": 1.0,
+      "missed_commit_rate": 0.0,
+      "no_valid_defer_accuracy": 1.0,
+      "partial_support_ask_accuracy": 1.0,
+      "payload_collision_rate": 0.0,
+      "row_count": 672,
+      "stale_rejection_accuracy": 1.0,
+      "toxic_rejection_accuracy": 1.0,
+      "trace_exact_rate": 1.0,
+      "trace_mismatch_rejection": 1.0,
+      "uses_fixed_header_rate": 1.0,
+      "wire_width": 8
+    },
+    "splits": {
+      "adversarial_payload": {
+        "action_accuracy": 1.0,
+        "agency_decision_success": 1.0,
+        "commit_target_value_accuracy": 1.0,
+        "expected_commit_recovery": 1.0,
+        "false_commit_rate": 0.0,
+        "ground_conflict_rejection": 1.0,
+        "missed_commit_rate": 0.0,
+        "no_valid_defer_accuracy": 1.0,
+        "partial_support_ask_accuracy": 1.0,
+        "payload_collision_rate": 0.0,
+        "row_count": 224,
+        "stale_rejection_accuracy": 1.0,
+        "toxic_rejection_accuracy": 1.0,
+        "trace_exact_rate": 1.0,
+        "trace_mismatch_rejection": 1.0,
+        "uses_fixed_header_rate": 1.0,
+        "wire_width": 8
+      },
+      "heldout": {
+        "action_accuracy": 1.0,
+        "agency_decision_success": 1.0,
+        "commit_target_value_accuracy": 1.0,
+        "expected_commit_recovery": 1.0,
+        "false_commit_rate": 0.0,
+        "ground_conflict_rejection": 1.0,
+        "missed_commit_rate": 0.0,
+        "no_valid_defer_accuracy": 1.0,
+        "partial_support_ask_accuracy": 1.0,
+        "payload_collision_rate": 0.0,
+        "row_count": 224,
+        "stale_rejection_accuracy": 1.0,
+        "toxic_rejection_accuracy": 1.0,
+        "trace_exact_rate": 1.0,
+        "trace_mismatch_rejection": 1.0,
+        "uses_fixed_header_rate": 1.0,
+        "wire_width": 8
+      },
+      "ood_counterfactual": {
+        "action_accuracy": 1.0,
+        "agency_decision_success": 1.0,
+        "commit_target_value_accuracy": 1.0,
+        "expected_commit_recovery": 1.0,
+        "false_commit_rate": 0.0,
+        "ground_conflict_rejection": 1.0,
+        "missed_commit_rate": 0.0,
+        "no_valid_defer_accuracy": 1.0,
+        "partial_support_ask_accuracy": 1.0,
+        "payload_collision_rate": 0.0,
+        "row_count": 224,
+        "stale_rejection_accuracy": 1.0,
+        "toxic_rejection_accuracy": 1.0,
+        "trace_exact_rate": 1.0,
+        "trace_mismatch_rejection": 1.0,
+        "uses_fixed_header_rate": 1.0,
+        "wire_width": 8
+      }
+    }
+  },
+  "random_payload_decoder_control": {
+    "candidate": {
+      "decoder": {},
+      "kind": "abstract_decoder",
+      "system": "random_payload_decoder_control",
+      "width": 8
+    },
+    "mutation": {
+      "accepted_mutations": 0,
+      "final_state": {
+        "decoder": {},
+        "kind": "abstract_decoder",
+        "system": "random_payload_decoder_control",
+        "width": 8
+      },
+      "initial_state": {
+        "decoder": {},
+        "kind": "abstract_decoder",
+        "system": "random_payload_decoder_control",
+        "width": 8
+      },
+      "parameter_diff": {},
+      "parameter_hash": "42bbfa052dc467afcec7e531c7886b23391834d570b13895c889ccacfcc63b11",
+      "rejected_mutations": 0,
+      "rollback_count": 0
+    },
+    "overall": {
+      "action_accuracy": 0.6041666666666666,
+      "agency_decision_success": 0.5714285714285714,
+      "commit_target_value_accuracy": 0.0763888888888889,
+      "expected_commit_recovery": 0.0763888888888889,
+      "false_commit_rate": 0.3958333333333333,
+      "ground_conflict_rejection": 1.0,
+      "missed_commit_rate": 0.3958333333333333,
+      "no_valid_defer_accuracy": 1.0,
+      "partial_support_ask_accuracy": 1.0,
+      "payload_collision_rate": 0.0,
+      "row_count": 672,
+      "stale_rejection_accuracy": 0.0625,
+      "toxic_rejection_accuracy": 0.09375,
+      "trace_exact_rate": 0.5714285714285714,
+      "trace_mismatch_rejection": 1.0,
+      "uses_fixed_header_rate": 1.0,
+      "wire_width": 8
+    },
+    "splits": {
+      "adversarial_payload": {
+        "action_accuracy": 0.5892857142857143,
+        "agency_decision_success": 0.5714285714285714,
+        "commit_target_value_accuracy": 0.041666666666666664,
+        "expected_commit_recovery": 0.041666666666666664,
+        "false_commit_rate": 0.4107142857142857,
+        "ground_conflict_rejection": 1.0,
+        "missed_commit_rate": 0.4107142857142857,
+        "no_valid_defer_accuracy": 1.0,
+        "partial_support_ask_accuracy": 1.0,
+        "payload_collision_rate": 0.0,
+        "row_count": 224,
+        "stale_rejection_accuracy": 0.0625,
+        "toxic_rejection_accuracy": 0.03125,
+        "trace_exact_rate": 0.5714285714285714,
+        "trace_mismatch_rejection": 1.0,
+        "uses_fixed_header_rate": 1.0,
+        "wire_width": 8
+      },
+      "heldout": {
+        "action_accuracy": 0.6026785714285714,
+        "agency_decision_success": 0.5714285714285714,
+        "commit_target_value_accuracy": 0.07291666666666667,
+        "expected_commit_recovery": 0.07291666666666667,
+        "false_commit_rate": 0.39732142857142855,
+        "ground_conflict_rejection": 1.0,
+        "missed_commit_rate": 0.39732142857142855,
+        "no_valid_defer_accuracy": 1.0,
+        "partial_support_ask_accuracy": 1.0,
+        "payload_collision_rate": 0.0,
+        "row_count": 224,
+        "stale_rejection_accuracy": 0.03125,
+        "toxic_rejection_accuracy": 0.125,
+        "trace_exact_rate": 0.5714285714285714,
+        "trace_mismatch_rejection": 1.0,
+        "uses_fixed_header_rate": 1.0,
+        "wire_width": 8
+      },
+      "ood_counterfactual": {
+        "action_accuracy": 0.6205357142857143,
+        "agency_decision_success": 0.5714285714285714,
+        "commit_target_value_accuracy": 0.11458333333333333,
+        "expected_commit_recovery": 0.11458333333333333,
+        "false_commit_rate": 0.3794642857142857,
+        "ground_conflict_rejection": 1.0,
+        "missed_commit_rate": 0.3794642857142857,
+        "no_valid_defer_accuracy": 1.0,
+        "partial_support_ask_accuracy": 1.0,
+        "payload_collision_rate": 0.0,
+        "row_count": 224,
+        "stale_rejection_accuracy": 0.09375,
+        "toxic_rejection_accuracy": 0.125,
+        "trace_exact_rate": 0.5714285714285714,
+        "trace_mismatch_rejection": 1.0,
+        "uses_fixed_header_rate": 1.0,
+        "wire_width": 8
+      }
+    }
+  }
+}
