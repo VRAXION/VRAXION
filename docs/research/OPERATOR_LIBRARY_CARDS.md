@@ -3492,3 +3492,201 @@ always_restart_dialogue_control       -> Deprecated
 turn_order_shuffle_committer          -> Quarantine
 continuity_echo_clone                 -> Redundant
 ```
+
+## E105 Conversation Memory Summary And Context Compression Expansion
+
+Source:
+
+```text
+target/pilot_wave/e105_conversation_memory_summary_and_context_compression_expansion/
+docs/research/artifact_samples/e105_conversation_memory_summary_and_context_compression_expansion/
+```
+
+Boundary:
+
+```text
+controlled context compression proxy
+not open-domain summarization
+not direct summary without evidence
+```
+
+### Context Window Pressure Lens
+
+```text
+component_id = context_window_pressure_lens
+status       = StableOperatorCandidate
+family       = Lens
+```
+
+What it does:
+
+```text
+detects when a trace must be compressed before the next reasoning step
+```
+
+If removed:
+
+```text
+mean_context_compression_success_loss = 1.000000
+mean_lost_dependency_delta = 0.000000
+```
+
+### Summary Relevance Span Selector Lens
+
+```text
+component_id = summary_relevance_span_selector_lens
+status       = StableOperatorCandidate
+family       = Lens
+```
+
+What it does:
+
+```text
+selects only trace spans needed for the active question and pending dependencies
+```
+
+If removed:
+
+```text
+mean_context_compression_success_loss = 1.000000
+mean_lost_dependency_delta = 0.000000
+```
+
+### Required Fact Preservation Guard
+
+```text
+component_id = required_fact_preservation_guard
+status       = StableOperatorCandidate
+family       = Guard
+```
+
+What it does:
+
+```text
+requires every active fact dependency to survive compression
+```
+
+If removed:
+
+```text
+mean_context_compression_success_loss = 1.000000
+mean_lost_dependency_delta = 0.000000
+```
+
+### Unresolved Dependency Preservation T-Stab
+
+```text
+component_id = unresolved_dependency_preservation_t_stab
+status       = StableOperatorCandidate
+family       = T-Stab
+```
+
+What it does:
+
+```text
+stabilizes unresolved dependencies so compression cannot drop them
+```
+
+If removed:
+
+```text
+mean_context_compression_success_loss = 0.799014
+mean_lost_dependency_delta = 0.202625
+```
+
+### Citation Pointer Compaction Scribe
+
+```text
+component_id = citation_pointer_compaction_scribe
+status       = StableOperatorCandidate
+family       = Scribe
+```
+
+What it does:
+
+```text
+writes compact evidence pointers instead of copying full raw turns
+```
+
+If removed:
+
+```text
+mean_context_compression_success_loss = 1.000000
+mean_lost_dependency_delta = 0.000000
+```
+
+### Obsolete Turn Prune Guard
+
+```text
+component_id = obsolete_turn_prune_guard
+status       = StableOperatorCandidate
+family       = Guard
+```
+
+What it does:
+
+```text
+prunes repaired or obsolete turns only when their facts are preserved elsewhere
+```
+
+If removed:
+
+```text
+mean_context_compression_success_loss = 1.000000
+mean_lost_dependency_delta = 0.000000
+```
+
+### Summary Drift Detection Guard
+
+```text
+component_id = summary_drift_detection_guard
+status       = StableOperatorCandidate
+family       = Guard
+```
+
+What it does:
+
+```text
+rejects summaries that introduce stale, hallucinated, or cross-thread state
+```
+
+If removed:
+
+```text
+mean_context_compression_success_loss = 1.000000
+mean_lost_dependency_delta = 0.000000
+```
+
+### Compressed Context Reentry Scribe
+
+```text
+component_id = compressed_context_reentry_scribe
+status       = StableOperatorCandidate
+family       = Scribe
+```
+
+What it does:
+
+```text
+routes the compressed context back into the active reasoning state
+```
+
+If removed:
+
+```text
+mean_context_compression_success_loss = 1.000000
+mean_lost_dependency_delta = 0.000000
+```
+
+### E105 Rejected Controls
+
+```text
+last_turn_only_summary_control      -> Quarantine
+keyword_frequency_summary_control   -> Quarantine
+drop_unresolved_dependency_control  -> Quarantine
+drop_citation_pointer_control       -> Quarantine
+stale_fact_summary_control          -> Quarantine
+overcompressed_summary_control      -> Quarantine
+hallucinated_bridge_summary_control -> Quarantine
+summary_guard_echo_clone            -> Redundant
+```

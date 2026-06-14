@@ -1,0 +1,36 @@
+{
+  "summary": {
+    "citation_pointer_compaction_scribe": {
+      "mean_context_compression_success_loss": 1.0,
+      "mean_lost_dependency_delta": 0.0
+    },
+    "compressed_context_reentry_scribe": {
+      "mean_context_compression_success_loss": 1.0,
+      "mean_lost_dependency_delta": 0.0
+    },
+    "context_window_pressure_lens": {
+      "mean_context_compression_success_loss": 1.0,
+      "mean_lost_dependency_delta": 0.0
+    },
+    "obsolete_turn_prune_guard": {
+      "mean_context_compression_success_loss": 1.0,
+      "mean_lost_dependency_delta": 0.0
+    },
+    "required_fact_preservation_guard": {
+      "mean_context_compression_success_loss": 1.0,
+      "mean_lost_dependency_delta": 0.0
+    },
+    "summary_drift_detection_guard": {
+      "mean_context_compression_success_loss": 1.0,
+      "mean_lost_dependency_delta": 0.0
+    },
+    "summary_relevance_span_selector_lens": {
+      "mean_context_compression_success_loss": 1.0,
+      "mean_lost_dependency_delta": 0.0
+    },
+    "unresolved_dependency_preservation_t_stab": {
+      "mean_context_compression_success_loss": 0.799014,
+      "mean_lost_dependency_delta": 0.202625
+    }
+  }
+}

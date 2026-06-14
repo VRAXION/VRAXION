@@ -1,0 +1,5 @@
+{
+  "artifact_contract": "E105_CONVERSATION_MEMORY_SUMMARY_AND_CONTEXT_COMPRESSION_EXPANSION",
+  "sample_only": true,
+  "source": "target\\pilot_wave\\e105_conversation_memory_summary_and_context_compression_expansion"
+}
