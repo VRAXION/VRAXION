@@ -1,0 +1,21 @@
+{
+  "artifact_contract": "E103_CLARIFICATION_RESPONSE_INGRESS_AND_STATE_REPAIR_EXPANSION",
+  "case_count": 11520,
+  "clarification_response_ingress": true,
+  "direct_repair_without_pending_question_allowed": false,
+  "families": [
+    "conflicting_clarification_defer",
+    "irrelevant_clarification_rejected",
+    "latest_cycle_clarification_commit",
+    "missing_dependency_resolved",
+    "multi_dependency_incremental_repair",
+    "no_answer_hold_unresolved",
+    "numeric_marker_clarification_repair",
+    "partial_clarification_reask",
+    "source_attributed_clarification_commit",
+    "stale_pending_question_rejected"
+  ],
+  "open_domain_dialogue": false,
+  "requires_repair_trace": true,
+  "state_repair_after_ask": true
+}

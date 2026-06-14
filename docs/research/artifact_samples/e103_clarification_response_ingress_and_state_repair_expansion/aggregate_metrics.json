@@ -1,0 +1,20 @@
+{
+  "accepted_mutations_total": 128,
+  "adversarial_clarification_repair_success_mean": 1.0,
+  "adversarial_clarification_repair_success_min": 1.0,
+  "adversarial_false_reask_rate_max": 0.0,
+  "adversarial_irrelevant_repair_rate_max": 0.0,
+  "adversarial_stale_repair_rate_max": 0.0,
+  "adversarial_unsafe_repair_rate_max": 0.0,
+  "rejected_mutations_total": 512,
+  "rollback_count_total": 512,
+  "seconds": 0.72,
+  "seed_count": 16,
+  "validation_answer_reentry_success_min": 1.0,
+  "validation_clarification_repair_success_mean": 1.0,
+  "validation_clarification_repair_success_min": 1.0,
+  "validation_dependency_binding_validity_min": 1.0,
+  "validation_final_answer_after_repair_accuracy_min": 1.0,
+  "validation_state_repair_validity_min": 1.0,
+  "validation_trace_integrity_min": 1.0
+}

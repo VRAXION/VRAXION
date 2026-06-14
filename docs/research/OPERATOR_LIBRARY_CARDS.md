@@ -3096,3 +3096,201 @@ template_only_answer_control           -> Quarantine
 stale_evidence_answerer                -> Quarantine
 answerability_echo_clone               -> Redundant
 ```
+
+## E103 Clarification Response Ingress And State Repair Expansion
+
+Source:
+
+```text
+target/pilot_wave/e103_clarification_response_ingress_and_state_repair_expansion/
+docs/research/artifact_samples/e103_clarification_response_ingress_and_state_repair_expansion/
+```
+
+Boundary:
+
+```text
+controlled clarification-response state repair proxy
+not open-domain dialogue
+not direct repair without pending question
+```
+
+### Pending Question Trace Lens
+
+```text
+component_id = pending_question_trace_lens
+status       = StableOperatorCandidate
+family       = Lens
+```
+
+What it does:
+
+```text
+reads the previous ASK/DEFER trace and recovers the active pending dependency
+```
+
+If removed:
+
+```text
+mean_clarification_repair_success_loss = 1.000000
+mean_unsafe_repair_delta = 0.000000
+```
+
+### Clarification Span Locator Lens
+
+```text
+component_id = clarification_span_locator_lens
+status       = StableOperatorCandidate
+family       = Lens
+```
+
+What it does:
+
+```text
+locates the mechanical answer span inside a clarification response
+```
+
+If removed:
+
+```text
+mean_clarification_repair_success_loss = 0.898905
+mean_unsafe_repair_delta = 0.000000
+```
+
+### Clarification Dependency Binder Guard
+
+```text
+component_id = clarification_dependency_binder_guard
+status       = StableOperatorCandidate
+family       = Guard
+```
+
+What it does:
+
+```text
+requires the clarification span to answer the active pending dependency
+```
+
+If removed:
+
+```text
+mean_clarification_repair_success_loss = 0.898905
+mean_unsafe_repair_delta = 0.000000
+```
+
+### State Repair Patch Scribe
+
+```text
+component_id = state_repair_patch_scribe
+status       = StableOperatorCandidate
+family       = Scribe
+```
+
+What it does:
+
+```text
+writes a repair proposal that updates Flow/Ground from the clarification
+```
+
+If removed:
+
+```text
+mean_clarification_repair_success_loss = 0.486298
+mean_unsafe_repair_delta = 0.000000
+```
+
+### Stale Pending Question Guard
+
+```text
+component_id = stale_pending_question_guard
+status       = StableOperatorCandidate
+family       = Guard
+```
+
+What it does:
+
+```text
+rejects clarification responses that target an old or already closed question
+```
+
+If removed:
+
+```text
+mean_clarification_repair_success_loss = 0.303029
+mean_unsafe_repair_delta = 0.000000
+```
+
+### Irrelevant Clarification Filter Guard
+
+```text
+component_id = irrelevant_clarification_filter_guard
+status       = StableOperatorCandidate
+family       = Guard
+```
+
+What it does:
+
+```text
+rejects clarification text that does not cover the pending dependency
+```
+
+If removed:
+
+```text
+mean_clarification_repair_success_loss = 0.412607
+mean_unsafe_repair_delta = 0.000000
+```
+
+### Repaired Answer Reentry Scribe
+
+```text
+component_id = repaired_answer_reentry_scribe
+status       = StableOperatorCandidate
+family       = Scribe
+```
+
+What it does:
+
+```text
+routes the repaired state back into grounded answer decision
+```
+
+If removed:
+
+```text
+mean_clarification_repair_success_loss = 0.400545
+mean_unsafe_repair_delta = 0.000000
+```
+
+### Repair Trace Integrity T-Stab
+
+```text
+component_id = repair_trace_integrity_t_stab
+status       = StableOperatorCandidate
+family       = T-Stab
+```
+
+What it does:
+
+```text
+stabilizes the ask -> clarification -> repair -> answer trace chain
+```
+
+If removed:
+
+```text
+mean_clarification_repair_success_loss = 1.000000
+mean_unsafe_repair_delta = 0.000000
+```
+
+### E103 Rejected Controls
+
+```text
+any_clarification_committer          -> Quarantine
+stale_question_reopener              -> Quarantine
+irrelevant_answer_binder             -> Quarantine
+conflicting_clarification_overwriter -> Quarantine
+answer_without_reentry_control       -> Quarantine
+always_reask_control                 -> Deprecated
+latest_text_blind_binder             -> Quarantine
+repair_trace_echo_clone              -> Redundant
+```

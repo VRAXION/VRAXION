@@ -1,0 +1,142 @@
+{
+  "rows": [
+    {
+      "cost": 0.13,
+      "display_name": "Pending Question Trace Lens",
+      "family": "Lens",
+      "operator_id": "pending_question_trace_lens",
+      "role": "useful",
+      "selected_frequency": 1.0
+    },
+    {
+      "cost": 0.13,
+      "display_name": "Clarification Span Locator Lens",
+      "family": "Lens",
+      "operator_id": "clarification_span_locator_lens",
+      "role": "useful",
+      "selected_frequency": 1.0
+    },
+    {
+      "cost": 0.14,
+      "display_name": "Clarification Dependency Binder Guard",
+      "family": "Guard",
+      "operator_id": "clarification_dependency_binder_guard",
+      "role": "useful",
+      "selected_frequency": 1.0
+    },
+    {
+      "cost": 0.14,
+      "display_name": "State Repair Patch Scribe",
+      "family": "Scribe",
+      "operator_id": "state_repair_patch_scribe",
+      "role": "useful",
+      "selected_frequency": 1.0
+    },
+    {
+      "cost": 0.13,
+      "display_name": "Stale Pending Question Guard",
+      "family": "Guard",
+      "operator_id": "stale_pending_question_guard",
+      "role": "useful",
+      "selected_frequency": 1.0
+    },
+    {
+      "cost": 0.13,
+      "display_name": "Irrelevant Clarification Filter Guard",
+      "family": "Guard",
+      "operator_id": "irrelevant_clarification_filter_guard",
+      "role": "useful",
+      "selected_frequency": 1.0
+    },
+    {
+      "cost": 0.13,
+      "display_name": "Repaired Answer Reentry Scribe",
+      "family": "Scribe",
+      "operator_id": "repaired_answer_reentry_scribe",
+      "role": "useful",
+      "selected_frequency": 1.0
+    },
+    {
+      "cost": 0.13,
+      "display_name": "Repair Trace Integrity T-Stab",
+      "family": "T-Stab",
+      "operator_id": "repair_trace_integrity_t_stab",
+      "role": "useful",
+      "selected_frequency": 1.0
+    },
+    {
+      "cost": 0.03,
+      "display_name": "Any Clarification Committer",
+      "family": "unsafe_control",
+      "operator_id": "any_clarification_committer",
+      "role": "unsafe",
+      "selected_frequency": 0.0
+    },
+    {
+      "cost": 0.04,
+      "display_name": "Stale Question Reopener",
+      "family": "unsafe_control",
+      "operator_id": "stale_question_reopener",
+      "role": "unsafe",
+      "selected_frequency": 0.0
+    },
+    {
+      "cost": 0.04,
+      "display_name": "Irrelevant Answer Binder",
+      "family": "unsafe_control",
+      "operator_id": "irrelevant_answer_binder",
+      "role": "unsafe",
+      "selected_frequency": 0.0
+    },
+    {
+      "cost": 0.04,
+      "display_name": "Conflicting Clarification Overwriter",
+      "family": "unsafe_control",
+      "operator_id": "conflicting_clarification_overwriter",
+      "role": "unsafe",
+      "selected_frequency": 0.0
+    },
+    {
+      "cost": 0.03,
+      "display_name": "Answer Without Reentry Control",
+      "family": "unsafe_control",
+      "operator_id": "answer_without_reentry_control",
+      "role": "unsafe",
+      "selected_frequency": 0.0
+    },
+    {
+      "cost": 0.02,
+      "display_name": "Always Reask Control",
+      "family": "control",
+      "operator_id": "always_reask_control",
+      "role": "noop",
+      "selected_frequency": 0.0
+    },
+    {
+      "cost": 0.04,
+      "display_name": "Latest Text Blind Binder",
+      "family": "unsafe_control",
+      "operator_id": "latest_text_blind_binder",
+      "role": "unsafe",
+      "selected_frequency": 0.0
+    },
+    {
+      "cost": 0.18,
+      "display_name": "Repair Trace Echo Clone",
+      "family": "T-Stab",
+      "operator_id": "repair_trace_echo_clone",
+      "role": "redundant",
+      "selected_frequency": 0.0
+    }
+  ],
+  "stable_top": [
+    "pending_question_trace_lens",
+    "clarification_span_locator_lens",
+    "clarification_dependency_binder_guard",
+    "state_repair_patch_scribe",
+    "stale_pending_question_guard",
+    "irrelevant_clarification_filter_guard",
+    "repaired_answer_reentry_scribe",
+    "repair_trace_integrity_t_stab"
+  ]
+}
