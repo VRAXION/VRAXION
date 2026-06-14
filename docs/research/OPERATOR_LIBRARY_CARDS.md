@@ -3294,3 +3294,201 @@ always_reask_control                 -> Deprecated
 latest_text_blind_binder             -> Quarantine
 repair_trace_echo_clone              -> Redundant
 ```
+
+## E104 Multi-Turn Evidence State Continuity Expansion
+
+Source:
+
+```text
+target/pilot_wave/e104_multi_turn_evidence_state_continuity_expansion/
+docs/research/artifact_samples/e104_multi_turn_evidence_state_continuity_expansion/
+```
+
+Boundary:
+
+```text
+controlled multi-turn evidence-state continuity proxy
+not open-domain dialogue
+not direct answer without continuity
+```
+
+### Turn Boundary Cycle Lens
+
+```text
+component_id = turn_boundary_cycle_lens
+status       = StableOperatorCandidate
+family       = Lens
+```
+
+What it does:
+
+```text
+separates incoming clarification text by turn and cycle id
+```
+
+If removed:
+
+```text
+mean_multi_turn_continuity_success_loss = 1.000000
+mean_cross_turn_contamination_delta = 0.000000
+```
+
+### Pending Dependency Stack T-Stab
+
+```text
+component_id = pending_dependency_stack_t_stab
+status       = StableOperatorCandidate
+family       = T-Stab
+```
+
+What it does:
+
+```text
+stabilizes unresolved dependencies across multiple turns
+```
+
+If removed:
+
+```text
+mean_multi_turn_continuity_success_loss = 1.000000
+mean_cross_turn_contamination_delta = 0.000000
+```
+
+### Active Turn State Router Guard
+
+```text
+component_id = active_turn_state_router_guard
+status       = StableOperatorCandidate
+family       = Guard
+```
+
+What it does:
+
+```text
+routes each clarification to the currently active pending question
+```
+
+If removed:
+
+```text
+mean_multi_turn_continuity_success_loss = 1.000000
+mean_cross_turn_contamination_delta = 0.000000
+```
+
+### Multi-Turn Ground Delta Scribe
+
+```text
+component_id = multi_turn_ground_delta_scribe
+status       = StableOperatorCandidate
+family       = Scribe
+```
+
+What it does:
+
+```text
+writes ordered Ground/Flow deltas after each accepted clarification
+```
+
+If removed:
+
+```text
+mean_multi_turn_continuity_success_loss = 1.000000
+mean_cross_turn_contamination_delta = 0.000000
+```
+
+### Clarification Chain Join Lens
+
+```text
+component_id = clarification_chain_join_lens
+status       = StableOperatorCandidate
+family       = Lens
+```
+
+What it does:
+
+```text
+joins several clarification spans into one answerable evidence chain
+```
+
+If removed:
+
+```text
+mean_multi_turn_continuity_success_loss = 0.793597
+mean_cross_turn_contamination_delta = 0.000000
+```
+
+### Cross-Turn Stale Context Guard
+
+```text
+component_id = cross_turn_stale_context_guard
+status       = StableOperatorCandidate
+family       = Guard
+```
+
+What it does:
+
+```text
+blocks stale or previous-turn state from contaminating the active cycle
+```
+
+If removed:
+
+```text
+mean_multi_turn_continuity_success_loss = 0.899254
+mean_cross_turn_contamination_delta = 0.000000
+```
+
+### Unresolved State Carry Scribe
+
+```text
+component_id = unresolved_state_carry_scribe
+status       = StableOperatorCandidate
+family       = Scribe
+```
+
+What it does:
+
+```text
+carries unresolved dependencies forward without pretending they are answered
+```
+
+If removed:
+
+```text
+mean_multi_turn_continuity_success_loss = 0.894342
+mean_cross_turn_contamination_delta = 0.000000
+```
+
+### Final Turn Answer Continuity Guard
+
+```text
+component_id = final_turn_answer_continuity_guard
+status       = StableOperatorCandidate
+family       = Guard
+```
+
+What it does:
+
+```text
+allows final answer only when all turn-linked dependencies are resolved
+```
+
+If removed:
+
+```text
+mean_multi_turn_continuity_success_loss = 1.000000
+mean_cross_turn_contamination_delta = 0.000000
+```
+
+### E104 Rejected Controls
+
+```text
+single_turn_memory_reset_control      -> Quarantine
+latest_turn_only_binder               -> Quarantine
+stale_dependency_reuse_control        -> Quarantine
+cross_thread_contamination_control    -> Quarantine
+answer_before_all_turns_resolved      -> Quarantine
+always_restart_dialogue_control       -> Deprecated
+turn_order_shuffle_committer          -> Quarantine
+continuity_echo_clone                 -> Redundant
+```

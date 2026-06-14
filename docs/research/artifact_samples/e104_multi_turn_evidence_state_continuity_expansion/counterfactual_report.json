@@ -1,0 +1,36 @@
+{
+  "summary": {
+    "active_turn_state_router_guard": {
+      "mean_cross_turn_contamination_delta": 0.0,
+      "mean_multi_turn_continuity_success_loss": 1.0
+    },
+    "clarification_chain_join_lens": {
+      "mean_cross_turn_contamination_delta": 0.0,
+      "mean_multi_turn_continuity_success_loss": 0.793597
+    },
+    "cross_turn_stale_context_guard": {
+      "mean_cross_turn_contamination_delta": 0.0,
+      "mean_multi_turn_continuity_success_loss": 0.899254
+    },
+    "final_turn_answer_continuity_guard": {
+      "mean_cross_turn_contamination_delta": 0.0,
+      "mean_multi_turn_continuity_success_loss": 1.0
+    },
+    "multi_turn_ground_delta_scribe": {
+      "mean_cross_turn_contamination_delta": 0.0,
+      "mean_multi_turn_continuity_success_loss": 1.0
+    },
+    "pending_dependency_stack_t_stab": {
+      "mean_cross_turn_contamination_delta": 0.0,
+      "mean_multi_turn_continuity_success_loss": 1.0
+    },
+    "turn_boundary_cycle_lens": {
+      "mean_cross_turn_contamination_delta": 0.0,
+      "mean_multi_turn_continuity_success_loss": 1.0
+    },
+    "unresolved_state_carry_scribe": {
+      "mean_cross_turn_contamination_delta": 0.0,
+      "mean_multi_turn_continuity_success_loss": 0.894342
+    }
+  }
+}

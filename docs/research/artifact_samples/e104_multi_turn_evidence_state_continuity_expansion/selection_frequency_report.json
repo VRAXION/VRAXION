@@ -1,0 +1,142 @@
+{
+  "rows": [
+    {
+      "cost": 0.13,
+      "display_name": "Turn Boundary Cycle Lens",
+      "family": "Lens",
+      "operator_id": "turn_boundary_cycle_lens",
+      "role": "useful",
+      "selected_frequency": 1.0
+    },
+    {
+      "cost": 0.14,
+      "display_name": "Pending Dependency Stack T-Stab",
+      "family": "T-Stab",
+      "operator_id": "pending_dependency_stack_t_stab",
+      "role": "useful",
+      "selected_frequency": 1.0
+    },
+    {
+      "cost": 0.14,
+      "display_name": "Active Turn State Router Guard",
+      "family": "Guard",
+      "operator_id": "active_turn_state_router_guard",
+      "role": "useful",
+      "selected_frequency": 1.0
+    },
+    {
+      "cost": 0.14,
+      "display_name": "Multi-Turn Ground Delta Scribe",
+      "family": "Scribe",
+      "operator_id": "multi_turn_ground_delta_scribe",
+      "role": "useful",
+      "selected_frequency": 1.0
+    },
+    {
+      "cost": 0.13,
+      "display_name": "Clarification Chain Join Lens",
+      "family": "Lens",
+      "operator_id": "clarification_chain_join_lens",
+      "role": "useful",
+      "selected_frequency": 1.0
+    },
+    {
+      "cost": 0.13,
+      "display_name": "Cross-Turn Stale Context Guard",
+      "family": "Guard",
+      "operator_id": "cross_turn_stale_context_guard",
+      "role": "useful",
+      "selected_frequency": 1.0
+    },
+    {
+      "cost": 0.13,
+      "display_name": "Unresolved State Carry Scribe",
+      "family": "Scribe",
+      "operator_id": "unresolved_state_carry_scribe",
+      "role": "useful",
+      "selected_frequency": 1.0
+    },
+    {
+      "cost": 0.13,
+      "display_name": "Final Turn Answer Continuity Guard",
+      "family": "Guard",
+      "operator_id": "final_turn_answer_continuity_guard",
+      "role": "useful",
+      "selected_frequency": 1.0
+    },
+    {
+      "cost": 0.03,
+      "display_name": "Single-Turn Memory Reset Control",
+      "family": "unsafe_control",
+      "operator_id": "single_turn_memory_reset_control",
+      "role": "unsafe",
+      "selected_frequency": 0.0
+    },
+    {
+      "cost": 0.04,
+      "display_name": "Latest Turn Only Binder",
+      "family": "unsafe_control",
+      "operator_id": "latest_turn_only_binder",
+      "role": "unsafe",
+      "selected_frequency": 0.0
+    },
+    {
+      "cost": 0.04,
+      "display_name": "Stale Dependency Reuse Control",
+      "family": "unsafe_control",
+      "operator_id": "stale_dependency_reuse_control",
+      "role": "unsafe",
+      "selected_frequency": 0.0
+    },
+    {
+      "cost": 0.04,
+      "display_name": "Cross-Thread Contamination Control",
+      "family": "unsafe_control",
+      "operator_id": "cross_thread_contamination_control",
+      "role": "unsafe",
+      "selected_frequency": 0.0
+    },
+    {
+      "cost": 0.03,
+      "display_name": "Answer Before All Turns Resolved",
+      "family": "unsafe_control",
+      "operator_id": "answer_before_all_turns_resolved",
+      "role": "unsafe",
+      "selected_frequency": 0.0
+    },
+    {
+      "cost": 0.02,
+      "display_name": "Always Restart Dialogue Control",
+      "family": "control",
+      "operator_id": "always_restart_dialogue_control",
+      "role": "noop",
+      "selected_frequency": 0.0
+    },
+    {
+      "cost": 0.04,
+      "display_name": "Turn Order Shuffle Committer",
+      "family": "unsafe_control",
+      "operator_id": "turn_order_shuffle_committer",
+      "role": "unsafe",
+      "selected_frequency": 0.0
+    },
+    {
+      "cost": 0.18,
+      "display_name": "Continuity Echo Clone",
+      "family": "T-Stab",
+      "operator_id": "continuity_echo_clone",
+      "role": "redundant",
+      "selected_frequency": 0.0
+    }
+  ],
+  "stable_top": [
+    "turn_boundary_cycle_lens",
+    "pending_dependency_stack_t_stab",
+    "active_turn_state_router_guard",
+    "multi_turn_ground_delta_scribe",
+    "clarification_chain_join_lens",
+    "cross_turn_stale_context_guard",
+    "unresolved_state_carry_scribe",
+    "final_turn_answer_continuity_guard"
+  ]
+}

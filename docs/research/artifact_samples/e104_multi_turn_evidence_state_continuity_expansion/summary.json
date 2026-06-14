@@ -1,0 +1,7 @@
+{
+  "artifact_contract": "E104_MULTI_TURN_EVIDENCE_STATE_CONTINUITY_EXPANSION",
+  "decision": "e104_multi_turn_evidence_state_continuity_confirmed",
+  "sample_pack": "docs\\research\\artifact_samples\\e104_multi_turn_evidence_state_continuity_expansion",
+  "stable_operator_candidate_count": 8,
+  "unsafe_final_selected": 0
+}

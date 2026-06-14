@@ -1,0 +1,142 @@
+{
+  "artifact_contract": "E104_MULTI_TURN_EVIDENCE_STATE_CONTINUITY_EXPANSION",
+  "canonical_term": "Operator",
+  "families": [
+    "Guard",
+    "Lens",
+    "Scribe",
+    "T-Stab",
+    "control"
+  ],
+  "legacy_alias": "Pocket",
+  "operators": [
+    {
+      "cost": 0.13,
+      "description": "Separates incoming clarification text by turn and cycle id.",
+      "display_name": "Turn Boundary Cycle Lens",
+      "family": "Lens",
+      "operator_id": "turn_boundary_cycle_lens",
+      "role": "useful"
+    },
+    {
+      "cost": 0.14,
+      "description": "Stabilizes unresolved dependencies across multiple turns.",
+      "display_name": "Pending Dependency Stack T-Stab",
+      "family": "T-Stab",
+      "operator_id": "pending_dependency_stack_t_stab",
+      "role": "useful"
+    },
+    {
+      "cost": 0.14,
+      "description": "Routes each clarification to the currently active pending question.",
+      "display_name": "Active Turn State Router Guard",
+      "family": "Guard",
+      "operator_id": "active_turn_state_router_guard",
+      "role": "useful"
+    },
+    {
+      "cost": 0.14,
+      "description": "Writes ordered Ground/Flow deltas after each accepted clarification.",
+      "display_name": "Multi-Turn Ground Delta Scribe",
+      "family": "Scribe",
+      "operator_id": "multi_turn_ground_delta_scribe",
+      "role": "useful"
+    },
+    {
+      "cost": 0.13,
+      "description": "Joins several clarification spans into one answerable evidence chain.",
+      "display_name": "Clarification Chain Join Lens",
+      "family": "Lens",
+      "operator_id": "clarification_chain_join_lens",
+      "role": "useful"
+    },
+    {
+      "cost": 0.13,
+      "description": "Blocks stale or previous-turn state from contaminating the active cycle.",
+      "display_name": "Cross-Turn Stale Context Guard",
+      "family": "Guard",
+      "operator_id": "cross_turn_stale_context_guard",
+      "role": "useful"
+    },
+    {
+      "cost": 0.13,
+      "description": "Carries unresolved dependencies forward without pretending they are answered.",
+      "display_name": "Unresolved State Carry Scribe",
+      "family": "Scribe",
+      "operator_id": "unresolved_state_carry_scribe",
+      "role": "useful"
+    },
+    {
+      "cost": 0.13,
+      "description": "Allows final answer only when all turn-linked dependencies are resolved.",
+      "display_name": "Final Turn Answer Continuity Guard",
+      "family": "Guard",
+      "operator_id": "final_turn_answer_continuity_guard",
+      "role": "useful"
+    },
+    {
+      "cost": 0.03,
+      "description": "Unsafe control: forgets earlier pending dependencies each turn.",
+      "display_name": "Single-Turn Memory Reset Control",
+      "family": "unsafe_control",
+      "operator_id": "single_turn_memory_reset_control",
+      "role": "unsafe"
+    },
+    {
+      "cost": 0.04,
+      "description": "Unsafe control: binds every answer to the latest turn only.",
+      "display_name": "Latest Turn Only Binder",
+      "family": "unsafe_control",
+      "operator_id": "latest_turn_only_binder",
+      "role": "unsafe"
+    },
+    {
+      "cost": 0.04,
+      "description": "Unsafe control: reuses old resolved dependencies after a newer cycle supersedes them.",
+      "display_name": "Stale Dependency Reuse Control",
+      "family": "unsafe_control",
+      "operator_id": "stale_dependency_reuse_control",
+      "role": "unsafe"
+    },
+    {
+      "cost": 0.04,
+      "description": "Unsafe control: mixes state from another pending question chain.",
+      "display_name": "Cross-Thread Contamination Control",
+      "family": "unsafe_control",
+      "operator_id": "cross_thread_contamination_control",
+      "role": "unsafe"
+    },
+    {
+      "cost": 0.03,
+      "description": "Unsafe control: answers as soon as one dependency is repaired.",
+      "display_name": "Answer Before All Turns Resolved",
+      "family": "unsafe_control",
+      "operator_id": "answer_before_all_turns_resolved",
+      "role": "unsafe"
+    },
+    {
+      "cost": 0.02,
+      "description": "Control: restarts the state chain instead of preserving continuity.",
+      "display_name": "Always Restart Dialogue Control",
+      "family": "control",
+      "operator_id": "always_restart_dialogue_control",
+      "role": "noop"
+    },
+    {
+      "cost": 0.04,
+      "description": "Unsafe control: commits correct spans in the wrong turn order.",
+      "display_name": "Turn Order Shuffle Committer",
+      "family": "unsafe_control",
+      "operator_id": "turn_order_shuffle_committer",
+      "role": "unsafe"
+    },
+    {
+      "cost": 0.18,
+      "description": "Redundant continuity stabilizer without unique value.",
+      "display_name": "Continuity Echo Clone",
+      "family": "T-Stab",
+      "operator_id": "continuity_echo_clone",
+      "role": "redundant"
+    }
+  ]
+}
