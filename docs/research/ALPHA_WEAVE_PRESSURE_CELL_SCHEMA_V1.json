@@ -1,0 +1,87 @@
+{
+  "candidate_visible_path": "public_input only",
+  "hard_rule": "public_input must not contain target/operator/oracle/meta fields or labels",
+  "hidden_oracle_required": [
+    "expected_action",
+    "expected_answer",
+    "forbidden_behavior",
+    "required_evidence",
+    "required_trace"
+  ],
+  "observation_required": [
+    "cycle",
+    "obs_id",
+    "order",
+    "source_id",
+    "source_trust",
+    "span",
+    "text"
+  ],
+  "public_forbidden_keys": [
+    "expected_action",
+    "expected_answer",
+    "forbidden_behavior",
+    "hidden_oracle",
+    "label",
+    "oracle",
+    "required_trace",
+    "target_operators",
+    "target_skill",
+    "training_metadata"
+  ],
+  "public_forbidden_text": [
+    "evidence_citation_link_scribe",
+    "evidence_conflict_detector_lens",
+    "expected_answer",
+    "hidden_oracle",
+    "source_priority_resolver_lens",
+    "target_operators",
+    "target_skill",
+    "temporal_latest_span_t_stab",
+    "unsupported_answer_defer_guard"
+  ],
+  "public_input_required": [
+    "context",
+    "current_cycle",
+    "observations",
+    "query"
+  ],
+  "query_required": [
+    "required_focus",
+    "text"
+  ],
+  "schema_version": "AlphaWeavePressureCell-v1",
+  "scoring_required": [
+    "action_accuracy",
+    "answer_accuracy",
+    "citation_exact",
+    "false_commit",
+    "neutral_valid",
+    "neutral_waste",
+    "over_budget",
+    "trace_dependency_coverage",
+    "unsupported_answer",
+    "wrong_scope_call"
+  ],
+  "top_level_required": [
+    "adversarial_variants",
+    "cell_id",
+    "cell_version",
+    "hidden_oracle",
+    "public_input",
+    "scoring",
+    "training_metadata"
+  ],
+  "trainer_checker_only_paths": [
+    "hidden_oracle",
+    "training_metadata",
+    "adversarial_variants",
+    "scoring"
+  ],
+  "training_metadata_required": [
+    "operator_visibility",
+    "route_budget",
+    "target_operators",
+    "target_skill"
+  ]
+}
