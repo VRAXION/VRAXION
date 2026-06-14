@@ -1514,3 +1514,200 @@ contradiction_flattening_scribe      -> Quarantine
 always_verbose_control               -> Deprecated
 answer_format_clone                  -> Redundant
 ```
+
+## E95 Active Evidence Request/Search Expansion Cards
+
+Source:
+
+```text
+E95_ACTIVE_EVIDENCE_REQUEST_SEARCH_EXPANSION
+decision = e95_active_evidence_request_search_expansion_confirmed
+```
+
+Boundary:
+
+```text
+controlled active evidence selection only
+not open-domain retrieval
+not chatbot behavior
+```
+
+### Missing Dependency Locator Lens
+
+```text
+component_id = missing_dependency_locator_lens
+status       = StableOperatorCandidate
+family       = Lens
+```
+
+What it does:
+
+```text
+finds which unresolved dependency blocks the current answer
+```
+
+If removed:
+
+```text
+mean_evidence_action_loss = 0.325753
+mean_false_search_delta = 0.000000
+```
+
+### Targeted Evidence Request Scribe
+
+```text
+component_id = targeted_evidence_request_scribe
+status       = StableOperatorCandidate
+family       = Scribe
+```
+
+What it does:
+
+```text
+renders the minimal ASK_FOR_EVIDENCE request for the missing dependency
+```
+
+If removed:
+
+```text
+mean_evidence_action_loss = 0.559346
+mean_false_search_delta = 0.000000
+```
+
+### Source Reliability Rank Guard
+
+```text
+component_id = source_reliability_rank_guard
+status       = StableOperatorCandidate
+family       = Guard
+```
+
+What it does:
+
+```text
+ranks verified sources above rumor or decoy sources
+```
+
+If removed:
+
+```text
+mean_evidence_action_loss = 0.233593
+mean_false_search_delta = 0.000000
+```
+
+### Redundant Request Guard
+
+```text
+component_id = redundant_request_guard
+status       = StableOperatorCandidate
+family       = Guard
+```
+
+What it does:
+
+```text
+prevents asking for evidence already present in Trace or Ground
+```
+
+If removed:
+
+```text
+mean_evidence_action_loss = 0.325614
+mean_false_search_delta = 0.000000
+```
+
+### Search Budget Guard
+
+```text
+component_id = search_budget_guard
+status       = StableOperatorCandidate
+family       = Guard
+```
+
+What it does:
+
+```text
+keeps evidence search inside the allowed action budget
+```
+
+If removed:
+
+```text
+mean_evidence_action_loss = 0.111358
+mean_false_search_delta = 0.000000
+```
+
+### Adversarial Decoy Source Guard
+
+```text
+component_id = adversarial_decoy_source_guard
+status       = StableOperatorCandidate
+family       = Guard
+```
+
+What it does:
+
+```text
+rejects decoy evidence sources that match surface form but not requested dependency
+```
+
+If removed:
+
+```text
+mean_evidence_action_loss = 0.123903
+mean_false_search_delta = 0.000000
+```
+
+### Retrieved Evidence Integrator T-Stab
+
+```text
+component_id = retrieved_evidence_integrator_t_stab
+status       = StableOperatorCandidate
+family       = T-Stab
+```
+
+What it does:
+
+```text
+stabilizes the transition from retrieved evidence to answer-ready state
+```
+
+If removed:
+
+```text
+mean_evidence_action_loss = 0.114054
+mean_false_search_delta = 0.000000
+```
+
+### Answer-Ready After Evidence Scribe
+
+```text
+component_id = answer_ready_after_evidence_scribe
+status       = StableOperatorCandidate
+family       = Scribe
+```
+
+What it does:
+
+```text
+renders ANSWER_READY only after required evidence has been integrated
+```
+
+If removed:
+
+```text
+mean_evidence_action_loss = 0.333095
+mean_false_search_delta = 0.000000
+```
+
+### E95 Rejected Controls
+
+```text
+broad_search_spammer            -> Quarantine
+random_evidence_picker          -> Quarantine
+rumor_source_committer          -> Quarantine
+decoy_surface_match_committer   -> Quarantine
+budgetless_search_runner        -> Quarantine
+always_ask_all_control          -> Deprecated
+request_locator_clone           -> Redundant
+```

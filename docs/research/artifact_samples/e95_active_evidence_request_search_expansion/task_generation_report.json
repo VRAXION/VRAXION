@@ -1,0 +1,17 @@
+{
+  "active_evidence_selection": true,
+  "artifact_contract": "E95_ACTIVE_EVIDENCE_REQUEST_SEARCH_EXPANSION",
+  "case_count": 11520,
+  "families": [
+    "already_answer_ready",
+    "budget_limited_search",
+    "decoy_surface_source",
+    "missing_single_dependency",
+    "missing_two_choose_blocker",
+    "redundant_request_present",
+    "retrieved_evidence_transition",
+    "unanswerable_no_source",
+    "verified_vs_rumor_source"
+  ],
+  "open_domain_retrieval": false
+}

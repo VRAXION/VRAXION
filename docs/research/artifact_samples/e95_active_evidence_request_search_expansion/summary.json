@@ -1,0 +1,7 @@
+{
+  "artifact_contract": "E95_ACTIVE_EVIDENCE_REQUEST_SEARCH_EXPANSION",
+  "decision": "e95_active_evidence_request_search_expansion_confirmed",
+  "sample_pack": "docs\\research\\artifact_samples\\e95_active_evidence_request_search_expansion",
+  "stable_operator_candidate_count": 8,
+  "unsafe_final_selected": 0
+}

@@ -1,0 +1,6 @@
+{
+  "artifact_contract": "E95_ACTIVE_EVIDENCE_REQUEST_SEARCH_EXPANSION",
+  "created_at_ms": 1781436612395,
+  "sample_only": true,
+  "source": "target\\pilot_wave\\e95_active_evidence_request_search_expansion"
+}

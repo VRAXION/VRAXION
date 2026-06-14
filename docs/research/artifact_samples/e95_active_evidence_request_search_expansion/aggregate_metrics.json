@@ -1,0 +1,16 @@
+{
+  "accepted_mutations_total": 128,
+  "adversarial_evidence_action_success_mean": 1.0,
+  "adversarial_evidence_action_success_min": 1.0,
+  "adversarial_false_search_max": 0.0,
+  "adversarial_over_budget_max": 0.0,
+  "adversarial_wrong_confident_max": 0.0,
+  "rejected_mutations_total": 448,
+  "rollback_count_total": 448,
+  "seconds": 0.798,
+  "seed_count": 16,
+  "validation_answer_ready_accuracy_min": 1.0,
+  "validation_evidence_action_success_mean": 1.0,
+  "validation_evidence_action_success_min": 1.0,
+  "validation_targeted_request_accuracy_min": 1.0
+}
