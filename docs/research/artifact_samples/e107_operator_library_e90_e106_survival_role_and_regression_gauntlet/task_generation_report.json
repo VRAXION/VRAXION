@@ -1,0 +1,349 @@
+{
+  "artifact_contract": "E107_OPERATOR_LIBRARY_E90_E106_SURVIVAL_ROLE_AND_REGRESSION_GAUNTLET",
+  "case_count": 224,
+  "final_training": false,
+  "full_library_scan_allowed_as_success": false,
+  "neighborhood_count": 14,
+  "neighborhoods": [
+    {
+      "adversarial": false,
+      "description": "Visible evidence binding, revocation, and ruleshift.",
+      "focus_terms": [
+        "evidence",
+        "binding",
+        "answer",
+        "contradiction",
+        "unresolved"
+      ],
+      "max_selected": 16,
+      "neighborhood_id": "visible_evidence_ruleshift",
+      "required_families": [
+        "Alpha-Syncer",
+        "Guard",
+        "Scribe"
+      ],
+      "required_groups": [
+        "E90",
+        "E101",
+        "E102"
+      ]
+    },
+    {
+      "adversarial": false,
+      "description": "Temporal frame/bitstream stability and stale replay rejection.",
+      "focus_terms": [
+        "frame",
+        "crc",
+        "bit",
+        "stale",
+        "replay",
+        "temporal"
+      ],
+      "max_selected": 12,
+      "neighborhood_id": "temporal_bitstream_resync",
+      "required_families": [
+        "T-Stab",
+        "Guard",
+        "Lens"
+      ],
+      "required_groups": [
+        "E91",
+        "E96"
+      ]
+    },
+    {
+      "adversarial": false,
+      "description": "Lexical alias, glyph, unit, negation, and canonical lexeme grounding.",
+      "focus_terms": [
+        "alias",
+        "negation",
+        "unit",
+        "symbol",
+        "lexeme",
+        "span"
+      ],
+      "max_selected": 14,
+      "neighborhood_id": "lexical_glyph_grounding",
+      "required_families": [
+        "Alpha-Syncer",
+        "Guard",
+        "Scribe",
+        "Lens"
+      ],
+      "required_groups": [
+        "E92",
+        "E100"
+      ]
+    },
+    {
+      "adversarial": true,
+      "description": "Proposal commit boundary, ground conflict, and trace coverage.",
+      "focus_terms": [
+        "commit",
+        "ground",
+        "trace",
+        "complete",
+        "answerability"
+      ],
+      "max_selected": 16,
+      "neighborhood_id": "agency_commit_safety",
+      "required_families": [
+        "Guard",
+        "T-Stab",
+        "Scribe"
+      ],
+      "required_groups": [
+        "E93",
+        "E102",
+        "E106"
+      ]
+    },
+    {
+      "adversarial": false,
+      "description": "Answer rendering, citation, contradiction report, and no-answer boundary.",
+      "focus_terms": [
+        "answer",
+        "citation",
+        "format",
+        "uncertainty",
+        "boundary"
+      ],
+      "max_selected": 13,
+      "neighborhood_id": "answer_output_hygiene",
+      "required_families": [
+        "Scribe",
+        "Guard",
+        "T-Stab"
+      ],
+      "required_groups": [
+        "E94",
+        "E102"
+      ]
+    },
+    {
+      "adversarial": true,
+      "description": "Missing dependency search, source ranking, and retrieved evidence integration.",
+      "focus_terms": [
+        "missing",
+        "source",
+        "request",
+        "search",
+        "clarification"
+      ],
+      "max_selected": 18,
+      "neighborhood_id": "active_evidence_search",
+      "required_families": [
+        "Lens",
+        "Guard",
+        "Scribe",
+        "T-Stab"
+      ],
+      "required_groups": [
+        "E95",
+        "E101",
+        "E103"
+      ]
+    },
+    {
+      "adversarial": true,
+      "description": "Trace dedupe, provenance, ground promotion, and replay audit.",
+      "focus_terms": [
+        "trace",
+        "ground",
+        "replay",
+        "summary",
+        "context"
+      ],
+      "max_selected": 21,
+      "neighborhood_id": "trace_ground_memory_hygiene",
+      "required_families": [
+        "Lens",
+        "Guard",
+        "Scribe",
+        "T-Stab"
+      ],
+      "required_groups": [
+        "E96",
+        "E104",
+        "E105"
+      ]
+    },
+    {
+      "adversarial": false,
+      "description": "Operator routing, adapter detection, sequence planning, and checkpoints.",
+      "focus_terms": [
+        "route",
+        "operator",
+        "composition",
+        "checkpoint",
+        "dependency"
+      ],
+      "max_selected": 14,
+      "neighborhood_id": "route_composition_execution",
+      "required_families": [
+        "Lens",
+        "Guard",
+        "Scribe",
+        "T-Stab"
+      ],
+      "required_groups": [
+        "E97",
+        "E98"
+      ]
+    },
+    {
+      "adversarial": true,
+      "description": "Capability gaps, lesson ranking, regression replay, and mutation queue.",
+      "focus_terms": [
+        "curriculum",
+        "regression",
+        "promotion",
+        "progress",
+        "next"
+      ],
+      "max_selected": 13,
+      "neighborhood_id": "curriculum_regression_scheduler",
+      "required_families": [
+        "Lens",
+        "Guard",
+        "Scribe",
+        "T-Stab"
+      ],
+      "required_groups": [
+        "E99",
+        "E106"
+      ]
+    },
+    {
+      "adversarial": true,
+      "description": "Text span ingress, source attribution, and conflict resolution.",
+      "focus_terms": [
+        "text",
+        "span",
+        "source",
+        "conflict",
+        "quote",
+        "contrast"
+      ],
+      "max_selected": 14,
+      "neighborhood_id": "text_ingress_conflict_resolution",
+      "required_families": [
+        "Lens",
+        "Guard",
+        "Scribe",
+        "T-Stab"
+      ],
+      "required_groups": [
+        "E100",
+        "E101"
+      ]
+    },
+    {
+      "adversarial": false,
+      "description": "Clarification response binding, state repair, and multi-turn continuity.",
+      "focus_terms": [
+        "clarification",
+        "repair",
+        "pending",
+        "turn",
+        "state"
+      ],
+      "max_selected": 14,
+      "neighborhood_id": "clarification_state_repair",
+      "required_families": [
+        "Lens",
+        "Guard",
+        "Scribe",
+        "T-Stab"
+      ],
+      "required_groups": [
+        "E103",
+        "E104"
+      ]
+    },
+    {
+      "adversarial": true,
+      "description": "Context-window pressure, fact preservation, compaction, and re-entry.",
+      "focus_terms": [
+        "context",
+        "summary",
+        "compression",
+        "dependency",
+        "reentry"
+      ],
+      "max_selected": 14,
+      "neighborhood_id": "context_compression_reentry",
+      "required_families": [
+        "Lens",
+        "Guard",
+        "Scribe",
+        "T-Stab"
+      ],
+      "required_groups": [
+        "E105",
+        "E104"
+      ]
+    },
+    {
+      "adversarial": true,
+      "description": "False completion, blocker, stale progress, and recheck traps.",
+      "focus_terms": [
+        "complete",
+        "progress",
+        "recheck",
+        "block",
+        "commit"
+      ],
+      "max_selected": 18,
+      "neighborhood_id": "false_done_progress_traps",
+      "required_families": [
+        "Lens",
+        "Guard",
+        "Scribe",
+        "T-Stab"
+      ],
+      "required_groups": [
+        "E106",
+        "E99",
+        "E93"
+      ]
+    },
+    {
+      "adversarial": true,
+      "description": "Long-horizon multi-skill route with text, memory, progress, and answer guards.",
+      "focus_terms": [
+        "evidence",
+        "route",
+        "trace",
+        "answer",
+        "progress",
+        "summary"
+      ],
+      "max_selected": 38,
+      "neighborhood_id": "full_long_horizon_bundle",
+      "required_families": [
+        "Lens",
+        "Guard",
+        "Scribe",
+        "T-Stab"
+      ],
+      "required_groups": [
+        "E90",
+        "E93",
+        "E95",
+        "E98",
+        "E99",
+        "E101",
+        "E102",
+        "E104",
+        "E105",
+        "E106"
+      ]
+    }
+  ],
+  "open_domain_capability_eval": false,
+  "operator_survival_ranking": true,
+  "quality_control_gauntlet": true,
+  "seed_count": 16,
+  "unsafe_control_allowed": false
+}

@@ -1,0 +1,2756 @@
+{
+  "operator_lifecycle_table": [
+    {
+      "counterfactual": {
+        "mean_cost_delta": -0.1,
+        "mean_survival_score_loss": 0.01
+      },
+      "display_name": "Visible Claim Binding Alpha Syncer",
+      "family": "Alpha-Syncer",
+      "final_status": "Specialist",
+      "group_id": "E90",
+      "neighborhood_count": 1,
+      "neighborhoods": [
+        "visible_evidence_ruleshift"
+      ],
+      "operator_id": "visible_claim_binding_alpha_syncer",
+      "role": "candidate",
+      "selected_count": 16,
+      "selected_frequency": 0.071429
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": -0.1,
+        "mean_survival_score_loss": 0.01
+      },
+      "display_name": "Numeric Value Binding Alpha Syncer",
+      "family": "Alpha-Syncer",
+      "final_status": "Specialist",
+      "group_id": "E90",
+      "neighborhood_count": 1,
+      "neighborhoods": [
+        "visible_evidence_ruleshift"
+      ],
+      "operator_id": "numeric_value_binding_alpha_syncer",
+      "role": "candidate",
+      "selected_count": 16,
+      "selected_frequency": 0.071429
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": 0.0,
+        "mean_survival_score_loss": 0.0
+      },
+      "display_name": "Temporal Rule Shift T Stab",
+      "family": "T-Stab",
+      "final_status": "Deprecated",
+      "group_id": "E90",
+      "neighborhood_count": 0,
+      "neighborhoods": [],
+      "operator_id": "temporal_rule_shift_t_stab",
+      "role": "candidate",
+      "selected_count": 0,
+      "selected_frequency": 0.0
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": 0.0,
+        "mean_survival_score_loss": 0.0
+      },
+      "display_name": "False Alarm Temporal T Stab",
+      "family": "T-Stab",
+      "final_status": "Deprecated",
+      "group_id": "E90",
+      "neighborhood_count": 0,
+      "neighborhoods": [],
+      "operator_id": "false_alarm_temporal_t_stab",
+      "role": "candidate",
+      "selected_count": 0,
+      "selected_frequency": 0.0
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": -0.12,
+        "mean_survival_score_loss": 0.01
+      },
+      "display_name": "Revoked Binding Guard",
+      "family": "Guard",
+      "final_status": "Specialist",
+      "group_id": "E90",
+      "neighborhood_count": 2,
+      "neighborhoods": [
+        "full_long_horizon_bundle",
+        "visible_evidence_ruleshift"
+      ],
+      "operator_id": "revoked_binding_guard",
+      "role": "candidate",
+      "selected_count": 22,
+      "selected_frequency": 0.098214
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": -0.12,
+        "mean_survival_score_loss": 0.01
+      },
+      "display_name": "Contradiction Guard",
+      "family": "Guard",
+      "final_status": "Specialist",
+      "group_id": "E90",
+      "neighborhood_count": 2,
+      "neighborhoods": [
+        "full_long_horizon_bundle",
+        "visible_evidence_ruleshift"
+      ],
+      "operator_id": "contradiction_guard",
+      "role": "candidate",
+      "selected_count": 21,
+      "selected_frequency": 0.09375
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": -0.12,
+        "mean_survival_score_loss": 0.01
+      },
+      "display_name": "Unresolved State Info Guard",
+      "family": "Guard",
+      "final_status": "Specialist",
+      "group_id": "E90",
+      "neighborhood_count": 2,
+      "neighborhoods": [
+        "full_long_horizon_bundle",
+        "visible_evidence_ruleshift"
+      ],
+      "operator_id": "unresolved_state_info_guard",
+      "role": "candidate",
+      "selected_count": 25,
+      "selected_frequency": 0.111607
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": -0.12,
+        "mean_survival_score_loss": 0.01
+      },
+      "display_name": "Inactive Quote Scope Guard",
+      "family": "Guard",
+      "final_status": "Specialist",
+      "group_id": "E90",
+      "neighborhood_count": 2,
+      "neighborhoods": [
+        "full_long_horizon_bundle",
+        "visible_evidence_ruleshift"
+      ],
+      "operator_id": "inactive_quote_scope_guard",
+      "role": "candidate",
+      "selected_count": 18,
+      "selected_frequency": 0.080357
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": -0.11,
+        "mean_survival_score_loss": 0.01
+      },
+      "display_name": "Evidence Span Lens",
+      "family": "Lens",
+      "final_status": "Specialist",
+      "group_id": "E90",
+      "neighborhood_count": 1,
+      "neighborhoods": [
+        "full_long_horizon_bundle"
+      ],
+      "operator_id": "evidence_span_lens",
+      "role": "candidate",
+      "selected_count": 16,
+      "selected_frequency": 0.071429
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": -0.1,
+        "mean_survival_score_loss": 0.01
+      },
+      "display_name": "Canonical Answer Scribe",
+      "family": "Scribe",
+      "final_status": "Specialist",
+      "group_id": "E90",
+      "neighborhood_count": 2,
+      "neighborhoods": [
+        "full_long_horizon_bundle",
+        "visible_evidence_ruleshift"
+      ],
+      "operator_id": "canonical_answer_scribe",
+      "role": "candidate",
+      "selected_count": 32,
+      "selected_frequency": 0.142857
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": -0.13,
+        "mean_survival_score_loss": 0.01
+      },
+      "display_name": "Frame Sequence T Stab",
+      "family": "T-Stab",
+      "final_status": "Specialist",
+      "group_id": "E91",
+      "neighborhood_count": 1,
+      "neighborhoods": [
+        "temporal_bitstream_resync"
+      ],
+      "operator_id": "frame_sequence_t_stab",
+      "role": "candidate",
+      "selected_count": 16,
+      "selected_frequency": 0.071429
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": -0.12,
+        "mean_survival_score_loss": 0.01
+      },
+      "display_name": "Crc Parity Frame Guard",
+      "family": "Guard",
+      "final_status": "Specialist",
+      "group_id": "E91",
+      "neighborhood_count": 1,
+      "neighborhoods": [
+        "temporal_bitstream_resync"
+      ],
+      "operator_id": "crc_parity_frame_guard",
+      "role": "candidate",
+      "selected_count": 16,
+      "selected_frequency": 0.071429
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": -0.13,
+        "mean_survival_score_loss": 0.01
+      },
+      "display_name": "Bit Slip Resync T Stab",
+      "family": "T-Stab",
+      "final_status": "Specialist",
+      "group_id": "E91",
+      "neighborhood_count": 1,
+      "neighborhoods": [
+        "temporal_bitstream_resync"
+      ],
+      "operator_id": "bit_slip_resync_t_stab",
+      "role": "candidate",
+      "selected_count": 16,
+      "selected_frequency": 0.071429
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": -0.13,
+        "mean_survival_score_loss": 0.01
+      },
+      "display_name": "Repeat Vote Stabilizer T Stab",
+      "family": "T-Stab",
+      "final_status": "BundleSupport",
+      "group_id": "E91",
+      "neighborhood_count": 1,
+      "neighborhoods": [
+        "temporal_bitstream_resync"
+      ],
+      "operator_id": "repeat_vote_stabilizer_t_stab",
+      "role": "candidate",
+      "selected_count": 9,
+      "selected_frequency": 0.040179
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": -0.12,
+        "mean_survival_score_loss": 0.01
+      },
+      "display_name": "Stale Replay Guard",
+      "family": "Guard",
+      "final_status": "Specialist",
+      "group_id": "E91",
+      "neighborhood_count": 1,
+      "neighborhoods": [
+        "temporal_bitstream_resync"
+      ],
+      "operator_id": "stale_replay_guard",
+      "role": "candidate",
+      "selected_count": 16,
+      "selected_frequency": 0.071429
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": -0.12,
+        "mean_survival_score_loss": 0.01
+      },
+      "display_name": "Source Trust Guard",
+      "family": "Guard",
+      "final_status": "Specialist",
+      "group_id": "E91",
+      "neighborhood_count": 1,
+      "neighborhoods": [
+        "temporal_bitstream_resync"
+      ],
+      "operator_id": "source_trust_guard",
+      "role": "candidate",
+      "selected_count": 14,
+      "selected_frequency": 0.0625
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": -0.11,
+        "mean_survival_score_loss": 0.01
+      },
+      "display_name": "Delayed Evidence Buffer Lens",
+      "family": "Lens",
+      "final_status": "Specialist",
+      "group_id": "E91",
+      "neighborhood_count": 1,
+      "neighborhoods": [
+        "temporal_bitstream_resync"
+      ],
+      "operator_id": "delayed_evidence_buffer_lens",
+      "role": "candidate",
+      "selected_count": 15,
+      "selected_frequency": 0.066964
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": -0.1,
+        "mean_survival_score_loss": 0.01
+      },
+      "display_name": "Temporal Commit Scribe",
+      "family": "Scribe",
+      "final_status": "BundleSupport",
+      "group_id": "E91",
+      "neighborhood_count": 1,
+      "neighborhoods": [
+        "temporal_bitstream_resync"
+      ],
+      "operator_id": "temporal_commit_scribe",
+      "role": "candidate",
+      "selected_count": 2,
+      "selected_frequency": 0.008929
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": -0.1,
+        "mean_survival_score_loss": 0.01
+      },
+      "display_name": "Lexical Alias Alpha Syncer",
+      "family": "Alpha-Syncer",
+      "final_status": "Specialist",
+      "group_id": "E92",
+      "neighborhood_count": 1,
+      "neighborhoods": [
+        "lexical_glyph_grounding"
+      ],
+      "operator_id": "lexical_alias_alpha_syncer",
+      "role": "candidate",
+      "selected_count": 16,
+      "selected_frequency": 0.071429
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": -0.1,
+        "mean_survival_score_loss": 0.01
+      },
+      "display_name": "Negation Marker Alpha Syncer",
+      "family": "Alpha-Syncer",
+      "final_status": "Specialist",
+      "group_id": "E92",
+      "neighborhood_count": 1,
+      "neighborhoods": [
+        "lexical_glyph_grounding"
+      ],
+      "operator_id": "negation_marker_alpha_syncer",
+      "role": "candidate",
+      "selected_count": 16,
+      "selected_frequency": 0.071429
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": -0.1,
+        "mean_survival_score_loss": 0.01
+      },
+      "display_name": "Unit Code Alpha Syncer",
+      "family": "Alpha-Syncer",
+      "final_status": "Specialist",
+      "group_id": "E92",
+      "neighborhood_count": 1,
+      "neighborhoods": [
+        "lexical_glyph_grounding"
+      ],
+      "operator_id": "unit_code_alpha_syncer",
+      "role": "candidate",
+      "selected_count": 16,
+      "selected_frequency": 0.071429
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": -0.1,
+        "mean_survival_score_loss": 0.01
+      },
+      "display_name": "Multilingual Surface Alpha Syncer",
+      "family": "Alpha-Syncer",
+      "final_status": "Specialist",
+      "group_id": "E92",
+      "neighborhood_count": 1,
+      "neighborhoods": [
+        "lexical_glyph_grounding"
+      ],
+      "operator_id": "multilingual_surface_alpha_syncer",
+      "role": "candidate",
+      "selected_count": 14,
+      "selected_frequency": 0.0625
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": -0.1,
+        "mean_survival_score_loss": 0.01
+      },
+      "display_name": "Case Morphology Alpha Syncer",
+      "family": "Alpha-Syncer",
+      "final_status": "Specialist",
+      "group_id": "E92",
+      "neighborhood_count": 1,
+      "neighborhoods": [
+        "lexical_glyph_grounding"
+      ],
+      "operator_id": "case_morphology_alpha_syncer",
+      "role": "candidate",
+      "selected_count": 15,
+      "selected_frequency": 0.066964
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": -0.12,
+        "mean_survival_score_loss": 0.01
+      },
+      "display_name": "Symbol Equivalence Guard",
+      "family": "Guard",
+      "final_status": "Specialist",
+      "group_id": "E92",
+      "neighborhood_count": 1,
+      "neighborhoods": [
+        "lexical_glyph_grounding"
+      ],
+      "operator_id": "symbol_equivalence_guard",
+      "role": "candidate",
+      "selected_count": 16,
+      "selected_frequency": 0.071429
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": -0.12,
+        "mean_survival_score_loss": 0.01
+      },
+      "display_name": "Alias Scope Guard",
+      "family": "Guard",
+      "final_status": "Specialist",
+      "group_id": "E92",
+      "neighborhood_count": 1,
+      "neighborhoods": [
+        "lexical_glyph_grounding"
+      ],
+      "operator_id": "alias_scope_guard",
+      "role": "candidate",
+      "selected_count": 16,
+      "selected_frequency": 0.071429
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": -0.1,
+        "mean_survival_score_loss": 0.041875
+      },
+      "display_name": "Canonical Lexeme Scribe",
+      "family": "Scribe",
+      "final_status": "Specialist",
+      "group_id": "E92",
+      "neighborhood_count": 1,
+      "neighborhoods": [
+        "lexical_glyph_grounding"
+      ],
+      "operator_id": "canonical_lexeme_scribe",
+      "role": "candidate",
+      "selected_count": 16,
+      "selected_frequency": 0.071429
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": -0.12,
+        "mean_survival_score_loss": 0.01
+      },
+      "display_name": "Proposal Collision Guard",
+      "family": "Guard",
+      "final_status": "Specialist",
+      "group_id": "E93",
+      "neighborhood_count": 3,
+      "neighborhoods": [
+        "agency_commit_safety",
+        "false_done_progress_traps",
+        "full_long_horizon_bundle"
+      ],
+      "operator_id": "proposal_collision_guard",
+      "role": "candidate",
+      "selected_count": 48,
+      "selected_frequency": 0.214286
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": -0.12,
+        "mean_survival_score_loss": 0.01
+      },
+      "display_name": "Ground Conflict Guard",
+      "family": "Guard",
+      "final_status": "Specialist",
+      "group_id": "E93",
+      "neighborhood_count": 3,
+      "neighborhoods": [
+        "agency_commit_safety",
+        "false_done_progress_traps",
+        "full_long_horizon_bundle"
+      ],
+      "operator_id": "ground_conflict_guard",
+      "role": "candidate",
+      "selected_count": 48,
+      "selected_frequency": 0.214286
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": -0.12,
+        "mean_survival_score_loss": 0.01
+      },
+      "display_name": "Evidence Recency Guard",
+      "family": "Guard",
+      "final_status": "Specialist",
+      "group_id": "E93",
+      "neighborhood_count": 3,
+      "neighborhoods": [
+        "agency_commit_safety",
+        "false_done_progress_traps",
+        "full_long_horizon_bundle"
+      ],
+      "operator_id": "evidence_recency_guard",
+      "role": "candidate",
+      "selected_count": 48,
+      "selected_frequency": 0.214286
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": -0.12,
+        "mean_survival_score_loss": 0.01
+      },
+      "display_name": "Trace Dependency Coverage Guard",
+      "family": "Guard",
+      "final_status": "Specialist",
+      "group_id": "E93",
+      "neighborhood_count": 3,
+      "neighborhoods": [
+        "agency_commit_safety",
+        "false_done_progress_traps",
+        "full_long_horizon_bundle"
+      ],
+      "operator_id": "trace_dependency_coverage_guard",
+      "role": "candidate",
+      "selected_count": 48,
+      "selected_frequency": 0.214286
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": -0.12,
+        "mean_survival_score_loss": 0.01
+      },
+      "display_name": "Cycle Freshness Guard",
+      "family": "Guard",
+      "final_status": "Specialist",
+      "group_id": "E93",
+      "neighborhood_count": 3,
+      "neighborhoods": [
+        "agency_commit_safety",
+        "false_done_progress_traps",
+        "full_long_horizon_bundle"
+      ],
+      "operator_id": "cycle_freshness_guard",
+      "role": "candidate",
+      "selected_count": 48,
+      "selected_frequency": 0.214286
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": -0.13,
+        "mean_survival_score_loss": 0.01
+      },
+      "display_name": "Local Scope Exit T Stab",
+      "family": "T-Stab",
+      "final_status": "BundleSupport",
+      "group_id": "E93",
+      "neighborhood_count": 1,
+      "neighborhoods": [
+        "false_done_progress_traps"
+      ],
+      "operator_id": "local_scope_exit_t_stab",
+      "role": "candidate",
+      "selected_count": 4,
+      "selected_frequency": 0.017857
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": -0.12,
+        "mean_survival_score_loss": 0.01
+      },
+      "display_name": "Agency Commit Quorum Guard",
+      "family": "Guard",
+      "final_status": "Specialist",
+      "group_id": "E93",
+      "neighborhood_count": 3,
+      "neighborhoods": [
+        "agency_commit_safety",
+        "false_done_progress_traps",
+        "full_long_horizon_bundle"
+      ],
+      "operator_id": "agency_commit_quorum_guard",
+      "role": "candidate",
+      "selected_count": 48,
+      "selected_frequency": 0.214286
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": -0.1,
+        "mean_survival_score_loss": 0.01
+      },
+      "display_name": "Safe Commit Action Scribe",
+      "family": "Scribe",
+      "final_status": "Specialist",
+      "group_id": "E93",
+      "neighborhood_count": 3,
+      "neighborhoods": [
+        "agency_commit_safety",
+        "false_done_progress_traps",
+        "full_long_horizon_bundle"
+      ],
+      "operator_id": "safe_commit_action_scribe",
+      "role": "candidate",
+      "selected_count": 35,
+      "selected_frequency": 0.15625
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": -0.1,
+        "mean_survival_score_loss": 0.01
+      },
+      "display_name": "Canonical Answer Format Scribe",
+      "family": "Scribe",
+      "final_status": "Specialist",
+      "group_id": "E94",
+      "neighborhood_count": 1,
+      "neighborhoods": [
+        "answer_output_hygiene"
+      ],
+      "operator_id": "canonical_answer_format_scribe",
+      "role": "candidate",
+      "selected_count": 16,
+      "selected_frequency": 0.071429
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": -0.1,
+        "mean_survival_score_loss": 0.01
+      },
+      "display_name": "Unit Preserving Answer Scribe",
+      "family": "Scribe",
+      "final_status": "Specialist",
+      "group_id": "E94",
+      "neighborhood_count": 1,
+      "neighborhoods": [
+        "answer_output_hygiene"
+      ],
+      "operator_id": "unit_preserving_answer_scribe",
+      "role": "candidate",
+      "selected_count": 16,
+      "selected_frequency": 0.071429
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": -0.1,
+        "mean_survival_score_loss": 0.01
+      },
+      "display_name": "Uncertainty Action Scribe",
+      "family": "Scribe",
+      "final_status": "Specialist",
+      "group_id": "E94",
+      "neighborhood_count": 1,
+      "neighborhoods": [
+        "answer_output_hygiene"
+      ],
+      "operator_id": "uncertainty_action_scribe",
+      "role": "candidate",
+      "selected_count": 16,
+      "selected_frequency": 0.071429
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": -0.1,
+        "mean_survival_score_loss": 0.01
+      },
+      "display_name": "Evidence Citation Scribe",
+      "family": "Scribe",
+      "final_status": "Specialist",
+      "group_id": "E94",
+      "neighborhood_count": 1,
+      "neighborhoods": [
+        "answer_output_hygiene"
+      ],
+      "operator_id": "evidence_citation_scribe",
+      "role": "candidate",
+      "selected_count": 16,
+      "selected_frequency": 0.071429
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": -0.1,
+        "mean_survival_score_loss": 0.01
+      },
+      "display_name": "Multi Value List Scribe",
+      "family": "Scribe",
+      "final_status": "Specialist",
+      "group_id": "E94",
+      "neighborhood_count": 1,
+      "neighborhoods": [
+        "answer_output_hygiene"
+      ],
+      "operator_id": "multi_value_list_scribe",
+      "role": "candidate",
+      "selected_count": 12,
+      "selected_frequency": 0.053571
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": -0.1,
+        "mean_survival_score_loss": 0.01
+      },
+      "display_name": "Contradiction Report Scribe",
+      "family": "Scribe",
+      "final_status": "BundleSupport",
+      "group_id": "E94",
+      "neighborhood_count": 1,
+      "neighborhoods": [
+        "answer_output_hygiene"
+      ],
+      "operator_id": "contradiction_report_scribe",
+      "role": "candidate",
+      "selected_count": 10,
+      "selected_frequency": 0.044643
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": -0.12,
+        "mean_survival_score_loss": 0.01
+      },
+      "display_name": "Output Scope Guard",
+      "family": "Guard",
+      "final_status": "BundleSupport",
+      "group_id": "E94",
+      "neighborhood_count": 1,
+      "neighborhoods": [
+        "answer_output_hygiene"
+      ],
+      "operator_id": "output_scope_guard",
+      "role": "candidate",
+      "selected_count": 7,
+      "selected_frequency": 0.03125
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": -0.12,
+        "mean_survival_score_loss": 0.01
+      },
+      "display_name": "No Answer Boundary Guard",
+      "family": "Guard",
+      "final_status": "Specialist",
+      "group_id": "E94",
+      "neighborhood_count": 1,
+      "neighborhoods": [
+        "answer_output_hygiene"
+      ],
+      "operator_id": "no_answer_boundary_guard",
+      "role": "candidate",
+      "selected_count": 16,
+      "selected_frequency": 0.071429
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": -0.11,
+        "mean_survival_score_loss": 0.01
+      },
+      "display_name": "Missing Dependency Locator Lens",
+      "family": "Lens",
+      "final_status": "Specialist",
+      "group_id": "E95",
+      "neighborhood_count": 1,
+      "neighborhoods": [
+        "active_evidence_search"
+      ],
+      "operator_id": "missing_dependency_locator_lens",
+      "role": "candidate",
+      "selected_count": 16,
+      "selected_frequency": 0.071429
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": -0.1,
+        "mean_survival_score_loss": 0.01
+      },
+      "display_name": "Targeted Evidence Request Scribe",
+      "family": "Scribe",
+      "final_status": "Specialist",
+      "group_id": "E95",
+      "neighborhood_count": 2,
+      "neighborhoods": [
+        "active_evidence_search",
+        "full_long_horizon_bundle"
+      ],
+      "operator_id": "targeted_evidence_request_scribe",
+      "role": "candidate",
+      "selected_count": 32,
+      "selected_frequency": 0.142857
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": -0.12,
+        "mean_survival_score_loss": 0.01
+      },
+      "display_name": "Source Reliability Rank Guard",
+      "family": "Guard",
+      "final_status": "Specialist",
+      "group_id": "E95",
+      "neighborhood_count": 2,
+      "neighborhoods": [
+        "active_evidence_search",
+        "full_long_horizon_bundle"
+      ],
+      "operator_id": "source_reliability_rank_guard",
+      "role": "candidate",
+      "selected_count": 26,
+      "selected_frequency": 0.116071
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": -0.12,
+        "mean_survival_score_loss": 0.01
+      },
+      "display_name": "Redundant Request Guard",
+      "family": "Guard",
+      "final_status": "Specialist",
+      "group_id": "E95",
+      "neighborhood_count": 2,
+      "neighborhoods": [
+        "active_evidence_search",
+        "full_long_horizon_bundle"
+      ],
+      "operator_id": "redundant_request_guard",
+      "role": "candidate",
+      "selected_count": 24,
+      "selected_frequency": 0.107143
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": -0.12,
+        "mean_survival_score_loss": 0.01
+      },
+      "display_name": "Search Budget Guard",
+      "family": "Guard",
+      "final_status": "Specialist",
+      "group_id": "E95",
+      "neighborhood_count": 2,
+      "neighborhoods": [
+        "active_evidence_search",
+        "full_long_horizon_bundle"
+      ],
+      "operator_id": "search_budget_guard",
+      "role": "candidate",
+      "selected_count": 22,
+      "selected_frequency": 0.098214
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": -0.12,
+        "mean_survival_score_loss": 0.01
+      },
+      "display_name": "Adversarial Decoy Source Guard",
+      "family": "Guard",
+      "final_status": "Specialist",
+      "group_id": "E95",
+      "neighborhood_count": 2,
+      "neighborhoods": [
+        "active_evidence_search",
+        "full_long_horizon_bundle"
+      ],
+      "operator_id": "adversarial_decoy_source_guard",
+      "role": "candidate",
+      "selected_count": 21,
+      "selected_frequency": 0.09375
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": -0.13,
+        "mean_survival_score_loss": 0.0576
+      },
+      "display_name": "Retrieved Evidence Integrator T Stab",
+      "family": "T-Stab",
+      "final_status": "Specialist",
+      "group_id": "E95",
+      "neighborhood_count": 2,
+      "neighborhoods": [
+        "active_evidence_search",
+        "full_long_horizon_bundle"
+      ],
+      "operator_id": "retrieved_evidence_integrator_t_stab",
+      "role": "candidate",
+      "selected_count": 25,
+      "selected_frequency": 0.111607
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": -0.1,
+        "mean_survival_score_loss": 0.01
+      },
+      "display_name": "Answer Ready After Evidence Scribe",
+      "family": "Scribe",
+      "final_status": "Specialist",
+      "group_id": "E95",
+      "neighborhood_count": 2,
+      "neighborhoods": [
+        "active_evidence_search",
+        "full_long_horizon_bundle"
+      ],
+      "operator_id": "answer_ready_after_evidence_scribe",
+      "role": "candidate",
+      "selected_count": 25,
+      "selected_frequency": 0.111607
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": -0.11,
+        "mean_survival_score_loss": 0.01
+      },
+      "display_name": "Trace Deduplication Lens",
+      "family": "Lens",
+      "final_status": "Specialist",
+      "group_id": "E96",
+      "neighborhood_count": 2,
+      "neighborhoods": [
+        "temporal_bitstream_resync",
+        "trace_ground_memory_hygiene"
+      ],
+      "operator_id": "trace_deduplication_lens",
+      "role": "candidate",
+      "selected_count": 30,
+      "selected_frequency": 0.133929
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": -0.12,
+        "mean_survival_score_loss": 0.01
+      },
+      "display_name": "Provenance Chain Guard",
+      "family": "Guard",
+      "final_status": "Specialist",
+      "group_id": "E96",
+      "neighborhood_count": 2,
+      "neighborhoods": [
+        "temporal_bitstream_resync",
+        "trace_ground_memory_hygiene"
+      ],
+      "operator_id": "provenance_chain_guard",
+      "role": "candidate",
+      "selected_count": 28,
+      "selected_frequency": 0.125
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": -0.13,
+        "mean_survival_score_loss": 0.021333
+      },
+      "display_name": "Delayed Feedback Integrator T Stab",
+      "family": "T-Stab",
+      "final_status": "Specialist",
+      "group_id": "E96",
+      "neighborhood_count": 2,
+      "neighborhoods": [
+        "temporal_bitstream_resync",
+        "trace_ground_memory_hygiene"
+      ],
+      "operator_id": "delayed_feedback_integrator_t_stab",
+      "role": "candidate",
+      "selected_count": 15,
+      "selected_frequency": 0.066964
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": -0.11,
+        "mean_survival_score_loss": 0.01
+      },
+      "display_name": "Contradiction Memory Index Lens",
+      "family": "Lens",
+      "final_status": "Specialist",
+      "group_id": "E96",
+      "neighborhood_count": 2,
+      "neighborhoods": [
+        "temporal_bitstream_resync",
+        "trace_ground_memory_hygiene"
+      ],
+      "operator_id": "contradiction_memory_index_lens",
+      "role": "candidate",
+      "selected_count": 24,
+      "selected_frequency": 0.107143
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": -0.1,
+        "mean_survival_score_loss": 0.01
+      },
+      "display_name": "Ground Promotion Candidate Scribe",
+      "family": "Scribe",
+      "final_status": "Specialist",
+      "group_id": "E96",
+      "neighborhood_count": 1,
+      "neighborhoods": [
+        "trace_ground_memory_hygiene"
+      ],
+      "operator_id": "ground_promotion_candidate_scribe",
+      "role": "candidate",
+      "selected_count": 16,
+      "selected_frequency": 0.071429
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": -0.12,
+        "mean_survival_score_loss": 0.01
+      },
+      "display_name": "Stale Trace Pruner Guard",
+      "family": "Guard",
+      "final_status": "Specialist",
+      "group_id": "E96",
+      "neighborhood_count": 2,
+      "neighborhoods": [
+        "temporal_bitstream_resync",
+        "trace_ground_memory_hygiene"
+      ],
+      "operator_id": "stale_trace_pruner_guard",
+      "role": "candidate",
+      "selected_count": 32,
+      "selected_frequency": 0.142857
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": -0.13,
+        "mean_survival_score_loss": 0.0185
+      },
+      "display_name": "Scope Lifetime T Stab",
+      "family": "T-Stab",
+      "final_status": "Specialist",
+      "group_id": "E96",
+      "neighborhood_count": 2,
+      "neighborhoods": [
+        "temporal_bitstream_resync",
+        "trace_ground_memory_hygiene"
+      ],
+      "operator_id": "scope_lifetime_t_stab",
+      "role": "candidate",
+      "selected_count": 20,
+      "selected_frequency": 0.089286
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": -0.12,
+        "mean_survival_score_loss": 0.01
+      },
+      "display_name": "Replay Hash Audit Guard",
+      "family": "Guard",
+      "final_status": "Specialist",
+      "group_id": "E96",
+      "neighborhood_count": 2,
+      "neighborhoods": [
+        "temporal_bitstream_resync",
+        "trace_ground_memory_hygiene"
+      ],
+      "operator_id": "replay_hash_audit_guard",
+      "role": "candidate",
+      "selected_count": 32,
+      "selected_frequency": 0.142857
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": -0.11,
+        "mean_survival_score_loss": 0.03125
+      },
+      "display_name": "Route Intent Classifier Lens",
+      "family": "Lens",
+      "final_status": "Specialist",
+      "group_id": "E97",
+      "neighborhood_count": 1,
+      "neighborhoods": [
+        "route_composition_execution"
+      ],
+      "operator_id": "route_intent_classifier_lens",
+      "role": "candidate",
+      "selected_count": 16,
+      "selected_frequency": 0.071429
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": -0.12,
+        "mean_survival_score_loss": 0.01
+      },
+      "display_name": "Active Operator Set Selector Guard",
+      "family": "Guard",
+      "final_status": "Specialist",
+      "group_id": "E97",
+      "neighborhood_count": 1,
+      "neighborhoods": [
+        "route_composition_execution"
+      ],
+      "operator_id": "active_operator_set_selector_guard",
+      "role": "candidate",
+      "selected_count": 16,
+      "selected_frequency": 0.071429
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": -0.1,
+        "mean_survival_score_loss": 0.01
+      },
+      "display_name": "Ordered Operator Sequence Scribe",
+      "family": "Scribe",
+      "final_status": "Specialist",
+      "group_id": "E97",
+      "neighborhood_count": 1,
+      "neighborhoods": [
+        "route_composition_execution"
+      ],
+      "operator_id": "ordered_operator_sequence_scribe",
+      "role": "candidate",
+      "selected_count": 16,
+      "selected_frequency": 0.071429
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": -0.11,
+        "mean_survival_score_loss": 0.01
+      },
+      "display_name": "Adapter Requirement Detector Lens",
+      "family": "Lens",
+      "final_status": "BundleSupport",
+      "group_id": "E97",
+      "neighborhood_count": 1,
+      "neighborhoods": [
+        "route_composition_execution"
+      ],
+      "operator_id": "adapter_requirement_detector_lens",
+      "role": "candidate",
+      "selected_count": 10,
+      "selected_frequency": 0.044643
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": -0.12,
+        "mean_survival_score_loss": 0.01
+      },
+      "display_name": "Loop Prevention Route Guard",
+      "family": "Guard",
+      "final_status": "Specialist",
+      "group_id": "E97",
+      "neighborhood_count": 1,
+      "neighborhoods": [
+        "route_composition_execution"
+      ],
+      "operator_id": "loop_prevention_route_guard",
+      "role": "candidate",
+      "selected_count": 16,
+      "selected_frequency": 0.071429
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": -0.12,
+        "mean_survival_score_loss": 0.01
+      },
+      "display_name": "Route Budget Guard",
+      "family": "Guard",
+      "final_status": "Specialist",
+      "group_id": "E97",
+      "neighborhood_count": 1,
+      "neighborhoods": [
+        "route_composition_execution"
+      ],
+      "operator_id": "route_budget_guard",
+      "role": "candidate",
+      "selected_count": 16,
+      "selected_frequency": 0.071429
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": -0.1,
+        "mean_survival_score_loss": 0.01
+      },
+      "display_name": "Fallback To Ask Route Scribe",
+      "family": "Scribe",
+      "final_status": "Specialist",
+      "group_id": "E97",
+      "neighborhood_count": 1,
+      "neighborhoods": [
+        "route_composition_execution"
+      ],
+      "operator_id": "fallback_to_ask_route_scribe",
+      "role": "candidate",
+      "selected_count": 16,
+      "selected_frequency": 0.071429
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": -0.13,
+        "mean_survival_score_loss": 0.07375
+      },
+      "display_name": "Composition Completion T Stab",
+      "family": "T-Stab",
+      "final_status": "Specialist",
+      "group_id": "E97",
+      "neighborhood_count": 1,
+      "neighborhoods": [
+        "route_composition_execution"
+      ],
+      "operator_id": "composition_completion_t_stab",
+      "role": "candidate",
+      "selected_count": 16,
+      "selected_frequency": 0.071429
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": -0.11,
+        "mean_survival_score_loss": 0.01
+      },
+      "display_name": "Composite Task Decomposer Lens",
+      "family": "Lens",
+      "final_status": "BundleSupport",
+      "group_id": "E98",
+      "neighborhood_count": 1,
+      "neighborhoods": [
+        "route_composition_execution"
+      ],
+      "operator_id": "composite_task_decomposer_lens",
+      "role": "candidate",
+      "selected_count": 11,
+      "selected_frequency": 0.049107
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": -0.1,
+        "mean_survival_score_loss": 0.01
+      },
+      "display_name": "Dependency Ordering Scribe",
+      "family": "Scribe",
+      "final_status": "Specialist",
+      "group_id": "E98",
+      "neighborhood_count": 1,
+      "neighborhoods": [
+        "route_composition_execution"
+      ],
+      "operator_id": "dependency_ordering_scribe",
+      "role": "candidate",
+      "selected_count": 16,
+      "selected_frequency": 0.071429
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": -0.13,
+        "mean_survival_score_loss": 0.01
+      },
+      "display_name": "Intermediate State Carry T Stab",
+      "family": "T-Stab",
+      "final_status": "BundleSupport",
+      "group_id": "E98",
+      "neighborhood_count": 1,
+      "neighborhoods": [
+        "route_composition_execution"
+      ],
+      "operator_id": "intermediate_state_carry_t_stab",
+      "role": "candidate",
+      "selected_count": 10,
+      "selected_frequency": 0.044643
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": -0.12,
+        "mean_survival_score_loss": 0.01
+      },
+      "display_name": "Cross Skill Trace Join Guard",
+      "family": "Guard",
+      "final_status": "Specialist",
+      "group_id": "E98",
+      "neighborhood_count": 2,
+      "neighborhoods": [
+        "full_long_horizon_bundle",
+        "route_composition_execution"
+      ],
+      "operator_id": "cross_skill_trace_join_guard",
+      "role": "candidate",
+      "selected_count": 24,
+      "selected_frequency": 0.107143
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": -0.12,
+        "mean_survival_score_loss": 0.01
+      },
+      "display_name": "Capability Scope Boundary Guard",
+      "family": "Guard",
+      "final_status": "Specialist",
+      "group_id": "E98",
+      "neighborhood_count": 2,
+      "neighborhoods": [
+        "full_long_horizon_bundle",
+        "route_composition_execution"
+      ],
+      "operator_id": "capability_scope_boundary_guard",
+      "role": "candidate",
+      "selected_count": 17,
+      "selected_frequency": 0.075893
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": -0.1,
+        "mean_survival_score_loss": 0.01
+      },
+      "display_name": "Partial Route Checkpoint Scribe",
+      "family": "Scribe",
+      "final_status": "Specialist",
+      "group_id": "E98",
+      "neighborhood_count": 2,
+      "neighborhoods": [
+        "full_long_horizon_bundle",
+        "route_composition_execution"
+      ],
+      "operator_id": "partial_route_checkpoint_scribe",
+      "role": "candidate",
+      "selected_count": 32,
+      "selected_frequency": 0.142857
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": -0.1,
+        "mean_survival_score_loss": 0.01
+      },
+      "display_name": "Composition Error Recovery Scribe",
+      "family": "Scribe",
+      "final_status": "Specialist",
+      "group_id": "E98",
+      "neighborhood_count": 1,
+      "neighborhoods": [
+        "route_composition_execution"
+      ],
+      "operator_id": "composition_error_recovery_scribe",
+      "role": "candidate",
+      "selected_count": 16,
+      "selected_frequency": 0.071429
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": -0.12,
+        "mean_survival_score_loss": 0.01
+      },
+      "display_name": "Final Response Integrity Guard",
+      "family": "Guard",
+      "final_status": "Specialist",
+      "group_id": "E98",
+      "neighborhood_count": 2,
+      "neighborhoods": [
+        "full_long_horizon_bundle",
+        "route_composition_execution"
+      ],
+      "operator_id": "final_response_integrity_guard",
+      "role": "candidate",
+      "selected_count": 22,
+      "selected_frequency": 0.098214
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": -0.11,
+        "mean_survival_score_loss": 0.01
+      },
+      "display_name": "Capability Gap Detector Lens",
+      "family": "Lens",
+      "final_status": "BundleSupport",
+      "group_id": "E99",
+      "neighborhood_count": 1,
+      "neighborhoods": [
+        "curriculum_regression_scheduler"
+      ],
+      "operator_id": "capability_gap_detector_lens",
+      "role": "candidate",
+      "selected_count": 8,
+      "selected_frequency": 0.035714
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": -0.1,
+        "mean_survival_score_loss": 0.01
+      },
+      "display_name": "Lesson Candidate Ranker Scribe",
+      "family": "Scribe",
+      "final_status": "BundleSupport",
+      "group_id": "E99",
+      "neighborhood_count": 1,
+      "neighborhoods": [
+        "curriculum_regression_scheduler"
+      ],
+      "operator_id": "lesson_candidate_ranker_scribe",
+      "role": "candidate",
+      "selected_count": 3,
+      "selected_frequency": 0.013393
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": -0.12,
+        "mean_survival_score_loss": 0.01
+      },
+      "display_name": "Regression Replay Set Guard",
+      "family": "Guard",
+      "final_status": "Specialist",
+      "group_id": "E99",
+      "neighborhood_count": 3,
+      "neighborhoods": [
+        "curriculum_regression_scheduler",
+        "false_done_progress_traps",
+        "full_long_horizon_bundle"
+      ],
+      "operator_id": "regression_replay_set_guard",
+      "role": "candidate",
+      "selected_count": 36,
+      "selected_frequency": 0.160714
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": -0.11,
+        "mean_survival_score_loss": 0.01
+      },
+      "display_name": "Adversarial Family Sampler Lens",
+      "family": "Lens",
+      "final_status": "BundleSupport",
+      "group_id": "E99",
+      "neighborhood_count": 1,
+      "neighborhoods": [
+        "curriculum_regression_scheduler"
+      ],
+      "operator_id": "adversarial_family_sampler_lens",
+      "role": "candidate",
+      "selected_count": 4,
+      "selected_frequency": 0.017857
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": -0.13,
+        "mean_survival_score_loss": 0.01
+      },
+      "display_name": "Difficulty Ramp T Stab",
+      "family": "T-Stab",
+      "final_status": "BundleSupport",
+      "group_id": "E99",
+      "neighborhood_count": 1,
+      "neighborhoods": [
+        "curriculum_regression_scheduler"
+      ],
+      "operator_id": "difficulty_ramp_t_stab",
+      "role": "candidate",
+      "selected_count": 1,
+      "selected_frequency": 0.004464
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": -0.12,
+        "mean_survival_score_loss": 0.027317
+      },
+      "display_name": "Compute Budget Allocator Guard",
+      "family": "Guard",
+      "final_status": "Specialist",
+      "group_id": "E99",
+      "neighborhood_count": 3,
+      "neighborhoods": [
+        "curriculum_regression_scheduler",
+        "false_done_progress_traps",
+        "full_long_horizon_bundle"
+      ],
+      "operator_id": "compute_budget_allocator_guard",
+      "role": "candidate",
+      "selected_count": 41,
+      "selected_frequency": 0.183036
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": -0.12,
+        "mean_survival_score_loss": 0.0313
+      },
+      "display_name": "Promotion Gate Precheck Guard",
+      "family": "Guard",
+      "final_status": "Specialist",
+      "group_id": "E99",
+      "neighborhood_count": 3,
+      "neighborhoods": [
+        "curriculum_regression_scheduler",
+        "false_done_progress_traps",
+        "full_long_horizon_bundle"
+      ],
+      "operator_id": "promotion_gate_precheck_guard",
+      "role": "candidate",
+      "selected_count": 40,
+      "selected_frequency": 0.178571
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": -0.1,
+        "mean_survival_score_loss": 0.01
+      },
+      "display_name": "Next Mutation Queue Scribe",
+      "family": "Scribe",
+      "final_status": "Specialist",
+      "group_id": "E99",
+      "neighborhood_count": 1,
+      "neighborhoods": [
+        "curriculum_regression_scheduler"
+      ],
+      "operator_id": "next_mutation_queue_scribe",
+      "role": "candidate",
+      "selected_count": 16,
+      "selected_frequency": 0.071429
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": -0.11,
+        "mean_survival_score_loss": 0.01
+      },
+      "display_name": "Text Frame Boundary Lens",
+      "family": "Lens",
+      "final_status": "Specialist",
+      "group_id": "E100",
+      "neighborhood_count": 2,
+      "neighborhoods": [
+        "lexical_glyph_grounding",
+        "text_ingress_conflict_resolution"
+      ],
+      "operator_id": "text_frame_boundary_lens",
+      "role": "candidate",
+      "selected_count": 30,
+      "selected_frequency": 0.133929
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": -0.11,
+        "mean_survival_score_loss": 0.01
+      },
+      "display_name": "Evidence Span Locator Lens",
+      "family": "Lens",
+      "final_status": "Specialist",
+      "group_id": "E100",
+      "neighborhood_count": 2,
+      "neighborhoods": [
+        "lexical_glyph_grounding",
+        "text_ingress_conflict_resolution"
+      ],
+      "operator_id": "evidence_span_locator_lens",
+      "role": "candidate",
+      "selected_count": 32,
+      "selected_frequency": 0.142857
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": -0.11,
+        "mean_survival_score_loss": 0.01
+      },
+      "display_name": "Source Attribution Lens",
+      "family": "Lens",
+      "final_status": "Specialist",
+      "group_id": "E100",
+      "neighborhood_count": 2,
+      "neighborhoods": [
+        "lexical_glyph_grounding",
+        "text_ingress_conflict_resolution"
+      ],
+      "operator_id": "source_attribution_lens",
+      "role": "candidate",
+      "selected_count": 30,
+      "selected_frequency": 0.133929
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": -0.12,
+        "mean_survival_score_loss": 0.01
+      },
+      "display_name": "Negation Contrast Scope Guard",
+      "family": "Guard",
+      "final_status": "Specialist",
+      "group_id": "E100",
+      "neighborhood_count": 2,
+      "neighborhoods": [
+        "lexical_glyph_grounding",
+        "text_ingress_conflict_resolution"
+      ],
+      "operator_id": "negation_contrast_scope_guard",
+      "role": "candidate",
+      "selected_count": 32,
+      "selected_frequency": 0.142857
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": -0.12,
+        "mean_survival_score_loss": 0.01
+      },
+      "display_name": "Quote Scope Boundary Guard",
+      "family": "Guard",
+      "final_status": "Specialist",
+      "group_id": "E100",
+      "neighborhood_count": 2,
+      "neighborhoods": [
+        "lexical_glyph_grounding",
+        "text_ingress_conflict_resolution"
+      ],
+      "operator_id": "quote_scope_boundary_guard",
+      "role": "candidate",
+      "selected_count": 26,
+      "selected_frequency": 0.116071
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": -0.12,
+        "mean_survival_score_loss": 0.01
+      },
+      "display_name": "Irrelevant Span Filter Guard",
+      "family": "Guard",
+      "final_status": "Specialist",
+      "group_id": "E100",
+      "neighborhood_count": 2,
+      "neighborhoods": [
+        "lexical_glyph_grounding",
+        "text_ingress_conflict_resolution"
+      ],
+      "operator_id": "irrelevant_span_filter_guard",
+      "role": "candidate",
+      "selected_count": 32,
+      "selected_frequency": 0.142857
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": -0.13,
+        "mean_survival_score_loss": 0.01
+      },
+      "display_name": "Weak Claim Uncertainty T Stab",
+      "family": "T-Stab",
+      "final_status": "BundleSupport",
+      "group_id": "E100",
+      "neighborhood_count": 1,
+      "neighborhoods": [
+        "text_ingress_conflict_resolution"
+      ],
+      "operator_id": "weak_claim_uncertainty_t_stab",
+      "role": "candidate",
+      "selected_count": 1,
+      "selected_frequency": 0.004464
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": -0.1,
+        "mean_survival_score_loss": 0.01
+      },
+      "display_name": "Text Evidence Proposal Scribe",
+      "family": "Scribe",
+      "final_status": "Specialist",
+      "group_id": "E100",
+      "neighborhood_count": 2,
+      "neighborhoods": [
+        "lexical_glyph_grounding",
+        "text_ingress_conflict_resolution"
+      ],
+      "operator_id": "text_evidence_proposal_scribe",
+      "role": "candidate",
+      "selected_count": 29,
+      "selected_frequency": 0.129464
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": -0.11,
+        "mean_survival_score_loss": 0.020923
+      },
+      "display_name": "Evidence Conflict Detector Lens",
+      "family": "Lens",
+      "final_status": "Specialist",
+      "group_id": "E101",
+      "neighborhood_count": 3,
+      "neighborhoods": [
+        "active_evidence_search",
+        "full_long_horizon_bundle",
+        "text_ingress_conflict_resolution"
+      ],
+      "operator_id": "evidence_conflict_detector_lens",
+      "role": "candidate",
+      "selected_count": 39,
+      "selected_frequency": 0.174107
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": -0.11,
+        "mean_survival_score_loss": 0.01
+      },
+      "display_name": "Source Priority Resolver Lens",
+      "family": "Lens",
+      "final_status": "Specialist",
+      "group_id": "E101",
+      "neighborhood_count": 2,
+      "neighborhoods": [
+        "active_evidence_search",
+        "text_ingress_conflict_resolution"
+      ],
+      "operator_id": "source_priority_resolver_lens",
+      "role": "candidate",
+      "selected_count": 32,
+      "selected_frequency": 0.142857
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": -0.13,
+        "mean_survival_score_loss": 0.164545
+      },
+      "display_name": "Temporal Latest Span T Stab",
+      "family": "T-Stab",
+      "final_status": "Specialist",
+      "group_id": "E101",
+      "neighborhood_count": 2,
+      "neighborhoods": [
+        "active_evidence_search",
+        "text_ingress_conflict_resolution"
+      ],
+      "operator_id": "temporal_latest_span_t_stab",
+      "role": "candidate",
+      "selected_count": 22,
+      "selected_frequency": 0.098214
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": -0.12,
+        "mean_survival_score_loss": 0.01
+      },
+      "display_name": "Multi Span Consistency Guard",
+      "family": "Guard",
+      "final_status": "StableSupport",
+      "group_id": "E101",
+      "neighborhood_count": 4,
+      "neighborhoods": [
+        "active_evidence_search",
+        "full_long_horizon_bundle",
+        "text_ingress_conflict_resolution",
+        "visible_evidence_ruleshift"
+      ],
+      "operator_id": "multi_span_consistency_guard",
+      "role": "candidate",
+      "selected_count": 51,
+      "selected_frequency": 0.227679
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": -0.12,
+        "mean_survival_score_loss": 0.01
+      },
+      "display_name": "Contradiction To Defer Guard",
+      "family": "Guard",
+      "final_status": "StableSupport",
+      "group_id": "E101",
+      "neighborhood_count": 4,
+      "neighborhoods": [
+        "active_evidence_search",
+        "full_long_horizon_bundle",
+        "text_ingress_conflict_resolution",
+        "visible_evidence_ruleshift"
+      ],
+      "operator_id": "contradiction_to_defer_guard",
+      "role": "candidate",
+      "selected_count": 57,
+      "selected_frequency": 0.254464
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": -0.1,
+        "mean_survival_score_loss": 0.01
+      },
+      "display_name": "Missing Dependency Question Scribe",
+      "family": "Scribe",
+      "final_status": "Specialist",
+      "group_id": "E101",
+      "neighborhood_count": 3,
+      "neighborhoods": [
+        "active_evidence_search",
+        "text_ingress_conflict_resolution",
+        "visible_evidence_ruleshift"
+      ],
+      "operator_id": "missing_dependency_question_scribe",
+      "role": "candidate",
+      "selected_count": 42,
+      "selected_frequency": 0.1875
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": -0.11,
+        "mean_survival_score_loss": 0.01
+      },
+      "display_name": "Clarified Query Focus Lens",
+      "family": "Lens",
+      "final_status": "Specialist",
+      "group_id": "E101",
+      "neighborhood_count": 2,
+      "neighborhoods": [
+        "active_evidence_search",
+        "text_ingress_conflict_resolution"
+      ],
+      "operator_id": "clarified_query_focus_lens",
+      "role": "candidate",
+      "selected_count": 14,
+      "selected_frequency": 0.0625
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": -0.1,
+        "mean_survival_score_loss": 0.01
+      },
+      "display_name": "Conflict Resolved Proposal Scribe",
+      "family": "Scribe",
+      "final_status": "Specialist",
+      "group_id": "E101",
+      "neighborhood_count": 3,
+      "neighborhoods": [
+        "active_evidence_search",
+        "text_ingress_conflict_resolution",
+        "visible_evidence_ruleshift"
+      ],
+      "operator_id": "conflict_resolved_proposal_scribe",
+      "role": "candidate",
+      "selected_count": 34,
+      "selected_frequency": 0.151786
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": -0.11,
+        "mean_survival_score_loss": 0.01
+      },
+      "display_name": "Query Requirement Mapper Lens",
+      "family": "Lens",
+      "final_status": "BundleSupport",
+      "group_id": "E102",
+      "neighborhood_count": 1,
+      "neighborhoods": [
+        "full_long_horizon_bundle"
+      ],
+      "operator_id": "query_requirement_mapper_lens",
+      "role": "candidate",
+      "selected_count": 3,
+      "selected_frequency": 0.013393
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": -0.12,
+        "mean_survival_score_loss": 0.01
+      },
+      "display_name": "Resolved Evidence Coverage Guard",
+      "family": "Guard",
+      "final_status": "StableSupport",
+      "group_id": "E102",
+      "neighborhood_count": 4,
+      "neighborhoods": [
+        "agency_commit_safety",
+        "answer_output_hygiene",
+        "full_long_horizon_bundle",
+        "visible_evidence_ruleshift"
+      ],
+      "operator_id": "resolved_evidence_coverage_guard",
+      "role": "candidate",
+      "selected_count": 54,
+      "selected_frequency": 0.241071
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": -0.12,
+        "mean_survival_score_loss": 0.01
+      },
+      "display_name": "Answerability Decision Guard",
+      "family": "Guard",
+      "final_status": "StableSupport",
+      "group_id": "E102",
+      "neighborhood_count": 4,
+      "neighborhoods": [
+        "agency_commit_safety",
+        "answer_output_hygiene",
+        "full_long_horizon_bundle",
+        "visible_evidence_ruleshift"
+      ],
+      "operator_id": "answerability_decision_guard",
+      "role": "candidate",
+      "selected_count": 64,
+      "selected_frequency": 0.285714
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": -0.1,
+        "mean_survival_score_loss": 0.01
+      },
+      "display_name": "Grounded Answer Template Scribe",
+      "family": "Scribe",
+      "final_status": "StableSupport",
+      "group_id": "E102",
+      "neighborhood_count": 4,
+      "neighborhoods": [
+        "agency_commit_safety",
+        "answer_output_hygiene",
+        "full_long_horizon_bundle",
+        "visible_evidence_ruleshift"
+      ],
+      "operator_id": "grounded_answer_template_scribe",
+      "role": "candidate",
+      "selected_count": 64,
+      "selected_frequency": 0.285714
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": -0.1,
+        "mean_survival_score_loss": 0.01
+      },
+      "display_name": "Evidence Citation Link Scribe",
+      "family": "Scribe",
+      "final_status": "StableSupport",
+      "group_id": "E102",
+      "neighborhood_count": 4,
+      "neighborhoods": [
+        "agency_commit_safety",
+        "answer_output_hygiene",
+        "full_long_horizon_bundle",
+        "visible_evidence_ruleshift"
+      ],
+      "operator_id": "evidence_citation_link_scribe",
+      "role": "candidate",
+      "selected_count": 49,
+      "selected_frequency": 0.21875
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": -0.12,
+        "mean_survival_score_loss": 0.01
+      },
+      "display_name": "Unsupported Answer Defer Guard",
+      "family": "Guard",
+      "final_status": "StableSupport",
+      "group_id": "E102",
+      "neighborhood_count": 4,
+      "neighborhoods": [
+        "agency_commit_safety",
+        "answer_output_hygiene",
+        "full_long_horizon_bundle",
+        "visible_evidence_ruleshift"
+      ],
+      "operator_id": "unsupported_answer_defer_guard",
+      "role": "candidate",
+      "selected_count": 64,
+      "selected_frequency": 0.285714
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": -0.1,
+        "mean_survival_score_loss": 0.01
+      },
+      "display_name": "Ask When Dependency Missing Scribe",
+      "family": "Scribe",
+      "final_status": "Specialist",
+      "group_id": "E102",
+      "neighborhood_count": 4,
+      "neighborhoods": [
+        "agency_commit_safety",
+        "answer_output_hygiene",
+        "full_long_horizon_bundle",
+        "visible_evidence_ruleshift"
+      ],
+      "operator_id": "ask_when_dependency_missing_scribe",
+      "role": "candidate",
+      "selected_count": 34,
+      "selected_frequency": 0.151786
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": -0.13,
+        "mean_survival_score_loss": 0.138889
+      },
+      "display_name": "Answer Trace Integrity T Stab",
+      "family": "T-Stab",
+      "final_status": "Specialist",
+      "group_id": "E102",
+      "neighborhood_count": 3,
+      "neighborhoods": [
+        "agency_commit_safety",
+        "answer_output_hygiene",
+        "full_long_horizon_bundle"
+      ],
+      "operator_id": "answer_trace_integrity_t_stab",
+      "role": "candidate",
+      "selected_count": 48,
+      "selected_frequency": 0.214286
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": -0.11,
+        "mean_survival_score_loss": 0.01
+      },
+      "display_name": "Pending Question Trace Lens",
+      "family": "Lens",
+      "final_status": "Specialist",
+      "group_id": "E103",
+      "neighborhood_count": 2,
+      "neighborhoods": [
+        "active_evidence_search",
+        "clarification_state_repair"
+      ],
+      "operator_id": "pending_question_trace_lens",
+      "role": "candidate",
+      "selected_count": 19,
+      "selected_frequency": 0.084821
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": -0.11,
+        "mean_survival_score_loss": 0.01
+      },
+      "display_name": "Clarification Span Locator Lens",
+      "family": "Lens",
+      "final_status": "Specialist",
+      "group_id": "E103",
+      "neighborhood_count": 2,
+      "neighborhoods": [
+        "active_evidence_search",
+        "clarification_state_repair"
+      ],
+      "operator_id": "clarification_span_locator_lens",
+      "role": "candidate",
+      "selected_count": 30,
+      "selected_frequency": 0.133929
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": -0.12,
+        "mean_survival_score_loss": 0.01
+      },
+      "display_name": "Clarification Dependency Binder Guard",
+      "family": "Guard",
+      "final_status": "Specialist",
+      "group_id": "E103",
+      "neighborhood_count": 2,
+      "neighborhoods": [
+        "active_evidence_search",
+        "clarification_state_repair"
+      ],
+      "operator_id": "clarification_dependency_binder_guard",
+      "role": "candidate",
+      "selected_count": 31,
+      "selected_frequency": 0.138393
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": -0.1,
+        "mean_survival_score_loss": 0.01
+      },
+      "display_name": "State Repair Patch Scribe",
+      "family": "Scribe",
+      "final_status": "Specialist",
+      "group_id": "E103",
+      "neighborhood_count": 2,
+      "neighborhoods": [
+        "active_evidence_search",
+        "clarification_state_repair"
+      ],
+      "operator_id": "state_repair_patch_scribe",
+      "role": "candidate",
+      "selected_count": 21,
+      "selected_frequency": 0.09375
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": -0.12,
+        "mean_survival_score_loss": 0.01
+      },
+      "display_name": "Stale Pending Question Guard",
+      "family": "Guard",
+      "final_status": "Specialist",
+      "group_id": "E103",
+      "neighborhood_count": 2,
+      "neighborhoods": [
+        "active_evidence_search",
+        "clarification_state_repair"
+      ],
+      "operator_id": "stale_pending_question_guard",
+      "role": "candidate",
+      "selected_count": 29,
+      "selected_frequency": 0.129464
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": -0.12,
+        "mean_survival_score_loss": 0.01
+      },
+      "display_name": "Irrelevant Clarification Filter Guard",
+      "family": "Guard",
+      "final_status": "Specialist",
+      "group_id": "E103",
+      "neighborhood_count": 2,
+      "neighborhoods": [
+        "active_evidence_search",
+        "clarification_state_repair"
+      ],
+      "operator_id": "irrelevant_clarification_filter_guard",
+      "role": "candidate",
+      "selected_count": 29,
+      "selected_frequency": 0.129464
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": -0.1,
+        "mean_survival_score_loss": 0.01
+      },
+      "display_name": "Repaired Answer Reentry Scribe",
+      "family": "Scribe",
+      "final_status": "Specialist",
+      "group_id": "E103",
+      "neighborhood_count": 2,
+      "neighborhoods": [
+        "active_evidence_search",
+        "clarification_state_repair"
+      ],
+      "operator_id": "repaired_answer_reentry_scribe",
+      "role": "candidate",
+      "selected_count": 18,
+      "selected_frequency": 0.080357
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": -0.13,
+        "mean_survival_score_loss": 0.089333
+      },
+      "display_name": "Repair Trace Integrity T Stab",
+      "family": "T-Stab",
+      "final_status": "Specialist",
+      "group_id": "E103",
+      "neighborhood_count": 2,
+      "neighborhoods": [
+        "active_evidence_search",
+        "clarification_state_repair"
+      ],
+      "operator_id": "repair_trace_integrity_t_stab",
+      "role": "candidate",
+      "selected_count": 15,
+      "selected_frequency": 0.066964
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": -0.11,
+        "mean_survival_score_loss": 0.01
+      },
+      "display_name": "Turn Boundary Cycle Lens",
+      "family": "Lens",
+      "final_status": "Specialist",
+      "group_id": "E104",
+      "neighborhood_count": 3,
+      "neighborhoods": [
+        "clarification_state_repair",
+        "context_compression_reentry",
+        "trace_ground_memory_hygiene"
+      ],
+      "operator_id": "turn_boundary_cycle_lens",
+      "role": "candidate",
+      "selected_count": 40,
+      "selected_frequency": 0.178571
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": -0.13,
+        "mean_survival_score_loss": 0.035758
+      },
+      "display_name": "Pending Dependency Stack T Stab",
+      "family": "T-Stab",
+      "final_status": "Specialist",
+      "group_id": "E104",
+      "neighborhood_count": 3,
+      "neighborhoods": [
+        "clarification_state_repair",
+        "context_compression_reentry",
+        "trace_ground_memory_hygiene"
+      ],
+      "operator_id": "pending_dependency_stack_t_stab",
+      "role": "candidate",
+      "selected_count": 33,
+      "selected_frequency": 0.147321
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": -0.12,
+        "mean_survival_score_loss": 0.01
+      },
+      "display_name": "Active Turn State Router Guard",
+      "family": "Guard",
+      "final_status": "StableSupport",
+      "group_id": "E104",
+      "neighborhood_count": 4,
+      "neighborhoods": [
+        "clarification_state_repair",
+        "context_compression_reentry",
+        "full_long_horizon_bundle",
+        "trace_ground_memory_hygiene"
+      ],
+      "operator_id": "active_turn_state_router_guard",
+      "role": "candidate",
+      "selected_count": 64,
+      "selected_frequency": 0.285714
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": -0.1,
+        "mean_survival_score_loss": 0.01
+      },
+      "display_name": "Multi Turn Ground Delta Scribe",
+      "family": "Scribe",
+      "final_status": "Specialist",
+      "group_id": "E104",
+      "neighborhood_count": 3,
+      "neighborhoods": [
+        "clarification_state_repair",
+        "context_compression_reentry",
+        "trace_ground_memory_hygiene"
+      ],
+      "operator_id": "multi_turn_ground_delta_scribe",
+      "role": "candidate",
+      "selected_count": 41,
+      "selected_frequency": 0.183036
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": -0.11,
+        "mean_survival_score_loss": 0.01
+      },
+      "display_name": "Clarification Chain Join Lens",
+      "family": "Lens",
+      "final_status": "Specialist",
+      "group_id": "E104",
+      "neighborhood_count": 3,
+      "neighborhoods": [
+        "clarification_state_repair",
+        "context_compression_reentry",
+        "trace_ground_memory_hygiene"
+      ],
+      "operator_id": "clarification_chain_join_lens",
+      "role": "candidate",
+      "selected_count": 37,
+      "selected_frequency": 0.165179
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": -0.12,
+        "mean_survival_score_loss": 0.01
+      },
+      "display_name": "Cross Turn Stale Context Guard",
+      "family": "Guard",
+      "final_status": "StableSupport",
+      "group_id": "E104",
+      "neighborhood_count": 4,
+      "neighborhoods": [
+        "clarification_state_repair",
+        "context_compression_reentry",
+        "full_long_horizon_bundle",
+        "trace_ground_memory_hygiene"
+      ],
+      "operator_id": "cross_turn_stale_context_guard",
+      "role": "candidate",
+      "selected_count": 51,
+      "selected_frequency": 0.227679
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": -0.1,
+        "mean_survival_score_loss": 0.01
+      },
+      "display_name": "Unresolved State Carry Scribe",
+      "family": "Scribe",
+      "final_status": "Specialist",
+      "group_id": "E104",
+      "neighborhood_count": 3,
+      "neighborhoods": [
+        "clarification_state_repair",
+        "context_compression_reentry",
+        "trace_ground_memory_hygiene"
+      ],
+      "operator_id": "unresolved_state_carry_scribe",
+      "role": "candidate",
+      "selected_count": 37,
+      "selected_frequency": 0.165179
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": -0.12,
+        "mean_survival_score_loss": 0.01
+      },
+      "display_name": "Final Turn Answer Continuity Guard",
+      "family": "Guard",
+      "final_status": "StableSupport",
+      "group_id": "E104",
+      "neighborhood_count": 4,
+      "neighborhoods": [
+        "clarification_state_repair",
+        "context_compression_reentry",
+        "full_long_horizon_bundle",
+        "trace_ground_memory_hygiene"
+      ],
+      "operator_id": "final_turn_answer_continuity_guard",
+      "role": "candidate",
+      "selected_count": 62,
+      "selected_frequency": 0.276786
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": -0.11,
+        "mean_survival_score_loss": 0.01
+      },
+      "display_name": "Context Window Pressure Lens",
+      "family": "Lens",
+      "final_status": "Specialist",
+      "group_id": "E105",
+      "neighborhood_count": 2,
+      "neighborhoods": [
+        "context_compression_reentry",
+        "trace_ground_memory_hygiene"
+      ],
+      "operator_id": "context_window_pressure_lens",
+      "role": "candidate",
+      "selected_count": 32,
+      "selected_frequency": 0.142857
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": -0.11,
+        "mean_survival_score_loss": 0.01
+      },
+      "display_name": "Summary Relevance Span Selector Lens",
+      "family": "Lens",
+      "final_status": "Specialist",
+      "group_id": "E105",
+      "neighborhood_count": 3,
+      "neighborhoods": [
+        "context_compression_reentry",
+        "full_long_horizon_bundle",
+        "trace_ground_memory_hygiene"
+      ],
+      "operator_id": "summary_relevance_span_selector_lens",
+      "role": "candidate",
+      "selected_count": 48,
+      "selected_frequency": 0.214286
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": -0.12,
+        "mean_survival_score_loss": 0.01
+      },
+      "display_name": "Required Fact Preservation Guard",
+      "family": "Guard",
+      "final_status": "Specialist",
+      "group_id": "E105",
+      "neighborhood_count": 3,
+      "neighborhoods": [
+        "context_compression_reentry",
+        "full_long_horizon_bundle",
+        "trace_ground_memory_hygiene"
+      ],
+      "operator_id": "required_fact_preservation_guard",
+      "role": "candidate",
+      "selected_count": 40,
+      "selected_frequency": 0.178571
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": -0.13,
+        "mean_survival_score_loss": 0.0168
+      },
+      "display_name": "Unresolved Dependency Preservation T Stab",
+      "family": "T-Stab",
+      "final_status": "Specialist",
+      "group_id": "E105",
+      "neighborhood_count": 2,
+      "neighborhoods": [
+        "context_compression_reentry",
+        "trace_ground_memory_hygiene"
+      ],
+      "operator_id": "unresolved_dependency_preservation_t_stab",
+      "role": "candidate",
+      "selected_count": 25,
+      "selected_frequency": 0.111607
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": -0.1,
+        "mean_survival_score_loss": 0.01
+      },
+      "display_name": "Citation Pointer Compaction Scribe",
+      "family": "Scribe",
+      "final_status": "Specialist",
+      "group_id": "E105",
+      "neighborhood_count": 2,
+      "neighborhoods": [
+        "context_compression_reentry",
+        "trace_ground_memory_hygiene"
+      ],
+      "operator_id": "citation_pointer_compaction_scribe",
+      "role": "candidate",
+      "selected_count": 22,
+      "selected_frequency": 0.098214
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": -0.12,
+        "mean_survival_score_loss": 0.01
+      },
+      "display_name": "Obsolete Turn Prune Guard",
+      "family": "Guard",
+      "final_status": "Specialist",
+      "group_id": "E105",
+      "neighborhood_count": 3,
+      "neighborhoods": [
+        "context_compression_reentry",
+        "full_long_horizon_bundle",
+        "trace_ground_memory_hygiene"
+      ],
+      "operator_id": "obsolete_turn_prune_guard",
+      "role": "candidate",
+      "selected_count": 39,
+      "selected_frequency": 0.174107
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": -0.12,
+        "mean_survival_score_loss": 0.01
+      },
+      "display_name": "Summary Drift Detection Guard",
+      "family": "Guard",
+      "final_status": "Specialist",
+      "group_id": "E105",
+      "neighborhood_count": 3,
+      "neighborhoods": [
+        "context_compression_reentry",
+        "full_long_horizon_bundle",
+        "trace_ground_memory_hygiene"
+      ],
+      "operator_id": "summary_drift_detection_guard",
+      "role": "candidate",
+      "selected_count": 48,
+      "selected_frequency": 0.214286
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": -0.1,
+        "mean_survival_score_loss": 0.01
+      },
+      "display_name": "Compressed Context Reentry Scribe",
+      "family": "Scribe",
+      "final_status": "Specialist",
+      "group_id": "E105",
+      "neighborhood_count": 2,
+      "neighborhoods": [
+        "context_compression_reentry",
+        "trace_ground_memory_hygiene"
+      ],
+      "operator_id": "compressed_context_reentry_scribe",
+      "role": "candidate",
+      "selected_count": 32,
+      "selected_frequency": 0.142857
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": -0.11,
+        "mean_survival_score_loss": 0.11625
+      },
+      "display_name": "Task Requirement Decomposition Lens",
+      "family": "Lens",
+      "final_status": "Specialist",
+      "group_id": "E106",
+      "neighborhood_count": 2,
+      "neighborhoods": [
+        "curriculum_regression_scheduler",
+        "false_done_progress_traps"
+      ],
+      "operator_id": "task_requirement_decomposition_lens",
+      "role": "candidate",
+      "selected_count": 32,
+      "selected_frequency": 0.142857
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": -0.1,
+        "mean_survival_score_loss": 0.01
+      },
+      "display_name": "Deliverable Evidence Mapping Scribe",
+      "family": "Scribe",
+      "final_status": "StableSupport",
+      "group_id": "E106",
+      "neighborhood_count": 4,
+      "neighborhoods": [
+        "agency_commit_safety",
+        "curriculum_regression_scheduler",
+        "false_done_progress_traps",
+        "full_long_horizon_bundle"
+      ],
+      "operator_id": "deliverable_evidence_mapping_scribe",
+      "role": "candidate",
+      "selected_count": 51,
+      "selected_frequency": 0.227679
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": -0.12,
+        "mean_survival_score_loss": 0.01
+      },
+      "display_name": "Step Status Transition Guard",
+      "family": "Guard",
+      "final_status": "StableSupport",
+      "group_id": "E106",
+      "neighborhood_count": 4,
+      "neighborhoods": [
+        "agency_commit_safety",
+        "curriculum_regression_scheduler",
+        "false_done_progress_traps",
+        "full_long_horizon_bundle"
+      ],
+      "operator_id": "step_status_transition_guard",
+      "role": "candidate",
+      "selected_count": 64,
+      "selected_frequency": 0.285714
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": -0.13,
+        "mean_survival_score_loss": 0.153437
+      },
+      "display_name": "Blocked Dependency Tracker T Stab",
+      "family": "T-Stab",
+      "final_status": "Specialist",
+      "group_id": "E106",
+      "neighborhood_count": 2,
+      "neighborhoods": [
+        "curriculum_regression_scheduler",
+        "false_done_progress_traps"
+      ],
+      "operator_id": "blocked_dependency_tracker_t_stab",
+      "role": "candidate",
+      "selected_count": 32,
+      "selected_frequency": 0.142857
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": -0.1,
+        "mean_survival_score_loss": 0.01
+      },
+      "display_name": "Progress Ledger Update Scribe",
+      "family": "Scribe",
+      "final_status": "StableSupport",
+      "group_id": "E106",
+      "neighborhood_count": 4,
+      "neighborhoods": [
+        "agency_commit_safety",
+        "curriculum_regression_scheduler",
+        "false_done_progress_traps",
+        "full_long_horizon_bundle"
+      ],
+      "operator_id": "progress_ledger_update_scribe",
+      "role": "candidate",
+      "selected_count": 54,
+      "selected_frequency": 0.241071
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": -0.12,
+        "mean_survival_score_loss": 0.01
+      },
+      "display_name": "Completion Gate All Requirements Guard",
+      "family": "Guard",
+      "final_status": "StableSupport",
+      "group_id": "E106",
+      "neighborhood_count": 4,
+      "neighborhoods": [
+        "agency_commit_safety",
+        "curriculum_regression_scheduler",
+        "false_done_progress_traps",
+        "full_long_horizon_bundle"
+      ],
+      "operator_id": "completion_gate_all_requirements_guard",
+      "role": "candidate",
+      "selected_count": 64,
+      "selected_frequency": 0.285714
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": -0.12,
+        "mean_survival_score_loss": 0.01
+      },
+      "display_name": "Regression Recheck Step Guard",
+      "family": "Guard",
+      "final_status": "StableSupport",
+      "group_id": "E106",
+      "neighborhood_count": 4,
+      "neighborhoods": [
+        "agency_commit_safety",
+        "curriculum_regression_scheduler",
+        "false_done_progress_traps",
+        "full_long_horizon_bundle"
+      ],
+      "operator_id": "regression_recheck_step_guard",
+      "role": "candidate",
+      "selected_count": 64,
+      "selected_frequency": 0.285714
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": -0.1,
+        "mean_survival_score_loss": 0.01
+      },
+      "display_name": "Next Action Selector Scribe",
+      "family": "Scribe",
+      "final_status": "Specialist",
+      "group_id": "E106",
+      "neighborhood_count": 4,
+      "neighborhoods": [
+        "agency_commit_safety",
+        "curriculum_regression_scheduler",
+        "false_done_progress_traps",
+        "full_long_horizon_bundle"
+      ],
+      "operator_id": "next_action_selector_scribe",
+      "role": "candidate",
+      "selected_count": 35,
+      "selected_frequency": 0.15625
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": 0.0,
+        "mean_survival_score_loss": 0.0
+      },
+      "display_name": "Final Answer Popularity Selector Control",
+      "family": "unsafe_control",
+      "final_status": "Quarantine",
+      "group_id": "CONTROL",
+      "neighborhood_count": 0,
+      "neighborhoods": [],
+      "operator_id": "final_answer_popularity_selector_control",
+      "role": "unsafe",
+      "selected_count": 0,
+      "selected_frequency": 0.0
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": 0.0,
+        "mean_survival_score_loss": 0.0
+      },
+      "display_name": "Full Library Scan Overreach Control",
+      "family": "unsafe_control",
+      "final_status": "Quarantine",
+      "group_id": "CONTROL",
+      "neighborhood_count": 0,
+      "neighborhoods": [],
+      "operator_id": "full_library_scan_overreach_control",
+      "role": "unsafe",
+      "selected_count": 0,
+      "selected_frequency": 0.0
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": 0.0,
+        "mean_survival_score_loss": 0.0
+      },
+      "display_name": "Ignore Negative Scope Control",
+      "family": "unsafe_control",
+      "final_status": "Quarantine",
+      "group_id": "CONTROL",
+      "neighborhood_count": 0,
+      "neighborhoods": [],
+      "operator_id": "ignore_negative_scope_control",
+      "role": "unsafe",
+      "selected_count": 0,
+      "selected_frequency": 0.0
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": 0.0,
+        "mean_survival_score_loss": 0.0
+      },
+      "display_name": "Skip Regression Replay Control",
+      "family": "unsafe_control",
+      "final_status": "Quarantine",
+      "group_id": "CONTROL",
+      "neighborhood_count": 0,
+      "neighborhoods": [],
+      "operator_id": "skip_regression_replay_control",
+      "role": "unsafe",
+      "selected_count": 0,
+      "selected_frequency": 0.0
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": 0.0,
+        "mean_survival_score_loss": 0.0
+      },
+      "display_name": "Stale Trace Route Control",
+      "family": "unsafe_control",
+      "final_status": "Quarantine",
+      "group_id": "CONTROL",
+      "neighborhood_count": 0,
+      "neighborhoods": [],
+      "operator_id": "stale_trace_route_control",
+      "role": "unsafe",
+      "selected_count": 0,
+      "selected_frequency": 0.0
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": 0.0,
+        "mean_survival_score_loss": 0.0
+      },
+      "display_name": "Unsafe Complete Priority Control",
+      "family": "unsafe_control",
+      "final_status": "Quarantine",
+      "group_id": "CONTROL",
+      "neighborhood_count": 0,
+      "neighborhoods": [],
+      "operator_id": "unsafe_complete_priority_control",
+      "role": "unsafe",
+      "selected_count": 0,
+      "selected_frequency": 0.0
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": 0.0,
+        "mean_survival_score_loss": 0.0
+      },
+      "display_name": "Cost Blind Selector Control",
+      "family": "unsafe_control",
+      "final_status": "Quarantine",
+      "group_id": "CONTROL",
+      "neighborhood_count": 0,
+      "neighborhoods": [],
+      "operator_id": "cost_blind_selector_control",
+      "role": "unsafe",
+      "selected_count": 0,
+      "selected_frequency": 0.0
+    },
+    {
+      "counterfactual": {
+        "mean_cost_delta": 0.0,
+        "mean_survival_score_loss": 0.0
+      },
+      "display_name": "Random Operator Neighborhood Control",
+      "family": "control",
+      "final_status": "Deprecated",
+      "group_id": "CONTROL",
+      "neighborhood_count": 0,
+      "neighborhoods": [],
+      "operator_id": "random_operator_neighborhood_control",
+      "role": "noop",
+      "selected_count": 0,
+      "selected_frequency": 0.0
+    }
+  ]
+}
