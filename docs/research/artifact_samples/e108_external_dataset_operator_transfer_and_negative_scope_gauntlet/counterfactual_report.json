@@ -1,0 +1,699 @@
+{
+  "summary": {
+    "active_operator_set_selector_guard": {
+      "ablation_loss": 0.0,
+      "activated_gain": 0.0,
+      "negative_transfer_count": 0
+    },
+    "active_turn_state_router_guard": {
+      "ablation_loss": 22.96,
+      "activated_gain": 28.7,
+      "negative_transfer_count": 0
+    },
+    "adapter_requirement_detector_lens": {
+      "ablation_loss": 0.0,
+      "activated_gain": 0.0,
+      "negative_transfer_count": 0
+    },
+    "adversarial_decoy_source_guard": {
+      "ablation_loss": 0.0,
+      "activated_gain": 0.0,
+      "negative_transfer_count": 0
+    },
+    "adversarial_family_sampler_lens": {
+      "ablation_loss": 0.0,
+      "activated_gain": 0.0,
+      "negative_transfer_count": 0
+    },
+    "agency_commit_quorum_guard": {
+      "ablation_loss": 0.0,
+      "activated_gain": 0.0,
+      "negative_transfer_count": 0
+    },
+    "alias_scope_guard": {
+      "ablation_loss": 0.0,
+      "activated_gain": 0.0,
+      "negative_transfer_count": 0
+    },
+    "answer_ready_after_evidence_scribe": {
+      "ablation_loss": 0.0,
+      "activated_gain": 0.0,
+      "negative_transfer_count": 0
+    },
+    "answer_trace_integrity_t_stab": {
+      "ablation_loss": 23.208,
+      "activated_gain": 29.01,
+      "negative_transfer_count": 0
+    },
+    "answerability_decision_guard": {
+      "ablation_loss": 34.776,
+      "activated_gain": 43.47,
+      "negative_transfer_count": 0
+    },
+    "ask_when_dependency_missing_scribe": {
+      "ablation_loss": 23.208,
+      "activated_gain": 29.01,
+      "negative_transfer_count": 0
+    },
+    "bit_slip_resync_t_stab": {
+      "ablation_loss": 0.0,
+      "activated_gain": 0.0,
+      "negative_transfer_count": 0
+    },
+    "blocked_dependency_tracker_t_stab": {
+      "ablation_loss": 11.656,
+      "activated_gain": 14.57,
+      "negative_transfer_count": 0
+    },
+    "canonical_answer_format_scribe": {
+      "ablation_loss": 0.0,
+      "activated_gain": 0.0,
+      "negative_transfer_count": 0
+    },
+    "canonical_answer_scribe": {
+      "ablation_loss": 0.0,
+      "activated_gain": 0.0,
+      "negative_transfer_count": 0
+    },
+    "canonical_lexeme_scribe": {
+      "ablation_loss": 0.0,
+      "activated_gain": 0.0,
+      "negative_transfer_count": 0
+    },
+    "capability_gap_detector_lens": {
+      "ablation_loss": 0.0,
+      "activated_gain": 0.0,
+      "negative_transfer_count": 0
+    },
+    "capability_scope_boundary_guard": {
+      "ablation_loss": 0.0,
+      "activated_gain": 0.0,
+      "negative_transfer_count": 0
+    },
+    "case_morphology_alpha_syncer": {
+      "ablation_loss": 0.0,
+      "activated_gain": 0.0,
+      "negative_transfer_count": 0
+    },
+    "citation_pointer_compaction_scribe": {
+      "ablation_loss": 0.0,
+      "activated_gain": 0.0,
+      "negative_transfer_count": 0
+    },
+    "clarification_chain_join_lens": {
+      "ablation_loss": 22.96,
+      "activated_gain": 28.7,
+      "negative_transfer_count": 0
+    },
+    "clarification_dependency_binder_guard": {
+      "ablation_loss": 11.136,
+      "activated_gain": 13.92,
+      "negative_transfer_count": 0
+    },
+    "clarification_span_locator_lens": {
+      "ablation_loss": 11.136,
+      "activated_gain": 13.92,
+      "negative_transfer_count": 0
+    },
+    "clarified_query_focus_lens": {
+      "ablation_loss": 34.776,
+      "activated_gain": 43.47,
+      "negative_transfer_count": 0
+    },
+    "completion_gate_all_requirements_guard": {
+      "ablation_loss": 23.48,
+      "activated_gain": 29.35,
+      "negative_transfer_count": 0
+    },
+    "composite_task_decomposer_lens": {
+      "ablation_loss": 0.0,
+      "activated_gain": 0.0,
+      "negative_transfer_count": 0
+    },
+    "composition_completion_t_stab": {
+      "ablation_loss": 0.0,
+      "activated_gain": 0.0,
+      "negative_transfer_count": 0
+    },
+    "composition_error_recovery_scribe": {
+      "ablation_loss": 0.0,
+      "activated_gain": 0.0,
+      "negative_transfer_count": 0
+    },
+    "compressed_context_reentry_scribe": {
+      "ablation_loss": 0.0,
+      "activated_gain": 0.0,
+      "negative_transfer_count": 0
+    },
+    "compute_budget_allocator_guard": {
+      "ablation_loss": 0.0,
+      "activated_gain": 0.0,
+      "negative_transfer_count": 0
+    },
+    "conflict_resolved_proposal_scribe": {
+      "ablation_loss": 34.776,
+      "activated_gain": 43.47,
+      "negative_transfer_count": 0
+    },
+    "context_window_pressure_lens": {
+      "ablation_loss": 0.0,
+      "activated_gain": 0.0,
+      "negative_transfer_count": 0
+    },
+    "contradiction_guard": {
+      "ablation_loss": 0.0,
+      "activated_gain": 0.0,
+      "negative_transfer_count": 0
+    },
+    "contradiction_memory_index_lens": {
+      "ablation_loss": 0.0,
+      "activated_gain": 0.0,
+      "negative_transfer_count": 0
+    },
+    "contradiction_report_scribe": {
+      "ablation_loss": 0.0,
+      "activated_gain": 0.0,
+      "negative_transfer_count": 0
+    },
+    "contradiction_to_defer_guard": {
+      "ablation_loss": 34.776,
+      "activated_gain": 43.47,
+      "negative_transfer_count": 0
+    },
+    "crc_parity_frame_guard": {
+      "ablation_loss": 0.0,
+      "activated_gain": 0.0,
+      "negative_transfer_count": 0
+    },
+    "cross_skill_trace_join_guard": {
+      "ablation_loss": 0.0,
+      "activated_gain": 0.0,
+      "negative_transfer_count": 0
+    },
+    "cross_turn_stale_context_guard": {
+      "ablation_loss": 22.96,
+      "activated_gain": 28.7,
+      "negative_transfer_count": 0
+    },
+    "cycle_freshness_guard": {
+      "ablation_loss": 0.0,
+      "activated_gain": 0.0,
+      "negative_transfer_count": 0
+    },
+    "delayed_evidence_buffer_lens": {
+      "ablation_loss": 0.0,
+      "activated_gain": 0.0,
+      "negative_transfer_count": 0
+    },
+    "delayed_feedback_integrator_t_stab": {
+      "ablation_loss": 0.0,
+      "activated_gain": 0.0,
+      "negative_transfer_count": 0
+    },
+    "deliverable_evidence_mapping_scribe": {
+      "ablation_loss": 23.04,
+      "activated_gain": 28.8,
+      "negative_transfer_count": 0
+    },
+    "dependency_ordering_scribe": {
+      "ablation_loss": 0.0,
+      "activated_gain": 0.0,
+      "negative_transfer_count": 0
+    },
+    "difficulty_ramp_t_stab": {
+      "ablation_loss": 0.0,
+      "activated_gain": 0.0,
+      "negative_transfer_count": 0
+    },
+    "evidence_citation_link_scribe": {
+      "ablation_loss": 34.776,
+      "activated_gain": 43.47,
+      "negative_transfer_count": 0
+    },
+    "evidence_citation_scribe": {
+      "ablation_loss": 0.0,
+      "activated_gain": 0.0,
+      "negative_transfer_count": 0
+    },
+    "evidence_conflict_detector_lens": {
+      "ablation_loss": 34.776,
+      "activated_gain": 43.47,
+      "negative_transfer_count": 0
+    },
+    "evidence_recency_guard": {
+      "ablation_loss": 0.0,
+      "activated_gain": 0.0,
+      "negative_transfer_count": 0
+    },
+    "evidence_span_lens": {
+      "ablation_loss": 0.0,
+      "activated_gain": 0.0,
+      "negative_transfer_count": 0
+    },
+    "evidence_span_locator_lens": {
+      "ablation_loss": 11.568,
+      "activated_gain": 14.46,
+      "negative_transfer_count": 0
+    },
+    "fallback_to_ask_route_scribe": {
+      "ablation_loss": 0.0,
+      "activated_gain": 0.0,
+      "negative_transfer_count": 0
+    },
+    "false_alarm_temporal_t_stab": {
+      "ablation_loss": 0.0,
+      "activated_gain": 0.0,
+      "negative_transfer_count": 0
+    },
+    "final_response_integrity_guard": {
+      "ablation_loss": 0.0,
+      "activated_gain": 0.0,
+      "negative_transfer_count": 0
+    },
+    "final_turn_answer_continuity_guard": {
+      "ablation_loss": 34.344,
+      "activated_gain": 42.93,
+      "negative_transfer_count": 0
+    },
+    "frame_sequence_t_stab": {
+      "ablation_loss": 0.0,
+      "activated_gain": 0.0,
+      "negative_transfer_count": 0
+    },
+    "ground_conflict_guard": {
+      "ablation_loss": 0.0,
+      "activated_gain": 0.0,
+      "negative_transfer_count": 0
+    },
+    "ground_promotion_candidate_scribe": {
+      "ablation_loss": 0.0,
+      "activated_gain": 0.0,
+      "negative_transfer_count": 0
+    },
+    "grounded_answer_template_scribe": {
+      "ablation_loss": 34.776,
+      "activated_gain": 43.47,
+      "negative_transfer_count": 0
+    },
+    "inactive_quote_scope_guard": {
+      "ablation_loss": 0.0,
+      "activated_gain": 0.0,
+      "negative_transfer_count": 0
+    },
+    "intermediate_state_carry_t_stab": {
+      "ablation_loss": 0.0,
+      "activated_gain": 0.0,
+      "negative_transfer_count": 0
+    },
+    "irrelevant_clarification_filter_guard": {
+      "ablation_loss": 11.136,
+      "activated_gain": 13.92,
+      "negative_transfer_count": 0
+    },
+    "irrelevant_span_filter_guard": {
+      "ablation_loss": 11.568,
+      "activated_gain": 14.46,
+      "negative_transfer_count": 0
+    },
+    "lesson_candidate_ranker_scribe": {
+      "ablation_loss": 0.0,
+      "activated_gain": 0.0,
+      "negative_transfer_count": 0
+    },
+    "lexical_alias_alpha_syncer": {
+      "ablation_loss": 0.0,
+      "activated_gain": 0.0,
+      "negative_transfer_count": 0
+    },
+    "local_scope_exit_t_stab": {
+      "ablation_loss": 0.0,
+      "activated_gain": 0.0,
+      "negative_transfer_count": 0
+    },
+    "loop_prevention_route_guard": {
+      "ablation_loss": 0.0,
+      "activated_gain": 0.0,
+      "negative_transfer_count": 0
+    },
+    "missing_dependency_locator_lens": {
+      "ablation_loss": 0.0,
+      "activated_gain": 0.0,
+      "negative_transfer_count": 0
+    },
+    "missing_dependency_question_scribe": {
+      "ablation_loss": 34.776,
+      "activated_gain": 43.47,
+      "negative_transfer_count": 0
+    },
+    "multi_span_consistency_guard": {
+      "ablation_loss": 34.776,
+      "activated_gain": 43.47,
+      "negative_transfer_count": 0
+    },
+    "multi_turn_ground_delta_scribe": {
+      "ablation_loss": 22.96,
+      "activated_gain": 28.7,
+      "negative_transfer_count": 0
+    },
+    "multi_value_list_scribe": {
+      "ablation_loss": 0.0,
+      "activated_gain": 0.0,
+      "negative_transfer_count": 0
+    },
+    "multilingual_surface_alpha_syncer": {
+      "ablation_loss": 0.0,
+      "activated_gain": 0.0,
+      "negative_transfer_count": 0
+    },
+    "negation_contrast_scope_guard": {
+      "ablation_loss": 11.568,
+      "activated_gain": 14.46,
+      "negative_transfer_count": 0
+    },
+    "negation_marker_alpha_syncer": {
+      "ablation_loss": 0.0,
+      "activated_gain": 0.0,
+      "negative_transfer_count": 0
+    },
+    "next_action_selector_scribe": {
+      "ablation_loss": 11.656,
+      "activated_gain": 14.57,
+      "negative_transfer_count": 0
+    },
+    "next_mutation_queue_scribe": {
+      "ablation_loss": 0.0,
+      "activated_gain": 0.0,
+      "negative_transfer_count": 0
+    },
+    "no_answer_boundary_guard": {
+      "ablation_loss": 0.0,
+      "activated_gain": 0.0,
+      "negative_transfer_count": 0
+    },
+    "numeric_value_binding_alpha_syncer": {
+      "ablation_loss": 0.0,
+      "activated_gain": 0.0,
+      "negative_transfer_count": 0
+    },
+    "obsolete_turn_prune_guard": {
+      "ablation_loss": 0.0,
+      "activated_gain": 0.0,
+      "negative_transfer_count": 0
+    },
+    "ordered_operator_sequence_scribe": {
+      "ablation_loss": 0.0,
+      "activated_gain": 0.0,
+      "negative_transfer_count": 0
+    },
+    "output_scope_guard": {
+      "ablation_loss": 0.0,
+      "activated_gain": 0.0,
+      "negative_transfer_count": 0
+    },
+    "partial_route_checkpoint_scribe": {
+      "ablation_loss": 0.0,
+      "activated_gain": 0.0,
+      "negative_transfer_count": 0
+    },
+    "pending_dependency_stack_t_stab": {
+      "ablation_loss": 22.96,
+      "activated_gain": 28.7,
+      "negative_transfer_count": 0
+    },
+    "pending_question_trace_lens": {
+      "ablation_loss": 11.136,
+      "activated_gain": 13.92,
+      "negative_transfer_count": 0
+    },
+    "progress_ledger_update_scribe": {
+      "ablation_loss": 11.656,
+      "activated_gain": 14.57,
+      "negative_transfer_count": 0
+    },
+    "promotion_gate_precheck_guard": {
+      "ablation_loss": 0.0,
+      "activated_gain": 0.0,
+      "negative_transfer_count": 0
+    },
+    "proposal_collision_guard": {
+      "ablation_loss": 0.0,
+      "activated_gain": 0.0,
+      "negative_transfer_count": 0
+    },
+    "provenance_chain_guard": {
+      "ablation_loss": 0.0,
+      "activated_gain": 0.0,
+      "negative_transfer_count": 0
+    },
+    "query_requirement_mapper_lens": {
+      "ablation_loss": 0.0,
+      "activated_gain": 0.0,
+      "negative_transfer_count": 0
+    },
+    "quote_scope_boundary_guard": {
+      "ablation_loss": 11.568,
+      "activated_gain": 14.46,
+      "negative_transfer_count": 0
+    },
+    "random_operator_neighborhood_control": {
+      "ablation_loss": 0.0,
+      "activated_gain": 0.0,
+      "negative_transfer_count": 0
+    },
+    "redundant_request_guard": {
+      "ablation_loss": 0.0,
+      "activated_gain": 0.0,
+      "negative_transfer_count": 0
+    },
+    "regression_recheck_step_guard": {
+      "ablation_loss": 23.48,
+      "activated_gain": 29.35,
+      "negative_transfer_count": 0
+    },
+    "regression_replay_set_guard": {
+      "ablation_loss": 0.0,
+      "activated_gain": 0.0,
+      "negative_transfer_count": 0
+    },
+    "repair_trace_integrity_t_stab": {
+      "ablation_loss": 11.136,
+      "activated_gain": 13.92,
+      "negative_transfer_count": 0
+    },
+    "repaired_answer_reentry_scribe": {
+      "ablation_loss": 11.136,
+      "activated_gain": 13.92,
+      "negative_transfer_count": 0
+    },
+    "repeat_vote_stabilizer_t_stab": {
+      "ablation_loss": 0.0,
+      "activated_gain": 0.0,
+      "negative_transfer_count": 0
+    },
+    "replay_hash_audit_guard": {
+      "ablation_loss": 0.0,
+      "activated_gain": 0.0,
+      "negative_transfer_count": 0
+    },
+    "required_fact_preservation_guard": {
+      "ablation_loss": 11.824,
+      "activated_gain": 14.78,
+      "negative_transfer_count": 0
+    },
+    "resolved_evidence_coverage_guard": {
+      "ablation_loss": 34.776,
+      "activated_gain": 43.47,
+      "negative_transfer_count": 0
+    },
+    "retrieved_evidence_integrator_t_stab": {
+      "ablation_loss": 0.0,
+      "activated_gain": 0.0,
+      "negative_transfer_count": 0
+    },
+    "revoked_binding_guard": {
+      "ablation_loss": 0.0,
+      "activated_gain": 0.0,
+      "negative_transfer_count": 0
+    },
+    "route_budget_guard": {
+      "ablation_loss": 0.0,
+      "activated_gain": 0.0,
+      "negative_transfer_count": 0
+    },
+    "route_intent_classifier_lens": {
+      "ablation_loss": 0.0,
+      "activated_gain": 0.0,
+      "negative_transfer_count": 0
+    },
+    "safe_commit_action_scribe": {
+      "ablation_loss": 0.0,
+      "activated_gain": 0.0,
+      "negative_transfer_count": 0
+    },
+    "scope_lifetime_t_stab": {
+      "ablation_loss": 0.0,
+      "activated_gain": 0.0,
+      "negative_transfer_count": 0
+    },
+    "search_budget_guard": {
+      "ablation_loss": 0.0,
+      "activated_gain": 0.0,
+      "negative_transfer_count": 0
+    },
+    "source_attribution_lens": {
+      "ablation_loss": 11.568,
+      "activated_gain": 14.46,
+      "negative_transfer_count": 0
+    },
+    "source_priority_resolver_lens": {
+      "ablation_loss": 34.776,
+      "activated_gain": 43.47,
+      "negative_transfer_count": 0
+    },
+    "source_reliability_rank_guard": {
+      "ablation_loss": 0.0,
+      "activated_gain": 0.0,
+      "negative_transfer_count": 0
+    },
+    "source_trust_guard": {
+      "ablation_loss": 0.0,
+      "activated_gain": 0.0,
+      "negative_transfer_count": 0
+    },
+    "stale_pending_question_guard": {
+      "ablation_loss": 11.136,
+      "activated_gain": 13.92,
+      "negative_transfer_count": 0
+    },
+    "stale_replay_guard": {
+      "ablation_loss": 0.0,
+      "activated_gain": 0.0,
+      "negative_transfer_count": 0
+    },
+    "stale_trace_pruner_guard": {
+      "ablation_loss": 0.0,
+      "activated_gain": 0.0,
+      "negative_transfer_count": 0
+    },
+    "state_repair_patch_scribe": {
+      "ablation_loss": 11.136,
+      "activated_gain": 13.92,
+      "negative_transfer_count": 0
+    },
+    "step_status_transition_guard": {
+      "ablation_loss": 23.48,
+      "activated_gain": 29.35,
+      "negative_transfer_count": 0
+    },
+    "summary_drift_detection_guard": {
+      "ablation_loss": 11.824,
+      "activated_gain": 14.78,
+      "negative_transfer_count": 0
+    },
+    "summary_relevance_span_selector_lens": {
+      "ablation_loss": 11.824,
+      "activated_gain": 14.78,
+      "negative_transfer_count": 0
+    },
+    "symbol_equivalence_guard": {
+      "ablation_loss": 0.0,
+      "activated_gain": 0.0,
+      "negative_transfer_count": 0
+    },
+    "targeted_evidence_request_scribe": {
+      "ablation_loss": 0.0,
+      "activated_gain": 0.0,
+      "negative_transfer_count": 0
+    },
+    "task_requirement_decomposition_lens": {
+      "ablation_loss": 11.656,
+      "activated_gain": 14.57,
+      "negative_transfer_count": 0
+    },
+    "temporal_commit_scribe": {
+      "ablation_loss": 0.0,
+      "activated_gain": 0.0,
+      "negative_transfer_count": 0
+    },
+    "temporal_latest_span_t_stab": {
+      "ablation_loss": 34.776,
+      "activated_gain": 43.47,
+      "negative_transfer_count": 0
+    },
+    "temporal_rule_shift_t_stab": {
+      "ablation_loss": 0.0,
+      "activated_gain": 0.0,
+      "negative_transfer_count": 0
+    },
+    "text_evidence_proposal_scribe": {
+      "ablation_loss": 11.568,
+      "activated_gain": 14.46,
+      "negative_transfer_count": 0
+    },
+    "text_frame_boundary_lens": {
+      "ablation_loss": 11.568,
+      "activated_gain": 14.46,
+      "negative_transfer_count": 0
+    },
+    "trace_deduplication_lens": {
+      "ablation_loss": 0.0,
+      "activated_gain": 0.0,
+      "negative_transfer_count": 0
+    },
+    "trace_dependency_coverage_guard": {
+      "ablation_loss": 0.0,
+      "activated_gain": 0.0,
+      "negative_transfer_count": 0
+    },
+    "turn_boundary_cycle_lens": {
+      "ablation_loss": 22.96,
+      "activated_gain": 28.7,
+      "negative_transfer_count": 0
+    },
+    "uncertainty_action_scribe": {
+      "ablation_loss": 0.0,
+      "activated_gain": 0.0,
+      "negative_transfer_count": 0
+    },
+    "unit_code_alpha_syncer": {
+      "ablation_loss": 0.0,
+      "activated_gain": 0.0,
+      "negative_transfer_count": 0
+    },
+    "unit_preserving_answer_scribe": {
+      "ablation_loss": 0.0,
+      "activated_gain": 0.0,
+      "negative_transfer_count": 0
+    },
+    "unresolved_dependency_preservation_t_stab": {
+      "ablation_loss": 0.0,
+      "activated_gain": 0.0,
+      "negative_transfer_count": 0
+    },
+    "unresolved_state_carry_scribe": {
+      "ablation_loss": 11.136,
+      "activated_gain": 13.92,
+      "negative_transfer_count": 0
+    },
+    "unresolved_state_info_guard": {
+      "ablation_loss": 0.0,
+      "activated_gain": 0.0,
+      "negative_transfer_count": 0
+    },
+    "unsupported_answer_defer_guard": {
+      "ablation_loss": 34.776,
+      "activated_gain": 43.47,
+      "negative_transfer_count": 0
+    },
+    "visible_claim_binding_alpha_syncer": {
+      "ablation_loss": 0.0,
+      "activated_gain": 0.0,
+      "negative_transfer_count": 0
+    },
+    "weak_claim_uncertainty_t_stab": {
+      "ablation_loss": 0.0,
+      "activated_gain": 0.0,
+      "negative_transfer_count": 0
+    }
+  }
+}

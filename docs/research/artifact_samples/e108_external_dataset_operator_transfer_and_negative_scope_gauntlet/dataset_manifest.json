@@ -1,0 +1,22 @@
+{
+  "artifact_contract": "E108_EXTERNAL_DATASET_OPERATOR_TRANSFER_AND_NEGATIVE_SCOPE_GAUNTLET",
+  "dataset_kind": "deterministic external-style transfer/no-harm corpus",
+  "families": [
+    "adversarial_scope_collision",
+    "external_clarification_state",
+    "external_progress_state",
+    "external_structured_heldout",
+    "long_composition_no_harm",
+    "negative_scope_corpus",
+    "real_like_noisy_text",
+    "unrelated_open_domain_text"
+  ],
+  "not_raw_web_claim": true,
+  "source_hash": "0c35d0bc4623dd40a68485b17d0e9e7a5cda8dd96be320638d6093a32aacc90a",
+  "source_license": "generated synthetic controlled proxy; repo-local",
+  "splits": [
+    "validation",
+    "adversarial",
+    "negative_scope"
+  ]
+}
