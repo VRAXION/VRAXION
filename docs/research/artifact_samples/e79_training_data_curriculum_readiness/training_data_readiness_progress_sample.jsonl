@@ -1,0 +1,4 @@
+{"timestamp_ms":1781399076350,"event":"start","lanes":3,"rounds_per_lane":8,"contract":"E79 training data curriculum readiness"}
+{"timestamp_ms":1781399076356,"event":"curriculum_manifest_written","lesson_count":24}
+{"timestamp_ms":1781399076357,"event":"contract_evaluated","missing_family_split_count":0,"missing_candidate_capability_count":0,"invalid_row_count":0}
+{"timestamp_ms":1781399076358,"event":"complete","passed":true,"curriculum_digest":4353337191945860645,"seconds":0.006185800}

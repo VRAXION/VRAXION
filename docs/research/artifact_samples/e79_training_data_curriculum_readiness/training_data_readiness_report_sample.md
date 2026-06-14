@@ -1,0 +1,20 @@
+# E79 Training Data Curriculum Readiness
+
+```text
+passed = true
+lanes = 3
+rounds_per_lane = 8
+lesson_count = 24
+required_lesson_count = 24
+split_count = 3
+family_count = 8
+capability_count = 8
+candidate_unique_count = 16
+duplicate_lesson_id_count = 0
+missing_family_split_count = 0
+missing_candidate_capability_count = 0
+invalid_row_count = 0
+score_contract_complete = true
+inference_contract_complete = true
+curriculum_digest = 4353337191945860645
+```

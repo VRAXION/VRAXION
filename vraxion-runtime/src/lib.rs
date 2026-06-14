@@ -26,6 +26,7 @@ pub mod next_mutation;
 pub mod pocket;
 pub mod proposal;
 pub mod text_field;
+pub mod training_data;
 
 pub use agency::{agency_decide, Action, AgencyState, CommitRecord};
 pub use binary_ingress::{
@@ -75,6 +76,10 @@ pub use pocket::{
 };
 pub use proposal::{ingress_to_proposal, Proposal, ProposalKind};
 pub use text_field::{select_text_mode, TextMode, TextProfile};
+pub use training_data::{
+    run_training_data_readiness_preflight, TrainingDataReadinessConfig,
+    TrainingDataReadinessSummary, TrainingLessonSpec,
+};
 
 #[cfg(test)]
 mod tests {

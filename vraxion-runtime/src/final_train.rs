@@ -4,7 +4,8 @@ use std::path::{Path, PathBuf};
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 use crate::{
-    run_global_library_supervisor, GlobalLibrarySupervisorConfig, GlobalLibrarySupervisorSummary,
+    run_global_library_supervisor, run_training_data_readiness_preflight,
+    GlobalLibrarySupervisorConfig, TrainingDataReadinessConfig,
 };
 
 #[derive(Debug, Clone, PartialEq)]
@@ -22,7 +23,12 @@ pub struct FinalTrainSummary {
     pub lanes: usize,
     pub rounds_per_lane: u64,
     pub total_rounds: u64,
+    pub training_data_readiness_passed: bool,
+    pub training_data_lesson_count: usize,
+    pub training_data_capability_count: usize,
+    pub training_data_curriculum_digest: u64,
     pub global_generated_pocket_count: usize,
+    pub promoted_to_global: u64,
     pub duplicate_candidates_blocked: u64,
     pub failed_promotions: u64,
     pub redundant_clone_block_rate: f64,
@@ -30,6 +36,7 @@ pub struct FinalTrainSummary {
     pub unsafe_promotion_rate: f64,
     pub seconds: f64,
     pub out: PathBuf,
+    pub training_data_readiness_out: PathBuf,
     pub global_supervisor_out: PathBuf,
 }
 
@@ -68,11 +75,7 @@ fn json_escape(text: &str) -> String {
     text.replace('\\', "\\\\").replace('"', "\\\"")
 }
 
-fn write_final_results(
-    out: &Path,
-    summary: &FinalTrainSummary,
-    global: &GlobalLibrarySupervisorSummary,
-) {
+fn write_final_results(out: &Path, summary: &FinalTrainSummary) {
     fs::write(
         out.join("final_train_results.json"),
         format!(
@@ -82,6 +85,10 @@ fn write_final_results(
                 "  \"lanes\": {},\n",
                 "  \"rounds_per_lane\": {},\n",
                 "  \"total_rounds\": {},\n",
+                "  \"training_data_readiness_passed\": {},\n",
+                "  \"training_data_lesson_count\": {},\n",
+                "  \"training_data_capability_count\": {},\n",
+                "  \"training_data_curriculum_digest\": {},\n",
                 "  \"global_generated_pocket_count\": {},\n",
                 "  \"promoted_to_global\": {},\n",
                 "  \"duplicate_candidates_blocked\": {},\n",
@@ -90,6 +97,7 @@ fn write_final_results(
                 "  \"bad_commit_rate\": {:.6},\n",
                 "  \"unsafe_promotion_rate\": {:.6},\n",
                 "  \"seconds\": {:.9},\n",
+                "  \"training_data_readiness_out\": \"{}\",\n",
                 "  \"global_supervisor_out\": \"{}\"\n",
                 "}}\n"
             ),
@@ -97,14 +105,19 @@ fn write_final_results(
             summary.lanes,
             summary.rounds_per_lane,
             summary.total_rounds,
+            summary.training_data_readiness_passed,
+            summary.training_data_lesson_count,
+            summary.training_data_capability_count,
+            summary.training_data_curriculum_digest,
             summary.global_generated_pocket_count,
-            global.promoted_to_global,
+            summary.promoted_to_global,
             summary.duplicate_candidates_blocked,
             summary.failed_promotions,
             summary.redundant_clone_block_rate,
             summary.bad_commit_rate,
             summary.unsafe_promotion_rate,
             summary.seconds,
+            json_escape(&summary.training_data_readiness_out.display().to_string()),
             json_escape(&summary.global_supervisor_out.display().to_string())
         ),
     )
@@ -120,14 +133,20 @@ fn write_manifest(out: &Path, summary: &FinalTrainSummary) {
                 "  \"canonical_entrypoint\": \"final_train\",\n",
                 "  \"runtime_surface\": \"vraxion-runtime\",\n",
                 "  \"artifact_contract\": \"E78_FINAL_TRAIN_CAMPAIGN_ENTRYPOINT\",\n",
+                "  \"required_preflight_contract\": \"E79_TRAINING_DATA_CURRICULUM_READINESS\",\n",
                 "  \"lanes\": {},\n",
                 "  \"rounds_per_lane\": {},\n",
+                "  \"training_data_readiness_out\": \"{}\",\n",
                 "  \"global_supervisor_out\": \"{}\",\n",
                 "  \"required_artifacts\": [\n",
                 "    \"final_train_results.json\",\n",
                 "    \"final_train_manifest.json\",\n",
                 "    \"final_train_progress.jsonl\",\n",
                 "    \"final_train_report.md\",\n",
+                "    \"training_data_readiness/training_data_readiness_results.json\",\n",
+                "    \"training_data_readiness/training_data_readiness_manifest.json\",\n",
+                "    \"training_data_readiness/training_data_readiness_progress.jsonl\",\n",
+                "    \"training_data_readiness/training_curriculum_manifest.jsonl\",\n",
                 "    \"global_supervisor/global_merge_results.json\",\n",
                 "    \"global_supervisor/global_library_summary.json\",\n",
                 "    \"global_supervisor/lane_supervisor/supervisor_results.json\"\n",
@@ -137,6 +156,7 @@ fn write_manifest(out: &Path, summary: &FinalTrainSummary) {
             ),
             summary.lanes,
             summary.rounds_per_lane,
+            json_escape(&summary.training_data_readiness_out.display().to_string()),
             json_escape(&summary.global_supervisor_out.display().to_string())
         ),
     )
@@ -153,24 +173,36 @@ fn write_report(out: &Path, summary: &FinalTrainSummary) {
              lanes = {}\n\
              rounds_per_lane = {}\n\
              total_rounds = {}\n\
+             training_data_readiness_passed = {}\n\
+             training_data_lesson_count = {}\n\
+             training_data_capability_count = {}\n\
+             training_data_curriculum_digest = {}\n\
              global_generated_pocket_count = {}\n\
+             promoted_to_global = {}\n\
              duplicate_candidates_blocked = {}\n\
              failed_promotions = {}\n\
              redundant_clone_block_rate = {:.6}\n\
              bad_commit_rate = {:.6}\n\
              unsafe_promotion_rate = {:.6}\n\
+             training_data_readiness_out = {}\n\
              global_supervisor_out = {}\n\
              ```\n",
             summary.passed,
             summary.lanes,
             summary.rounds_per_lane,
             summary.total_rounds,
+            summary.training_data_readiness_passed,
+            summary.training_data_lesson_count,
+            summary.training_data_capability_count,
+            summary.training_data_curriculum_digest,
             summary.global_generated_pocket_count,
+            summary.promoted_to_global,
             summary.duplicate_candidates_blocked,
             summary.failed_promotions,
             summary.redundant_clone_block_rate,
             summary.bad_commit_rate,
             summary.unsafe_promotion_rate,
+            summary.training_data_readiness_out.display(),
             summary.global_supervisor_out.display()
         ),
     )
@@ -195,6 +227,63 @@ pub fn run_final_train(config: FinalTrainConfig) -> FinalTrainSummary {
 
     let started = Instant::now();
     let global_supervisor_out = config.out.join("global_supervisor");
+    let training_data_readiness_out = config.out.join("training_data_readiness");
+    let readiness = run_training_data_readiness_preflight(TrainingDataReadinessConfig::new(
+        config.lanes,
+        config.rounds_per_lane,
+        training_data_readiness_out.clone(),
+    ));
+    append_jsonl(
+        &progress,
+        &format!(
+            "{{\"timestamp_ms\":{},\"event\":\"training_data_readiness_complete\",\"passed\":{},\"lesson_count\":{},\"capability_count\":{},\"curriculum_digest\":{}}}",
+            now_millis(),
+            readiness.passed,
+            readiness.lesson_count,
+            readiness.capability_count,
+            readiness.curriculum_digest
+        ),
+    );
+
+    if !readiness.passed {
+        let total_rounds = config.lanes as u64 * config.rounds_per_lane;
+        let seconds = started.elapsed().as_secs_f64();
+        let summary = FinalTrainSummary {
+            passed: false,
+            lanes: config.lanes,
+            rounds_per_lane: config.rounds_per_lane,
+            total_rounds,
+            training_data_readiness_passed: false,
+            training_data_lesson_count: readiness.lesson_count,
+            training_data_capability_count: readiness.capability_count,
+            training_data_curriculum_digest: readiness.curriculum_digest,
+            global_generated_pocket_count: 0,
+            promoted_to_global: 0,
+            duplicate_candidates_blocked: 0,
+            failed_promotions: 0,
+            redundant_clone_block_rate: 0.0,
+            bad_commit_rate: 0.0,
+            unsafe_promotion_rate: 0.0,
+            seconds,
+            out: config.out,
+            training_data_readiness_out,
+            global_supervisor_out,
+        };
+        write_final_results(&summary.out, &summary);
+        write_manifest(&summary.out, &summary);
+        write_report(&summary.out, &summary);
+        append_jsonl(
+            &progress,
+            &format!(
+                "{{\"timestamp_ms\":{},\"event\":\"complete\",\"passed\":false,\"reason\":\"training_data_readiness_failed\",\"total_rounds\":{},\"seconds\":{:.9}}}",
+                now_millis(),
+                summary.total_rounds,
+                summary.seconds
+            ),
+        );
+        return summary;
+    }
+
     let mut global_config = GlobalLibrarySupervisorConfig::new(
         config.lanes,
         config.rounds_per_lane,
@@ -219,6 +308,7 @@ pub fn run_final_train(config: FinalTrainConfig) -> FinalTrainSummary {
     let total_rounds = global.lanes as u64 * global.rounds_per_lane;
     let seconds = started.elapsed().as_secs_f64();
     let passed = global.passed
+        && readiness.passed
         && total_rounds > 0
         && global.global_generated_pocket_count > 0
         && global.failed_promotions == 0
@@ -231,7 +321,12 @@ pub fn run_final_train(config: FinalTrainConfig) -> FinalTrainSummary {
         lanes: global.lanes,
         rounds_per_lane: global.rounds_per_lane,
         total_rounds,
+        training_data_readiness_passed: readiness.passed,
+        training_data_lesson_count: readiness.lesson_count,
+        training_data_capability_count: readiness.capability_count,
+        training_data_curriculum_digest: readiness.curriculum_digest,
         global_generated_pocket_count: global.global_generated_pocket_count,
+        promoted_to_global: global.promoted_to_global,
         duplicate_candidates_blocked: global.duplicate_candidates_blocked,
         failed_promotions: global.failed_promotions,
         redundant_clone_block_rate: global.redundant_clone_block_rate,
@@ -239,10 +334,11 @@ pub fn run_final_train(config: FinalTrainConfig) -> FinalTrainSummary {
         unsafe_promotion_rate: global.unsafe_promotion_rate,
         seconds,
         out: config.out,
+        training_data_readiness_out,
         global_supervisor_out,
     };
 
-    write_final_results(&summary.out, &summary, &global);
+    write_final_results(&summary.out, &summary);
     write_manifest(&summary.out, &summary);
     write_report(&summary.out, &summary);
     append_jsonl(
@@ -275,15 +371,47 @@ mod tests {
         assert!(summary.passed);
         assert_eq!(summary.lanes, 3);
         assert_eq!(summary.total_rounds, 12);
+        assert!(summary.training_data_readiness_passed);
+        assert_eq!(summary.training_data_lesson_count, 24);
+        assert_eq!(summary.training_data_capability_count, 8);
         assert_eq!(summary.global_generated_pocket_count, 16);
+        assert_eq!(summary.promoted_to_global, 16);
         assert_eq!(summary.duplicate_candidates_blocked, 32);
         assert!(out.join("final_train_results.json").exists());
         assert!(out.join("final_train_manifest.json").exists());
         assert!(out.join("final_train_progress.jsonl").exists());
         assert!(out
+            .join("training_data_readiness")
+            .join("training_data_readiness_results.json")
+            .exists());
+        assert!(out
             .join("global_supervisor")
             .join("global_merge_results.json")
             .exists());
+
+        let _ = fs::remove_dir_all(out);
+    }
+
+    #[test]
+    fn final_train_blocks_before_global_supervisor_when_data_gate_fails() {
+        let out = std::env::temp_dir().join(format!(
+            "vraxion_e79_final_train_block_test_{}",
+            now_millis()
+        ));
+        let mut config = FinalTrainConfig::new(3, 2, out.clone());
+        config.preflight_rounds = 4;
+        config.checkpoint_interval = 2;
+
+        let summary = run_final_train(config);
+
+        assert!(!summary.passed);
+        assert!(!summary.training_data_readiness_passed);
+        assert_eq!(summary.global_generated_pocket_count, 0);
+        assert!(out
+            .join("training_data_readiness")
+            .join("training_data_readiness_results.json")
+            .exists());
+        assert!(!out.join("global_supervisor").exists());
 
         let _ = fs::remove_dir_all(out);
     }

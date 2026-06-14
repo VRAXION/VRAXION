@@ -1,0 +1,18 @@
+{
+  "artifact_contract": "E79_TRAINING_DATA_CURRICULUM_READINESS",
+  "runtime_surface": "vraxion-runtime",
+  "lanes": 3,
+  "rounds_per_lane": 8,
+  "required_splits": ["train", "validation", "adversarial"],
+  "required_families": ["frame_integrity", "requested_feature_match", "trace_commit", "library_reload", "bitslip_recovery", "text_mode_selection", "agency_commit", "library_governance"],
+  "required_capability_signatures": ["binary_training_frame_guard", "binary_training_request_guard", "binary_training_trace_guard", "binary_training_reload_guard", "binary_training_bitslip_guard", "text_training_mode_guard", "agency_training_commit_guard", "library_training_reload_guard"],
+  "minimum_rounds_for_full_candidate_rotation": 4,
+  "required_artifacts": [
+    "training_data_readiness_results.json",
+    "training_data_readiness_manifest.json",
+    "training_data_readiness_progress.jsonl",
+    "training_curriculum_manifest.jsonl",
+    "training_data_readiness_report.md"
+  ],
+  "boundary": "dataset/curriculum contract readiness gate; not final production data or trained weights"
+}

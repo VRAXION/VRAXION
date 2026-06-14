@@ -4,7 +4,7 @@ version.workspace = true
 edition.workspace = true
 license.workspace = true
 authors.workspace = true
-description = "Minimal locked VRAXION runtime kernel with canonical final train entrypoint"
+description = "Minimal locked VRAXION runtime kernel with training data readiness gate"
 repository.workspace = true
 homepage.workspace = true
 documentation.workspace = true
@@ -57,6 +57,10 @@ path = "src/bin/final_bake_preflight.rs"
 [[bin]]
 name = "final_train"
 path = "src/bin/final_train.rs"
+
+[[bin]]
+name = "training_data_readiness"
+path = "src/bin/training_data_readiness.rs"
 
 [[bin]]
 name = "final_training_runner"

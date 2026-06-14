@@ -38,13 +38,26 @@ jobs:
           test -f target/ci/e78_final_bake_smoke/final_bake_results.json
           test -f target/ci/e78_final_bake_smoke/report.md
 
+      - name: Training data readiness smoke with progress artifacts
+        run: |
+          cargo run --release -p vraxion-runtime --bin training_data_readiness -- 3 8 target/ci/e79_training_data_readiness_smoke
+          test -f target/ci/e79_training_data_readiness_smoke/training_data_readiness_progress.jsonl
+          test -f target/ci/e79_training_data_readiness_smoke/training_data_readiness_results.json
+          test -f target/ci/e79_training_data_readiness_smoke/training_data_readiness_manifest.json
+          test -f target/ci/e79_training_data_readiness_smoke/training_curriculum_manifest.jsonl
+          test -f target/ci/e79_training_data_readiness_smoke/training_data_readiness_report.md
+
       - name: Canonical final train smoke with progress artifacts
         run: |
-          cargo run --release -p vraxion-runtime --bin final_train -- 3 8 target/ci/e78_final_train_smoke --preflight-rounds 4 --checkpoint-interval 4
-          test -f target/ci/e78_final_train_smoke/final_train_progress.jsonl
-          test -f target/ci/e78_final_train_smoke/final_train_results.json
-          test -f target/ci/e78_final_train_smoke/final_train_manifest.json
-          test -f target/ci/e78_final_train_smoke/final_train_report.md
-          test -f target/ci/e78_final_train_smoke/global_supervisor/global_merge_results.json
-          test -f target/ci/e78_final_train_smoke/global_supervisor/global_library_summary.json
-          test -f target/ci/e78_final_train_smoke/global_supervisor/lane_supervisor/supervisor_results.json
+          cargo run --release -p vraxion-runtime --bin final_train -- 3 8 target/ci/e79_final_train_smoke --preflight-rounds 4 --checkpoint-interval 4
+          test -f target/ci/e79_final_train_smoke/final_train_progress.jsonl
+          test -f target/ci/e79_final_train_smoke/final_train_results.json
+          test -f target/ci/e79_final_train_smoke/final_train_manifest.json
+          test -f target/ci/e79_final_train_smoke/final_train_report.md
+          test -f target/ci/e79_final_train_smoke/training_data_readiness/training_data_readiness_results.json
+          test -f target/ci/e79_final_train_smoke/training_data_readiness/training_data_readiness_manifest.json
+          test -f target/ci/e79_final_train_smoke/training_data_readiness/training_data_readiness_progress.jsonl
+          test -f target/ci/e79_final_train_smoke/training_data_readiness/training_curriculum_manifest.jsonl
+          test -f target/ci/e79_final_train_smoke/global_supervisor/global_merge_results.json
+          test -f target/ci/e79_final_train_smoke/global_supervisor/global_library_summary.json
+          test -f target/ci/e79_final_train_smoke/global_supervisor/lane_supervisor/supervisor_results.json
