@@ -1,0 +1,9 @@
+{
+  "hash": "594d796f6e0179b4123902741662ab66486b922d1d130cc2952e01729d1fc3d7",
+  "payload_keys": [
+    "aggregate",
+    "counterfactual_summary",
+    "lifecycle",
+    "selection_frequency"
+  ]
+}

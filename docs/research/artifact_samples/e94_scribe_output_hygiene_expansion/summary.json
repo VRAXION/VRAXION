@@ -1,0 +1,7 @@
+{
+  "artifact_contract": "E94_SCRIBE_OUTPUT_HYGIENE_EXPANSION",
+  "decision": "e94_scribe_output_hygiene_expansion_confirmed",
+  "sample_pack": "docs\\research\\artifact_samples\\e94_scribe_output_hygiene_expansion",
+  "stable_operator_candidate_count": 8,
+  "unsafe_final_selected": 0
+}

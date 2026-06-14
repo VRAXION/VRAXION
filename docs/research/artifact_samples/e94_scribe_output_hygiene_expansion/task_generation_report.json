@@ -1,0 +1,17 @@
+{
+  "artifact_contract": "E94_SCRIBE_OUTPUT_HYGIENE_EXPANSION",
+  "case_count": 11520,
+  "external_output_only_after_agency_action": true,
+  "families": [
+    "ask_more_evidence",
+    "canonical_scalar_answer",
+    "contradiction_report",
+    "evidence_cited_answer",
+    "hold_unresolved",
+    "inactive_scope_output_block",
+    "multi_value_ordered_list",
+    "search_more_action",
+    "unit_preserved_answer"
+  ],
+  "hidden_answer_solving": false
+}

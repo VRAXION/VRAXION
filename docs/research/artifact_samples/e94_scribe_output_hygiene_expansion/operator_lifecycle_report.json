@@ -1,0 +1,178 @@
+{
+  "operator_lifecycle_table": [
+    {
+      "counterfactual": {
+        "mean_missed_answer_delta": 0.34433,
+        "mean_render_loss": 0.34433
+      },
+      "description": "Renders canonical answer records into stable external text.",
+      "display_name": "Canonical Answer Format Scribe",
+      "family": "Scribe",
+      "final_status": "StableOperatorCandidate",
+      "operator_id": "canonical_answer_format_scribe",
+      "role": "useful",
+      "selected_frequency": 1.0
+    },
+    {
+      "counterfactual": {
+        "mean_missed_answer_delta": 0.10815,
+        "mean_render_loss": 0.10815
+      },
+      "description": "Preserves required units/codes during answer rendering.",
+      "display_name": "Unit-Preserving Answer Scribe",
+      "family": "Scribe",
+      "final_status": "StableOperatorCandidate",
+      "operator_id": "unit_preserving_answer_scribe",
+      "role": "useful",
+      "selected_frequency": 1.0
+    },
+    {
+      "counterfactual": {
+        "mean_missed_answer_delta": 0.0,
+        "mean_render_loss": 0.310932
+      },
+      "description": "Renders ASK/HOLD/SEARCH actions instead of unsupported answers.",
+      "display_name": "Uncertainty Action Scribe",
+      "family": "Scribe",
+      "final_status": "StableOperatorCandidate",
+      "operator_id": "uncertainty_action_scribe",
+      "role": "useful",
+      "selected_frequency": 1.0
+    },
+    {
+      "counterfactual": {
+        "mean_missed_answer_delta": 0.465124,
+        "mean_render_loss": 0.579331
+      },
+      "description": "Attaches visible evidence span identifiers to rendered answers.",
+      "display_name": "Evidence Citation Scribe",
+      "family": "Scribe",
+      "final_status": "StableOperatorCandidate",
+      "operator_id": "evidence_citation_scribe",
+      "role": "useful",
+      "selected_frequency": 1.0
+    },
+    {
+      "counterfactual": {
+        "mean_missed_answer_delta": 0.120794,
+        "mean_render_loss": 0.120794
+      },
+      "description": "Renders ordered multi-value outputs without dropping elements.",
+      "display_name": "Multi-Value List Scribe",
+      "family": "Scribe",
+      "final_status": "StableOperatorCandidate",
+      "operator_id": "multi_value_list_scribe",
+      "role": "useful",
+      "selected_frequency": 1.0
+    },
+    {
+      "counterfactual": {
+        "mean_missed_answer_delta": 0.0,
+        "mean_render_loss": 0.114207
+      },
+      "description": "Renders visible contradiction reports instead of flattening conflicts.",
+      "display_name": "Contradiction Report Scribe",
+      "family": "Scribe",
+      "final_status": "StableOperatorCandidate",
+      "operator_id": "contradiction_report_scribe",
+      "role": "useful",
+      "selected_frequency": 1.0
+    },
+    {
+      "counterfactual": {
+        "mean_missed_answer_delta": 0.0,
+        "mean_render_loss": 0.109737
+      },
+      "description": "Blocks output from inactive or local-only internal records.",
+      "display_name": "Output Scope Guard",
+      "family": "Guard",
+      "final_status": "StableOperatorCandidate",
+      "operator_id": "output_scope_guard",
+      "role": "useful",
+      "selected_frequency": 1.0
+    },
+    {
+      "counterfactual": {
+        "mean_missed_answer_delta": 0.0,
+        "mean_render_loss": 0.420669
+      },
+      "description": "Prevents external answer emission when Agency selected non-answer action.",
+      "display_name": "No-Answer Boundary Guard",
+      "family": "Guard",
+      "final_status": "StableOperatorCandidate",
+      "operator_id": "no_answer_boundary_guard",
+      "role": "useful",
+      "selected_frequency": 1.0
+    },
+    {
+      "counterfactual": {},
+      "description": "Unsafe control: drops units, citations, and action state.",
+      "display_name": "Plain Value-Only Scribe",
+      "family": "unsafe_control",
+      "final_status": "Quarantine",
+      "operator_id": "plain_value_only_scribe",
+      "role": "unsafe",
+      "selected_frequency": 0.0
+    },
+    {
+      "counterfactual": {},
+      "description": "Unsafe control: emits numbers without required units.",
+      "display_name": "Unit-Dropping Scribe",
+      "family": "unsafe_control",
+      "final_status": "Quarantine",
+      "operator_id": "unit_dropping_scribe",
+      "role": "unsafe",
+      "selected_frequency": 0.0
+    },
+    {
+      "counterfactual": {},
+      "description": "Unsafe control: emits answers without evidence spans.",
+      "display_name": "Citationless Answer Scribe",
+      "family": "unsafe_control",
+      "final_status": "Quarantine",
+      "operator_id": "citationless_answer_scribe",
+      "role": "unsafe",
+      "selected_frequency": 0.0
+    },
+    {
+      "counterfactual": {},
+      "description": "Unsafe control: outputs a default answer on ASK/HOLD cases.",
+      "display_name": "Overconfident Default Answer Scribe",
+      "family": "unsafe_control",
+      "final_status": "Quarantine",
+      "operator_id": "overconfident_default_answer_scribe",
+      "role": "unsafe",
+      "selected_frequency": 0.0
+    },
+    {
+      "counterfactual": {},
+      "description": "Unsafe control: hides contradictions by picking one side.",
+      "display_name": "Contradiction-Flattening Scribe",
+      "family": "unsafe_control",
+      "final_status": "Quarantine",
+      "operator_id": "contradiction_flattening_scribe",
+      "role": "unsafe",
+      "selected_frequency": 0.0
+    },
+    {
+      "counterfactual": {},
+      "description": "Control: adds output noise without improving correctness.",
+      "display_name": "Always Verbose Control",
+      "family": "control",
+      "final_status": "Deprecated",
+      "operator_id": "always_verbose_control",
+      "role": "noop",
+      "selected_frequency": 0.0
+    },
+    {
+      "counterfactual": {},
+      "description": "Redundant answer format support without unique value.",
+      "display_name": "Answer Format Echo Clone",
+      "family": "Scribe",
+      "final_status": "Redundant",
+      "operator_id": "answer_format_clone",
+      "role": "redundant",
+      "selected_frequency": 0.0
+    }
+  ]
+}

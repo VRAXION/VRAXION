@@ -1317,3 +1317,200 @@ local_scope_leak_committer        -> Quarantine
 always_reject_control             -> Deprecated
 quorum_guard_clone                -> Redundant
 ```
+
+## E94 Scribe Output Hygiene Expansion Cards
+
+Source:
+
+```text
+E94_SCRIBE_OUTPUT_HYGIENE_EXPANSION
+decision = e94_scribe_output_hygiene_expansion_confirmed
+```
+
+Boundary:
+
+```text
+external output rendering after Agency action only
+not chatbot behavior
+not hidden answer solving
+```
+
+### Canonical Answer Format Scribe
+
+```text
+component_id = canonical_answer_format_scribe
+status       = StableOperatorCandidate
+family       = Scribe
+```
+
+What it does:
+
+```text
+renders canonical answer records into stable external text
+```
+
+If removed:
+
+```text
+mean_render_loss = 0.344330
+mean_missed_answer_delta = 0.344330
+```
+
+### Unit-Preserving Answer Scribe
+
+```text
+component_id = unit_preserving_answer_scribe
+status       = StableOperatorCandidate
+family       = Scribe
+```
+
+What it does:
+
+```text
+preserves required units and codes during answer rendering
+```
+
+If removed:
+
+```text
+mean_render_loss = 0.108150
+mean_missed_answer_delta = 0.108150
+```
+
+### Uncertainty Action Scribe
+
+```text
+component_id = uncertainty_action_scribe
+status       = StableOperatorCandidate
+family       = Scribe
+```
+
+What it does:
+
+```text
+renders ASK, HOLD, and SEARCH actions instead of unsupported answers
+```
+
+If removed:
+
+```text
+mean_render_loss = 0.310932
+mean_missed_answer_delta = 0.000000
+```
+
+### Evidence Citation Scribe
+
+```text
+component_id = evidence_citation_scribe
+status       = StableOperatorCandidate
+family       = Scribe
+```
+
+What it does:
+
+```text
+attaches visible evidence span identifiers to rendered answers
+```
+
+If removed:
+
+```text
+mean_render_loss = 0.579331
+mean_missed_answer_delta = 0.465124
+```
+
+### Multi-Value List Scribe
+
+```text
+component_id = multi_value_list_scribe
+status       = StableOperatorCandidate
+family       = Scribe
+```
+
+What it does:
+
+```text
+renders ordered multi-value outputs without dropping elements
+```
+
+If removed:
+
+```text
+mean_render_loss = 0.120794
+mean_missed_answer_delta = 0.120794
+```
+
+### Contradiction Report Scribe
+
+```text
+component_id = contradiction_report_scribe
+status       = StableOperatorCandidate
+family       = Scribe
+```
+
+What it does:
+
+```text
+renders visible contradiction reports instead of flattening conflicts
+```
+
+If removed:
+
+```text
+mean_render_loss = 0.114207
+mean_missed_answer_delta = 0.000000
+```
+
+### Output Scope Guard
+
+```text
+component_id = output_scope_guard
+status       = StableOperatorCandidate
+family       = Guard
+```
+
+What it does:
+
+```text
+blocks output from inactive or local-only internal records
+```
+
+If removed:
+
+```text
+mean_render_loss = 0.109737
+mean_missed_answer_delta = 0.000000
+```
+
+### No-Answer Boundary Guard
+
+```text
+component_id = no_answer_boundary_guard
+status       = StableOperatorCandidate
+family       = Guard
+```
+
+What it does:
+
+```text
+prevents external answer emission when Agency selected a non-answer action
+```
+
+If removed:
+
+```text
+mean_render_loss = 0.420669
+mean_missed_answer_delta = 0.000000
+```
+
+### E94 Rejected Controls
+
+```text
+plain_value_only_scribe              -> Quarantine
+unit_dropping_scribe                 -> Quarantine
+citationless_answer_scribe           -> Quarantine
+overconfident_default_answer_scribe  -> Quarantine
+contradiction_flattening_scribe      -> Quarantine
+always_verbose_control               -> Deprecated
+answer_format_clone                  -> Redundant
+```

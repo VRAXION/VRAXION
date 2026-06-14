@@ -1,0 +1,36 @@
+{
+  "summary": {
+    "canonical_answer_format_scribe": {
+      "mean_missed_answer_delta": 0.34433,
+      "mean_render_loss": 0.34433
+    },
+    "contradiction_report_scribe": {
+      "mean_missed_answer_delta": 0.0,
+      "mean_render_loss": 0.114207
+    },
+    "evidence_citation_scribe": {
+      "mean_missed_answer_delta": 0.465124,
+      "mean_render_loss": 0.579331
+    },
+    "multi_value_list_scribe": {
+      "mean_missed_answer_delta": 0.120794,
+      "mean_render_loss": 0.120794
+    },
+    "no_answer_boundary_guard": {
+      "mean_missed_answer_delta": 0.0,
+      "mean_render_loss": 0.420669
+    },
+    "output_scope_guard": {
+      "mean_missed_answer_delta": 0.0,
+      "mean_render_loss": 0.109737
+    },
+    "uncertainty_action_scribe": {
+      "mean_missed_answer_delta": 0.0,
+      "mean_render_loss": 0.310932
+    },
+    "unit_preserving_answer_scribe": {
+      "mean_missed_answer_delta": 0.10815,
+      "mean_render_loss": 0.10815
+    }
+  }
+}
