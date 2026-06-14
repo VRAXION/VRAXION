@@ -18,6 +18,7 @@ Curriculum runner preflight glue
 Curriculum queue preflight glue
 Curriculum resume/checkpoint preflight glue
 Final bake preflight entrypoint
+Final train campaign entrypoint
 Final curriculum pocket-generation runner
 Final training multi-lane supervisor
 Global Pocket Library merge supervisor
@@ -43,6 +44,7 @@ next_mutation  one-slot candidate -> mutation/rollback -> Golden Disc lifecycle
 library        persistent registry/tokens/artifacts/ledgers store model
 curriculum     active-set -> guarded-load -> body commit -> promotion row loop
 final_bake     unified body/text/registry/manager/library/curriculum bake gate
+final_train    canonical final-training campaign entrypoint
 final_training final curriculum runner with checkpoints/progress/library growth
 final_training_supervisor multi-lane final training fanout + aggregate progress
 global_library_supervisor global lane merge + dedupe/challenger governance
@@ -81,6 +83,7 @@ cargo run -p vraxion-runtime --bin curriculum_runner_preflight --release -- 1000
 cargo run -p vraxion-runtime --bin curriculum_queue_preflight --release -- 10000
 cargo run -p vraxion-runtime --bin curriculum_resume_preflight --release -- 10000
 cargo run -p vraxion-runtime --bin final_bake_preflight --release -- 10000
+cargo run -p vraxion-runtime --bin final_train --release -- 8 10000
 cargo run -p vraxion-runtime --bin final_training_runner --release -- 10000
 cargo run -p vraxion-runtime --bin final_training_supervisor --release -- 8 10000
 cargo run -p vraxion-runtime --bin global_library_supervisor --release -- 8 10000

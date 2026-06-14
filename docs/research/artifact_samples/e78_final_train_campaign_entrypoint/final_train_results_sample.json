@@ -1,0 +1,15 @@
+{
+  "passed": true,
+  "lanes": 8,
+  "rounds_per_lane": 20000,
+  "total_rounds": 160000,
+  "global_generated_pocket_count": 16,
+  "promoted_to_global": 16,
+  "duplicate_candidates_blocked": 112,
+  "failed_promotions": 0,
+  "redundant_clone_block_rate": 1.000000,
+  "bad_commit_rate": 0.000000,
+  "unsafe_promotion_rate": 0.000000,
+  "seconds": 0.480505800,
+  "global_supervisor_out": "target\\pilot_wave\\e78_final_train_campaign_entrypoint\\global_supervisor"
+}

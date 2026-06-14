@@ -16,6 +16,7 @@ pub mod body;
 pub mod curriculum;
 pub mod egress;
 pub mod final_bake;
+pub mod final_train;
 pub mod final_training;
 pub mod final_training_supervisor;
 pub mod global_library_supervisor;
@@ -45,6 +46,7 @@ pub use curriculum::{
 };
 pub use egress::{render_output, EgressMode, RenderedOutput};
 pub use final_bake::{run_final_bake_preflight, FinalBakeSummary};
+pub use final_train::{run_final_train, FinalTrainConfig, FinalTrainSummary};
 pub use final_training::{
     run_final_curriculum_pocket_generation, FinalTrainingConfig, FinalTrainingSummary,
 };

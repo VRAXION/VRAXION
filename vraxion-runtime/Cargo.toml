@@ -4,7 +4,7 @@ version.workspace = true
 edition.workspace = true
 license.workspace = true
 authors.workspace = true
-description = "Minimal locked VRAXION runtime kernel: ingress, proposal, agency, egress"
+description = "Minimal locked VRAXION runtime kernel with canonical final train entrypoint"
 repository.workspace = true
 homepage.workspace = true
 documentation.workspace = true
@@ -53,3 +53,19 @@ path = "src/bin/curriculum_resume_preflight.rs"
 [[bin]]
 name = "final_bake_preflight"
 path = "src/bin/final_bake_preflight.rs"
+
+[[bin]]
+name = "final_train"
+path = "src/bin/final_train.rs"
+
+[[bin]]
+name = "final_training_runner"
+path = "src/bin/final_training_runner.rs"
+
+[[bin]]
+name = "final_training_supervisor"
+path = "src/bin/final_training_supervisor.rs"
+
+[[bin]]
+name = "global_library_supervisor"
+path = "src/bin/global_library_supervisor.rs"

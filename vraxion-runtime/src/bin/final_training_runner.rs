@@ -3,6 +3,10 @@ use std::path::PathBuf;
 
 use vraxion_runtime::{run_final_curriculum_pocket_generation, FinalTrainingConfig};
 
+fn json_escape(text: &str) -> String {
+    text.replace('\\', "\\\\").replace('"', "\\\"")
+}
+
 fn main() {
     let rounds = env::args()
         .nth(1)
@@ -42,6 +46,6 @@ fn main() {
         summary.preflight_gate_passed,
         summary.checkpoint_written,
         summary.seconds,
-        summary.out.display()
+        json_escape(&summary.out.display().to_string())
     );
 }

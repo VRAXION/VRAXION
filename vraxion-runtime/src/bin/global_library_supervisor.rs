@@ -3,6 +3,10 @@ use std::path::PathBuf;
 
 use vraxion_runtime::{run_global_library_supervisor, GlobalLibrarySupervisorConfig};
 
+fn json_escape(text: &str) -> String {
+    text.replace('\\', "\\\\").replace('"', "\\\"")
+}
+
 fn arg_after(flag: &str) -> Option<String> {
     env::args()
         .position(|arg| arg == flag)
@@ -48,6 +52,6 @@ fn main() {
         summary.bad_commit_rate,
         summary.unsafe_promotion_rate,
         summary.seconds,
-        summary.out.display()
+        json_escape(&summary.out.display().to_string())
     );
 }
