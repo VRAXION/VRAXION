@@ -1,0 +1,19 @@
+{
+  "accepted_mutations_total": 128,
+  "adversarial_composition_success_mean": 1.0,
+  "adversarial_composition_success_min": 1.0,
+  "adversarial_dropped_intermediate_rate_max": 0.0,
+  "adversarial_scope_bleed_rate_max": 0.0,
+  "adversarial_unordered_execution_rate_max": 0.0,
+  "adversarial_unsafe_answer_rate_max": 0.0,
+  "rejected_mutations_total": 512,
+  "rollback_count_total": 512,
+  "seconds": 0.854,
+  "seed_count": 16,
+  "validation_checkpoint_accuracy_min": 1.0,
+  "validation_composition_success_mean": 1.0,
+  "validation_composition_success_min": 1.0,
+  "validation_dependency_order_accuracy_min": 1.0,
+  "validation_intermediate_carry_validity_min": 1.0,
+  "validation_trace_join_validity_min": 1.0
+}

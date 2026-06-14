@@ -2106,3 +2106,201 @@ adapterless_cross_abi_caller   -> Quarantine
 always_call_more_control       -> Deprecated
 route_selector_clone           -> Redundant
 ```
+
+## E98 Multi-Skill Execution Curriculum Expansion
+
+Source:
+
+```text
+target/pilot_wave/e98_multi_skill_execution_curriculum_expansion/
+docs/research/artifact_samples/e98_multi_skill_execution_curriculum_expansion/
+```
+
+Boundary:
+
+```text
+controlled multi-skill Operator composition proxy
+not open-domain reasoning
+not direct answer shortcut
+```
+
+### Composite Task Decomposer Lens
+
+```text
+component_id = composite_task_decomposer_lens
+status       = StableOperatorCandidate
+family       = Lens
+```
+
+What it does:
+
+```text
+detects the small set of skills needed by a composite task
+```
+
+If removed:
+
+```text
+mean_composition_success_loss = 0.598240
+mean_unsafe_answer_delta = 0.000000
+```
+
+### Dependency Ordering Scribe
+
+```text
+component_id = dependency_ordering_scribe
+status       = StableOperatorCandidate
+family       = Scribe
+```
+
+What it does:
+
+```text
+renders a dependency-correct skill call order
+```
+
+If removed:
+
+```text
+mean_composition_success_loss = 0.598240
+mean_unsafe_answer_delta = 0.000000
+```
+
+### Intermediate State Carry T-Stab
+
+```text
+component_id = intermediate_state_carry_t_stab
+status       = StableOperatorCandidate
+family       = T-Stab
+```
+
+What it does:
+
+```text
+stabilizes intermediate state between skill calls
+```
+
+If removed:
+
+```text
+mean_composition_success_loss = 0.491444
+mean_unsafe_answer_delta = 0.000000
+```
+
+### Cross-Skill Trace Join Guard
+
+```text
+component_id = cross_skill_trace_join_guard
+status       = StableOperatorCandidate
+family       = Guard
+```
+
+What it does:
+
+```text
+requires evidence/provenance continuity across skill boundaries
+```
+
+If removed:
+
+```text
+mean_composition_success_loss = 0.696447
+mean_unsafe_answer_delta = 0.000000
+```
+
+### Capability Scope Boundary Guard
+
+```text
+component_id = capability_scope_boundary_guard
+status       = StableOperatorCandidate
+family       = Guard
+```
+
+What it does:
+
+```text
+blocks a scoped skill from acting outside its capability boundary
+```
+
+If removed:
+
+```text
+mean_composition_success_loss = 0.099035
+mean_unsafe_answer_delta = 0.000000
+```
+
+### Partial Route Checkpoint Scribe
+
+```text
+component_id = partial_route_checkpoint_scribe
+status       = StableOperatorCandidate
+family       = Scribe
+```
+
+What it does:
+
+```text
+writes mechanical checkpoints after each completed skill stage
+```
+
+If removed:
+
+```text
+mean_composition_success_loss = 0.696447
+mean_unsafe_answer_delta = 0.000000
+```
+
+### Composition Error Recovery Scribe
+
+```text
+component_id = composition_error_recovery_scribe
+status       = StableOperatorCandidate
+family       = Scribe
+```
+
+What it does:
+
+```text
+routes invalid composite state to ASK, DEFER, or RETRY instead of forced answer
+```
+
+If removed:
+
+```text
+mean_composition_success_loss = 0.496394
+mean_unsafe_answer_delta = 0.000000
+```
+
+### Final Response Integrity Guard
+
+```text
+component_id = final_response_integrity_guard
+status       = StableOperatorCandidate
+family       = Guard
+```
+
+What it does:
+
+```text
+allows final answer assembly only when route, trace, scope, and intermediate state are valid
+```
+
+If removed:
+
+```text
+mean_composition_success_loss = 1.000000
+mean_unsafe_answer_delta = 0.000000
+```
+
+### E98 Rejected Controls
+
+```text
+single_skill_shortcut_solver          -> Quarantine
+answer_only_composer                  -> Quarantine
+unordered_skill_bag_runner            -> Quarantine
+drop_intermediate_state_control       -> Quarantine
+trace_join_omission_control           -> Quarantine
+scope_bleed_word_solver_control       -> Quarantine
+always_successful_completion_control  -> Deprecated
+decomposer_echo_clone                 -> Redundant
+```
