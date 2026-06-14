@@ -1,0 +1,7 @@
+{
+  "artifact_contract": "E99_CURRICULUM_SCHEDULER_AND_REGRESSION_REPLAY_EXPANSION",
+  "decision": "e99_curriculum_scheduler_regression_replay_expansion_confirmed",
+  "sample_pack": "docs\\research\\artifact_samples\\e99_curriculum_scheduler_and_regression_replay_expansion",
+  "stable_operator_candidate_count": 8,
+  "unsafe_final_selected": 0
+}

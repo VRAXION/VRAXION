@@ -2304,3 +2304,201 @@ scope_bleed_word_solver_control       -> Quarantine
 always_successful_completion_control  -> Deprecated
 decomposer_echo_clone                 -> Redundant
 ```
+
+## E99 Curriculum Scheduler And Regression Replay Expansion
+
+Source:
+
+```text
+target/pilot_wave/e99_curriculum_scheduler_and_regression_replay_expansion/
+docs/research/artifact_samples/e99_curriculum_scheduler_and_regression_replay_expansion/
+```
+
+Boundary:
+
+```text
+controlled curriculum scheduler proxy
+not autonomous open-ended training
+not direct promotion from train score
+```
+
+### Capability Gap Detector Lens
+
+```text
+component_id = capability_gap_detector_lens
+status       = StableOperatorCandidate
+family       = Lens
+```
+
+What it does:
+
+```text
+detects the weakest verified capability frontier from metric deltas
+```
+
+If removed:
+
+```text
+mean_curriculum_success_loss = 1.000000
+mean_forgetting_risk_delta = 0.000000
+```
+
+### Lesson Candidate Ranker Scribe
+
+```text
+component_id = lesson_candidate_ranker_scribe
+status       = StableOperatorCandidate
+family       = Scribe
+```
+
+What it does:
+
+```text
+ranks next lessons by expected utility, risk, and scope
+```
+
+If removed:
+
+```text
+mean_curriculum_success_loss = 0.897574
+mean_forgetting_risk_delta = 0.000000
+```
+
+### Regression Replay Set Guard
+
+```text
+component_id = regression_replay_set_guard
+status       = StableOperatorCandidate
+family       = Guard
+```
+
+What it does:
+
+```text
+requires prior stable skills to remain in the replay set
+```
+
+If removed:
+
+```text
+mean_curriculum_success_loss = 1.000000
+mean_forgetting_risk_delta = 1.000000
+```
+
+### Adversarial Family Sampler Lens
+
+```text
+component_id = adversarial_family_sampler_lens
+status       = StableOperatorCandidate
+family       = Lens
+```
+
+What it does:
+
+```text
+selects adversarial families tied to the active capability gap
+```
+
+If removed:
+
+```text
+mean_curriculum_success_loss = 0.389899
+mean_forgetting_risk_delta = 0.000000
+```
+
+### Difficulty Ramp T-Stab
+
+```text
+component_id = difficulty_ramp_t_stab
+status       = StableOperatorCandidate
+family       = T-Stab
+```
+
+What it does:
+
+```text
+stabilizes easy-to-hard lesson progression instead of abrupt jumps
+```
+
+If removed:
+
+```text
+mean_curriculum_success_loss = 0.295213
+mean_forgetting_risk_delta = 0.000000
+```
+
+### Compute Budget Allocator Guard
+
+```text
+component_id = compute_budget_allocator_guard
+status       = StableOperatorCandidate
+family       = Guard
+```
+
+What it does:
+
+```text
+keeps curriculum seed/worker/mutation budget within declared limits
+```
+
+If removed:
+
+```text
+mean_curriculum_success_loss = 0.314888
+mean_forgetting_risk_delta = 0.000000
+```
+
+### Promotion Gate Precheck Guard
+
+```text
+component_id = promotion_gate_precheck_guard
+status       = StableOperatorCandidate
+family       = Guard
+```
+
+What it does:
+
+```text
+blocks promotion attempts until validation, adversarial, replay, and scope gates exist
+```
+
+If removed:
+
+```text
+mean_curriculum_success_loss = 0.294058
+mean_forgetting_risk_delta = 0.000000
+```
+
+### Next Mutation Queue Scribe
+
+```text
+component_id = next_mutation_queue_scribe
+status       = StableOperatorCandidate
+family       = Scribe
+```
+
+What it does:
+
+```text
+writes the next concrete mutation/lesson queue with reasons and replay links
+```
+
+If removed:
+
+```text
+mean_curriculum_success_loss = 1.000000
+mean_forgetting_risk_delta = 0.000000
+```
+
+### E99 Rejected Controls
+
+```text
+random_lesson_selector          -> Quarantine
+novelty_only_curriculum         -> Quarantine
+easy_only_sampler               -> Quarantine
+no_replay_curriculum            -> Quarantine
+train_metric_only_promoter      -> Quarantine
+budgetless_curriculum_expander  -> Quarantine
+stale_gap_repeater              -> Deprecated
+gap_detector_echo_clone         -> Redundant
+```

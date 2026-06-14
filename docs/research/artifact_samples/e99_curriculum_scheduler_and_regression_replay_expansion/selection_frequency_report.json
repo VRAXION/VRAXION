@@ -1,0 +1,142 @@
+{
+  "rows": [
+    {
+      "cost": 0.13,
+      "display_name": "Capability Gap Detector Lens",
+      "family": "Lens",
+      "operator_id": "capability_gap_detector_lens",
+      "role": "useful",
+      "selected_frequency": 1.0
+    },
+    {
+      "cost": 0.13,
+      "display_name": "Lesson Candidate Ranker Scribe",
+      "family": "Scribe",
+      "operator_id": "lesson_candidate_ranker_scribe",
+      "role": "useful",
+      "selected_frequency": 1.0
+    },
+    {
+      "cost": 0.14,
+      "display_name": "Regression Replay Set Guard",
+      "family": "Guard",
+      "operator_id": "regression_replay_set_guard",
+      "role": "useful",
+      "selected_frequency": 1.0
+    },
+    {
+      "cost": 0.12,
+      "display_name": "Adversarial Family Sampler Lens",
+      "family": "Lens",
+      "operator_id": "adversarial_family_sampler_lens",
+      "role": "useful",
+      "selected_frequency": 1.0
+    },
+    {
+      "cost": 0.12,
+      "display_name": "Difficulty Ramp T-Stab",
+      "family": "T-Stab",
+      "operator_id": "difficulty_ramp_t_stab",
+      "role": "useful",
+      "selected_frequency": 1.0
+    },
+    {
+      "cost": 0.12,
+      "display_name": "Compute Budget Allocator Guard",
+      "family": "Guard",
+      "operator_id": "compute_budget_allocator_guard",
+      "role": "useful",
+      "selected_frequency": 1.0
+    },
+    {
+      "cost": 0.13,
+      "display_name": "Promotion Gate Precheck Guard",
+      "family": "Guard",
+      "operator_id": "promotion_gate_precheck_guard",
+      "role": "useful",
+      "selected_frequency": 1.0
+    },
+    {
+      "cost": 0.11,
+      "display_name": "Next Mutation Queue Scribe",
+      "family": "Scribe",
+      "operator_id": "next_mutation_queue_scribe",
+      "role": "useful",
+      "selected_frequency": 1.0
+    },
+    {
+      "cost": 0.03,
+      "display_name": "Random Lesson Selector",
+      "family": "unsafe_control",
+      "operator_id": "random_lesson_selector",
+      "role": "unsafe",
+      "selected_frequency": 0.0
+    },
+    {
+      "cost": 0.04,
+      "display_name": "Novelty-Only Curriculum",
+      "family": "unsafe_control",
+      "operator_id": "novelty_only_curriculum",
+      "role": "unsafe",
+      "selected_frequency": 0.0
+    },
+    {
+      "cost": 0.03,
+      "display_name": "Easy-Only Sampler",
+      "family": "unsafe_control",
+      "operator_id": "easy_only_sampler",
+      "role": "unsafe",
+      "selected_frequency": 0.0
+    },
+    {
+      "cost": 0.04,
+      "display_name": "No-Replay Curriculum",
+      "family": "unsafe_control",
+      "operator_id": "no_replay_curriculum",
+      "role": "unsafe",
+      "selected_frequency": 0.0
+    },
+    {
+      "cost": 0.04,
+      "display_name": "Train-Metric-Only Promoter",
+      "family": "unsafe_control",
+      "operator_id": "train_metric_only_promoter",
+      "role": "unsafe",
+      "selected_frequency": 0.0
+    },
+    {
+      "cost": 0.04,
+      "display_name": "Budgetless Curriculum Expander",
+      "family": "unsafe_control",
+      "operator_id": "budgetless_curriculum_expander",
+      "role": "unsafe",
+      "selected_frequency": 0.0
+    },
+    {
+      "cost": 0.03,
+      "display_name": "Stale Gap Repeater",
+      "family": "control",
+      "operator_id": "stale_gap_repeater",
+      "role": "noop",
+      "selected_frequency": 0.0
+    },
+    {
+      "cost": 0.18,
+      "display_name": "Gap Detector Echo Clone",
+      "family": "Lens",
+      "operator_id": "gap_detector_echo_clone",
+      "role": "redundant",
+      "selected_frequency": 0.0
+    }
+  ],
+  "stable_top": [
+    "capability_gap_detector_lens",
+    "lesson_candidate_ranker_scribe",
+    "regression_replay_set_guard",
+    "adversarial_family_sampler_lens",
+    "difficulty_ramp_t_stab",
+    "compute_budget_allocator_guard",
+    "promotion_gate_precheck_guard",
+    "next_mutation_queue_scribe"
+  ]
+}

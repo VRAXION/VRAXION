@@ -1,0 +1,36 @@
+{
+  "summary": {
+    "adversarial_family_sampler_lens": {
+      "mean_curriculum_success_loss": 0.389899,
+      "mean_forgetting_risk_delta": 0.0
+    },
+    "capability_gap_detector_lens": {
+      "mean_curriculum_success_loss": 1.0,
+      "mean_forgetting_risk_delta": 0.0
+    },
+    "compute_budget_allocator_guard": {
+      "mean_curriculum_success_loss": 0.314888,
+      "mean_forgetting_risk_delta": 0.0
+    },
+    "difficulty_ramp_t_stab": {
+      "mean_curriculum_success_loss": 0.295213,
+      "mean_forgetting_risk_delta": 0.0
+    },
+    "lesson_candidate_ranker_scribe": {
+      "mean_curriculum_success_loss": 0.897574,
+      "mean_forgetting_risk_delta": 0.0
+    },
+    "next_mutation_queue_scribe": {
+      "mean_curriculum_success_loss": 1.0,
+      "mean_forgetting_risk_delta": 0.0
+    },
+    "promotion_gate_precheck_guard": {
+      "mean_curriculum_success_loss": 0.294058,
+      "mean_forgetting_risk_delta": 0.0
+    },
+    "regression_replay_set_guard": {
+      "mean_curriculum_success_loss": 1.0,
+      "mean_forgetting_risk_delta": 1.0
+    }
+  }
+}
