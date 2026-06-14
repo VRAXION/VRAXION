@@ -1,0 +1,135 @@
+{
+  "artifact_contract": "E92_ALPHA_SYNC_LEXICAL_GLYPH_EXPANSION",
+  "boundary": "controlled visible lexical/glyph alpha-Sync probe; not open-domain language understanding",
+  "canonical_term": "Operator",
+  "families": [
+    "Guard",
+    "Scribe",
+    "alpha_syncer",
+    "control",
+    "unsafe_control"
+  ],
+  "legacy_alias": "Pocket",
+  "operators": [
+    {
+      "cost": 0.12,
+      "description": "Maps visible aliases/synonyms to canonical lexeme proposals.",
+      "display_name": "Lexical Alias alpha-Syncer",
+      "family": "alpha_syncer",
+      "operator_id": "lexical_alias_alpha_syncer",
+      "role": "useful"
+    },
+    {
+      "cost": 0.13,
+      "description": "Grounds visible not/no/never markers so rejected claims do not commit.",
+      "display_name": "Negation Marker alpha-Syncer",
+      "family": "alpha_syncer",
+      "operator_id": "negation_marker_alpha_syncer",
+      "role": "useful"
+    },
+    {
+      "cost": 0.14,
+      "description": "Normalizes visible unit/code expressions into canonical unit values.",
+      "display_name": "Unit-Code alpha-Syncer",
+      "family": "alpha_syncer",
+      "operator_id": "unit_code_alpha_syncer",
+      "role": "useful"
+    },
+    {
+      "cost": 0.14,
+      "description": "Maps visible multilingual surface forms into canonical lexemes.",
+      "display_name": "Multilingual Surface alpha-Syncer",
+      "family": "alpha_syncer",
+      "operator_id": "multilingual_surface_alpha_syncer",
+      "role": "useful"
+    },
+    {
+      "cost": 0.12,
+      "description": "Normalizes visible plural/case/morphology variants into canonical lexemes.",
+      "display_name": "Case-Morphology alpha-Syncer",
+      "family": "alpha_syncer",
+      "operator_id": "case_morphology_alpha_syncer",
+      "role": "useful"
+    },
+    {
+      "cost": 0.12,
+      "description": "Blocks unsafe glyph equivalence unless visible equivalence evidence supports it.",
+      "display_name": "Symbol Equivalence Guard",
+      "family": "Guard",
+      "operator_id": "symbol_equivalence_guard",
+      "role": "useful"
+    },
+    {
+      "cost": 0.12,
+      "description": "Keeps local/quoted/archived aliases from leaking into active scope.",
+      "display_name": "Alias Scope Guard",
+      "family": "Guard",
+      "operator_id": "alias_scope_guard",
+      "role": "useful"
+    },
+    {
+      "cost": 0.1,
+      "description": "Renders the resolved canonical lexeme or unit as the external answer action.",
+      "display_name": "Canonical Lexeme Scribe",
+      "family": "Scribe",
+      "operator_id": "canonical_lexeme_scribe",
+      "role": "useful"
+    },
+    {
+      "cost": 0.03,
+      "description": "Unsafe control: treats surface similarity as canonical meaning.",
+      "display_name": "Surface String Matcher Shortcut",
+      "family": "unsafe_control",
+      "operator_id": "surface_string_matcher_shortcut",
+      "role": "unsafe"
+    },
+    {
+      "cost": 0.03,
+      "description": "Unsafe control: commits denied claims.",
+      "display_name": "Negation-Ignoring Committer",
+      "family": "unsafe_control",
+      "operator_id": "negation_ignoring_committer",
+      "role": "unsafe"
+    },
+    {
+      "cost": 0.03,
+      "description": "Unsafe control: strips units and commits only the number.",
+      "display_name": "Unitless Value Committer",
+      "family": "unsafe_control",
+      "operator_id": "unitless_value_committer",
+      "role": "unsafe"
+    },
+    {
+      "cost": 0.04,
+      "description": "Unsafe control: lets local aliases leak globally.",
+      "display_name": "Global Alias Overreach",
+      "family": "unsafe_control",
+      "operator_id": "global_alias_overreach",
+      "role": "unsafe"
+    },
+    {
+      "cost": 0.04,
+      "description": "Unsafe control: accepts glyph lookalikes without equivalence evidence.",
+      "display_name": "Glyph Similarity Overreach",
+      "family": "unsafe_control",
+      "operator_id": "glyph_similarity_overreach",
+      "role": "unsafe"
+    },
+    {
+      "cost": 0.02,
+      "description": "Control: avoids wrong commits by deferring answerable cases.",
+      "display_name": "Always Defer Control",
+      "family": "control",
+      "operator_id": "always_defer_control",
+      "role": "noop"
+    },
+    {
+      "cost": 0.18,
+      "description": "Redundant alias support without unique contribution.",
+      "display_name": "Lexical Alias Echo Clone",
+      "family": "alpha_syncer",
+      "operator_id": "lexical_alias_clone",
+      "role": "redundant"
+    }
+  ]
+}

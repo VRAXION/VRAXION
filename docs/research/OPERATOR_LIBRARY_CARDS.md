@@ -924,3 +924,199 @@ full_stream_overreach       -> Quarantine
 always_hold_control         -> Deprecated
 sequence_clone              -> Redundant
 ```
+
+## E92 Alpha-Sync Lexical/Glyph Expansion Cards
+
+Source:
+
+```text
+E92_ALPHA_SYNC_LEXICAL_GLYPH_EXPANSION
+decision = e92_alpha_sync_lexical_glyph_expansion_confirmed
+```
+
+Boundary:
+
+```text
+visible lexical/glyph/unit normalization only
+not open-domain language understanding
+```
+
+### Lexical Alias alpha-Syncer
+
+```text
+component_id = lexical_alias_alpha_syncer
+status       = StableOperatorCandidate
+family       = alpha_syncer
+```
+
+What it does:
+
+```text
+maps visible aliases/synonyms to canonical lexeme proposals
+```
+
+If removed:
+
+```text
+mean_resolution_loss = 0.343017
+mean_false_hold_delta = 0.343017
+```
+
+### Negation Marker alpha-Syncer
+
+```text
+component_id = negation_marker_alpha_syncer
+status       = StableOperatorCandidate
+family       = alpha_syncer
+```
+
+What it does:
+
+```text
+grounds visible not/no/never markers so denied claims do not commit
+```
+
+If removed:
+
+```text
+mean_resolution_loss = 0.112229
+mean_false_hold_delta = 0.112228
+```
+
+### Unit-Code alpha-Syncer
+
+```text
+component_id = unit_code_alpha_syncer
+status       = StableOperatorCandidate
+family       = alpha_syncer
+```
+
+What it does:
+
+```text
+normalizes visible unit/code expressions into canonical unit values
+```
+
+If removed:
+
+```text
+mean_resolution_loss = 0.107182
+mean_false_hold_delta = 0.107182
+```
+
+### Multilingual Surface alpha-Syncer
+
+```text
+component_id = multilingual_surface_alpha_syncer
+status       = StableOperatorCandidate
+family       = alpha_syncer
+```
+
+What it does:
+
+```text
+maps visible multilingual surface forms into canonical lexemes
+```
+
+If removed:
+
+```text
+mean_resolution_loss = 0.108481
+mean_false_hold_delta = 0.108481
+```
+
+### Case-Morphology alpha-Syncer
+
+```text
+component_id = case_morphology_alpha_syncer
+status       = StableOperatorCandidate
+family       = alpha_syncer
+```
+
+What it does:
+
+```text
+normalizes visible plural/case/morphology variants into canonical lexemes
+```
+
+If removed:
+
+```text
+mean_resolution_loss = 0.114821
+mean_false_hold_delta = 0.114821
+```
+
+### Symbol Equivalence Guard
+
+```text
+component_id = symbol_equivalence_guard
+status       = StableOperatorCandidate
+family       = Guard
+```
+
+What it does:
+
+```text
+blocks unsafe glyph equivalence unless visible equivalence evidence supports it
+```
+
+If removed:
+
+```text
+mean_resolution_loss = 0.214492
+mean_false_hold_delta = 0.101957
+```
+
+### Alias Scope Guard
+
+```text
+component_id = alias_scope_guard
+status       = StableOperatorCandidate
+family       = Guard
+```
+
+What it does:
+
+```text
+keeps local, quoted, or archived aliases from leaking into active scope
+```
+
+If removed:
+
+```text
+mean_resolution_loss = 0.225929
+mean_false_hold_delta = 0.113922
+```
+
+### Canonical Lexeme Scribe
+
+```text
+component_id = canonical_lexeme_scribe
+status       = StableOperatorCandidate
+family       = Scribe
+```
+
+What it does:
+
+```text
+renders the resolved canonical lexeme or unit as the external answer action
+```
+
+If removed:
+
+```text
+mean_resolution_loss = 1.000000
+mean_false_hold_delta = 0.775458
+```
+
+### E92 Rejected Controls
+
+```text
+surface_string_matcher_shortcut -> Quarantine
+negation_ignoring_committer     -> Quarantine
+unitless_value_committer        -> Quarantine
+global_alias_overreach          -> Quarantine
+glyph_similarity_overreach      -> Quarantine
+always_defer_control            -> Deprecated
+lexical_alias_clone             -> Redundant
+```
