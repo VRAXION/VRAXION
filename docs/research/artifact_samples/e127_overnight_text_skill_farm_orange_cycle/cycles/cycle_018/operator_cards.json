@@ -1,0 +1,74 @@
+{
+  "rows": [
+    {
+      "candidate_id": "identity_equality_lens",
+      "candidate_status": "Farmable",
+      "family": "Lens",
+      "gap_score": 944.298225,
+      "need": "bind identity/equality claims without collapsing nearby alternatives",
+      "scope": "text_identity_equality_grounding",
+      "support_count": 923,
+      "title": "Identity / Equality Lens"
+    },
+    {
+      "candidate_id": "method_result_split_lens",
+      "candidate_status": "Farmable",
+      "family": "Lens",
+      "gap_score": 659.530025,
+      "need": "separate procedure descriptions from result claims",
+      "scope": "text_method_result_split",
+      "support_count": 649,
+      "title": "Method / Result Split Lens"
+    },
+    {
+      "candidate_id": "limitation_future_work_lens",
+      "candidate_status": "Farmable",
+      "family": "Lens",
+      "gap_score": 562.700625,
+      "need": "ground limitations and future-work caveats before broad reuse",
+      "scope": "text_limitation_future_work",
+      "support_count": 555,
+      "title": "Limitation / Future Work Lens"
+    },
+    {
+      "candidate_id": "probability_odds_lens",
+      "candidate_status": "Farmable",
+      "family": "Lens",
+      "gap_score": 490.880625,
+      "need": "ground probability or odds statements with denominator and subject",
+      "scope": "text_probability_odds_grounding",
+      "support_count": 485,
+      "title": "Probability / Odds Lens"
+    },
+    {
+      "candidate_id": "resource_budget_constraint_lens",
+      "candidate_status": "Farmable",
+      "family": "Lens",
+      "gap_score": 195.950625,
+      "need": "ground resource constraints before choosing an action or mode",
+      "scope": "text_resource_budget_constraint",
+      "support_count": 195,
+      "title": "Resource / Budget Constraint Lens"
+    },
+    {
+      "candidate_id": "form_field_instruction_lens",
+      "candidate_status": "Farmable",
+      "family": "Lens",
+      "gap_score": 145.525625,
+      "need": "bind form instructions to the correct field/action",
+      "scope": "text_form_field_instruction",
+      "support_count": 145,
+      "title": "Form Field Instruction Lens"
+    },
+    {
+      "candidate_id": "source_reliability_caveat_lens",
+      "candidate_status": "Farmable",
+      "family": "Lens",
+      "gap_score": 89.198025,
+      "need": "preserve weak-source caveats before committing claims",
+      "scope": "text_source_reliability_caveat",
+      "support_count": 89,
+      "title": "Source Reliability Caveat Lens"
+    }
+  ]
+}
