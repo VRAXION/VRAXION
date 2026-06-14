@@ -1,0 +1,164 @@
+{
+  "rows": [
+    {
+      "candidate_id": "entity_attribute_relation_lens",
+      "candidate_status": "Farmable",
+      "family": "Lens",
+      "gap_score": 35659.1424,
+      "need": "bind attributes to the correct entity instead of nearby subjects",
+      "scope": "text_entity_attribute_relation",
+      "support_count": 22736,
+      "title": "Entity / Attribute Relation Lens"
+    },
+    {
+      "candidate_id": "frequency_adverb_lens",
+      "candidate_status": "Farmable",
+      "family": "Lens",
+      "gap_score": 21801.5889,
+      "need": "ground frequency qualifiers before turning claims into universal rules",
+      "scope": "text_frequency_adverb_grounding",
+      "support_count": 15666,
+      "title": "Frequency Adverb Lens"
+    },
+    {
+      "candidate_id": "qualifier_degree_lens",
+      "candidate_status": "Farmable",
+      "family": "Lens",
+      "gap_score": 19972.265625,
+      "need": "preserve degree qualifiers attached to claims or quantities",
+      "scope": "text_qualifier_degree_grounding",
+      "support_count": 14625,
+      "title": "Qualifier Degree Lens"
+    },
+    {
+      "candidate_id": "historical_current_state_guard",
+      "candidate_status": "Farmable",
+      "family": "Guard",
+      "gap_score": 17942.4656,
+      "need": "separate historical state from current state before reuse",
+      "scope": "text_historical_current_state",
+      "support_count": 13432,
+      "title": "Historical / Current State Guard"
+    },
+    {
+      "candidate_id": "range_interval_lens",
+      "candidate_status": "Farmable",
+      "family": "Lens",
+      "gap_score": 10769.133225,
+      "need": "bind interval endpoints and avoid treating ranges as single scalar facts",
+      "scope": "text_range_interval_grounding",
+      "support_count": 8823,
+      "title": "Range / Interval Lens"
+    },
+    {
+      "candidate_id": "excluded_included_items_lens",
+      "candidate_status": "Farmable",
+      "family": "Lens",
+      "gap_score": 10467.594225,
+      "need": "keep included and excluded item sets separated",
+      "scope": "text_excluded_included_items",
+      "support_count": 8613,
+      "title": "Excluded / Included Items Lens"
+    },
+    {
+      "candidate_id": "conclusion_recommendation_lens",
+      "candidate_status": "Farmable",
+      "family": "Lens",
+      "gap_score": 3394.590225,
+      "need": "bind recommendations to their supporting evidence and scope",
+      "scope": "text_conclusion_recommendation",
+      "support_count": 3147,
+      "title": "Conclusion / Recommendation Lens"
+    },
+    {
+      "candidate_id": "dependency_chain_lens",
+      "candidate_status": "Farmable",
+      "family": "Lens",
+      "gap_score": 2306.574225,
+      "need": "ground dependency chains and preserve prerequisite order",
+      "scope": "text_dependency_chain_grounding",
+      "support_count": 2187,
+      "title": "Dependency Chain Lens"
+    },
+    {
+      "candidate_id": "finding_claim_lens",
+      "candidate_status": "Farmable",
+      "family": "Lens",
+      "gap_score": 1832.000625,
+      "need": "bind result/finding language to the evidence span and avoid overclaiming",
+      "scope": "text_finding_claim_grounding",
+      "support_count": 1755,
+      "title": "Finding Claim Lens"
+    },
+    {
+      "candidate_id": "uncertainty_resolution_lens",
+      "candidate_status": "Farmable",
+      "family": "Lens",
+      "gap_score": 1671.561225,
+      "need": "track whether an uncertainty has been resolved before answer commit",
+      "scope": "text_uncertainty_resolution",
+      "support_count": 1607,
+      "title": "Uncertainty Resolution Lens"
+    },
+    {
+      "candidate_id": "normalization_mapping_lens",
+      "candidate_status": "Farmable",
+      "family": "Lens",
+      "gap_score": 1259.3321,
+      "need": "ground mapping/normalization rules without applying them outside scope",
+      "scope": "text_normalization_mapping",
+      "support_count": 1222,
+      "title": "Normalization Mapping Lens"
+    },
+    {
+      "candidate_id": "assumption_marker_guard",
+      "candidate_status": "Farmable",
+      "family": "Guard",
+      "gap_score": 1119.7025,
+      "need": "keep assumptions from becoming unconditional committed facts",
+      "scope": "text_assumption_marker_scope",
+      "support_count": 1090,
+      "title": "Assumption Marker Guard"
+    },
+    {
+      "candidate_id": "comparison_control_group_lens",
+      "candidate_status": "Farmable",
+      "family": "Lens",
+      "gap_score": 765.100025,
+      "need": "bind comparison outcomes to baseline/control context",
+      "scope": "text_comparison_control_group",
+      "support_count": 751,
+      "title": "Comparison / Control Group Lens"
+    },
+    {
+      "candidate_id": "sensitive_identifier_lens",
+      "candidate_status": "Farmable",
+      "family": "Lens",
+      "gap_score": 555.5076,
+      "need": "detect sensitive identifiers and keep them from unsafe propagation",
+      "scope": "text_sensitive_identifier_boundary",
+      "support_count": 548,
+      "title": "Sensitive Identifier Lens"
+    },
+    {
+      "candidate_id": "role_permission_assignment_lens",
+      "candidate_status": "Farmable",
+      "family": "Lens",
+      "gap_score": 537.0225,
+      "need": "bind permissions to the correct role or actor",
+      "scope": "text_role_permission_assignment",
+      "support_count": 530,
+      "title": "Role / Permission Assignment Lens"
+    },
+    {
+      "candidate_id": "license_condition_lens",
+      "candidate_status": "Farmable",
+      "family": "Lens",
+      "gap_score": 486.784025,
+      "need": "ground license conditions and avoid over-broad reuse claims",
+      "scope": "text_license_condition_grounding",
+      "support_count": 481,
+      "title": "License Condition Lens"
+    }
+  ]
+}

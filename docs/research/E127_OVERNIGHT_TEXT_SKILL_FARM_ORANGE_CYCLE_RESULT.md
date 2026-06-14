@@ -2,8 +2,8 @@
 
 ```text
 decision = e127_overnight_cycle_positive
-cycle_count = 19
-orange_legendary_candidate_total = 166
+cycle_count = 22
+orange_legendary_candidate_total = 192
 hard_negative_total = 0
 false_commit_total = 0
 wrong_scope_call_total = 0
@@ -21,7 +21,7 @@ candidate discovery
 -> repeat with already-promoted operators excluded
 ```
 
-The supervised overnight loop has completed 19 cycles so far. Several candidate
+The supervised overnight loop has completed 22 cycles so far. Several candidate
 spec packs were added as the currently visible candidate space was exhausted;
 each pack was validated by running the next cycle with active already-promoted
 operators excluded.
@@ -32,11 +32,11 @@ final training, Gemma-level generation, or open-domain reasoning.
 ## Aggregate Metrics
 
 ```text
-selected_candidate_total = 166
-orange_legendary_candidate_total = 166
-mutation_attempts_total = 807486
-accepted_mutations_total = 5262
-rollback_count_total = 802224
+selected_candidate_total = 192
+orange_legendary_candidate_total = 192
+mutation_attempts_total = 933668
+accepted_mutations_total = 6075
+rollback_count_total = 927593
 
 hard_negative_total = 0
 false_commit_total = 0
@@ -44,17 +44,17 @@ wrong_scope_call_total = 0
 unsupported_answer_total = 0
 ```
 
-## Latest Successful Cycle 018 Metrics
+## Latest Successful Cycle 021 Metrics
 
 ```text
-selected_candidate_count = 7
-orange_legendary_candidate_count = 7
-candidate_pool_count = 27
-farmable_candidate_count = 7
-qualified_activation_min = 300928
-mutation_attempts_total = 33271
-accepted_mutations_total = 203
-rollback_count_total = 33068
+selected_candidate_count = 10
+orange_legendary_candidate_count = 10
+candidate_pool_count = 33
+farmable_candidate_count = 10
+qualified_activation_min = 301026
+mutation_attempts_total = 49338
+accepted_mutations_total = 307
+rollback_count_total = 49031
 mean_selected_prune_ratio = 0.62
 
 reload_match_rate = 1.0
@@ -68,19 +68,22 @@ wrong_scope_call_total = 0
 unsupported_answer_total = 0
 ```
 
-## Latest Successful Cycle 018 Orange Operators
+## Latest Successful Cycle 021 Orange Operators
 
 ```text
-identity_equality_lens
-method_result_split_lens
-limitation_future_work_lens
-probability_odds_lens
-resource_budget_constraint_lens
-form_field_instruction_lens
-source_reliability_caveat_lens
+research_question_lens
+meeting_action_item_lens
+source_conflict_resolution_lens
+calculation_result_phrase_lens
+input_output_contract_lens
+cache_staleness_guard
+rhetorical_question_guard
+evidence_strength_marker_lens
+measurement_uncertainty_lens
+cause_mitigation_pair_lens
 ```
 
-Cycle 019 then scanned 40,000 rows and stopped cleanly with no farmable
+Cycle 022 then scanned 40,000 rows and stopped cleanly with no farmable
 candidate left in the current candidate set.
 
 ## Current Boundary
