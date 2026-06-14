@@ -1,0 +1,7 @@
+{
+  "artifact_contract": "E93_AGENCY_GUARD_COMMIT_SAFETY_EXPANSION",
+  "decision": "e93_agency_guard_commit_safety_expansion_confirmed",
+  "sample_pack": "docs\\research\\artifact_samples\\e93_agency_guard_commit_safety_expansion",
+  "stable_operator_candidate_count": 8,
+  "unsafe_final_selected": 0
+}

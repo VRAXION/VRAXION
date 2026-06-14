@@ -1,0 +1,17 @@
+{
+  "artifact_contract": "E93_AGENCY_GUARD_COMMIT_SAFETY_EXPANSION",
+  "case_count": 11520,
+  "direct_flow_write_allowed": false,
+  "families": [
+    "ask_for_more_evidence",
+    "clean_commit",
+    "ground_conflict",
+    "local_scope_exit",
+    "missing_trace_dependency",
+    "proposal_collision",
+    "quorum_commit",
+    "recency_update",
+    "stale_cycle_replay"
+  ],
+  "proposal_field_commit_boundary": true
+}

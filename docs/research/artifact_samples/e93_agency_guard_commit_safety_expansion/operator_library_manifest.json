@@ -1,0 +1,135 @@
+{
+  "artifact_contract": "E93_AGENCY_GUARD_COMMIT_SAFETY_EXPANSION",
+  "boundary": "controlled Proposal Field commit-safety probe; not open-domain model behavior",
+  "canonical_term": "Operator",
+  "families": [
+    "Guard",
+    "Scribe",
+    "T-Stab",
+    "control",
+    "unsafe_control"
+  ],
+  "legacy_alias": "Pocket",
+  "operators": [
+    {
+      "cost": 0.13,
+      "description": "Detects conflicting same-target proposals before commit.",
+      "display_name": "Proposal Collision Guard",
+      "family": "Guard",
+      "operator_id": "proposal_collision_guard",
+      "role": "useful"
+    },
+    {
+      "cost": 0.14,
+      "description": "Blocks proposals that contradict stable Ground without revocation evidence.",
+      "display_name": "Ground Conflict Guard",
+      "family": "Guard",
+      "operator_id": "ground_conflict_guard",
+      "role": "useful"
+    },
+    {
+      "cost": 0.12,
+      "description": "Prefers newer verified evidence over older active evidence.",
+      "display_name": "Evidence Recency Guard",
+      "family": "Guard",
+      "operator_id": "evidence_recency_guard",
+      "role": "useful"
+    },
+    {
+      "cost": 0.14,
+      "description": "Requires every proposal dependency to have visible trace support.",
+      "display_name": "Trace Dependency Coverage Guard",
+      "family": "Guard",
+      "operator_id": "trace_dependency_coverage_guard",
+      "role": "useful"
+    },
+    {
+      "cost": 0.12,
+      "description": "Rejects stale-cycle proposals replayed into the current decision cycle.",
+      "display_name": "Cycle Freshness Guard",
+      "family": "Guard",
+      "operator_id": "cycle_freshness_guard",
+      "role": "useful"
+    },
+    {
+      "cost": 0.13,
+      "description": "Stabilizes cleanup of local bindings after their scope ends.",
+      "display_name": "Local Scope Exit T-Stab",
+      "family": "T-Stab",
+      "operator_id": "local_scope_exit_t_stab",
+      "role": "useful"
+    },
+    {
+      "cost": 0.13,
+      "description": "Requires compatible evidence quorum for high-risk commits.",
+      "display_name": "Agency Commit Quorum Guard",
+      "family": "Guard",
+      "operator_id": "agency_commit_quorum_guard",
+      "role": "useful"
+    },
+    {
+      "cost": 0.1,
+      "description": "Renders COMMIT/REJECT/DEFER/ASK actions after guard checks.",
+      "display_name": "Safe Commit Action Scribe",
+      "family": "Scribe",
+      "operator_id": "safe_commit_action_scribe",
+      "role": "useful"
+    },
+    {
+      "cost": 0.03,
+      "description": "Unsafe control: commits whichever proposal appears first.",
+      "display_name": "First Proposal Committer",
+      "family": "unsafe_control",
+      "operator_id": "first_proposal_committer",
+      "role": "unsafe"
+    },
+    {
+      "cost": 0.04,
+      "description": "Unsafe control: commits majority proposals without trace coverage.",
+      "display_name": "Majority Without Trace Committer",
+      "family": "unsafe_control",
+      "operator_id": "majority_without_trace_committer",
+      "role": "unsafe"
+    },
+    {
+      "cost": 0.03,
+      "description": "Unsafe control: accepts stale-cycle proposals.",
+      "display_name": "Stale Cycle Committer",
+      "family": "unsafe_control",
+      "operator_id": "stale_cycle_committer",
+      "role": "unsafe"
+    },
+    {
+      "cost": 0.04,
+      "description": "Unsafe control: overwrites stable Ground without revocation evidence.",
+      "display_name": "Ground Overwrite Committer",
+      "family": "unsafe_control",
+      "operator_id": "ground_overwrite_committer",
+      "role": "unsafe"
+    },
+    {
+      "cost": 0.04,
+      "description": "Unsafe control: leaks local bindings after scope exit.",
+      "display_name": "Local Scope Leak Committer",
+      "family": "unsafe_control",
+      "operator_id": "local_scope_leak_committer",
+      "role": "unsafe"
+    },
+    {
+      "cost": 0.02,
+      "description": "Control: rejects even safe commits.",
+      "display_name": "Always Reject Control",
+      "family": "control",
+      "operator_id": "always_reject_control",
+      "role": "noop"
+    },
+    {
+      "cost": 0.18,
+      "description": "Redundant quorum guard support without unique value.",
+      "display_name": "Quorum Guard Echo Clone",
+      "family": "Guard",
+      "operator_id": "quorum_guard_clone",
+      "role": "redundant"
+    }
+  ]
+}

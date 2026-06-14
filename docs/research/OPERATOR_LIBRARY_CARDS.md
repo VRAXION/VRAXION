@@ -1120,3 +1120,200 @@ glyph_similarity_overreach      -> Quarantine
 always_defer_control            -> Deprecated
 lexical_alias_clone             -> Redundant
 ```
+
+## E93 Agency/Guard Commit-Safety Expansion Cards
+
+Source:
+
+```text
+E93_AGENCY_GUARD_COMMIT_SAFETY_EXPANSION
+decision = e93_agency_guard_commit_safety_expansion_confirmed
+```
+
+Boundary:
+
+```text
+Proposal Field -> Agency -> Flow/Ground commit safety only
+direct Flow write remains disallowed
+not open-domain model behavior
+```
+
+### Proposal Collision Guard
+
+```text
+component_id = proposal_collision_guard
+status       = StableOperatorCandidate
+family       = Guard
+```
+
+What it does:
+
+```text
+detects conflicting same-target proposals before commit
+```
+
+If removed:
+
+```text
+mean_commit_safety_loss = 0.105937
+mean_missed_commit_delta = 0.000000
+```
+
+### Ground Conflict Guard
+
+```text
+component_id = ground_conflict_guard
+status       = StableOperatorCandidate
+family       = Guard
+```
+
+What it does:
+
+```text
+blocks proposals that contradict stable Ground without revocation evidence
+```
+
+If removed:
+
+```text
+mean_commit_safety_loss = 0.113759
+mean_missed_commit_delta = 0.000000
+```
+
+### Evidence Recency Guard
+
+```text
+component_id = evidence_recency_guard
+status       = StableOperatorCandidate
+family       = Guard
+```
+
+What it does:
+
+```text
+prefers newer verified evidence over older active evidence
+```
+
+If removed:
+
+```text
+mean_commit_safety_loss = 0.113739
+mean_missed_commit_delta = 0.113739
+```
+
+### Trace Dependency Coverage Guard
+
+```text
+component_id = trace_dependency_coverage_guard
+status       = StableOperatorCandidate
+family       = Guard
+```
+
+What it does:
+
+```text
+requires every proposal dependency to have visible trace support
+```
+
+If removed:
+
+```text
+mean_commit_safety_loss = 0.453563
+mean_missed_commit_delta = 0.336358
+```
+
+### Cycle Freshness Guard
+
+```text
+component_id = cycle_freshness_guard
+status       = StableOperatorCandidate
+family       = Guard
+```
+
+What it does:
+
+```text
+rejects stale-cycle proposals replayed into the current decision cycle
+```
+
+If removed:
+
+```text
+mean_commit_safety_loss = 0.213919
+mean_missed_commit_delta = 0.105245
+```
+
+### Local Scope Exit T-Stab
+
+```text
+component_id = local_scope_exit_t_stab
+status       = StableOperatorCandidate
+family       = T-Stab
+```
+
+What it does:
+
+```text
+stabilizes cleanup of local bindings after their scope ends
+```
+
+If removed:
+
+```text
+mean_commit_safety_loss = 0.108350
+mean_missed_commit_delta = 0.000000
+```
+
+### Agency Commit Quorum Guard
+
+```text
+component_id = agency_commit_quorum_guard
+status       = StableOperatorCandidate
+family       = Guard
+```
+
+What it does:
+
+```text
+requires compatible evidence quorum for high-risk commits
+```
+
+If removed:
+
+```text
+mean_commit_safety_loss = 0.227090
+mean_missed_commit_delta = 0.117374
+```
+
+### Safe Commit Action Scribe
+
+```text
+component_id = safe_commit_action_scribe
+status       = StableOperatorCandidate
+family       = Scribe
+```
+
+What it does:
+
+```text
+renders COMMIT, REJECT, DEFER, and ASK actions after guard checks
+```
+
+If removed:
+
+```text
+mean_commit_safety_loss = 1.000000
+mean_missed_commit_delta = 0.336358
+```
+
+### E93 Rejected Controls
+
+```text
+first_proposal_committer          -> Quarantine
+majority_without_trace_committer  -> Quarantine
+stale_cycle_committer             -> Quarantine
+ground_overwrite_committer        -> Quarantine
+local_scope_leak_committer        -> Quarantine
+always_reject_control             -> Deprecated
+quorum_guard_clone                -> Redundant
+```
