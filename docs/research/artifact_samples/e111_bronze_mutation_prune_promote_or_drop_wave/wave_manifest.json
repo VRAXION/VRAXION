@@ -1,0 +1,10 @@
+{
+  "artifact_contract": "E111_BRONZE_MUTATION_PRUNE_PROMOTE_OR_DROP_WAVE",
+  "boundary": "Bronze mutation/prune/challenger wave; not Diamond/Core/PermaCore promotion; not final training",
+  "candidate_source_rank": "Bronze",
+  "hard_negative_stops_promotion": true,
+  "mutation_mode": "active_variant_search_mutation_prune_challenger_accept_reject_rollback",
+  "source": "target\\pilot_wave\\e109_operator_rank_ladder_and_golden_watch_probation_mode",
+  "target_rank": "Gold_or_drop",
+  "wave": 2
+}

@@ -12,6 +12,7 @@ from typing import Any
 
 DEFAULT_E109 = Path("target/pilot_wave/e109_operator_rank_ladder_and_golden_watch_probation_mode")
 DEFAULT_E110 = Path("target/pilot_wave/e110_promote_or_drop_operator_grind_wave1")
+DEFAULT_E111 = Path("target/pilot_wave/e111_bronze_mutation_prune_promote_or_drop_wave")
 DEFAULT_OUT = Path("target/pilot_wave/operator_rank_dashboard/index.html")
 
 
@@ -51,6 +52,14 @@ def compact_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
         "qualified_activation_add",
         "rank_before",
         "rank_after",
+        "e111_wave2_outcome",
+        "selected_variant_id",
+        "selected_variant_type",
+        "selected_variant_net_score",
+        "mutation_attempts",
+        "accepted_mutations",
+        "rejected_mutations",
+        "rollback_count",
     ]
     return [{key: row.get(key) for key in keep} for row in rows]
 
@@ -105,9 +114,64 @@ def merge_e110(rows: list[dict[str, Any]], e110: Path | None) -> tuple[list[dict
     }
 
 
-def build_payload(e109: Path, e110: Path | None = None) -> dict[str, Any]:
+def merge_e111(rows: list[dict[str, Any]], e111: Path | None) -> tuple[list[dict[str, Any]], dict[str, Any] | None]:
+    if not e111 or not (e111 / "wave_results.json").exists():
+        return rows, None
+    wave = read_json(e111 / "wave_results.json")["rows"]
+    wave_by_id = {row["operator_id"]: row for row in wave}
+    merged: list[dict[str, Any]] = []
+    for row in rows:
+        update = wave_by_id.get(row["operator_id"])
+        if not update:
+            merged.append(row)
+            continue
+        next_row = dict(row)
+        for key in [
+            "rank_after",
+            "rank_before",
+            "wave2_outcome",
+            "selected_variant_id",
+            "selected_variant_type",
+            "selected_variant_net_score",
+            "qualified_activation",
+            "qualified_activation_add",
+            "positive",
+            "neutral_valid",
+            "neutral_waste",
+            "neutral_waste_rate",
+            "hard_negative",
+            "rule_of_three_upper_failure_bound",
+            "combined_family_coverage",
+            "campaign_count",
+            "counterfactual_value",
+            "activated_gain",
+            "ablation_loss",
+            "reload_shadow_pass",
+            "challenger_pass",
+            "prune_pass",
+            "mutation_attempts",
+            "accepted_mutations",
+            "rejected_mutations",
+            "rollback_count",
+        ]:
+            if key in update:
+                next_row[key if key != "wave2_outcome" else "e111_wave2_outcome"] = update[key]
+        next_row["rank"] = update.get("rank_after", next_row["rank"])
+        next_row["watch_state"] = "E111MutatedGoldConfirmed" if next_row["rank"] == "Gold" else next_row.get("watch_state")
+        merged.append(next_row)
+    return merged, {
+        "summary": read_json(e111 / "summary.json"),
+        "aggregate": read_json(e111 / "aggregate_metrics.json"),
+        "promotion": read_json(e111 / "promotion_report.json"),
+        "mutation": read_json(e111 / "mutation_summary.json"),
+        "duration": read_json(e111 / "duration_report.json"),
+    }
+
+
+def build_payload(e109: Path, e110: Path | None = None, e111: Path | None = None) -> dict[str, Any]:
     rank_results = read_json(e109 / "rank_results.json")
     rows, e110_payload = merge_e110(compact_rows(rank_results["rows"]), e110)
+    rows, e111_payload = merge_e111(rows, e111)
     counts = rank_counts(rows)
     aggregate = read_json(e109 / "aggregate_metrics.json")
     aggregate = {
@@ -124,11 +188,12 @@ def build_payload(e109: Path, e110: Path | None = None) -> dict[str, Any]:
     summary = {
         **summary,
         "rank_counts": counts,
-        "latest_wave": "E110 Wave 1" if e110_payload else "E109",
+        "latest_wave": "E111 Wave 2" if e111_payload else "E110 Wave 1" if e110_payload else "E109",
     }
     return {
         "summary": summary,
         "e110": e110_payload,
+        "e111": e111_payload,
         "aggregate": aggregate,
         "policy": read_json(e109 / "rank_policy_manifest.json"),
         "watch": read_json(e109 / "golden_watch_report.json"),
@@ -502,8 +567,10 @@ def render_html(payload: dict[str, Any]) -> str:
           <div>Campaign count</div><div>${{fmt(row.campaign_count)}}</div>
           <div>Counterfactual value</div><div>${{fmt(row.counterfactual_value)}} · gain ${{fmt(row.activated_gain)}} · ablation ${{fmt(row.ablation_loss)}}</div>
           <div>Reload / Challenger / Prune</div><div>${{row.reload_shadow_pass ? "reload pass" : "reload no"}} · ${{row.challenger_pass ? "challenger pass" : "challenger no"}} · ${{row.prune_pass ? "prune pass" : "prune no"}}</div>
-          <div>Status source</div><div>E107 ${{htmlEscape(row.e107_status)}} · E108 ${{htmlEscape(row.e108_status)}}${{row.e110_wave1_outcome ? " · E110 " + htmlEscape(row.e110_wave1_outcome) : ""}}</div>
-          <div>E110 activation add</div><div>${{fmt(row.qualified_activation_add || 0)}}</div>
+          <div>Status source</div><div>E107 ${{htmlEscape(row.e107_status)}} · E108 ${{htmlEscape(row.e108_status)}}${{row.e110_wave1_outcome ? " · E110 " + htmlEscape(row.e110_wave1_outcome) : ""}}${{row.e111_wave2_outcome ? " · E111 " + htmlEscape(row.e111_wave2_outcome) : ""}}</div>
+          <div>Latest activation add</div><div>${{fmt(row.qualified_activation_add || 0)}}</div>
+          <div>E111 selected variant</div><div>${{htmlEscape(row.selected_variant_type || "")}}<br><span class="detail-id">${{htmlEscape(row.selected_variant_id || "")}}</span></div>
+          <div>E111 mutation budget</div><div>${{fmt(row.mutation_attempts || 0)}} attempts · ${{fmt(row.accepted_mutations || 0)}} accepted · ${{fmt(row.rollback_count || 0)}} rollback</div>
         </div>
         <div class="note">Interpretation: rank is scoped. This operator is not Core memory unless a later Core probation grind passes the much higher qualified-activation and no-harm gates.</div>
       `;
@@ -531,12 +598,14 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--e109", default=str(DEFAULT_E109))
     parser.add_argument("--e110", default=str(DEFAULT_E110))
+    parser.add_argument("--e111", default=str(DEFAULT_E111))
     parser.add_argument("--out", default=str(DEFAULT_OUT))
     args = parser.parse_args()
     e109 = Path(args.e109)
     e110 = Path(args.e110)
+    e111 = Path(args.e111)
     out = Path(args.out)
-    payload = build_payload(e109, e110 if e110.exists() else None)
+    payload = build_payload(e109, e110 if e110.exists() else None, e111 if e111.exists() else None)
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(render_html(payload), encoding="utf-8")
     print(json.dumps({"out": str(out), "operator_count": len(payload["rows"])}, sort_keys=True))

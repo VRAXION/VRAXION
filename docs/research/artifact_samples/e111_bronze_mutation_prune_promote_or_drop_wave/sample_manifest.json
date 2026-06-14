@@ -1,0 +1,6 @@
+{
+  "artifact_contract": "E111_BRONZE_MUTATION_PRUNE_PROMOTE_OR_DROP_WAVE",
+  "sample_only": true,
+  "sample_row_count": 512,
+  "source": "target\\pilot_wave\\e111_bronze_mutation_prune_promote_or_drop_wave"
+}

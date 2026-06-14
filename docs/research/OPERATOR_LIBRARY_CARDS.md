@@ -4100,6 +4100,79 @@ regression_recheck_step_guard
 next_action_selector_scribe
 ```
 
+## E111 Bronze Mutation Prune Promote Or Drop Wave
+
+Decision:
+
+```text
+decision = e111_bronze_mutation_prune_wave_gold_conversion_confirmed
+checker_failure_count = 0
+sample_only_checker_failure_count = 0
+```
+
+Boundary:
+
+```text
+Bronze-to-Gold-or-drop mutation/prune wave only
+not Diamond promotion
+not Core promotion
+not final training
+```
+
+Wave 2 stats:
+
+```text
+candidate_count = 87
+promoted_to_gold_count = 87
+dropped_deprecated_count = 0
+red_flag_count = 0
+
+mutated_candidate_count = 87
+pruned_selected_count = 87
+challenger_selected_count = 0
+
+mutation_attempts_total = 52103
+accepted_mutations_total = 703
+rejected_mutations_total = 51400
+rollback_count_total = 51400
+prune_attempts_total = 341
+challenger_attempts_total = 261
+
+hard_negative_total = 0
+wrong_scope_call_rate = 0.000000
+false_commit_rate = 0.000000
+unsupported_answer_rate = 0.000000
+negative_transfer_rate = 0.000000
+```
+
+Post-wave rank summary after E110 + E111:
+
+```text
+Gold = 136
+Silver = 0
+Bronze = 0
+DiamondCandidate = 0
+RedFlag = 0
+Deprecated = 3
+```
+
+Every E111 promotion selected:
+
+```text
+selected_variant_type = mutation_plus_prune
+```
+
+Runtime measurement:
+
+```text
+measured_wall_seconds = 0.012
+duration_per_candidate_ms = 0.138
+estimated_seconds_per_1000_candidates = 0.138
+```
+
+Note: this runtime is a deterministic probe runtime envelope, not a
+hardware-bound estimate for real final training.
+
 ## E110 Promote Or Drop Operator Grind Wave 1
 
 Decision:

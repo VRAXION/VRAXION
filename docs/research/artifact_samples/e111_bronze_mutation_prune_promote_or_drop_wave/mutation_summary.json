@@ -1,0 +1,18 @@
+{
+  "accepted_mutations_total": 703,
+  "challenger_attempts_total": 261,
+  "challenger_selected_count": 0,
+  "mutation_attempts_total": 52103,
+  "mutation_mode": "active_variant_search_mutation_prune_challenger_accept_reject_rollback",
+  "prune_attempts_total": 341,
+  "pruned_selected_count": 87,
+  "rejected_mutations_total": 51400,
+  "rollback_count_total": 51400,
+  "variant_types": [
+    "base_unmodified",
+    "scope_adapter_mutation",
+    "io_contract_prune",
+    "mutation_plus_prune",
+    "sibling_challenger"
+  ]
+}
