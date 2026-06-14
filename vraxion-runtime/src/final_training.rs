@@ -166,6 +166,22 @@ const TRAINING_CANDIDATES: [StorePromotionCandidate; 16] = [
     },
 ];
 
+pub(crate) fn training_candidates_for_rounds(rounds: u64) -> Vec<StorePromotionCandidate> {
+    let mut candidates = Vec::new();
+    for round in 0..rounds {
+        for idx in 0..4 {
+            let candidate_index = ((round as usize * 4) + idx) % TRAINING_CANDIDATES.len();
+            let candidate = TRAINING_CANDIDATES[candidate_index];
+            if !candidates.iter().any(|existing: &StorePromotionCandidate| {
+                existing.pocket_uid == candidate.pocket_uid
+            }) {
+                candidates.push(candidate);
+            }
+        }
+    }
+    candidates
+}
+
 impl FinalTrainingConfig {
     pub fn new(rounds: u64, out: PathBuf) -> Self {
         Self {

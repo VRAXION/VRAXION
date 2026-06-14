@@ -18,6 +18,7 @@ pub mod egress;
 pub mod final_bake;
 pub mod final_training;
 pub mod final_training_supervisor;
+pub mod global_library_supervisor;
 pub mod library;
 pub mod manager;
 pub mod next_mutation;
@@ -49,6 +50,9 @@ pub use final_training::{
 };
 pub use final_training_supervisor::{
     run_final_training_supervisor, FinalTrainingSupervisorConfig, FinalTrainingSupervisorSummary,
+};
+pub use global_library_supervisor::{
+    run_global_library_supervisor, GlobalLibrarySupervisorConfig, GlobalLibrarySupervisorSummary,
 };
 pub use library::{
     PocketLibraryStore, StoreDecision, StoreGuardReason, StoreMutationStats,
