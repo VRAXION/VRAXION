@@ -1,0 +1,10 @@
+{
+  "artifact_contract": "E110_PROMOTE_OR_DROP_OPERATOR_GRIND_WAVE1",
+  "boundary": "Wave 1 Silver->Gold pressure; not Diamond/Core promotion",
+  "candidate_count": 35,
+  "decision": "e110_wave1_silver_to_gold_pressure_confirmed",
+  "kept_scoped_silver_count": 0,
+  "promoted_to_gold_count": 35,
+  "red_flag_count": 0,
+  "sample_pack": "docs\\research\\artifact_samples\\e110_promote_or_drop_operator_grind_wave1"
+}

@@ -1,0 +1,10 @@
+{
+  "artifact_contract": "E110_PROMOTE_OR_DROP_OPERATOR_GRIND_WAVE1",
+  "boundary": "promotion pressure only; not Diamond/Core/PermaCore promotion",
+  "candidate_source_rank": "Silver",
+  "hard_negative_stops_promotion": true,
+  "mutation_mode": "no capability mutation; scoped pressure plus shadow prune/challenger only",
+  "source": "target\\pilot_wave\\e109_operator_rank_ladder_and_golden_watch_probation_mode",
+  "target_rank": "Gold",
+  "wave": 1
+}

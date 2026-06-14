@@ -1,0 +1,11 @@
+{
+  "hash": "6ca6eb3588c18d9d48763a9afd15378d4e8dafb9a9da3e0c8dbfb7de0ef1ffdc",
+  "payload_keys": [
+    "aggregate",
+    "challenger",
+    "input_report",
+    "promotion_report",
+    "wave_manifest",
+    "wave_results"
+  ]
+}

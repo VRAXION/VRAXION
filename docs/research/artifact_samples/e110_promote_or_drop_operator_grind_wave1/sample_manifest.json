@@ -1,0 +1,6 @@
+{
+  "artifact_contract": "E110_PROMOTE_OR_DROP_OPERATOR_GRIND_WAVE1",
+  "sample_only": true,
+  "sample_row_count": 208,
+  "source": "target\\pilot_wave\\e110_promote_or_drop_operator_grind_wave1"
+}

@@ -1,0 +1,22 @@
+{
+  "campaign_count_after_min": 4,
+  "candidate_count": 35,
+  "challenger_replacement_count": 0,
+  "false_commit_rate": 0.0,
+  "family_coverage_after_min": 5,
+  "hard_negative_total": 0,
+  "kept_scoped_silver_count": 0,
+  "negative_transfer_rate": 0.0,
+  "neutral_waste_over_threshold_count": 0,
+  "neutral_waste_total": 0,
+  "promoted_to_gold_count": 35,
+  "pruned_variant_replacement_count": 0,
+  "qualified_activation_added_total": 54405,
+  "qualified_activation_after_mean": 3486.4,
+  "qualified_activation_after_min": 3192,
+  "red_flag_count": 0,
+  "reload_match_rate": 1.0,
+  "seconds": 0.003,
+  "unsupported_answer_rate": 0.0,
+  "wrong_scope_call_rate": 0.0
+}
