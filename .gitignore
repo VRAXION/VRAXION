@@ -41,6 +41,7 @@ venv/
 /vault/
 /reports/
 /results/
+/output/
 
 # OS cruft
 .DS_Store
@@ -73,3 +74,7 @@ nul
 # Rust build artifacts
 target/
 /.claude/
+
+# Local frontend build artifacts
+/tools/visual_lab/.svelte-kit/
+/tools/visual_lab/node_modules/

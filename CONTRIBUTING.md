@@ -1,23 +1,25 @@
 # Contributing
 
-VRAXION `main` is intentionally small. The active line is the E73 Rust runtime
-slice in `vraxion-runtime/`; older Python, legacy Rust, probe, Pages, and
-research-output surfaces are archived, not active mainline.
+VRAXION `main` is intentionally small. The active runtime line is
+`vraxion-runtime/`; current post-release evidence for governed pocket validation
+lives in `docs/research/` and `scripts/probes/`.
 
 ## Current Scope
 
 Current mainline work belongs in:
 
-- `vraxion-runtime/` - Rust runtime mechanics and preflight binaries.
+- `vraxion-runtime/` - Rust runtime mechanics and preflight/final-training binaries.
+- `scripts/probes/` - checked evidence probes that belong to the current mainline.
 - `README.md`, `BETA.md`, `VALIDATED_FINDINGS.md`, `docs/CURRENT_STATUS.md`,
   `docs/GETTING_STARTED.md`, and `docs/VERSION.json` - public current state.
-- `docs/research/E73_RUST_FINAL_BAKE_PREFLIGHT_*.md` and
-  `docs/research/artifact_samples/e73_rust_final_bake_preflight/` - current
-  final-bake evidence bundle.
+- `docs/research/E79_*` - latest released training-data/curriculum readiness evidence.
+- `docs/research/E80_*` through `docs/research/E85_*` - current post-release
+  dataset-backed scoring and CALC-SCRIBE evidence.
 - GitHub wiki timeline pages - historical record and consolidation manifest.
 
 Do not reintroduce old beta/grower/byte-pipeline/probe material as current
-guidance unless it is explicitly promoted back into the E73+ runtime line.
+guidance unless it is explicitly promoted back into the E79+ runtime/evidence
+line.
 
 ## Validation
 
@@ -30,12 +32,16 @@ cargo clippy -p vraxion-runtime --all-targets -- -D warnings
 cargo test -p vraxion-runtime
 ```
 
-For final-bake/preflight changes, also run a bounded smoke with progress
+For final-training/preflight changes, also run bounded smokes with progress
 artifacts:
 
 ```bash
-cargo run --release -p vraxion-runtime --bin final_bake_preflight -- 1000 target/ci/e73_final_bake_smoke
+cargo run --release -p vraxion-runtime --bin training_data_readiness -- 3 8 target/ci/e79_training_data_readiness_smoke
+cargo run --release -p vraxion-runtime --bin final_train -- 3 8 target/ci/e79_final_train_smoke --preflight-rounds 4 --checkpoint-interval 4
 ```
+
+For post-release evidence changes, include the matching probe and checker under
+`scripts/probes/`, and record the result under `docs/research/`.
 
 Long or expensive runs must write partial progress artifacts continuously.
 End-only reporting is not acceptable.
@@ -47,7 +53,7 @@ tag, wiki record, or retained timeline entry exists. The current cleanup restore
 point is:
 
 ```text
-archive/repo/pre-e73-public-surface-cleanup-2026-06-13
+archive/repo/pre-e74-public-surface-cleanup-2026-06-13
 ```
 
 ## Contribution Terms

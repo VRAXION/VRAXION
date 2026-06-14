@@ -1,6 +1,6 @@
 cff-version: 1.2.0
 message: "If you use this software, please cite it as below."
-title: "VRAXION E79 Rust Runtime"
+title: "VRAXION INSTNCT Runtime and E85 Evidence"
 version: "v5.0.0-e79.0"
 date-released: "2026-06-14"
 type: software
@@ -16,3 +16,5 @@ keywords:
   - checkpoint-resume
   - training-data-readiness
   - final-train
+  - calc-scribe
+  - visible-trace-validation
