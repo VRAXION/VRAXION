@@ -1,0 +1,16 @@
+{
+  "artifact_contract": "E109_OPERATOR_RANK_LADDER_AND_GOLDEN_WATCH_PROBATION_MODE",
+  "boundary": "rank policy only; not Core/TrueGolden promotion",
+  "decision": "e109_rank_ladder_and_golden_watch_confirmed",
+  "gold_watch_pass_count": 14,
+  "rank_counts": {
+    "Bronze": 87,
+    "Deprecated": 3,
+    "DiamondCandidate": 0,
+    "Gold": 14,
+    "RedFlag": 0,
+    "Silver": 35
+  },
+  "sample_pack": "docs\\research\\artifact_samples\\e109_operator_rank_ladder_and_golden_watch_probation_mode",
+  "silver_watch_pass_count": 35
+}

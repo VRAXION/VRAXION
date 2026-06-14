@@ -1,0 +1,19 @@
+{
+  "bronze_count": 87,
+  "challenger_replacement_count": 0,
+  "deprecated_count": 3,
+  "diamond_candidate_count": 0,
+  "gold_count": 14,
+  "gold_watch_pass_count": 14,
+  "hard_negative_freeze_count": 0,
+  "hard_negative_total": 0,
+  "max_upper_failure_bound_for_gold": 0.00069881,
+  "neutral_waste_over_threshold_count": 0,
+  "operator_count": 139,
+  "pruned_variant_replacement_count": 0,
+  "qualified_activation_total": 128423,
+  "red_flag_count": 0,
+  "seconds": 0.006,
+  "silver_count": 35,
+  "silver_watch_pass_count": 35
+}

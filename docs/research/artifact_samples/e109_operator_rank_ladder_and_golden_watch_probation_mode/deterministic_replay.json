@@ -1,0 +1,11 @@
+{
+  "hash": "7e333b1e6f4c038e94e55db39977c3dbb4d840911c9625c6b85176a496838944",
+  "payload_keys": [
+    "aggregate",
+    "challenger",
+    "input_report",
+    "policy",
+    "rank_results",
+    "watch"
+  ]
+}

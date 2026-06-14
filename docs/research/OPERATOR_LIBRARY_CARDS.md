@@ -4099,3 +4099,113 @@ completion_gate_all_requirements_guard
 regression_recheck_step_guard
 next_action_selector_scribe
 ```
+
+## E109 Operator Rank Ladder And GoldenWatch Probation Mode
+
+Decision:
+
+```text
+decision = e109_rank_ladder_and_golden_watch_confirmed
+checker_failure_count = 0
+sample_only_checker_failure_count = 0
+```
+
+Boundary:
+
+```text
+rank policy only
+scope-bound rank labels only
+not Core promotion
+not TrueGolden promotion
+not final training
+```
+
+Rank thresholds:
+
+```text
+Bronze = controlled-scope active candidate
+Silver = >= 300 qualified activation, 0 hard negative
+Gold = >= 3000 qualified activation, >= 5 combined family coverage, >= 3 campaigns
+DiamondCandidate = >= 30000 qualified activation, not reached in E109
+```
+
+Rank counts:
+
+```text
+Bronze = 87
+Silver = 35
+Gold = 14
+DiamondCandidate = 0
+RedFlag = 0
+Deprecated = 3
+```
+
+Safety:
+
+```text
+qualified_activation_total = 128423
+hard_negative_total = 0
+hard_negative_freeze_count = 0
+neutral_waste_over_threshold_count = 0
+challenger_replacement_count = 0
+pruned_variant_replacement_count = 0
+```
+
+### E109 Scoped Gold Operators
+
+```text
+evidence_conflict_detector_lens
+source_priority_resolver_lens
+temporal_latest_span_t_stab
+multi_span_consistency_guard
+contradiction_to_defer_guard
+missing_dependency_question_scribe
+clarified_query_focus_lens
+conflict_resolved_proposal_scribe
+resolved_evidence_coverage_guard
+answerability_decision_guard
+grounded_answer_template_scribe
+evidence_citation_link_scribe
+unsupported_answer_defer_guard
+final_turn_answer_continuity_guard
+```
+
+### E109 Scoped Silver Operators
+
+```text
+text_frame_boundary_lens
+evidence_span_locator_lens
+source_attribution_lens
+negation_contrast_scope_guard
+quote_scope_boundary_guard
+irrelevant_span_filter_guard
+text_evidence_proposal_scribe
+ask_when_dependency_missing_scribe
+answer_trace_integrity_t_stab
+pending_question_trace_lens
+clarification_span_locator_lens
+clarification_dependency_binder_guard
+state_repair_patch_scribe
+stale_pending_question_guard
+irrelevant_clarification_filter_guard
+repaired_answer_reentry_scribe
+repair_trace_integrity_t_stab
+turn_boundary_cycle_lens
+pending_dependency_stack_t_stab
+active_turn_state_router_guard
+multi_turn_ground_delta_scribe
+clarification_chain_join_lens
+cross_turn_stale_context_guard
+unresolved_state_carry_scribe
+summary_relevance_span_selector_lens
+required_fact_preservation_guard
+summary_drift_detection_guard
+task_requirement_decomposition_lens
+deliverable_evidence_mapping_scribe
+step_status_transition_guard
+blocked_dependency_tracker_t_stab
+progress_ledger_update_scribe
+completion_gate_all_requirements_guard
+regression_recheck_step_guard
+next_action_selector_scribe
+```
