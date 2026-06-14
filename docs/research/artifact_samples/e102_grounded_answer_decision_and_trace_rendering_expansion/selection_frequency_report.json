@@ -1,0 +1,142 @@
+{
+  "rows": [
+    {
+      "cost": 0.14,
+      "display_name": "Query Requirement Mapper Lens",
+      "family": "Lens",
+      "operator_id": "query_requirement_mapper_lens",
+      "role": "useful",
+      "selected_frequency": 1.0
+    },
+    {
+      "cost": 0.14,
+      "display_name": "Resolved Evidence Coverage Guard",
+      "family": "Guard",
+      "operator_id": "resolved_evidence_coverage_guard",
+      "role": "useful",
+      "selected_frequency": 1.0
+    },
+    {
+      "cost": 0.13,
+      "display_name": "Answerability Decision Guard",
+      "family": "Guard",
+      "operator_id": "answerability_decision_guard",
+      "role": "useful",
+      "selected_frequency": 1.0
+    },
+    {
+      "cost": 0.13,
+      "display_name": "Grounded Answer Template Scribe",
+      "family": "Scribe",
+      "operator_id": "grounded_answer_template_scribe",
+      "role": "useful",
+      "selected_frequency": 1.0
+    },
+    {
+      "cost": 0.12,
+      "display_name": "Evidence Citation Link Scribe",
+      "family": "Scribe",
+      "operator_id": "evidence_citation_link_scribe",
+      "role": "useful",
+      "selected_frequency": 1.0
+    },
+    {
+      "cost": 0.13,
+      "display_name": "Unsupported Answer Defer Guard",
+      "family": "Guard",
+      "operator_id": "unsupported_answer_defer_guard",
+      "role": "useful",
+      "selected_frequency": 1.0
+    },
+    {
+      "cost": 0.12,
+      "display_name": "Ask-When-Dependency-Missing Scribe",
+      "family": "Scribe",
+      "operator_id": "ask_when_dependency_missing_scribe",
+      "role": "useful",
+      "selected_frequency": 1.0
+    },
+    {
+      "cost": 0.13,
+      "display_name": "Answer Trace Integrity T-Stab",
+      "family": "T-Stab",
+      "operator_id": "answer_trace_integrity_t_stab",
+      "role": "useful",
+      "selected_frequency": 1.0
+    },
+    {
+      "cost": 0.03,
+      "display_name": "Answer From Memory Guess Control",
+      "family": "unsafe_control",
+      "operator_id": "answer_from_memory_guess_control",
+      "role": "unsafe",
+      "selected_frequency": 0.0
+    },
+    {
+      "cost": 0.03,
+      "display_name": "Answer Without Citation Control",
+      "family": "unsafe_control",
+      "operator_id": "answer_without_citation_control",
+      "role": "unsafe",
+      "selected_frequency": 0.0
+    },
+    {
+      "cost": 0.04,
+      "display_name": "Ignore Missing Dependency Control",
+      "family": "unsafe_control",
+      "operator_id": "ignore_missing_dependency_control",
+      "role": "unsafe",
+      "selected_frequency": 0.0
+    },
+    {
+      "cost": 0.04,
+      "display_name": "Overconfident Partial Evidence Control",
+      "family": "unsafe_control",
+      "operator_id": "overconfident_partial_evidence_control",
+      "role": "unsafe",
+      "selected_frequency": 0.0
+    },
+    {
+      "cost": 0.02,
+      "display_name": "Always Defer Control",
+      "family": "control",
+      "operator_id": "always_defer_control",
+      "role": "noop",
+      "selected_frequency": 0.0
+    },
+    {
+      "cost": 0.03,
+      "display_name": "Template-Only Answer Control",
+      "family": "unsafe_control",
+      "operator_id": "template_only_answer_control",
+      "role": "unsafe",
+      "selected_frequency": 0.0
+    },
+    {
+      "cost": 0.04,
+      "display_name": "Stale Evidence Answerer",
+      "family": "unsafe_control",
+      "operator_id": "stale_evidence_answerer",
+      "role": "unsafe",
+      "selected_frequency": 0.0
+    },
+    {
+      "cost": 0.18,
+      "display_name": "Answerability Echo Clone",
+      "family": "Guard",
+      "operator_id": "answerability_echo_clone",
+      "role": "redundant",
+      "selected_frequency": 0.0
+    }
+  ],
+  "stable_top": [
+    "query_requirement_mapper_lens",
+    "resolved_evidence_coverage_guard",
+    "answerability_decision_guard",
+    "grounded_answer_template_scribe",
+    "evidence_citation_link_scribe",
+    "unsupported_answer_defer_guard",
+    "ask_when_dependency_missing_scribe",
+    "answer_trace_integrity_t_stab"
+  ]
+}

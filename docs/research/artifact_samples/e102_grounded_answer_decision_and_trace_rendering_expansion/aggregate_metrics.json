@@ -1,0 +1,18 @@
+{
+  "accepted_mutations_total": 128,
+  "adversarial_answer_decision_success_mean": 1.0,
+  "adversarial_answer_decision_success_min": 1.0,
+  "adversarial_false_defer_rate_max": 0.0,
+  "adversarial_stale_answer_rate_max": 0.0,
+  "adversarial_unsupported_answer_rate_max": 0.0,
+  "rejected_mutations_total": 512,
+  "rollback_count_total": 512,
+  "seconds": 0.856,
+  "seed_count": 16,
+  "validation_answer_accuracy_min": 1.0,
+  "validation_answer_decision_success_mean": 1.0,
+  "validation_answer_decision_success_min": 1.0,
+  "validation_citation_validity_min": 1.0,
+  "validation_requirement_coverage_validity_min": 1.0,
+  "validation_trace_integrity_min": 1.0
+}

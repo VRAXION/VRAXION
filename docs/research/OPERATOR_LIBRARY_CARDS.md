@@ -2898,3 +2898,201 @@ source_rank_blind_control         -> Quarantine
 stale_span_committer              -> Quarantine
 conflict_detector_echo_clone      -> Redundant
 ```
+
+## E102 Grounded Answer Decision And Trace Rendering Expansion
+
+Source:
+
+```text
+target/pilot_wave/e102_grounded_answer_decision_and_trace_rendering_expansion/
+docs/research/artifact_samples/e102_grounded_answer_decision_and_trace_rendering_expansion/
+```
+
+Boundary:
+
+```text
+controlled grounded answer decision proxy
+not open-domain question answering
+not direct answer without evidence
+```
+
+### Query Requirement Mapper Lens
+
+```text
+component_id = query_requirement_mapper_lens
+status       = StableOperatorCandidate
+family       = Lens
+```
+
+What it does:
+
+```text
+maps a query to the mechanical evidence requirements needed before answering
+```
+
+If removed:
+
+```text
+mean_answer_decision_success_loss = 1.000000
+mean_unsupported_answer_delta = 0.000000
+```
+
+### Resolved Evidence Coverage Guard
+
+```text
+component_id = resolved_evidence_coverage_guard
+status       = StableOperatorCandidate
+family       = Guard
+```
+
+What it does:
+
+```text
+requires resolved evidence to cover every query dependency before answering
+```
+
+If removed:
+
+```text
+mean_answer_decision_success_loss = 1.000000
+mean_unsupported_answer_delta = 0.000000
+```
+
+### Answerability Decision Guard
+
+```text
+component_id = answerability_decision_guard
+status       = StableOperatorCandidate
+family       = Guard
+```
+
+What it does:
+
+```text
+chooses ANSWER, ASK, or DEFER from coverage and conflict state
+```
+
+If removed:
+
+```text
+mean_answer_decision_success_loss = 1.000000
+mean_unsupported_answer_delta = 0.000000
+```
+
+### Grounded Answer Template Scribe
+
+```text
+component_id = grounded_answer_template_scribe
+status       = StableOperatorCandidate
+family       = Scribe
+```
+
+What it does:
+
+```text
+renders answer text from resolved evidence without adding unsupported content
+```
+
+If removed:
+
+```text
+mean_answer_decision_success_loss = 0.698110
+mean_unsupported_answer_delta = 0.000000
+```
+
+### Evidence Citation Link Scribe
+
+```text
+component_id = evidence_citation_link_scribe
+status       = StableOperatorCandidate
+family       = Scribe
+```
+
+What it does:
+
+```text
+links each answer claim to a resolved evidence span identifier
+```
+
+If removed:
+
+```text
+mean_answer_decision_success_loss = 0.698110
+mean_unsupported_answer_delta = 0.000000
+```
+
+### Unsupported Answer Defer Guard
+
+```text
+component_id = unsupported_answer_defer_guard
+status       = StableOperatorCandidate
+family       = Guard
+```
+
+What it does:
+
+```text
+blocks answers when a required dependency is unsupported or contradictory
+```
+
+If removed:
+
+```text
+mean_answer_decision_success_loss = 0.496664
+mean_unsupported_answer_delta = 0.000000
+```
+
+### Ask-When-Dependency-Missing Scribe
+
+```text
+component_id = ask_when_dependency_missing_scribe
+status       = StableOperatorCandidate
+family       = Scribe
+```
+
+What it does:
+
+```text
+writes a targeted question for the missing evidence dependency
+```
+
+If removed:
+
+```text
+mean_answer_decision_success_loss = 0.093490
+mean_unsupported_answer_delta = 0.000000
+```
+
+### Answer Trace Integrity T-Stab
+
+```text
+component_id = answer_trace_integrity_t_stab
+status       = StableOperatorCandidate
+family       = T-Stab
+```
+
+What it does:
+
+```text
+stabilizes answer trace, citation, and route history before final output
+```
+
+If removed:
+
+```text
+mean_answer_decision_success_loss = 0.698110
+mean_unsupported_answer_delta = 0.000000
+```
+
+### E102 Rejected Controls
+
+```text
+answer_from_memory_guess_control       -> Quarantine
+answer_without_citation_control        -> Quarantine
+ignore_missing_dependency_control      -> Quarantine
+overconfident_partial_evidence_control -> Quarantine
+always_defer_control                   -> Deprecated
+template_only_answer_control           -> Quarantine
+stale_evidence_answerer                -> Quarantine
+answerability_echo_clone               -> Redundant
+```

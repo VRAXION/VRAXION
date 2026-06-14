@@ -1,0 +1,142 @@
+{
+  "artifact_contract": "E102_GROUNDED_ANSWER_DECISION_AND_TRACE_RENDERING_EXPANSION",
+  "canonical_term": "Operator",
+  "families": [
+    "Guard",
+    "Lens",
+    "Scribe",
+    "T-Stab",
+    "control"
+  ],
+  "legacy_alias": "Pocket",
+  "operators": [
+    {
+      "cost": 0.14,
+      "description": "Maps a query to the mechanical evidence requirements needed to answer it.",
+      "display_name": "Query Requirement Mapper Lens",
+      "family": "Lens",
+      "operator_id": "query_requirement_mapper_lens",
+      "role": "useful"
+    },
+    {
+      "cost": 0.14,
+      "description": "Requires resolved evidence to cover every query dependency before answering.",
+      "display_name": "Resolved Evidence Coverage Guard",
+      "family": "Guard",
+      "operator_id": "resolved_evidence_coverage_guard",
+      "role": "useful"
+    },
+    {
+      "cost": 0.13,
+      "description": "Chooses ANSWER, ASK, or DEFER from coverage and conflict state.",
+      "display_name": "Answerability Decision Guard",
+      "family": "Guard",
+      "operator_id": "answerability_decision_guard",
+      "role": "useful"
+    },
+    {
+      "cost": 0.13,
+      "description": "Renders the answer from resolved evidence without adding unsupported content.",
+      "display_name": "Grounded Answer Template Scribe",
+      "family": "Scribe",
+      "operator_id": "grounded_answer_template_scribe",
+      "role": "useful"
+    },
+    {
+      "cost": 0.12,
+      "description": "Links every answer claim to a resolved evidence span identifier.",
+      "display_name": "Evidence Citation Link Scribe",
+      "family": "Scribe",
+      "operator_id": "evidence_citation_link_scribe",
+      "role": "useful"
+    },
+    {
+      "cost": 0.13,
+      "description": "Blocks answers when any required dependency is unsupported or contradictory.",
+      "display_name": "Unsupported Answer Defer Guard",
+      "family": "Guard",
+      "operator_id": "unsupported_answer_defer_guard",
+      "role": "useful"
+    },
+    {
+      "cost": 0.12,
+      "description": "Writes a targeted question for the missing evidence dependency.",
+      "display_name": "Ask-When-Dependency-Missing Scribe",
+      "family": "Scribe",
+      "operator_id": "ask_when_dependency_missing_scribe",
+      "role": "useful"
+    },
+    {
+      "cost": 0.13,
+      "description": "Stabilizes answer trace, citation, and route history before final output.",
+      "display_name": "Answer Trace Integrity T-Stab",
+      "family": "T-Stab",
+      "operator_id": "answer_trace_integrity_t_stab",
+      "role": "useful"
+    },
+    {
+      "cost": 0.03,
+      "description": "Unsafe control: answers without visible resolved evidence.",
+      "display_name": "Answer From Memory Guess Control",
+      "family": "unsafe_control",
+      "operator_id": "answer_from_memory_guess_control",
+      "role": "unsafe"
+    },
+    {
+      "cost": 0.03,
+      "description": "Unsafe control: emits a correct-looking answer without citation links.",
+      "display_name": "Answer Without Citation Control",
+      "family": "unsafe_control",
+      "operator_id": "answer_without_citation_control",
+      "role": "unsafe"
+    },
+    {
+      "cost": 0.04,
+      "description": "Unsafe control: answers despite missing evidence dependencies.",
+      "display_name": "Ignore Missing Dependency Control",
+      "family": "unsafe_control",
+      "operator_id": "ignore_missing_dependency_control",
+      "role": "unsafe"
+    },
+    {
+      "cost": 0.04,
+      "description": "Unsafe control: treats partial evidence as complete.",
+      "display_name": "Overconfident Partial Evidence Control",
+      "family": "unsafe_control",
+      "operator_id": "overconfident_partial_evidence_control",
+      "role": "unsafe"
+    },
+    {
+      "cost": 0.02,
+      "description": "Control: defers even when evidence fully supports an answer.",
+      "display_name": "Always Defer Control",
+      "family": "control",
+      "operator_id": "always_defer_control",
+      "role": "noop"
+    },
+    {
+      "cost": 0.03,
+      "description": "Unsafe control: renders a template answer without evidence coverage.",
+      "display_name": "Template-Only Answer Control",
+      "family": "unsafe_control",
+      "operator_id": "template_only_answer_control",
+      "role": "unsafe"
+    },
+    {
+      "cost": 0.04,
+      "description": "Unsafe control: answers from stale evidence after a newer resolved span exists.",
+      "display_name": "Stale Evidence Answerer",
+      "family": "unsafe_control",
+      "operator_id": "stale_evidence_answerer",
+      "role": "unsafe"
+    },
+    {
+      "cost": 0.18,
+      "description": "Redundant answerability guard without unique value.",
+      "display_name": "Answerability Echo Clone",
+      "family": "Guard",
+      "operator_id": "answerability_echo_clone",
+      "role": "redundant"
+    }
+  ]
+}
