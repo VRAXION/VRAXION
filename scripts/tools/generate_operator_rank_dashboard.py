@@ -16,6 +16,7 @@ DEFAULT_E111 = Path("target/pilot_wave/e111_bronze_mutation_prune_promote_or_dro
 DEFAULT_E112 = Path("target/pilot_wave/e112_gold_to_core_prune_heavy_probation_wave")
 DEFAULT_E114 = Path("target/pilot_wave/e114_fineweb_next_limit_stability_projection")
 DEFAULT_E116 = Path("target/pilot_wave/e116_alpha_weave_synthetic_pressure_generation")
+DEFAULT_E117 = Path("target/pilot_wave/e117_alpha_weave_targeted_pressure_gauntlet")
 SAMPLE_E109 = Path("docs/research/artifact_samples/e109_operator_rank_ladder_and_golden_watch_probation_mode")
 SAMPLE_E110 = Path("docs/research/artifact_samples/e110_promote_or_drop_operator_grind_wave1")
 SAMPLE_E111 = Path("docs/research/artifact_samples/e111_bronze_mutation_prune_promote_or_drop_wave")
@@ -92,6 +93,14 @@ def compact_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
         "e116_qualified_synthetic_pressure_activation",
         "e116_projected_activation_after_targeted_pressure",
         "e116_reaches_permacore_probation_after_targeted_pressure",
+        "e117_qualified_activation",
+        "e117_activation_after_gauntlet",
+        "e117_remaining_after_gauntlet",
+        "e117_reaches_permacore_probation_after_gauntlet",
+        "e117_hard_negative",
+        "e117_positive_activation",
+        "e117_neutral_valid_activation",
+        "e117_negative_scope_valid_activation",
     ]
     return [{key: row.get(key) for key in keep} for row in rows]
 
@@ -311,6 +320,34 @@ def merge_e116(rows: list[dict[str, Any]], e116: Path | None) -> tuple[list[dict
     }
 
 
+def merge_e117(rows: list[dict[str, Any]], e117: Path | None) -> tuple[list[dict[str, Any]], dict[str, Any] | None]:
+    if not e117 or not (e117 / "operator_gauntlet_results.json").exists():
+        return rows, None
+    results = read_json(e117 / "operator_gauntlet_results.json")["rows"]
+    results_by_id = {row["operator_id"]: row for row in results}
+    merged: list[dict[str, Any]] = []
+    for row in rows:
+        update = results_by_id.get(row["operator_id"])
+        if not update:
+            merged.append(row)
+            continue
+        next_row = dict(row)
+        next_row["e117_qualified_activation"] = update.get("qualified_activation")
+        next_row["e117_activation_after_gauntlet"] = update.get("activation_after_e117_gauntlet")
+        next_row["e117_remaining_after_gauntlet"] = update.get("remaining_after_e117_gauntlet")
+        next_row["e117_reaches_permacore_probation_after_gauntlet"] = update.get("reaches_permacore_probation_after_e117_gauntlet")
+        next_row["e117_hard_negative"] = update.get("hard_negative")
+        next_row["e117_positive_activation"] = update.get("positive_activation")
+        next_row["e117_neutral_valid_activation"] = update.get("neutral_valid_activation")
+        next_row["e117_negative_scope_valid_activation"] = update.get("negative_scope_valid_activation")
+        merged.append(next_row)
+    return merged, {
+        "summary": read_json(e117 / "summary.json"),
+        "aggregate": read_json(e117 / "aggregate_metrics.json"),
+        "checker": read_json(e117 / "checker_summary.json") if (e117 / "checker_summary.json").exists() else None,
+    }
+
+
 def build_payload(
     e109: Path,
     e110: Path | None = None,
@@ -318,6 +355,7 @@ def build_payload(
     e112: Path | None = None,
     e114: Path | None = None,
     e116: Path | None = None,
+    e117: Path | None = None,
 ) -> dict[str, Any]:
     rank_results = read_json(e109 / "rank_results.json")
     rows, e110_payload = merge_e110(compact_rows(rank_results["rows"]), e110)
@@ -325,6 +363,7 @@ def build_payload(
     rows, e112_payload = merge_e112(rows, e112)
     rows, e114_payload = merge_e114(rows, e114)
     rows, e116_payload = merge_e116(rows, e116)
+    rows, e117_payload = merge_e117(rows, e117)
     counts = rank_counts(rows)
     aggregate = read_json(e109 / "aggregate_metrics.json")
     aggregate = {
@@ -343,12 +382,16 @@ def build_payload(
         "e116_target_reach_count": e116_payload["aggregate"]["target_reach_count"] if e116_payload else None,
         "e116_targeted_needed_remaining_count": e116_payload["aggregate"]["targeted_needed_remaining_count"] if e116_payload else None,
         "e116_scheduled_case_count": e116_payload["aggregate"]["scheduled_case_count"] if e116_payload else None,
+        "e117_target_reach_count": e117_payload["aggregate"]["target_reach_count"] if e117_payload else None,
+        "e117_targeted_needed_remaining_count": e117_payload["aggregate"]["targeted_needed_remaining_count"] if e117_payload else None,
+        "e117_scheduled_case_count": e117_payload["aggregate"]["scheduled_case_count"] if e117_payload else None,
+        "e117_hard_negative_total": e117_payload["aggregate"]["hard_negative_total"] if e117_payload else None,
     }
     summary = read_json(e109 / "summary.json")
     summary = {
         **summary,
         "rank_counts": counts,
-        "latest_wave": "E116 alpha-Weave targeted pressure" if e116_payload else "E114 FineWeb projection" if e114_payload else "E112 Wave 3" if e112_payload else "E111 Wave 2" if e111_payload else "E110 Wave 1" if e110_payload else "E109",
+        "latest_wave": "E117 alpha-Weave targeted pressure gauntlet" if e117_payload else "E116 alpha-Weave targeted pressure" if e116_payload else "E114 FineWeb projection" if e114_payload else "E112 Wave 3" if e112_payload else "E111 Wave 2" if e111_payload else "E110 Wave 1" if e110_payload else "E109",
     }
     return {
         "summary": summary,
@@ -357,6 +400,7 @@ def build_payload(
         "e112": e112_payload,
         "e114": e114_payload,
         "e116": e116_payload,
+        "e117": e117_payload,
         "aggregate": aggregate,
         "policy": read_json(e109 / "rank_policy_manifest.json"),
         "watch": read_json(e109 / "golden_watch_report.json"),
@@ -664,7 +708,9 @@ def render_html(payload: dict[str, Any]) -> str:
         ["E114 reaches target", agg.e114_projected_reach_permacore_count ?? "n/a", "green"],
         ["E114 targeted needed", agg.e114_projected_need_targeted_data_count ?? "n/a", agg.e114_projected_need_targeted_data_count ? "gold" : "green"],
         ["E116 synthetic reaches", agg.e116_target_reach_count ?? "n/a", "green"],
-        ["E116 remaining", agg.e116_targeted_needed_remaining_count ?? "n/a", agg.e116_targeted_needed_remaining_count ? "gold" : "green"]
+        ["E116 remaining", agg.e116_targeted_needed_remaining_count ?? "n/a", agg.e116_targeted_needed_remaining_count ? "gold" : "green"],
+        ["E117 gauntlet reaches", agg.e117_target_reach_count ?? "n/a", "green"],
+        ["E117 hard negatives", agg.e117_hard_negative_total ?? "n/a", agg.e117_hard_negative_total ? "red" : "green"]
       ];
       document.getElementById("cards").innerHTML = cards.map(([label,value,cls]) =>
         `<div class="card"><div class="label">${{label}}</div><div class="value ${{cls}}">${{value}}</div></div>`
@@ -753,6 +799,9 @@ def render_html(payload: dict[str, Any]) -> str:
           <div>E116 synthetic pressure</div><div>${{row.e116_reaches_permacore_probation_after_targeted_pressure ? "reaches 300k with targeted synthetic pressure" : "not targeted / still short"}} · +${{fmt(row.e116_qualified_synthetic_pressure_activation || 0)}} scheduled activations</div>
           <div>E116 generated data</div><div>${{htmlEscape(row.e116_template_family || "")}} · ${{fmt(row.e116_generated_cell_packs || 0)}} packs · ${{fmt(row.e116_variant_count || 0)}} variants · repeat ${{fmt(row.e116_repeat_count_per_pack || 0)}}</div>
           <div>E116 projected activation</div><div>${{fmt(row.e116_projected_activation_after_targeted_pressure || 0)}} after targeted pressure</div>
+          <div>E117 gauntlet activation</div><div>${{row.e117_reaches_permacore_probation_after_gauntlet ? "actual gauntlet reaches 300k" : "not reached in gauntlet"}} · +${{fmt(row.e117_qualified_activation || 0)}} qualified · hard negatives ${{fmt(row.e117_hard_negative || 0)}}</div>
+          <div>E117 activation mix</div><div>positive ${{fmt(row.e117_positive_activation || 0)}} · neutral ${{fmt(row.e117_neutral_valid_activation || 0)}} · negative-scope valid ${{fmt(row.e117_negative_scope_valid_activation || 0)}}</div>
+          <div>E117 remaining</div><div>${{fmt(row.e117_remaining_after_gauntlet || 0)}} after actual targeted gauntlet</div>
         </div>
         <div class="note">${{row.rank === "CoreMemoryCandidate" ? "Interpretation: this operator passed scoped CoreMemoryCandidate probation. It is still not PermaCore or TrueGolden without a later larger no-harm grind." : "Interpretation: rank is scoped. This operator is not Core memory unless a later Core probation grind passes the much higher qualified-activation and no-harm gates."}}</div>
       `;
@@ -784,6 +833,7 @@ def main() -> int:
     parser.add_argument("--e112", default=str(DEFAULT_E112))
     parser.add_argument("--e114", default=str(DEFAULT_E114))
     parser.add_argument("--e116", default=str(DEFAULT_E116))
+    parser.add_argument("--e117", default=str(DEFAULT_E117))
     parser.add_argument("--out", default=str(DEFAULT_OUT))
     args = parser.parse_args()
     e109 = existing_artifact_path(Path(args.e109), SAMPLE_E109, "rank_results.json")
@@ -792,13 +842,15 @@ def main() -> int:
     e112_requested = Path(args.e112)
     e114_requested = Path(args.e114)
     e116_requested = Path(args.e116)
+    e117_requested = Path(args.e117)
     e110 = e110_requested if (e110_requested / "wave_results.json").exists() else SAMPLE_E110 if (SAMPLE_E110 / "wave_results.json").exists() else None
     e111 = e111_requested if (e111_requested / "wave_results.json").exists() else SAMPLE_E111 if (SAMPLE_E111 / "wave_results.json").exists() else None
     e112 = e112_requested if (e112_requested / "wave_results.json").exists() else SAMPLE_E112 if (SAMPLE_E112 / "wave_results.json").exists() else None
     e114 = e114_requested if (e114_requested / "operator_projection_report.json").exists() else None
     e116 = e116_requested if (e116_requested / "operator_target_coverage.json").exists() else None
+    e117 = e117_requested if (e117_requested / "operator_gauntlet_results.json").exists() else None
     out = Path(args.out)
-    payload = build_payload(e109, e110, e111, e112, e114, e116)
+    payload = build_payload(e109, e110, e111, e112, e114, e116, e117)
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(render_html(payload), encoding="utf-8")
     print(json.dumps({"out": str(out), "operator_count": len(payload["rows"])}, sort_keys=True))
