@@ -1,0 +1,19 @@
+{
+  "artifact_contract": "E97_OPERATOR_ROUTE_COMPOSITION_PLANNING_EXPANSION",
+  "case_count": 11520,
+  "families": [
+    "adapter_required_route",
+    "alpha_sync_route",
+    "budget_limited_route",
+    "commit_safety_route",
+    "completed_route_halt",
+    "insufficient_info_ask_route",
+    "loop_risk_route",
+    "memory_hygiene_route",
+    "output_hygiene_route",
+    "temporal_stream_route"
+  ],
+  "full_library_scan_allowed": false,
+  "open_domain_planning": false,
+  "operator_route_planning": true
+}

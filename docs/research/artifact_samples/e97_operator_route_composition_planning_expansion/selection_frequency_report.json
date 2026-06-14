@@ -1,0 +1,134 @@
+{
+  "rows": [
+    {
+      "cost": 0.12,
+      "display_name": "Route Intent Classifier Lens",
+      "family": "Lens",
+      "operator_id": "route_intent_classifier_lens",
+      "role": "useful",
+      "selected_frequency": 1.0
+    },
+    {
+      "cost": 0.13,
+      "display_name": "Active Operator Set Selector Guard",
+      "family": "Guard",
+      "operator_id": "active_operator_set_selector_guard",
+      "role": "useful",
+      "selected_frequency": 1.0
+    },
+    {
+      "cost": 0.13,
+      "display_name": "Ordered Operator Sequence Scribe",
+      "family": "Scribe",
+      "operator_id": "ordered_operator_sequence_scribe",
+      "role": "useful",
+      "selected_frequency": 1.0
+    },
+    {
+      "cost": 0.12,
+      "display_name": "Adapter Requirement Detector Lens",
+      "family": "Lens",
+      "operator_id": "adapter_requirement_detector_lens",
+      "role": "useful",
+      "selected_frequency": 1.0
+    },
+    {
+      "cost": 0.12,
+      "display_name": "Loop Prevention Route Guard",
+      "family": "Guard",
+      "operator_id": "loop_prevention_route_guard",
+      "role": "useful",
+      "selected_frequency": 1.0
+    },
+    {
+      "cost": 0.12,
+      "display_name": "Route Budget Guard",
+      "family": "Guard",
+      "operator_id": "route_budget_guard",
+      "role": "useful",
+      "selected_frequency": 1.0
+    },
+    {
+      "cost": 0.11,
+      "display_name": "Fallback-To-Ask Route Scribe",
+      "family": "Scribe",
+      "operator_id": "fallback_to_ask_route_scribe",
+      "role": "useful",
+      "selected_frequency": 1.0
+    },
+    {
+      "cost": 0.13,
+      "display_name": "Composition Completion T-Stab",
+      "family": "T-Stab",
+      "operator_id": "composition_completion_t_stab",
+      "role": "useful",
+      "selected_frequency": 1.0
+    },
+    {
+      "cost": 0.05,
+      "display_name": "Full Library Scan Router",
+      "family": "unsafe_control",
+      "operator_id": "full_library_scan_router",
+      "role": "unsafe",
+      "selected_frequency": 0.0
+    },
+    {
+      "cost": 0.03,
+      "display_name": "Random Operator Caller",
+      "family": "unsafe_control",
+      "operator_id": "random_operator_caller",
+      "role": "unsafe",
+      "selected_frequency": 0.0
+    },
+    {
+      "cost": 0.04,
+      "display_name": "Looping Route Runner",
+      "family": "unsafe_control",
+      "operator_id": "looping_route_runner",
+      "role": "unsafe",
+      "selected_frequency": 0.0
+    },
+    {
+      "cost": 0.04,
+      "display_name": "Budgetless Route Expander",
+      "family": "unsafe_control",
+      "operator_id": "budgetless_route_expander",
+      "role": "unsafe",
+      "selected_frequency": 0.0
+    },
+    {
+      "cost": 0.04,
+      "display_name": "Adapterless Cross-ABI Caller",
+      "family": "unsafe_control",
+      "operator_id": "adapterless_cross_abi_caller",
+      "role": "unsafe",
+      "selected_frequency": 0.0
+    },
+    {
+      "cost": 0.02,
+      "display_name": "Always Call-More Control",
+      "family": "control",
+      "operator_id": "always_call_more_control",
+      "role": "noop",
+      "selected_frequency": 0.0
+    },
+    {
+      "cost": 0.18,
+      "display_name": "Route Selector Echo Clone",
+      "family": "Guard",
+      "operator_id": "route_selector_clone",
+      "role": "redundant",
+      "selected_frequency": 0.0
+    }
+  ],
+  "stable_top": [
+    "route_intent_classifier_lens",
+    "active_operator_set_selector_guard",
+    "ordered_operator_sequence_scribe",
+    "adapter_requirement_detector_lens",
+    "loop_prevention_route_guard",
+    "route_budget_guard",
+    "fallback_to_ask_route_scribe",
+    "composition_completion_t_stab"
+  ]
+}

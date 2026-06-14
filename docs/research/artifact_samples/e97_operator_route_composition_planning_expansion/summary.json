@@ -1,0 +1,7 @@
+{
+  "artifact_contract": "E97_OPERATOR_ROUTE_COMPOSITION_PLANNING_EXPANSION",
+  "decision": "e97_operator_route_composition_planning_expansion_confirmed",
+  "sample_pack": "docs\\research\\artifact_samples\\e97_operator_route_composition_planning_expansion",
+  "stable_operator_candidate_count": 8,
+  "unsafe_final_selected": 0
+}

@@ -1909,3 +1909,200 @@ stale_trace_keeper                 -> Quarantine
 always_prune_control               -> Deprecated
 trace_dedup_clone                  -> Redundant
 ```
+
+## E97 Operator Route/Composition Planning Expansion
+
+Source:
+
+```text
+target/pilot_wave/e97_operator_route_composition_planning_expansion/
+docs/research/artifact_samples/e97_operator_route_composition_planning_expansion/
+```
+
+Boundary:
+
+```text
+controlled Operator route/composition planning proxy
+not open-domain planning
+not full-library scan
+```
+
+### Route Intent Classifier Lens
+
+```text
+component_id = route_intent_classifier_lens
+status       = StableOperatorCandidate
+family       = Lens
+```
+
+What it does:
+
+```text
+classifies the current task intent into a route family
+```
+
+If removed:
+
+```text
+mean_route_success_loss = 0.702826
+mean_overcall_delta = 0.000000
+```
+
+### Active Operator Set Selector Guard
+
+```text
+component_id = active_operator_set_selector_guard
+status       = StableOperatorCandidate
+family       = Guard
+```
+
+What it does:
+
+```text
+selects a minimal active Operator set instead of scanning the full library
+```
+
+If removed:
+
+```text
+mean_route_success_loss = 0.492390
+mean_overcall_delta = 0.000000
+```
+
+### Ordered Operator Sequence Scribe
+
+```text
+component_id = ordered_operator_sequence_scribe
+status       = StableOperatorCandidate
+family       = Scribe
+```
+
+What it does:
+
+```text
+renders the ordered Operator call sequence for the current route
+```
+
+If removed:
+
+```text
+mean_route_success_loss = 0.603896
+mean_overcall_delta = 0.000000
+```
+
+### Adapter Requirement Detector Lens
+
+```text
+component_id = adapter_requirement_detector_lens
+status       = StableOperatorCandidate
+family       = Lens
+```
+
+What it does:
+
+```text
+detects when source/target ABI mismatch requires an Adapter Operator
+```
+
+If removed:
+
+```text
+mean_route_success_loss = 0.111506
+mean_overcall_delta = 0.000000
+```
+
+### Loop Prevention Route Guard
+
+```text
+component_id = loop_prevention_route_guard
+status       = StableOperatorCandidate
+family       = Guard
+```
+
+What it does:
+
+```text
+blocks repeated route cycles that do not change state
+```
+
+If removed:
+
+```text
+mean_route_success_loss = 0.188830
+mean_overcall_delta = 0.000000
+```
+
+### Route Budget Guard
+
+```text
+component_id = route_budget_guard
+status       = StableOperatorCandidate
+family       = Guard
+```
+
+What it does:
+
+```text
+keeps route calls inside the allowed compute/action budget
+```
+
+If removed:
+
+```text
+mean_route_success_loss = 0.108343
+mean_overcall_delta = 0.000000
+```
+
+### Fallback-To-Ask Route Scribe
+
+```text
+component_id = fallback_to_ask_route_scribe
+status       = StableOperatorCandidate
+family       = Scribe
+```
+
+What it does:
+
+```text
+renders ASK_FOR_EVIDENCE when no safe route can resolve the task
+```
+
+If removed:
+
+```text
+mean_route_success_loss = 0.299465
+mean_overcall_delta = 0.000000
+```
+
+### Composition Completion T-Stab
+
+```text
+component_id = composition_completion_t_stab
+status       = StableOperatorCandidate
+family       = T-Stab
+```
+
+What it does:
+
+```text
+stabilizes HALT/ANSWER_READY when the composed route is complete
+```
+
+If removed:
+
+```text
+mean_route_success_loss = 0.096639
+mean_overcall_delta = 0.000000
+```
+
+### E97 Rejected Controls
+
+```text
+full_library_scan_router       -> Quarantine
+random_operator_caller         -> Quarantine
+looping_route_runner           -> Quarantine
+budgetless_route_expander      -> Quarantine
+adapterless_cross_abi_caller   -> Quarantine
+always_call_more_control       -> Deprecated
+route_selector_clone           -> Redundant
+```

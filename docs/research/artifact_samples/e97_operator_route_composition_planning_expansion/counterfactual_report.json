@@ -1,0 +1,36 @@
+{
+  "summary": {
+    "active_operator_set_selector_guard": {
+      "mean_overcall_delta": 0.0,
+      "mean_route_success_loss": 0.49239
+    },
+    "adapter_requirement_detector_lens": {
+      "mean_overcall_delta": 0.0,
+      "mean_route_success_loss": 0.111506
+    },
+    "composition_completion_t_stab": {
+      "mean_overcall_delta": 0.0,
+      "mean_route_success_loss": 0.096639
+    },
+    "fallback_to_ask_route_scribe": {
+      "mean_overcall_delta": 0.0,
+      "mean_route_success_loss": 0.299465
+    },
+    "loop_prevention_route_guard": {
+      "mean_overcall_delta": 0.0,
+      "mean_route_success_loss": 0.18883
+    },
+    "ordered_operator_sequence_scribe": {
+      "mean_overcall_delta": 0.0,
+      "mean_route_success_loss": 0.603896
+    },
+    "route_budget_guard": {
+      "mean_overcall_delta": 0.0,
+      "mean_route_success_loss": 0.108343
+    },
+    "route_intent_classifier_lens": {
+      "mean_overcall_delta": 0.0,
+      "mean_route_success_loss": 0.702826
+    }
+  }
+}
