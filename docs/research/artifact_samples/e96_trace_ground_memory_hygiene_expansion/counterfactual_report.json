@@ -1,0 +1,36 @@
+{
+  "summary": {
+    "contradiction_memory_index_lens": {
+      "mean_memory_hygiene_loss": 0.103676,
+      "mean_stale_pollution_delta": 0.0
+    },
+    "delayed_feedback_integrator_t_stab": {
+      "mean_memory_hygiene_loss": 0.112186,
+      "mean_stale_pollution_delta": 0.0
+    },
+    "ground_promotion_candidate_scribe": {
+      "mean_memory_hygiene_loss": 0.119146,
+      "mean_stale_pollution_delta": 0.0
+    },
+    "provenance_chain_guard": {
+      "mean_memory_hygiene_loss": 0.67507,
+      "mean_stale_pollution_delta": 0.0
+    },
+    "replay_hash_audit_guard": {
+      "mean_memory_hygiene_loss": 0.338883,
+      "mean_stale_pollution_delta": 0.0
+    },
+    "scope_lifetime_t_stab": {
+      "mean_memory_hygiene_loss": 0.32493,
+      "mean_stale_pollution_delta": 0.0
+    },
+    "stale_trace_pruner_guard": {
+      "mean_memory_hygiene_loss": 0.32493,
+      "mean_stale_pollution_delta": 0.0
+    },
+    "trace_deduplication_lens": {
+      "mean_memory_hygiene_loss": 0.229756,
+      "mean_stale_pollution_delta": 0.0
+    }
+  }
+}

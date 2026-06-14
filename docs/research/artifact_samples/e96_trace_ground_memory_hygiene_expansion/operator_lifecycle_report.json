@@ -1,0 +1,188 @@
+{
+  "operator_lifecycle_table": [
+    {
+      "counterfactual": {
+        "mean_memory_hygiene_loss": 0.229756,
+        "mean_stale_pollution_delta": 0.0
+      },
+      "description": "Merges duplicate evidence events without losing distinct provenance.",
+      "display_name": "Trace Deduplication Lens",
+      "family": "Lens",
+      "final_status": "StableOperatorCandidate",
+      "operator_id": "trace_deduplication_lens",
+      "role": "useful",
+      "selected_frequency": 1.0
+    },
+    {
+      "counterfactual": {
+        "mean_memory_hygiene_loss": 0.67507,
+        "mean_stale_pollution_delta": 0.0
+      },
+      "description": "Requires every memory update to preserve source/cycle/proposal lineage.",
+      "display_name": "Provenance Chain Guard",
+      "family": "Guard",
+      "final_status": "StableOperatorCandidate",
+      "operator_id": "provenance_chain_guard",
+      "role": "useful",
+      "selected_frequency": 1.0
+    },
+    {
+      "counterfactual": {
+        "mean_memory_hygiene_loss": 0.112186,
+        "mean_stale_pollution_delta": 0.0
+      },
+      "description": "Applies delayed positive/negative feedback to prior trace events.",
+      "display_name": "Delayed Feedback Integrator T-Stab",
+      "family": "T-Stab",
+      "final_status": "StableOperatorCandidate",
+      "operator_id": "delayed_feedback_integrator_t_stab",
+      "role": "useful",
+      "selected_frequency": 1.0
+    },
+    {
+      "counterfactual": {
+        "mean_memory_hygiene_loss": 0.103676,
+        "mean_stale_pollution_delta": 0.0
+      },
+      "description": "Indexes contradictory evidence pairs for later Agency checks.",
+      "display_name": "Contradiction Memory Index Lens",
+      "family": "Lens",
+      "final_status": "StableOperatorCandidate",
+      "operator_id": "contradiction_memory_index_lens",
+      "role": "useful",
+      "selected_frequency": 1.0
+    },
+    {
+      "counterfactual": {
+        "mean_memory_hygiene_loss": 0.119146,
+        "mean_stale_pollution_delta": 0.0
+      },
+      "description": "Renders scoped Ground-promotion candidates from stable evidence chains.",
+      "display_name": "Ground Promotion Candidate Scribe",
+      "family": "Scribe",
+      "final_status": "StableOperatorCandidate",
+      "operator_id": "ground_promotion_candidate_scribe",
+      "role": "useful",
+      "selected_frequency": 1.0
+    },
+    {
+      "counterfactual": {
+        "mean_memory_hygiene_loss": 0.32493,
+        "mean_stale_pollution_delta": 0.0
+      },
+      "description": "Prunes expired stale traces while preserving active dependencies.",
+      "display_name": "Stale Trace Pruner Guard",
+      "family": "Guard",
+      "final_status": "StableOperatorCandidate",
+      "operator_id": "stale_trace_pruner_guard",
+      "role": "useful",
+      "selected_frequency": 1.0
+    },
+    {
+      "counterfactual": {
+        "mean_memory_hygiene_loss": 0.32493,
+        "mean_stale_pollution_delta": 0.0
+      },
+      "description": "Stabilizes trace lifetime across local/global scope transitions.",
+      "display_name": "Scope Lifetime T-Stab",
+      "family": "T-Stab",
+      "final_status": "StableOperatorCandidate",
+      "operator_id": "scope_lifetime_t_stab",
+      "role": "useful",
+      "selected_frequency": 1.0
+    },
+    {
+      "counterfactual": {
+        "mean_memory_hygiene_loss": 0.338883,
+        "mean_stale_pollution_delta": 0.0
+      },
+      "description": "Verifies replay hashes before memory consolidation is accepted.",
+      "display_name": "Replay Hash Audit Guard",
+      "family": "Guard",
+      "final_status": "StableOperatorCandidate",
+      "operator_id": "replay_hash_audit_guard",
+      "role": "useful",
+      "selected_frequency": 1.0
+    },
+    {
+      "counterfactual": {},
+      "description": "Unsafe control: stores duplicate traces as separate support.",
+      "display_name": "Duplicate Trace Accumulator",
+      "family": "unsafe_control",
+      "final_status": "Quarantine",
+      "operator_id": "duplicate_trace_accumulator",
+      "role": "unsafe",
+      "selected_frequency": 0.0
+    },
+    {
+      "counterfactual": {},
+      "description": "Unsafe control: writes memory without lineage.",
+      "display_name": "Provenance-Dropping Committer",
+      "family": "unsafe_control",
+      "final_status": "Quarantine",
+      "operator_id": "provenance_dropping_committer",
+      "role": "unsafe",
+      "selected_frequency": 0.0
+    },
+    {
+      "counterfactual": {},
+      "description": "Unsafe control: ignores later negative feedback.",
+      "display_name": "Delayed Feedback Ignorer",
+      "family": "unsafe_control",
+      "final_status": "Quarantine",
+      "operator_id": "delayed_feedback_ignorer",
+      "role": "unsafe",
+      "selected_frequency": 0.0
+    },
+    {
+      "counterfactual": {},
+      "description": "Unsafe control: forgets contradiction pairs during consolidation.",
+      "display_name": "Contradiction-Forgetting Committer",
+      "family": "unsafe_control",
+      "final_status": "Quarantine",
+      "operator_id": "contradiction_forgetting_committer",
+      "role": "unsafe",
+      "selected_frequency": 0.0
+    },
+    {
+      "counterfactual": {},
+      "description": "Unsafe control: promotes every stable-looking event into Ground.",
+      "display_name": "Always Promote To Ground",
+      "family": "unsafe_control",
+      "final_status": "Quarantine",
+      "operator_id": "always_promote_to_ground",
+      "role": "unsafe",
+      "selected_frequency": 0.0
+    },
+    {
+      "counterfactual": {},
+      "description": "Unsafe control: keeps expired local traces as active.",
+      "display_name": "Stale Trace Keeper",
+      "family": "unsafe_control",
+      "final_status": "Quarantine",
+      "operator_id": "stale_trace_keeper",
+      "role": "unsafe",
+      "selected_frequency": 0.0
+    },
+    {
+      "counterfactual": {},
+      "description": "Control: prunes useful active evidence.",
+      "display_name": "Always Prune Control",
+      "family": "control",
+      "final_status": "Deprecated",
+      "operator_id": "always_prune_control",
+      "role": "noop",
+      "selected_frequency": 0.0
+    },
+    {
+      "counterfactual": {},
+      "description": "Redundant deduplication support without unique value.",
+      "display_name": "Trace Dedup Echo Clone",
+      "family": "Lens",
+      "final_status": "Redundant",
+      "operator_id": "trace_dedup_clone",
+      "role": "redundant",
+      "selected_frequency": 0.0
+    }
+  ]
+}

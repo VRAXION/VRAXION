@@ -1,0 +1,6 @@
+{
+  "artifact_contract": "E96_TRACE_GROUND_MEMORY_HYGIENE_EXPANSION",
+  "created_at_ms": 1781437050534,
+  "sample_only": true,
+  "source": "target\\pilot_wave\\e96_trace_ground_memory_hygiene_expansion"
+}

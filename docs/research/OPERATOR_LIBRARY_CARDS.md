@@ -1711,3 +1711,201 @@ budgetless_search_runner        -> Quarantine
 always_ask_all_control          -> Deprecated
 request_locator_clone           -> Redundant
 ```
+
+## E96 Trace/Ground Memory Hygiene Expansion Cards
+
+Source:
+
+```text
+E96_TRACE_GROUND_MEMORY_HYGIENE_EXPANSION
+decision = e96_trace_ground_memory_hygiene_expansion_confirmed
+```
+
+Boundary:
+
+```text
+Trace/Ground hygiene only
+not persistent user memory
+not open-domain memory system
+```
+
+### Trace Deduplication Lens
+
+```text
+component_id = trace_deduplication_lens
+status       = StableOperatorCandidate
+family       = Lens
+```
+
+What it does:
+
+```text
+merges duplicate evidence events without losing distinct provenance
+```
+
+If removed:
+
+```text
+mean_memory_hygiene_loss = 0.229756
+mean_stale_pollution_delta = 0.000000
+```
+
+### Provenance Chain Guard
+
+```text
+component_id = provenance_chain_guard
+status       = StableOperatorCandidate
+family       = Guard
+```
+
+What it does:
+
+```text
+requires every memory update to preserve source, cycle, and proposal lineage
+```
+
+If removed:
+
+```text
+mean_memory_hygiene_loss = 0.675070
+mean_stale_pollution_delta = 0.000000
+```
+
+### Delayed Feedback Integrator T-Stab
+
+```text
+component_id = delayed_feedback_integrator_t_stab
+status       = StableOperatorCandidate
+family       = T-Stab
+```
+
+What it does:
+
+```text
+applies delayed positive or negative feedback to prior trace events
+```
+
+If removed:
+
+```text
+mean_memory_hygiene_loss = 0.112186
+mean_stale_pollution_delta = 0.000000
+```
+
+### Contradiction Memory Index Lens
+
+```text
+component_id = contradiction_memory_index_lens
+status       = StableOperatorCandidate
+family       = Lens
+```
+
+What it does:
+
+```text
+indexes contradictory evidence pairs for later Agency checks
+```
+
+If removed:
+
+```text
+mean_memory_hygiene_loss = 0.103676
+mean_stale_pollution_delta = 0.000000
+```
+
+### Ground Promotion Candidate Scribe
+
+```text
+component_id = ground_promotion_candidate_scribe
+status       = StableOperatorCandidate
+family       = Scribe
+```
+
+What it does:
+
+```text
+renders scoped Ground-promotion candidates from stable evidence chains
+```
+
+If removed:
+
+```text
+mean_memory_hygiene_loss = 0.119146
+mean_stale_pollution_delta = 0.000000
+```
+
+### Stale Trace Pruner Guard
+
+```text
+component_id = stale_trace_pruner_guard
+status       = StableOperatorCandidate
+family       = Guard
+```
+
+What it does:
+
+```text
+prunes expired stale traces while preserving active dependencies
+```
+
+If removed:
+
+```text
+mean_memory_hygiene_loss = 0.324930
+mean_stale_pollution_delta = 0.000000
+```
+
+### Scope Lifetime T-Stab
+
+```text
+component_id = scope_lifetime_t_stab
+status       = StableOperatorCandidate
+family       = T-Stab
+```
+
+What it does:
+
+```text
+stabilizes trace lifetime across local and global scope transitions
+```
+
+If removed:
+
+```text
+mean_memory_hygiene_loss = 0.324930
+mean_stale_pollution_delta = 0.000000
+```
+
+### Replay Hash Audit Guard
+
+```text
+component_id = replay_hash_audit_guard
+status       = StableOperatorCandidate
+family       = Guard
+```
+
+What it does:
+
+```text
+verifies replay hashes before memory consolidation is accepted
+```
+
+If removed:
+
+```text
+mean_memory_hygiene_loss = 0.338883
+mean_stale_pollution_delta = 0.000000
+```
+
+### E96 Rejected Controls
+
+```text
+duplicate_trace_accumulator        -> Quarantine
+provenance_dropping_committer      -> Quarantine
+delayed_feedback_ignorer           -> Quarantine
+contradiction_forgetting_committer -> Quarantine
+always_promote_to_ground           -> Quarantine
+stale_trace_keeper                 -> Quarantine
+always_prune_control               -> Deprecated
+trace_dedup_clone                  -> Redundant
+```

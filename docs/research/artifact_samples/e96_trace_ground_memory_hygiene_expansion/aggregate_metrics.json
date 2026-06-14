@@ -1,0 +1,16 @@
+{
+  "accepted_mutations_total": 128,
+  "adversarial_bad_ground_promotion_max": 0.0,
+  "adversarial_false_prune_max": 0.0,
+  "adversarial_memory_hygiene_success_mean": 1.0,
+  "adversarial_memory_hygiene_success_min": 1.0,
+  "adversarial_stale_pollution_max": 0.0,
+  "rejected_mutations_total": 448,
+  "rollback_count_total": 448,
+  "seconds": 0.828,
+  "seed_count": 16,
+  "validation_memory_hygiene_success_mean": 1.0,
+  "validation_memory_hygiene_success_min": 1.0,
+  "validation_provenance_validity_min": 1.0,
+  "validation_replay_safe_min": 1.0
+}
