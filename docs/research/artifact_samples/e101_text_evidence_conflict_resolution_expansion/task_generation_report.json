@@ -1,0 +1,20 @@
+{
+  "artifact_contract": "E101_TEXT_EVIDENCE_CONFLICT_RESOLUTION_EXPANSION",
+  "case_count": 11520,
+  "direct_span_commit_allowed": false,
+  "families": [
+    "all_clear_no_extra_ask",
+    "consistent_spans_commit",
+    "latest_verified_over_stale",
+    "missing_required_span_ask",
+    "multi_span_consistency_chain",
+    "query_focus_disambiguation",
+    "source_priority_vs_latest_conflict",
+    "stale_quote_decoy",
+    "trusted_source_over_rumor",
+    "unresolved_conflict_defer"
+  ],
+  "natural_language_reasoning": false,
+  "open_domain_fact_checking": false,
+  "text_evidence_conflict_resolution": true
+}

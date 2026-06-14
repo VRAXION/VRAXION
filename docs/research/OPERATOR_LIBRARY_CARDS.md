@@ -2700,3 +2700,201 @@ whole_sentence_dump_control               -> Quarantine
 answer_from_text_without_evidence_control -> Quarantine
 span_locator_echo_clone                   -> Redundant
 ```
+
+## E101 Text Evidence Conflict Resolution Expansion
+
+Source:
+
+```text
+target/pilot_wave/e101_text_evidence_conflict_resolution_expansion/
+docs/research/artifact_samples/e101_text_evidence_conflict_resolution_expansion/
+```
+
+Boundary:
+
+```text
+controlled text evidence conflict resolution proxy
+not natural-language reasoning
+not open-domain fact checking
+```
+
+### Evidence Conflict Detector Lens
+
+```text
+component_id = evidence_conflict_detector_lens
+status       = StableOperatorCandidate
+family       = Lens
+```
+
+What it does:
+
+```text
+detects when candidate evidence spans disagree on the same focus
+```
+
+If removed:
+
+```text
+mean_resolution_success_loss = 1.000000
+mean_unsafe_conflict_commit_delta = 0.000000
+```
+
+### Source Priority Resolver Lens
+
+```text
+component_id = source_priority_resolver_lens
+status       = StableOperatorCandidate
+family       = Lens
+```
+
+What it does:
+
+```text
+resolves span priority by trusted source order
+```
+
+If removed:
+
+```text
+mean_resolution_success_loss = 0.199140
+mean_unsafe_conflict_commit_delta = 0.000000
+```
+
+### Temporal Latest Span T-Stab
+
+```text
+component_id = temporal_latest_span_t_stab
+status       = StableOperatorCandidate
+family       = T-Stab
+```
+
+What it does:
+
+```text
+stabilizes latest verified evidence against stale earlier spans
+```
+
+If removed:
+
+```text
+mean_resolution_success_loss = 0.306562
+mean_unsafe_conflict_commit_delta = 0.000000
+```
+
+### Multi-Span Consistency Guard
+
+```text
+component_id = multi_span_consistency_guard
+status       = StableOperatorCandidate
+family       = Guard
+```
+
+What it does:
+
+```text
+requires all committed spans to be mutually consistent
+```
+
+If removed:
+
+```text
+mean_resolution_success_loss = 0.903145
+mean_unsafe_conflict_commit_delta = 0.000000
+```
+
+### Contradiction-To-Defer Guard
+
+```text
+component_id = contradiction_to_defer_guard
+status       = StableOperatorCandidate
+family       = Guard
+```
+
+What it does:
+
+```text
+blocks commit and routes to DEFER when conflict remains unresolved
+```
+
+If removed:
+
+```text
+mean_resolution_success_loss = 0.098377
+mean_unsafe_conflict_commit_delta = 0.000000
+```
+
+### Missing Dependency Question Scribe
+
+```text
+component_id = missing_dependency_question_scribe
+status       = StableOperatorCandidate
+family       = Scribe
+```
+
+What it does:
+
+```text
+writes a targeted evidence request for the missing span dependency
+```
+
+If removed:
+
+```text
+mean_resolution_success_loss = 0.096855
+mean_unsafe_conflict_commit_delta = 0.000000
+```
+
+### Clarified Query Focus Lens
+
+```text
+component_id = clarified_query_focus_lens
+status       = StableOperatorCandidate
+family       = Lens
+```
+
+What it does:
+
+```text
+narrows the active query focus before resolving competing spans
+```
+
+If removed:
+
+```text
+mean_resolution_success_loss = 1.000000
+mean_unsafe_conflict_commit_delta = 0.000000
+```
+
+### Conflict-Resolved Proposal Scribe
+
+```text
+component_id = conflict_resolved_proposal_scribe
+status       = StableOperatorCandidate
+family       = Scribe
+```
+
+What it does:
+
+```text
+renders the final resolved evidence proposal with conflict trace
+```
+
+If removed:
+
+```text
+mean_resolution_success_loss = 1.000000
+mean_unsafe_conflict_commit_delta = 0.000000
+```
+
+### E101 Rejected Controls
+
+```text
+first_span_wins_control           -> Quarantine
+latest_without_source_control     -> Quarantine
+keyword_strength_picker           -> Quarantine
+contradiction_ignoring_committer  -> Quarantine
+always_ask_control                -> Deprecated
+source_rank_blind_control         -> Quarantine
+stale_span_committer              -> Quarantine
+conflict_detector_echo_clone      -> Redundant
+```

@@ -1,0 +1,19 @@
+{
+  "accepted_mutations_total": 128,
+  "adversarial_false_ask_rate_max": 0.0,
+  "adversarial_resolution_success_mean": 1.0,
+  "adversarial_resolution_success_min": 1.0,
+  "adversarial_stale_commit_rate_max": 0.0,
+  "adversarial_unsafe_conflict_commit_rate_max": 0.0,
+  "rejected_mutations_total": 512,
+  "rollback_count_total": 512,
+  "seconds": 0.92,
+  "seed_count": 16,
+  "validation_ask_question_validity_min": 1.0,
+  "validation_conflict_detection_validity_min": 1.0,
+  "validation_resolution_success_mean": 1.0,
+  "validation_resolution_success_min": 1.0,
+  "validation_source_priority_validity_min": 1.0,
+  "validation_temporal_latest_validity_min": 1.0,
+  "validation_trace_resolution_validity_min": 1.0
+}
