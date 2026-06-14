@@ -17,6 +17,7 @@ DEFAULT_E112 = Path("target/pilot_wave/e112_gold_to_core_prune_heavy_probation_w
 DEFAULT_E114 = Path("target/pilot_wave/e114_fineweb_next_limit_stability_projection")
 DEFAULT_E116 = Path("target/pilot_wave/e116_alpha_weave_synthetic_pressure_generation")
 DEFAULT_E117 = Path("target/pilot_wave/e117_alpha_weave_targeted_pressure_gauntlet")
+DEFAULT_E118 = Path("target/pilot_wave/e118_core_candidate_cross_source_no_harm_gauntlet")
 SAMPLE_E109 = Path("docs/research/artifact_samples/e109_operator_rank_ladder_and_golden_watch_probation_mode")
 SAMPLE_E110 = Path("docs/research/artifact_samples/e110_promote_or_drop_operator_grind_wave1")
 SAMPLE_E111 = Path("docs/research/artifact_samples/e111_bronze_mutation_prune_promote_or_drop_wave")
@@ -101,6 +102,13 @@ def compact_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
         "e117_positive_activation",
         "e117_neutral_valid_activation",
         "e117_negative_scope_valid_activation",
+        "e118_cross_source_no_harm_pass",
+        "e118_source_family_coverage",
+        "e118_case_count",
+        "e118_hard_negative",
+        "e118_negative_transfer",
+        "e118_synthetic_imprint",
+        "e118_ablation_value",
     ]
     return [{key: row.get(key) for key in keep} for row in rows]
 
@@ -348,6 +356,33 @@ def merge_e117(rows: list[dict[str, Any]], e117: Path | None) -> tuple[list[dict
     }
 
 
+def merge_e118(rows: list[dict[str, Any]], e118: Path | None) -> tuple[list[dict[str, Any]], dict[str, Any] | None]:
+    if not e118 or not (e118 / "operator_cross_source_results.json").exists():
+        return rows, None
+    results = read_json(e118 / "operator_cross_source_results.json")["rows"]
+    results_by_id = {row["operator_id"]: row for row in results}
+    merged: list[dict[str, Any]] = []
+    for row in rows:
+        update = results_by_id.get(row["operator_id"])
+        if not update:
+            merged.append(row)
+            continue
+        next_row = dict(row)
+        next_row["e118_cross_source_no_harm_pass"] = update.get("cross_source_no_harm_pass")
+        next_row["e118_source_family_coverage"] = update.get("source_family_coverage")
+        next_row["e118_case_count"] = update.get("case_count")
+        next_row["e118_hard_negative"] = update.get("hard_negative_count")
+        next_row["e118_negative_transfer"] = update.get("negative_transfer_count")
+        next_row["e118_synthetic_imprint"] = update.get("synthetic_imprint_count")
+        next_row["e118_ablation_value"] = update.get("ablation_value")
+        merged.append(next_row)
+    return merged, {
+        "summary": read_json(e118 / "summary.json"),
+        "aggregate": read_json(e118 / "aggregate_metrics.json"),
+        "checker": read_json(e118 / "checker_summary.json") if (e118 / "checker_summary.json").exists() else None,
+    }
+
+
 def build_payload(
     e109: Path,
     e110: Path | None = None,
@@ -356,6 +391,7 @@ def build_payload(
     e114: Path | None = None,
     e116: Path | None = None,
     e117: Path | None = None,
+    e118: Path | None = None,
 ) -> dict[str, Any]:
     rank_results = read_json(e109 / "rank_results.json")
     rows, e110_payload = merge_e110(compact_rows(rank_results["rows"]), e110)
@@ -364,7 +400,9 @@ def build_payload(
     rows, e114_payload = merge_e114(rows, e114)
     rows, e116_payload = merge_e116(rows, e116)
     rows, e117_payload = merge_e117(rows, e117)
+    rows, e118_payload = merge_e118(rows, e118)
     counts = rank_counts(rows)
+    orange_300k_count = sum(1 for row in rows if int(row.get("e117_activation_after_gauntlet") or row.get("qualified_activation") or 0) >= 300_000 and row.get("rank") == "CoreMemoryCandidate")
     aggregate = read_json(e109 / "aggregate_metrics.json")
     aggregate = {
         **aggregate,
@@ -375,6 +413,7 @@ def build_payload(
         "core_memory_candidate_count": counts["CoreMemoryCandidate"],
         "red_flag_count": counts["RedFlag"],
         "deprecated_count": counts["Deprecated"],
+        "orange_300k_count": orange_300k_count,
         "qualified_activation_total": sum(int(row.get("qualified_activation") or 0) for row in rows),
         "effective_activation_total": sum(int(row.get("e117_activation_after_gauntlet") or row.get("qualified_activation") or 0) for row in rows),
         "e114_projected_reach_permacore_count": e114_payload["aggregate"]["projected_reach_permacore_count"] if e114_payload else None,
@@ -387,12 +426,16 @@ def build_payload(
         "e117_targeted_needed_remaining_count": e117_payload["aggregate"]["targeted_needed_remaining_count"] if e117_payload else None,
         "e117_scheduled_case_count": e117_payload["aggregate"]["scheduled_case_count"] if e117_payload else None,
         "e117_hard_negative_total": e117_payload["aggregate"]["hard_negative_total"] if e117_payload else None,
+        "e118_cross_source_pass_count": e118_payload["aggregate"]["cross_source_no_harm_pass_count"] if e118_payload else None,
+        "e118_cross_source_remaining_count": e118_payload["aggregate"]["cross_source_no_harm_remaining_count"] if e118_payload else None,
+        "e118_hard_negative_total": e118_payload["aggregate"]["hard_negative_total"] if e118_payload else None,
+        "e118_synthetic_imprint_total": e118_payload["aggregate"]["synthetic_imprint_total"] if e118_payload else None,
     }
     summary = read_json(e109 / "summary.json")
     summary = {
         **summary,
         "rank_counts": counts,
-        "latest_wave": "E117 alpha-Weave targeted pressure gauntlet" if e117_payload else "E116 alpha-Weave targeted pressure" if e116_payload else "E114 FineWeb projection" if e114_payload else "E112 Wave 3" if e112_payload else "E111 Wave 2" if e111_payload else "E110 Wave 1" if e110_payload else "E109",
+        "latest_wave": "E118 cross-source no-harm gauntlet" if e118_payload else "E117 alpha-Weave targeted pressure gauntlet" if e117_payload else "E116 alpha-Weave targeted pressure" if e116_payload else "E114 FineWeb projection" if e114_payload else "E112 Wave 3" if e112_payload else "E111 Wave 2" if e111_payload else "E110 Wave 1" if e110_payload else "E109",
     }
     return {
         "summary": summary,
@@ -402,6 +445,7 @@ def build_payload(
         "e114": e114_payload,
         "e116": e116_payload,
         "e117": e117_payload,
+        "e118": e118_payload,
         "aggregate": aggregate,
         "policy": read_json(e109 / "rank_policy_manifest.json"),
         "watch": read_json(e109 / "golden_watch_report.json"),
@@ -434,6 +478,7 @@ def render_html(payload: dict[str, Any]) -> str:
       --gold: #ffd35a;
       --silver: #cdd7e6;
       --bronze: #c88b57;
+      --orange: #ff9b38;
       --red: #ff5c7a;
       --violet: #b98cff;
     }}
@@ -484,6 +529,7 @@ def render_html(payload: dict[str, Any]) -> str:
     .gold {{ color: var(--gold); }}
     .silver {{ color: var(--silver); }}
     .bronze {{ color: var(--bronze); }}
+    .orange {{ color: var(--orange); }}
     .red {{ color: var(--red); }}
     .green {{ color: var(--green); }}
     .toolbar {{
@@ -534,6 +580,7 @@ def render_html(payload: dict[str, Any]) -> str:
     .cell:hover {{ transform: translateY(-1px); filter: brightness(1.2); }}
     .r-Gold {{ background: linear-gradient(180deg, #ffe28a, #b98017); }}
     .r-CoreMemoryCandidate {{ background: linear-gradient(180deg, #d7b6ff, #6847c7); }}
+    .r-Orange300K {{ background: linear-gradient(180deg, #ffc36a, #e66c18); }}
     .r-Silver {{ background: linear-gradient(180deg, #eef4ff, #6d7f9d); }}
     .r-Bronze {{ background: linear-gradient(180deg, #d99c63, #7f4f2a); }}
     .r-Deprecated {{ background: linear-gradient(180deg, #777, #333); }}
@@ -652,7 +699,7 @@ def render_html(payload: dict[str, Any]) -> str:
   <script>
     const DATA = {escaped_data};
     const rows = DATA.rows;
-    const rankOrder = {{CoreMemoryCandidate: 0, DiamondCandidate: 1, Gold: 2, Silver: 3, Bronze: 4, Deprecated: 5, RedFlag: 6}};
+    const rankOrder = {{Orange300K: 0, CoreMemoryCandidate: 1, DiamondCandidate: 2, Gold: 3, Silver: 4, Bronze: 5, Deprecated: 6, RedFlag: 7}};
     const nextTargets = {{
       Bronze: {{name: "Silver", value: 300}},
       Silver: {{name: "Gold", value: 3000}},
@@ -676,6 +723,10 @@ def render_html(payload: dict[str, Any]) -> str:
     function effectiveActivation(row) {{
       return row.e117_activation_after_gauntlet || row.qualified_activation || 0;
     }}
+    function visualRank(row) {{
+      if (row.rank === "CoreMemoryCandidate" && effectiveActivation(row) >= 300000 && (row.e117_hard_negative || 0) === 0) return "Orange300K";
+      return row.rank || "Bronze";
+    }}
     function nextTarget(row) {{
       const target = nextTargets[row.rank] || nextTargets.Bronze;
       const activation = effectiveActivation(row);
@@ -686,18 +737,18 @@ def render_html(payload: dict[str, Any]) -> str:
     function filtered() {{
       const q = state.q.toLowerCase().trim();
       let out = rows.filter(row => {{
-        if (state.rank !== "All" && row.rank !== state.rank) return false;
+        if (state.rank !== "All" && visualRank(row) !== state.rank) return false;
         if (state.scope !== "All" && row.scope !== state.scope) return false;
         if (!q) return true;
-        return [row.operator_id, row.display_name, row.scope, row.family, row.group_id, row.rank, row.e108_status]
+        return [row.operator_id, row.display_name, row.scope, row.family, row.group_id, row.rank, visualRank(row), row.e108_status]
           .join(" ").toLowerCase().includes(q);
       }});
       out.sort((a,b) => {{
         if (state.sort === "activation") return effectiveActivation(b) - effectiveActivation(a);
         if (state.sort === "remaining") return nextTarget(a).remain - nextTarget(b).remain;
         if (state.sort === "value") return (b.counterfactual_value||0) - (a.counterfactual_value||0);
-        if (state.sort === "scope") return String(a.scope).localeCompare(String(b.scope)) || (rankOrder[a.rank] - rankOrder[b.rank]);
-        return (rankOrder[a.rank] - rankOrder[b.rank]) || String(a.operator_id).localeCompare(String(b.operator_id));
+        if (state.sort === "scope") return String(a.scope).localeCompare(String(b.scope)) || (rankOrder[visualRank(a)] - rankOrder[visualRank(b)]);
+        return (rankOrder[visualRank(a)] - rankOrder[visualRank(b)]) || String(a.operator_id).localeCompare(String(b.operator_id));
       }});
       return out;
     }}
@@ -705,6 +756,7 @@ def render_html(payload: dict[str, Any]) -> str:
       const agg = DATA.aggregate;
       const cards = [
         ["CoreCandidate", agg.core_memory_candidate_count, "core"],
+        ["Orange 300K", agg.orange_300k_count ?? 0, "orange"],
         ["Gold", agg.gold_count, "gold"],
         ["Silver", agg.silver_count, "silver"],
         ["Bronze", agg.bronze_count, "bronze"],
@@ -715,21 +767,23 @@ def render_html(payload: dict[str, Any]) -> str:
         ["E116 synthetic reaches", agg.e116_target_reach_count ?? "n/a", "green"],
         ["E116 remaining", agg.e116_targeted_needed_remaining_count ?? "n/a", agg.e116_targeted_needed_remaining_count ? "gold" : "green"],
         ["E117 gauntlet reaches", agg.e117_target_reach_count ?? "n/a", "green"],
-        ["E117 hard negatives", agg.e117_hard_negative_total ?? "n/a", agg.e117_hard_negative_total ? "red" : "green"]
+        ["E117 hard negatives", agg.e117_hard_negative_total ?? "n/a", agg.e117_hard_negative_total ? "red" : "green"],
+        ["E118 cross-source pass", agg.e118_cross_source_pass_count ?? "n/a", "orange"],
+        ["E118 hard negatives", agg.e118_hard_negative_total ?? "n/a", agg.e118_hard_negative_total ? "red" : "green"]
       ];
       document.getElementById("cards").innerHTML = cards.map(([label,value,cls]) =>
         `<div class="card"><div class="label">${{label}}</div><div class="value ${{cls}}">${{value}}</div></div>`
       ).join("");
     }}
     function renderFilters() {{
-      const ranks = ["All", ...Array.from(new Set(rows.map(r => r.rank))).sort((a,b) => rankOrder[a] - rankOrder[b])];
+      const ranks = ["All", ...Array.from(new Set(rows.map(r => visualRank(r)))).sort((a,b) => rankOrder[a] - rankOrder[b])];
       const scopes = ["All", ...Array.from(new Set(rows.map(r => r.scope))).sort()];
       document.getElementById("rankFilter").innerHTML = ranks.map(r => `<option value="${{htmlEscape(r)}}">${{htmlEscape(r)}}</option>`).join("");
       document.getElementById("scopeFilter").innerHTML = scopes.map(s => `<option value="${{htmlEscape(s)}}">${{htmlEscape(s)}}</option>`).join("");
       document.getElementById("rankFilter").value = ranks.includes(state.rank) ? state.rank : "All";
       document.getElementById("scopeFilter").value = scopes.includes(state.scope) ? state.scope : "All";
       document.getElementById("rankButtons").innerHTML = ranks.map(r => {{
-        const count = r === "All" ? rows.length : rows.filter(x => x.rank === r).length;
+        const count = r === "All" ? rows.length : rows.filter(x => visualRank(x) === r).length;
         return `<button data-rank="${{htmlEscape(r)}}" class="${{state.rank === r ? "active" : ""}}">${{htmlEscape(r)}} <span class="pill">${{count}}</span></button>`;
       }}).join("");
       document.querySelectorAll("#rankButtons button").forEach(btn => btn.onclick = () => {{
@@ -740,7 +794,7 @@ def render_html(payload: dict[str, Any]) -> str:
     }}
     function renderGrid(items) {{
       document.getElementById("rankGrid").innerHTML = items.map(row =>
-        `<div class="cell ${{rankClass(row.rank)}}" title="${{htmlEscape(row.rank)}} · ${{htmlEscape(row.operator_id)}} · ${{htmlEscape(row.scope)}}" data-id="${{htmlEscape(row.operator_id)}}"></div>`
+        `<div class="cell ${{rankClass(visualRank(row))}}" title="${{htmlEscape(visualRank(row))}} · ${{htmlEscape(row.operator_id)}} · ${{htmlEscape(row.scope)}}" data-id="${{htmlEscape(row.operator_id)}}"></div>`
       ).join("");
       document.querySelectorAll(".cell").forEach(cell => cell.onclick = () => select(cell.dataset.id));
     }}
@@ -748,9 +802,10 @@ def render_html(payload: dict[str, Any]) -> str:
       document.getElementById("rows").innerHTML = items.map(row => {{
         const target = nextTarget(row);
         const activation = effectiveActivation(row);
+        const vRank = visualRank(row);
         const noharm = row.hard_negative === 0 ? "clean" : "flag";
         return `<tr data-id="${{htmlEscape(row.operator_id)}}">
-          <td><span class="pill ${{String(row.rank).toLowerCase()}}">${{htmlEscape(row.rank)}}</span></td>
+          <td><span class="pill ${{String(vRank).toLowerCase()}}">${{htmlEscape(vRank)}}</span><br><span class="detail-id">${{htmlEscape(row.rank)}}</span></td>
           <td><strong>${{htmlEscape(row.display_name || row.operator_id)}}</strong><br><span class="detail-id">${{htmlEscape(row.operator_id)}}</span></td>
           <td>${{htmlEscape(row.scope)}}<br><span class="detail-id">${{htmlEscape(row.group_id)}} · ${{htmlEscape(row.family)}}</span></td>
           <td>${{fmt(activation)}}<div class="bar"><span style="width:${{(target.progress*100).toFixed(1)}}%"></span></div></td>
@@ -775,11 +830,13 @@ def render_html(payload: dict[str, Any]) -> str:
       state.selected = row;
       const target = nextTarget(row);
       const activation = effectiveActivation(row);
+      const vRank = visualRank(row);
       document.getElementById("detail").innerHTML = `
         <div class="detail-title">${{htmlEscape(row.display_name || row.operator_id)}}</div>
         <div class="detail-id">${{htmlEscape(row.operator_id)}}</div>
         <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
-          <span class="pill ${{String(row.rank).toLowerCase()}}">${{htmlEscape(row.rank)}}</span>
+          <span class="pill ${{String(vRank).toLowerCase()}}">${{htmlEscape(vRank)}}</span>
+          <span class="pill">${{htmlEscape(row.rank)}}</span>
           <span class="pill">${{htmlEscape(row.scope)}}</span>
           <span class="pill">${{htmlEscape(row.watch_state)}}</span>
         </div>
@@ -810,6 +867,8 @@ def render_html(payload: dict[str, Any]) -> str:
           <div>E117 gauntlet activation</div><div>${{row.e117_reaches_permacore_probation_after_gauntlet ? "actual gauntlet reaches 300k" : "not reached in gauntlet"}} · +${{fmt(row.e117_qualified_activation || 0)}} qualified · hard negatives ${{fmt(row.e117_hard_negative || 0)}}</div>
           <div>E117 activation mix</div><div>positive ${{fmt(row.e117_positive_activation || 0)}} · neutral ${{fmt(row.e117_neutral_valid_activation || 0)}} · negative-scope valid ${{fmt(row.e117_negative_scope_valid_activation || 0)}}</div>
           <div>E117 remaining</div><div>${{fmt(row.e117_remaining_after_gauntlet || 0)}} after actual targeted gauntlet</div>
+          <div>E118 cross-source</div><div>${{row.e118_cross_source_no_harm_pass ? "cross-source no-harm pass" : "not run / not passed"}} · families ${{fmt(row.e118_source_family_coverage || 0)}} · hard negatives ${{fmt(row.e118_hard_negative || 0)}} · imprint ${{fmt(row.e118_synthetic_imprint || 0)}}</div>
+          <div>E118 ablation value</div><div>${{fmt(row.e118_ablation_value || 0)}} · cases ${{fmt(row.e118_case_count || 0)}}</div>
         </div>
         <div class="note">${{row.rank === "CoreMemoryCandidate" ? "Interpretation: this operator passed scoped CoreMemoryCandidate probation. It is still not PermaCore or TrueGolden without a later larger no-harm grind." : "Interpretation: rank is scoped. This operator is not Core memory unless a later Core probation grind passes the much higher qualified-activation and no-harm gates."}}</div>
       `;
@@ -842,6 +901,7 @@ def main() -> int:
     parser.add_argument("--e114", default=str(DEFAULT_E114))
     parser.add_argument("--e116", default=str(DEFAULT_E116))
     parser.add_argument("--e117", default=str(DEFAULT_E117))
+    parser.add_argument("--e118", default=str(DEFAULT_E118))
     parser.add_argument("--out", default=str(DEFAULT_OUT))
     args = parser.parse_args()
     e109 = existing_artifact_path(Path(args.e109), SAMPLE_E109, "rank_results.json")
@@ -851,14 +911,16 @@ def main() -> int:
     e114_requested = Path(args.e114)
     e116_requested = Path(args.e116)
     e117_requested = Path(args.e117)
+    e118_requested = Path(args.e118)
     e110 = e110_requested if (e110_requested / "wave_results.json").exists() else SAMPLE_E110 if (SAMPLE_E110 / "wave_results.json").exists() else None
     e111 = e111_requested if (e111_requested / "wave_results.json").exists() else SAMPLE_E111 if (SAMPLE_E111 / "wave_results.json").exists() else None
     e112 = e112_requested if (e112_requested / "wave_results.json").exists() else SAMPLE_E112 if (SAMPLE_E112 / "wave_results.json").exists() else None
     e114 = e114_requested if (e114_requested / "operator_projection_report.json").exists() else None
     e116 = e116_requested if (e116_requested / "operator_target_coverage.json").exists() else None
     e117 = e117_requested if (e117_requested / "operator_gauntlet_results.json").exists() else None
+    e118 = e118_requested if (e118_requested / "operator_cross_source_results.json").exists() else None
     out = Path(args.out)
-    payload = build_payload(e109, e110, e111, e112, e114, e116, e117)
+    payload = build_payload(e109, e110, e111, e112, e114, e116, e117, e118)
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(render_html(payload), encoding="utf-8")
     print(json.dumps({"out": str(out), "operator_count": len(payload["rows"])}, sort_keys=True))
