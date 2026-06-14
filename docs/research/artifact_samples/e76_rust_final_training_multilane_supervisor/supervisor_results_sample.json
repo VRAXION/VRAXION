@@ -1,0 +1,16 @@
+{
+  "passed": true,
+  "lanes": 8,
+  "rounds_per_lane": 20000,
+  "total_rounds": 160000,
+  "completed_queues": 160000,
+  "completed_lessons": 640000,
+  "promoted_count": 640000,
+  "failed_count": 0,
+  "lane_generated_pocket_count_sum": 128,
+  "bad_commit_rate": 0.000000,
+  "unsafe_promotion_rate": 0.000000,
+  "seconds": 0.451883300,
+  "queues_per_sec": 354073.718,
+  "lessons_per_sec": 1416294.871
+}

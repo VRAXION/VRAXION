@@ -19,6 +19,7 @@ Curriculum queue preflight glue
 Curriculum resume/checkpoint preflight glue
 Final bake preflight entrypoint
 Final curriculum pocket-generation runner
+Final training multi-lane supervisor
 proposal boundary
 Agency commit/reject/defer
 trace-backed egress rendering
@@ -42,6 +43,7 @@ library        persistent registry/tokens/artifacts/ledgers store model
 curriculum     active-set -> guarded-load -> body commit -> promotion row loop
 final_bake     unified body/text/registry/manager/library/curriculum bake gate
 final_training final curriculum runner with checkpoints/progress/library growth
+final_training_supervisor multi-lane final training fanout + aggregate progress
 proposal       temporary Pocket proposal ABI
 agency         commit/reject/defer/answer boundary
 egress         rendering from committed state only
@@ -78,6 +80,7 @@ cargo run -p vraxion-runtime --bin curriculum_queue_preflight --release -- 10000
 cargo run -p vraxion-runtime --bin curriculum_resume_preflight --release -- 10000
 cargo run -p vraxion-runtime --bin final_bake_preflight --release -- 10000
 cargo run -p vraxion-runtime --bin final_training_runner --release -- 10000
+cargo run -p vraxion-runtime --bin final_training_supervisor --release -- 8 10000
 ```
 
 ## Boundary

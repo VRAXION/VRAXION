@@ -1,0 +1,10 @@
+{"timestamp_ms":1781395205784,"event":"start","lanes":8,"rounds_per_lane":20000,"preflight_rounds":1000,"checkpoint_interval":5000}
+{"timestamp_ms":1781395206212,"event":"lane_complete","lane":2,"passed":true,"completed_queues":20000,"completed_lessons":80000,"generated_pocket_count":16,"seconds":0.425758100}
+{"timestamp_ms":1781395206218,"event":"lane_complete","lane":3,"passed":true,"completed_queues":20000,"completed_lessons":80000,"generated_pocket_count":16,"seconds":0.431511900}
+{"timestamp_ms":1781395206222,"event":"lane_complete","lane":1,"passed":true,"completed_queues":20000,"completed_lessons":80000,"generated_pocket_count":16,"seconds":0.434743700}
+{"timestamp_ms":1781395206223,"event":"lane_complete","lane":7,"passed":true,"completed_queues":20000,"completed_lessons":80000,"generated_pocket_count":16,"seconds":0.434894100}
+{"timestamp_ms":1781395206223,"event":"lane_complete","lane":0,"passed":true,"completed_queues":20000,"completed_lessons":80000,"generated_pocket_count":16,"seconds":0.436519000}
+{"timestamp_ms":1781395206224,"event":"lane_complete","lane":4,"passed":true,"completed_queues":20000,"completed_lessons":80000,"generated_pocket_count":16,"seconds":0.436392600}
+{"timestamp_ms":1781395206230,"event":"lane_complete","lane":5,"passed":true,"completed_queues":20000,"completed_lessons":80000,"generated_pocket_count":16,"seconds":0.443647200}
+{"timestamp_ms":1781395206235,"event":"lane_complete","lane":6,"passed":true,"completed_queues":20000,"completed_lessons":80000,"generated_pocket_count":16,"seconds":0.448658500}
+{"timestamp_ms":1781395206236,"event":"complete","passed":true,"lanes":8,"completed_queues":160000,"completed_lessons":640000}
