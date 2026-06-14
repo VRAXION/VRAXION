@@ -1,0 +1,11 @@
+{
+  "e109_decision": "e109_rank_ladder_and_golden_watch_confirmed",
+  "e110_decision": "e110_wave1_silver_to_gold_pressure_confirmed",
+  "e111_decision": "e111_bronze_mutation_prune_wave_gold_conversion_confirmed",
+  "gold_origins": {
+    "E109_original_gold": 14,
+    "E110_pressure_gold": 35,
+    "E111_mutation_plus_prune_gold": 87
+  },
+  "merged_gold_candidates": 136
+}

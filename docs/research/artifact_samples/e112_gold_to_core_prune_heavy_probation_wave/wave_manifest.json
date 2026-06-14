@@ -1,0 +1,15 @@
+{
+  "artifact_contract": "E112_GOLD_TO_CORE_PRUNE_HEAVY_PROBATION_WAVE",
+  "boundary": "CoreMemoryCandidate probation only; not PermaCore; not TrueGolden; not final training",
+  "candidate_source_rank": "Gold",
+  "hard_negative_stops_promotion": true,
+  "mutation_mode": "prune_heavy_core_probation_mutation_challenger_reload",
+  "prune_selected_ratio_min": 0.5,
+  "source": {
+    "e109": "target\\pilot_wave\\e109_operator_rank_ladder_and_golden_watch_probation_mode",
+    "e110": "target\\pilot_wave\\e110_promote_or_drop_operator_grind_wave1",
+    "e111": "target\\pilot_wave\\e111_bronze_mutation_prune_promote_or_drop_wave"
+  },
+  "target_rank": "CoreMemoryCandidate",
+  "wave": 3
+}

@@ -13,6 +13,7 @@ from typing import Any
 DEFAULT_E109 = Path("target/pilot_wave/e109_operator_rank_ladder_and_golden_watch_probation_mode")
 DEFAULT_E110 = Path("target/pilot_wave/e110_promote_or_drop_operator_grind_wave1")
 DEFAULT_E111 = Path("target/pilot_wave/e111_bronze_mutation_prune_promote_or_drop_wave")
+DEFAULT_E112 = Path("target/pilot_wave/e112_gold_to_core_prune_heavy_probation_wave")
 DEFAULT_OUT = Path("target/pilot_wave/operator_rank_dashboard/index.html")
 
 
@@ -60,12 +61,16 @@ def compact_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
         "accepted_mutations",
         "rejected_mutations",
         "rollback_count",
+        "e112_wave3_outcome",
+        "selected_prune_ratio",
+        "long_horizon_no_harm_pass",
+        "negative_scope_pass",
     ]
     return [{key: row.get(key) for key in keep} for row in rows]
 
 
 def rank_counts(rows: list[dict[str, Any]]) -> dict[str, int]:
-    keys = ["Bronze", "Silver", "Gold", "DiamondCandidate", "RedFlag", "Deprecated"]
+    keys = ["Bronze", "Silver", "Gold", "DiamondCandidate", "CoreMemoryCandidate", "RedFlag", "Deprecated"]
     return {key: sum(1 for row in rows if row.get("rank") == key) for key in keys}
 
 
@@ -168,10 +173,68 @@ def merge_e111(rows: list[dict[str, Any]], e111: Path | None) -> tuple[list[dict
     }
 
 
-def build_payload(e109: Path, e110: Path | None = None, e111: Path | None = None) -> dict[str, Any]:
+def merge_e112(rows: list[dict[str, Any]], e112: Path | None) -> tuple[list[dict[str, Any]], dict[str, Any] | None]:
+    if not e112 or not (e112 / "wave_results.json").exists():
+        return rows, None
+    wave = read_json(e112 / "wave_results.json")["rows"]
+    wave_by_id = {row["operator_id"]: row for row in wave}
+    merged: list[dict[str, Any]] = []
+    for row in rows:
+        update = wave_by_id.get(row["operator_id"])
+        if not update:
+            merged.append(row)
+            continue
+        next_row = dict(row)
+        for key in [
+            "rank_after",
+            "rank_before",
+            "wave3_outcome",
+            "selected_variant_id",
+            "selected_variant_type",
+            "selected_variant_net_score",
+            "selected_prune_ratio",
+            "qualified_activation",
+            "qualified_activation_add",
+            "positive",
+            "neutral_valid",
+            "neutral_waste",
+            "neutral_waste_rate",
+            "hard_negative",
+            "rule_of_three_upper_failure_bound",
+            "combined_family_coverage",
+            "campaign_count",
+            "counterfactual_value",
+            "activated_gain",
+            "ablation_loss",
+            "reload_shadow_pass",
+            "challenger_pass",
+            "prune_pass",
+            "long_horizon_no_harm_pass",
+            "negative_scope_pass",
+            "mutation_attempts",
+            "accepted_mutations",
+            "rejected_mutations",
+            "rollback_count",
+        ]:
+            if key in update:
+                next_row[key if key != "wave3_outcome" else "e112_wave3_outcome"] = update[key]
+        next_row["rank"] = update.get("rank_after", next_row["rank"])
+        next_row["watch_state"] = "E112CoreCandidateConfirmed" if next_row["rank"] == "CoreMemoryCandidate" else next_row.get("watch_state")
+        merged.append(next_row)
+    return merged, {
+        "summary": read_json(e112 / "summary.json"),
+        "aggregate": read_json(e112 / "aggregate_metrics.json"),
+        "promotion": read_json(e112 / "promotion_report.json"),
+        "mutation": read_json(e112 / "mutation_summary.json"),
+        "duration": read_json(e112 / "duration_report.json"),
+    }
+
+
+def build_payload(e109: Path, e110: Path | None = None, e111: Path | None = None, e112: Path | None = None) -> dict[str, Any]:
     rank_results = read_json(e109 / "rank_results.json")
     rows, e110_payload = merge_e110(compact_rows(rank_results["rows"]), e110)
     rows, e111_payload = merge_e111(rows, e111)
+    rows, e112_payload = merge_e112(rows, e112)
     counts = rank_counts(rows)
     aggregate = read_json(e109 / "aggregate_metrics.json")
     aggregate = {
@@ -180,6 +243,7 @@ def build_payload(e109: Path, e110: Path | None = None, e111: Path | None = None
         "silver_count": counts["Silver"],
         "gold_count": counts["Gold"],
         "diamond_candidate_count": counts["DiamondCandidate"],
+        "core_memory_candidate_count": counts["CoreMemoryCandidate"],
         "red_flag_count": counts["RedFlag"],
         "deprecated_count": counts["Deprecated"],
         "qualified_activation_total": sum(int(row.get("qualified_activation") or 0) for row in rows),
@@ -188,12 +252,13 @@ def build_payload(e109: Path, e110: Path | None = None, e111: Path | None = None
     summary = {
         **summary,
         "rank_counts": counts,
-        "latest_wave": "E111 Wave 2" if e111_payload else "E110 Wave 1" if e110_payload else "E109",
+        "latest_wave": "E112 Wave 3" if e112_payload else "E111 Wave 2" if e111_payload else "E110 Wave 1" if e110_payload else "E109",
     }
     return {
         "summary": summary,
         "e110": e110_payload,
         "e111": e111_payload,
+        "e112": e112_payload,
         "aggregate": aggregate,
         "policy": read_json(e109 / "rank_policy_manifest.json"),
         "watch": read_json(e109 / "golden_watch_report.json"),
@@ -272,6 +337,7 @@ def render_html(payload: dict[str, Any]) -> str:
     .card {{ padding: 14px; min-height: 86px; }}
     .label {{ color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .04em; }}
     .value {{ font-size: 26px; font-weight: 760; margin-top: 8px; }}
+    .core {{ color: var(--violet); }}
     .gold {{ color: var(--gold); }}
     .silver {{ color: var(--silver); }}
     .bronze {{ color: var(--bronze); }}
@@ -324,6 +390,7 @@ def render_html(payload: dict[str, Any]) -> str:
     }}
     .cell:hover {{ transform: translateY(-1px); filter: brightness(1.2); }}
     .r-Gold {{ background: linear-gradient(180deg, #ffe28a, #b98017); }}
+    .r-CoreMemoryCandidate {{ background: linear-gradient(180deg, #d7b6ff, #6847c7); }}
     .r-Silver {{ background: linear-gradient(180deg, #eef4ff, #6d7f9d); }}
     .r-Bronze {{ background: linear-gradient(180deg, #d99c63, #7f4f2a); }}
     .r-Deprecated {{ background: linear-gradient(180deg, #777, #333); }}
@@ -442,12 +509,13 @@ def render_html(payload: dict[str, Any]) -> str:
   <script>
     const DATA = {escaped_data};
     const rows = DATA.rows;
-    const rankOrder = {{DiamondCandidate: 0, Gold: 1, Silver: 2, Bronze: 3, Deprecated: 4, RedFlag: 5}};
+    const rankOrder = {{CoreMemoryCandidate: 0, DiamondCandidate: 1, Gold: 2, Silver: 3, Bronze: 4, Deprecated: 5, RedFlag: 6}};
     const nextTargets = {{
       Bronze: {{name: "Silver", value: 300}},
       Silver: {{name: "Gold", value: 3000}},
       Gold: {{name: "Diamond", value: 30000}},
       DiamondCandidate: {{name: "CoreCandidate", value: 100000}},
+      CoreMemoryCandidate: {{name: "PermaCore probation", value: 300000}},
       Deprecated: {{name: "Stopped", value: 0}},
       RedFlag: {{name: "Stopped", value: 0}}
     }};
@@ -489,10 +557,10 @@ def render_html(payload: dict[str, Any]) -> str:
     function renderCards() {{
       const agg = DATA.aggregate;
       const cards = [
+        ["CoreCandidate", agg.core_memory_candidate_count, "core"],
         ["Gold", agg.gold_count, "gold"],
         ["Silver", agg.silver_count, "silver"],
         ["Bronze", agg.bronze_count, "bronze"],
-        ["Diamond", agg.diamond_candidate_count, "green"],
         ["Hard negative", agg.hard_negative_total, agg.hard_negative_total ? "red" : "green"],
         ["Qualified activations", fmt(agg.qualified_activation_total), "green"]
       ];
@@ -526,7 +594,7 @@ def render_html(payload: dict[str, Any]) -> str:
         const target = nextTarget(row);
         const noharm = row.hard_negative === 0 ? "clean" : "flag";
         return `<tr data-id="${{row.operator_id}}">
-          <td><span class="pill ${{row.rank.toLowerCase()}}">${{row.rank}}</span></td>
+          <td><span class="pill ${{String(row.rank).toLowerCase()}}">${{row.rank}}</span></td>
           <td><strong>${{htmlEscape(row.display_name || row.operator_id)}}</strong><br><span class="detail-id">${{htmlEscape(row.operator_id)}}</span></td>
           <td>${{htmlEscape(row.scope)}}<br><span class="detail-id">${{htmlEscape(row.group_id)}} · ${{htmlEscape(row.family)}}</span></td>
           <td>${{fmt(row.qualified_activation)}}<div class="bar"><span style="width:${{(target.progress*100).toFixed(1)}}%"></span></div></td>
@@ -551,7 +619,7 @@ def render_html(payload: dict[str, Any]) -> str:
         <div class="detail-title">${{htmlEscape(row.display_name || row.operator_id)}}</div>
         <div class="detail-id">${{htmlEscape(row.operator_id)}}</div>
         <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
-          <span class="pill ${{row.rank.toLowerCase()}}">${{row.rank}}</span>
+          <span class="pill ${{String(row.rank).toLowerCase()}}">${{row.rank}}</span>
           <span class="pill">${{htmlEscape(row.scope)}}</span>
           <span class="pill">${{htmlEscape(row.watch_state)}}</span>
         </div>
@@ -567,12 +635,13 @@ def render_html(payload: dict[str, Any]) -> str:
           <div>Campaign count</div><div>${{fmt(row.campaign_count)}}</div>
           <div>Counterfactual value</div><div>${{fmt(row.counterfactual_value)}} · gain ${{fmt(row.activated_gain)}} · ablation ${{fmt(row.ablation_loss)}}</div>
           <div>Reload / Challenger / Prune</div><div>${{row.reload_shadow_pass ? "reload pass" : "reload no"}} · ${{row.challenger_pass ? "challenger pass" : "challenger no"}} · ${{row.prune_pass ? "prune pass" : "prune no"}}</div>
-          <div>Status source</div><div>E107 ${{htmlEscape(row.e107_status)}} · E108 ${{htmlEscape(row.e108_status)}}${{row.e110_wave1_outcome ? " · E110 " + htmlEscape(row.e110_wave1_outcome) : ""}}${{row.e111_wave2_outcome ? " · E111 " + htmlEscape(row.e111_wave2_outcome) : ""}}</div>
+          <div>Status source</div><div>E107 ${{htmlEscape(row.e107_status)}} · E108 ${{htmlEscape(row.e108_status)}}${{row.e110_wave1_outcome ? " · E110 " + htmlEscape(row.e110_wave1_outcome) : ""}}${{row.e111_wave2_outcome ? " · E111 " + htmlEscape(row.e111_wave2_outcome) : ""}}${{row.e112_wave3_outcome ? " · E112 " + htmlEscape(row.e112_wave3_outcome) : ""}}</div>
           <div>Latest activation add</div><div>${{fmt(row.qualified_activation_add || 0)}}</div>
-          <div>E111 selected variant</div><div>${{htmlEscape(row.selected_variant_type || "")}}<br><span class="detail-id">${{htmlEscape(row.selected_variant_id || "")}}</span></div>
-          <div>E111 mutation budget</div><div>${{fmt(row.mutation_attempts || 0)}} attempts · ${{fmt(row.accepted_mutations || 0)}} accepted · ${{fmt(row.rollback_count || 0)}} rollback</div>
+          <div>Selected variant</div><div>${{htmlEscape(row.selected_variant_type || "")}}${{typeof row.selected_prune_ratio === "number" ? " · prune " + (row.selected_prune_ratio * 100).toFixed(1) + "%" : ""}}<br><span class="detail-id">${{htmlEscape(row.selected_variant_id || "")}}</span></div>
+          <div>Mutation budget</div><div>${{fmt(row.mutation_attempts || 0)}} attempts · ${{fmt(row.accepted_mutations || 0)}} accepted · ${{fmt(row.rollback_count || 0)}} rollback</div>
+          <div>Core no-harm</div><div>${{row.long_horizon_no_harm_pass ? "long-horizon pass" : ""}}${{row.negative_scope_pass ? " · negative-scope pass" : ""}}</div>
         </div>
-        <div class="note">Interpretation: rank is scoped. This operator is not Core memory unless a later Core probation grind passes the much higher qualified-activation and no-harm gates.</div>
+        <div class="note">${{row.rank === "CoreMemoryCandidate" ? "Interpretation: this operator passed scoped CoreMemoryCandidate probation. It is still not PermaCore or TrueGolden without a later larger no-harm grind." : "Interpretation: rank is scoped. This operator is not Core memory unless a later Core probation grind passes the much higher qualified-activation and no-harm gates."}}</div>
       `;
     }}
     function render() {{
@@ -599,13 +668,15 @@ def main() -> int:
     parser.add_argument("--e109", default=str(DEFAULT_E109))
     parser.add_argument("--e110", default=str(DEFAULT_E110))
     parser.add_argument("--e111", default=str(DEFAULT_E111))
+    parser.add_argument("--e112", default=str(DEFAULT_E112))
     parser.add_argument("--out", default=str(DEFAULT_OUT))
     args = parser.parse_args()
     e109 = Path(args.e109)
     e110 = Path(args.e110)
     e111 = Path(args.e111)
+    e112 = Path(args.e112)
     out = Path(args.out)
-    payload = build_payload(e109, e110 if e110.exists() else None, e111 if e111.exists() else None)
+    payload = build_payload(e109, e110 if e110.exists() else None, e111 if e111.exists() else None, e112 if e112.exists() else None)
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(render_html(payload), encoding="utf-8")
     print(json.dumps({"out": str(out), "operator_count": len(payload["rows"])}, sort_keys=True))

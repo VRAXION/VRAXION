@@ -1,0 +1,12 @@
+{
+  "hash": "68662ae23d7d7388d592770794fa48713c3a98abd418a33cbf4f3a5655ed2605",
+  "payload_keys": [
+    "aggregate",
+    "duration",
+    "input_report",
+    "mutation_summary",
+    "promotion_report",
+    "wave_manifest",
+    "wave_results"
+  ]
+}
