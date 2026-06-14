@@ -14,6 +14,7 @@ DEFAULT_E109 = Path("target/pilot_wave/e109_operator_rank_ladder_and_golden_watc
 DEFAULT_E110 = Path("target/pilot_wave/e110_promote_or_drop_operator_grind_wave1")
 DEFAULT_E111 = Path("target/pilot_wave/e111_bronze_mutation_prune_promote_or_drop_wave")
 DEFAULT_E112 = Path("target/pilot_wave/e112_gold_to_core_prune_heavy_probation_wave")
+DEFAULT_E114 = Path("target/pilot_wave/e114_fineweb_next_limit_stability_projection")
 SAMPLE_E109 = Path("docs/research/artifact_samples/e109_operator_rank_ladder_and_golden_watch_probation_mode")
 SAMPLE_E110 = Path("docs/research/artifact_samples/e110_promote_or_drop_operator_grind_wave1")
 SAMPLE_E111 = Path("docs/research/artifact_samples/e111_bronze_mutation_prune_promote_or_drop_wave")
@@ -77,6 +78,12 @@ def compact_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
         "selected_prune_ratio",
         "long_horizon_no_harm_pass",
         "negative_scope_pass",
+        "e114_current_run_calls",
+        "e114_projected_full_fineweb_calls",
+        "e114_projected_activation_after_full_fineweb",
+        "e114_projected_reaches_permacore_probation",
+        "e114_projected_remaining_after_full_fineweb",
+        "e114_selected_variant",
     ]
     return [{key: row.get(key) for key in keep} for row in rows]
 
@@ -242,11 +249,45 @@ def merge_e112(rows: list[dict[str, Any]], e112: Path | None) -> tuple[list[dict
     }
 
 
-def build_payload(e109: Path, e110: Path | None = None, e111: Path | None = None, e112: Path | None = None) -> dict[str, Any]:
+def merge_e114(rows: list[dict[str, Any]], e114: Path | None) -> tuple[list[dict[str, Any]], dict[str, Any] | None]:
+    if not e114 or not (e114 / "operator_projection_report.json").exists():
+        return rows, None
+    projection = read_json(e114 / "operator_projection_report.json")["rows"]
+    projection_by_id = {row["operator_id"]: row for row in projection}
+    merged: list[dict[str, Any]] = []
+    for row in rows:
+        update = projection_by_id.get(row["operator_id"])
+        if not update:
+            merged.append(row)
+            continue
+        next_row = dict(row)
+        next_row["e114_current_run_calls"] = update.get("current_run_calls")
+        next_row["e114_projected_full_fineweb_calls"] = update.get("projected_full_fineweb_calls")
+        next_row["e114_projected_activation_after_full_fineweb"] = update.get("projected_activation_after_full_fineweb")
+        next_row["e114_projected_reaches_permacore_probation"] = update.get("projected_reaches_permacore_probation")
+        next_row["e114_projected_remaining_after_full_fineweb"] = update.get("projected_remaining_after_full_fineweb")
+        next_row["e114_selected_variant"] = update.get("selected_variant")
+        merged.append(next_row)
+    return merged, {
+        "summary": read_json(e114 / "summary.json"),
+        "aggregate": read_json(e114 / "aggregate_metrics.json"),
+        "target": read_json(e114 / "target_sufficiency_report.json"),
+        "stability": read_json(e114 / "stability_trend_report.json"),
+    }
+
+
+def build_payload(
+    e109: Path,
+    e110: Path | None = None,
+    e111: Path | None = None,
+    e112: Path | None = None,
+    e114: Path | None = None,
+) -> dict[str, Any]:
     rank_results = read_json(e109 / "rank_results.json")
     rows, e110_payload = merge_e110(compact_rows(rank_results["rows"]), e110)
     rows, e111_payload = merge_e111(rows, e111)
     rows, e112_payload = merge_e112(rows, e112)
+    rows, e114_payload = merge_e114(rows, e114)
     counts = rank_counts(rows)
     aggregate = read_json(e109 / "aggregate_metrics.json")
     aggregate = {
@@ -259,18 +300,22 @@ def build_payload(e109: Path, e110: Path | None = None, e111: Path | None = None
         "red_flag_count": counts["RedFlag"],
         "deprecated_count": counts["Deprecated"],
         "qualified_activation_total": sum(int(row.get("qualified_activation") or 0) for row in rows),
+        "e114_projected_reach_permacore_count": e114_payload["aggregate"]["projected_reach_permacore_count"] if e114_payload else None,
+        "e114_projected_need_targeted_data_count": e114_payload["aggregate"]["projected_need_targeted_data_count"] if e114_payload else None,
+        "e114_stability_trend": e114_payload["aggregate"]["stability_trend"] if e114_payload else None,
     }
     summary = read_json(e109 / "summary.json")
     summary = {
         **summary,
         "rank_counts": counts,
-        "latest_wave": "E112 Wave 3" if e112_payload else "E111 Wave 2" if e111_payload else "E110 Wave 1" if e110_payload else "E109",
+        "latest_wave": "E114 FineWeb projection" if e114_payload else "E112 Wave 3" if e112_payload else "E111 Wave 2" if e111_payload else "E110 Wave 1" if e110_payload else "E109",
     }
     return {
         "summary": summary,
         "e110": e110_payload,
         "e111": e111_payload,
         "e112": e112_payload,
+        "e114": e114_payload,
         "aggregate": aggregate,
         "policy": read_json(e109 / "rank_policy_manifest.json"),
         "watch": read_json(e109 / "golden_watch_report.json"),
@@ -574,7 +619,9 @@ def render_html(payload: dict[str, Any]) -> str:
         ["Silver", agg.silver_count, "silver"],
         ["Bronze", agg.bronze_count, "bronze"],
         ["Hard negative", agg.hard_negative_total, agg.hard_negative_total ? "red" : "green"],
-        ["Qualified activations", fmt(agg.qualified_activation_total), "green"]
+        ["Qualified activations", fmt(agg.qualified_activation_total), "green"],
+        ["E114 reaches target", agg.e114_projected_reach_permacore_count ?? "n/a", "green"],
+        ["E114 targeted needed", agg.e114_projected_need_targeted_data_count ?? "n/a", agg.e114_projected_need_targeted_data_count ? "gold" : "green"]
       ];
       document.getElementById("cards").innerHTML = cards.map(([label,value,cls]) =>
         `<div class="card"><div class="label">${{label}}</div><div class="value ${{cls}}">${{value}}</div></div>`
@@ -657,6 +704,9 @@ def render_html(payload: dict[str, Any]) -> str:
           <div>Selected variant</div><div>${{htmlEscape(row.selected_variant_type || "")}}${{typeof row.selected_prune_ratio === "number" ? " · prune " + (row.selected_prune_ratio * 100).toFixed(1) + "%" : ""}}<br><span class="detail-id">${{htmlEscape(row.selected_variant_id || "")}}</span></div>
           <div>Mutation budget</div><div>${{fmt(row.mutation_attempts || 0)}} attempts · ${{fmt(row.accepted_mutations || 0)}} accepted · ${{fmt(row.rollback_count || 0)}} rollback</div>
           <div>Core no-harm</div><div>${{row.long_horizon_no_harm_pass ? "long-horizon pass" : ""}}${{row.negative_scope_pass ? " · negative-scope pass" : ""}}</div>
+          <div>E114 FineWeb calls</div><div>${{fmt(row.e114_current_run_calls || 0)}} in 1M · projected full ${{fmt(row.e114_projected_full_fineweb_calls || 0)}}</div>
+          <div>E114 PermaCore projection</div><div>${{row.e114_projected_reaches_permacore_probation ? "reaches 300k with full FineWeb" : "targeted pressure data needed"}} · remaining after full ${{fmt(row.e114_projected_remaining_after_full_fineweb || 0)}}</div>
+          <div>E114 selected policy</div><div>${{htmlEscape(row.e114_selected_variant || "")}}</div>
         </div>
         <div class="note">${{row.rank === "CoreMemoryCandidate" ? "Interpretation: this operator passed scoped CoreMemoryCandidate probation. It is still not PermaCore or TrueGolden without a later larger no-harm grind." : "Interpretation: rank is scoped. This operator is not Core memory unless a later Core probation grind passes the much higher qualified-activation and no-harm gates."}}</div>
       `;
@@ -686,17 +736,20 @@ def main() -> int:
     parser.add_argument("--e110", default=str(DEFAULT_E110))
     parser.add_argument("--e111", default=str(DEFAULT_E111))
     parser.add_argument("--e112", default=str(DEFAULT_E112))
+    parser.add_argument("--e114", default=str(DEFAULT_E114))
     parser.add_argument("--out", default=str(DEFAULT_OUT))
     args = parser.parse_args()
     e109 = existing_artifact_path(Path(args.e109), SAMPLE_E109, "rank_results.json")
     e110_requested = Path(args.e110)
     e111_requested = Path(args.e111)
     e112_requested = Path(args.e112)
+    e114_requested = Path(args.e114)
     e110 = e110_requested if (e110_requested / "wave_results.json").exists() else SAMPLE_E110 if (SAMPLE_E110 / "wave_results.json").exists() else None
     e111 = e111_requested if (e111_requested / "wave_results.json").exists() else SAMPLE_E111 if (SAMPLE_E111 / "wave_results.json").exists() else None
     e112 = e112_requested if (e112_requested / "wave_results.json").exists() else SAMPLE_E112 if (SAMPLE_E112 / "wave_results.json").exists() else None
+    e114 = e114_requested if (e114_requested / "operator_projection_report.json").exists() else None
     out = Path(args.out)
-    payload = build_payload(e109, e110, e111, e112)
+    payload = build_payload(e109, e110, e111, e112, e114)
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(render_html(payload), encoding="utf-8")
     print(json.dumps({"out": str(out), "operator_count": len(payload["rows"])}, sort_keys=True))
