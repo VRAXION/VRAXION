@@ -3690,3 +3690,202 @@ overcompressed_summary_control      -> Quarantine
 hallucinated_bridge_summary_control -> Quarantine
 summary_guard_echo_clone            -> Redundant
 ```
+
+## E106 Task Plan Decomposition And Progress Tracking Expansion
+
+Decision:
+
+```text
+decision = e106_task_plan_progress_tracking_expansion_confirmed
+checker_failure_count = 0
+sample_only_checker_failure_count = 0
+```
+
+Boundary:
+
+```text
+controlled task plan/progress tracking proxy
+not open-domain project management
+not direct completion without evidence
+```
+
+### Task Requirement Decomposition Lens
+
+```text
+component_id = task_requirement_decomposition_lens
+status       = StableOperatorCandidate
+family       = Lens
+```
+
+What it does:
+
+```text
+splits a requested task into required evidence-backed work items
+```
+
+If removed:
+
+```text
+mean_plan_tracking_success_loss = 1.000000
+mean_premature_complete_delta = 0.000000
+```
+
+### Deliverable Evidence Mapping Scribe
+
+```text
+component_id = deliverable_evidence_mapping_scribe
+status       = StableOperatorCandidate
+family       = Scribe
+```
+
+What it does:
+
+```text
+maps each deliverable to the artifact or evidence needed to prove it complete
+```
+
+If removed:
+
+```text
+mean_plan_tracking_success_loss = 1.000000
+mean_premature_complete_delta = 0.000000
+```
+
+### Step Status Transition Guard
+
+```text
+component_id = step_status_transition_guard
+status       = StableOperatorCandidate
+family       = Guard
+```
+
+What it does:
+
+```text
+allows pending/in-progress/complete transitions only when evidence supports them
+```
+
+If removed:
+
+```text
+mean_plan_tracking_success_loss = 1.000000
+mean_premature_complete_delta = 0.000000
+```
+
+### Blocked Dependency Tracker T-Stab
+
+```text
+component_id = blocked_dependency_tracker_t_stab
+status       = StableOperatorCandidate
+family       = T-Stab
+```
+
+What it does:
+
+```text
+keeps blocked or waiting dependencies stable across progress updates
+```
+
+If removed:
+
+```text
+mean_plan_tracking_success_loss = 1.000000
+mean_premature_complete_delta = 0.000000
+```
+
+### Progress Ledger Update Scribe
+
+```text
+component_id = progress_ledger_update_scribe
+status       = StableOperatorCandidate
+family       = Scribe
+```
+
+What it does:
+
+```text
+writes an ordered progress ledger after each verified step update
+```
+
+If removed:
+
+```text
+mean_plan_tracking_success_loss = 1.000000
+mean_premature_complete_delta = 0.000000
+```
+
+### Completion Gate All Requirements Guard
+
+```text
+component_id = completion_gate_all_requirements_guard
+status       = StableOperatorCandidate
+family       = Guard
+```
+
+What it does:
+
+```text
+blocks final completion until every required step is proven complete
+```
+
+If removed:
+
+```text
+mean_plan_tracking_success_loss = 1.000000
+mean_premature_complete_delta = 0.000000
+```
+
+### Regression Recheck Step Guard
+
+```text
+component_id = regression_recheck_step_guard
+status       = StableOperatorCandidate
+family       = Guard
+```
+
+What it does:
+
+```text
+requires critical completed checks to be rerun after later changes
+```
+
+If removed:
+
+```text
+mean_plan_tracking_success_loss = 0.613065
+mean_premature_complete_delta = 0.000000
+```
+
+### Next Action Selector Scribe
+
+```text
+component_id = next_action_selector_scribe
+status       = StableOperatorCandidate
+family       = Scribe
+```
+
+What it does:
+
+```text
+selects the next actionable step from pending, blocked, and stale progress state
+```
+
+If removed:
+
+```text
+mean_plan_tracking_success_loss = 1.000000
+mean_premature_complete_delta = 0.000000
+```
+
+### E106 Rejected Controls
+
+```text
+first_step_done_means_complete_control -> Quarantine
+popularity_step_order_control          -> Quarantine
+ignore_blocked_dependency_control      -> Quarantine
+missing_evidence_complete_control      -> Quarantine
+stale_progress_reuse_control           -> Quarantine
+overbroad_done_summary_control         -> Quarantine
+always_continue_without_status_control -> Deprecated
+plan_decomposer_echo_clone             -> Redundant
+```

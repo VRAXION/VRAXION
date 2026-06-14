@@ -1,0 +1,21 @@
+{
+  "artifact_contract": "E106_TASK_PLAN_DECOMPOSITION_AND_PROGRESS_TRACKING_EXPANSION",
+  "case_count": 11520,
+  "direct_completion_without_evidence_allowed": false,
+  "families": [
+    "all_steps_complete_ready",
+    "artifact_missing_not_complete",
+    "blocked_dependency_waiting",
+    "blocked_then_unblocked_progress",
+    "multi_deliverable_completion_gate",
+    "one_step_missing_evidence",
+    "ordered_dependency_chain",
+    "partial_progress_next_action",
+    "regression_requires_recheck",
+    "stale_done_state_rejected"
+  ],
+  "open_domain_project_management": false,
+  "progress_tracking": true,
+  "requires_blocker_preservation": true,
+  "task_plan_decomposition": true
+}
