@@ -1,6 +1,6 @@
 # VRAXION Validated Findings
 
-_Last updated: 2026-06-13_
+_Last updated: 2026-06-14_
 
 This is the active evidence summary for the current repo state. Historical findings remain in git history, archived wiki state, release notes, and the Timeline Archive. This file is intentionally narrowed to the current sellable mainline.
 
@@ -8,8 +8,8 @@ This is the active evidence summary for the current repo state. Historical findi
 
 ```text
 branch = main
-runtime_slice = 3f519732949b73d5b55ae90a740381ca81143948
-current_runtime_slice = E75 Rust final curriculum pocket-generation runner
+runtime_slice = 5f335cec3502d6c932e2f40c5c5a3a389eb44b7e
+current_runtime_slice = E78 canonical final_train campaign entrypoint
 base_runtime_slice = 0879a2c004cf6a002bd5639d9cb7a759709a41aa E74 Rust final bake API extraction
 ```
 
@@ -24,18 +24,21 @@ base_runtime_slice = 0879a2c004cf6a002bd5639d9cb7a759709a41aa E74 Rust final bak
 | E73 | `51cd82a1` | Unified Rust final-bake preflight over the locked mechanics. | Current mainline |
 | E74 | `0879a2c0` | Final-bake logic extracted into a reusable Rust API while preserving the CLI preflight artifact contract. | Current mainline |
 | E75 | `3f519732` | Final curriculum pocket-generation runner with preflight gating, checkpoint/progress artifacts, resume, and Pocket Library growth. | Current mainline |
+| E76 | `3b44cfe0` | Multi-lane final-training supervisor with lane fanout, lane artifact preservation, aggregate progress, and zero bad/unsafe lane promotions. | Current mainline |
+| E77 | `7e91aaaa` | Global Pocket Library merge supervisor with uid/digest/token dedupe, guarded reload, clone blocking, and global registry artifacts. | Current mainline |
+| E78 | `5f335cec` | Canonical `final_train` campaign entrypoint over the global supervisor, multi-lane supervisor, and E75 lane runner stack. | Current mainline |
 
 ## Current Validated Claim
 
-> VRAXION has a Rust mainline for persistent Pocket Library governance and resumable curriculum execution preflights.
+> VRAXION has a Rust mainline for governed Pocket Library state, resumable curriculum execution, multi-lane final-training supervision, global Pocket Library merge/dedupe governance, and one canonical `final_train` campaign entrypoint.
 
-Current E75 extension:
+Current E78 extension:
 
-> VRAXION has a deterministic Rust final curriculum pocket-generation runner with preflight gating, checkpoint/progress writeout, resume behavior, Pocket Library growth, and zero bad/unsafe promotions in the recorded evidence run.
+> VRAXION has a deterministic Rust `final_train` command that runs the global Pocket Library supervisor over multi-lane E75 final-training lanes, writes progress/manifests/results, blocks redundant clones, and records zero bad commits or unsafe promotions in the E78 evidence run.
 
 ## Operational Finding
 
-Long-running work must write progress continuously and support resume. The E72 resume preflight proves the resume path; the E73 final-bake preflight proves the locked chain can be validated from one consolidated Rust entrypoint with progress artifacts; E74 keeps that CLI contract and makes the final-bake gate reusable from Rust code; E75 runs the first deterministic final-training-shaped curriculum and Pocket generation loop with checkpoints and resume.
+Long-running work must write progress continuously and support resume. The E72 resume preflight proves the resume path; the E73 final-bake preflight proves the locked chain can be validated from one consolidated Rust entrypoint with progress artifacts; E74 keeps that CLI contract and makes the final-bake gate reusable from Rust code; E75 runs the first deterministic final-training-shaped curriculum and Pocket generation loop with checkpoints and resume; E76 fans that lane work out in parallel; E77 merges lane-local candidates into one governed global Pocket Library; E78 makes that full path available through one canonical command.
 
 ## Hard Boundary
 
@@ -44,13 +47,15 @@ This file does not claim:
 - hosted SaaS
 - public production API readiness
 - GPT-like/open-domain assistant readiness
+- final dataset readiness
+- trained model/weights readiness
 - safety-aligned production deployment
 - consciousness or sentience
 - that old beta/grower/byte-pipeline results are the current sellable model
 
 ## Historical Evidence
 
-Previous bounded-service, open-vocab assistant, beta release, grower, byte-pipeline, and C19/EP results are historical evidence. They can still be useful for research context, but they are not the current mainline unless promoted back into E75+ code and docs.
+Previous bounded-service, open-vocab assistant, beta release, grower, byte-pipeline, and C19/EP results are historical evidence. They can still be useful for research context, but they are not the current mainline unless promoted back into E78+ code and docs.
 
 Primary archive surfaces:
 

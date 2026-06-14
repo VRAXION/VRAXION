@@ -1,8 +1,8 @@
 cff-version: 1.2.0
 message: "If you use this software, please cite it as below."
-title: "VRAXION E75 Rust Runtime"
-version: "main-2026-06-13-e75"
-date-released: "2026-06-13"
+title: "VRAXION E78 Rust Runtime"
+version: "v5.0.0-e78.0"
+date-released: "2026-06-14"
 type: software
 authors:
   - family-names: Kenessy
@@ -14,4 +14,4 @@ keywords:
   - pocket-library
   - runtime-governance
   - checkpoint-resume
-  - final-bake-preflight
+  - final-train

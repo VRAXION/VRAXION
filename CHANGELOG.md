@@ -1,37 +1,30 @@
 # Changelog
 
-This changelog is narrowed to the current E75 mainline. Full historical beta,
+This changelog is narrowed to the current E78 mainline. Full historical beta,
 probe, Python SDK, legacy Rust, and research-output history is preserved in git
 history and archive tags.
 
-## 2026-06-13 - E75 Final Curriculum Runner
+## 2026-06-14 - E78 Canonical Final Train Entrypoint
 
-- Current GitHub release: `v5.0.0-e75.0`.
-- Current main head: `41fc0af81d1aec27220a653fdfc8666f748a228f`
-  (`Prune legacy ignore rules`).
-- Current runtime slice: `3f519732949b73d5b55ae90a740381ca81143948`
+- Current GitHub release: `v5.0.0-e78.0`.
+- Current runtime slice: `5f335cec3502d6c932e2f40c5c5a3a389eb44b7e`
+  (`Add canonical final train entrypoint`).
+- E77 runtime slice: `7e91aaaa8a5e1571f60d06baa0b00c56e096c5cc`
+  (`Add global Pocket Library merge supervisor`).
+- E76 runtime slice: `3b44cfe0a246ce19677c595143877af27c381c6e`
+  (`Add Rust final training supervisor`).
+- E75 runtime slice: `3f519732949b73d5b55ae90a740381ca81143948`
   (`Add Rust final curriculum runner`).
 - E74 runtime slice: `0879a2c004cf6a002bd5639d9cb7a759709a41aa`
   (`Extract Rust final bake API`).
-- E73 runtime slice: `51cd82a11d8f1d2b98ee3e49538c7c26afdb767b`
-  (`Add Rust final bake preflight`).
-- Public docs aligned at `75bac550` (`Align public docs with E75 final
-  curriculum runner`).
-- Duplicate advanced CodeQL workflow removed at `03629e06` because GitHub
-  default CodeQL setup is the active code scanning source.
-- Legacy `.gitignore` rules for removed Python/Rust SDK/instnct/output surfaces
-  pruned at `41fc0af8`.
-- GitHub branch surface reduced to `main`; 52 former branch heads preserved
-  under `archive/branches/2026-06-13/*`.
-- Wiki preserved before cleanup under
-  `archive/wiki/pre-consolidation-2026-06-13`.
-- Repo public-surface cleanup restore point:
-  `archive/repo/pre-e74-public-surface-cleanup-2026-06-13`.
-- Active mainline narrowed to `vraxion-runtime/` plus current docs and E73/E74/E75
-  final-bake/final-training evidence.
-- E75 adds the deterministic final curriculum pocket-generation runner with
-  preflight gating, checkpoint/progress writeout, resume, and Pocket Library
-  growth.
+- Active mainline remains narrowed to `vraxion-runtime/` plus current docs and
+  E73-E78 final-bake/final-training evidence.
+- E76 adds multi-lane final-training fanout and aggregate progress artifacts.
+- E77 adds global Pocket Library merge, dedupe/challenger governance, guarded
+  reload, global registry, and clone blocking.
+- E78 adds the canonical `final_train` command over the E77/E76/E75 stack.
+- CI now smokes the canonical E78 `final_train` path and checks top-level plus
+  nested global-supervisor artifacts.
 
 ## Current Runtime Chain
 
@@ -44,10 +37,13 @@ history and archive tags.
 | E73 | `51cd82a1` | Unified Rust final-bake preflight |
 | E74 | `0879a2c0` | Final-bake library API extraction |
 | E75 | `3f519732` | Final curriculum pocket-generation runner |
+| E76 | `3b44cfe0` | Multi-lane final-training supervisor |
+| E77 | `7e91aaaa` | Global Pocket Library merge supervisor |
+| E78 | `5f335cec` | Canonical `final_train` campaign entrypoint |
 
 ## Historical Access
 
-Historical release notes before E75 were removed from the active front door
+Historical release notes before E78 were removed from the active front door
 because they described superseded beta/grower/byte-pipeline lines. Restore or
 inspect them from:
 

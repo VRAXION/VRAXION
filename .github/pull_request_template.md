@@ -18,8 +18,8 @@ Commands run (or N/A):
 cargo fmt --check -p vraxion-runtime
 cargo clippy -p vraxion-runtime --all-targets -- -D warnings
 cargo test -p vraxion-runtime
-cargo run --release -p vraxion-runtime --bin final_bake_preflight -- 1000 target/ci/e75_final_bake_smoke
-cargo run --release -p vraxion-runtime --bin final_training_runner -- 1000 target/ci/e75_final_training_smoke --preflight-rounds 100 --checkpoint-interval 100
+cargo run --release -p vraxion-runtime --bin final_bake_preflight -- 1000 target/ci/e78_final_bake_smoke
+cargo run --release -p vraxion-runtime --bin final_train -- 3 8 target/ci/e78_final_train_smoke --preflight-rounds 4 --checkpoint-interval 4
 ```
 
 ## Docs / links (if applicable)

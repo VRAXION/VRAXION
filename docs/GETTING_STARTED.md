@@ -1,15 +1,14 @@
 # Getting Started with VRAXION
 
-_Last updated: 2026-06-13_
+_Last updated: 2026-06-14_
 
 ## Start Here
 
 ```text
 branch = main
-current_release = v5.0.0-e75.0
-release_head = 41fc0af81d1aec27220a653fdfc8666f748a228f
-runtime_slice = 3f519732949b73d5b55ae90a740381ca81143948
-runtime_subject = Add Rust final curriculum runner
+current_release = v5.0.0-e78.0
+runtime_slice = 5f335cec3502d6c932e2f40c5c5a3a389eb44b7e
+runtime_subject = Add canonical final train entrypoint
 base_runtime_slice = 0879a2c004cf6a002bd5639d9cb7a759709a41aa Extract Rust final bake API
 ```
 
@@ -23,15 +22,19 @@ E72 curriculum resume
 E73 final bake
 E74 final-bake API extraction
 E75 final curriculum pocket-generation runner
+E76 multi-lane final-training supervisor
+E77 global Pocket Library merge supervisor
+E78 canonical final_train campaign entrypoint
 ```
 
 ## Repository Layout
 
 | Path | Purpose |
 |---|---|
-| `vraxion-runtime/` | Active Rust runtime and preflight binaries |
-| `docs/research/E75_RUST_FINAL_CURRICULUM_POCKET_GENERATION_RUNNER_*.md` | Current final-training runner contract/result evidence |
-| `docs/research/artifact_samples/e75_rust_final_curriculum_pocket_generation_runner/` | Current sample progress/checkpoint/result/report artifacts |
+| `vraxion-runtime/` | Active Rust runtime and preflight/final-training binaries |
+| `docs/research/E78_FINAL_TRAIN_CAMPAIGN_ENTRYPOINT_*.md` | Current canonical final-training entrypoint contract/result evidence |
+| `docs/research/artifact_samples/e78_final_train_campaign_entrypoint/` | Current sample manifest/progress/result/global-supervisor artifacts |
+| `docs/research/E76_*`, `docs/research/E77_*` | Current supervisor evidence below the canonical E78 entrypoint |
 | `docs/` | Current public docs |
 | `target/` | Generated local evidence artifacts; ignored by Git |
 
@@ -44,7 +47,7 @@ cargo test -p vraxion-runtime
 cargo test --workspace
 ```
 
-Current preflight entrypoints:
+Current preflight and final-training entrypoints:
 
 ```powershell
 cargo run --release -p vraxion-runtime --bin pocket_library_preflight -- --help
@@ -52,7 +55,7 @@ cargo run --release -p vraxion-runtime --bin curriculum_runner_preflight -- --he
 cargo run --release -p vraxion-runtime --bin curriculum_queue_preflight -- --help
 cargo run --release -p vraxion-runtime --bin curriculum_resume_preflight -- --help
 cargo run --release -p vraxion-runtime --bin final_bake_preflight -- --help
-cargo run --release -p vraxion-runtime --bin final_training_runner -- 1000 target/ci/e75_final_training_smoke --preflight-rounds 100 --checkpoint-interval 100
+cargo run --release -p vraxion-runtime --bin final_train -- 3 8 target/ci/e78_final_train_smoke --preflight-rounds 4 --checkpoint-interval 4
 ```
 
 ## Operating Rule
@@ -65,9 +68,10 @@ Long runs must continuously write partial outcomes and resumable progress. A run
 |---|---|---|
 | 1 | [`README.md`](../README.md) | Current front-door summary |
 | 2 | [`docs/CURRENT_STATUS.md`](CURRENT_STATUS.md) | Current status and claim boundary |
-| 3 | [`VALIDATED_FINDINGS.md`](../VALIDATED_FINDINGS.md) | Current validated E69-E75 chain |
-| 4 | [Timeline Archive wiki](https://github.com/VRAXION/VRAXION/wiki/Timeline-Archive) | Chronology and cleanup record |
-| 5 | [Consolidation Archive wiki](https://github.com/VRAXION/VRAXION/wiki/Consolidation-Archive-2026-06-13) | Branch/wiki deletion manifest |
+| 3 | [`VALIDATED_FINDINGS.md`](../VALIDATED_FINDINGS.md) | Current validated E69-E78 chain |
+| 4 | [`docs/research/E78_FINAL_TRAIN_CAMPAIGN_ENTRYPOINT_RESULT.md`](research/E78_FINAL_TRAIN_CAMPAIGN_ENTRYPOINT_RESULT.md) | Canonical final-training entrypoint evidence |
+| 5 | [Timeline Archive wiki](https://github.com/VRAXION/VRAXION/wiki/Timeline-Archive) | Chronology and cleanup record |
+| 6 | [Consolidation Archive wiki](https://github.com/VRAXION/VRAXION/wiki/Consolidation-Archive-2026-06-13) | Branch/wiki deletion manifest |
 
 ## Archive
 

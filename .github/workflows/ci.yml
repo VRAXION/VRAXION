@@ -33,17 +33,18 @@ jobs:
 
       - name: Final bake smoke with progress artifacts
         run: |
-          cargo run --release -p vraxion-runtime --bin final_bake_preflight -- 1000 target/ci/e75_final_bake_smoke
-          test -f target/ci/e75_final_bake_smoke/progress.jsonl
-          test -f target/ci/e75_final_bake_smoke/final_bake_results.json
-          test -f target/ci/e75_final_bake_smoke/report.md
+          cargo run --release -p vraxion-runtime --bin final_bake_preflight -- 1000 target/ci/e78_final_bake_smoke
+          test -f target/ci/e78_final_bake_smoke/progress.jsonl
+          test -f target/ci/e78_final_bake_smoke/final_bake_results.json
+          test -f target/ci/e78_final_bake_smoke/report.md
 
-      - name: Final curriculum runner smoke with progress artifacts
+      - name: Canonical final train smoke with progress artifacts
         run: |
-          cargo run --release -p vraxion-runtime --bin final_training_runner -- 1000 target/ci/e75_final_training_smoke --preflight-rounds 100 --checkpoint-interval 100
-          test -f target/ci/e75_final_training_smoke/progress.jsonl
-          test -f target/ci/e75_final_training_smoke/checkpoint_latest.json
-          test -f target/ci/e75_final_training_smoke/partial_summary.json
-          test -f target/ci/e75_final_training_smoke/final_training_results.json
-          test -f target/ci/e75_final_training_smoke/library_summary.json
-          test -f target/ci/e75_final_training_smoke/report.md
+          cargo run --release -p vraxion-runtime --bin final_train -- 3 8 target/ci/e78_final_train_smoke --preflight-rounds 4 --checkpoint-interval 4
+          test -f target/ci/e78_final_train_smoke/final_train_progress.jsonl
+          test -f target/ci/e78_final_train_smoke/final_train_results.json
+          test -f target/ci/e78_final_train_smoke/final_train_manifest.json
+          test -f target/ci/e78_final_train_smoke/final_train_report.md
+          test -f target/ci/e78_final_train_smoke/global_supervisor/global_merge_results.json
+          test -f target/ci/e78_final_train_smoke/global_supervisor/global_library_summary.json
+          test -f target/ci/e78_final_train_smoke/global_supervisor/lane_supervisor/supervisor_results.json

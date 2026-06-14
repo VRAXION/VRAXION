@@ -6,14 +6,13 @@ This file replaces the older `v5.0.0 Public Beta` front-door contract. The old b
 
 ```text
 branch = main
-current_release = v5.0.0-e75.0
-release_head = 41fc0af81d1aec27220a653fdfc8666f748a228f
-runtime_slice = 3f519732949b73d5b55ae90a740381ca81143948
-slice = E75 Rust final curriculum pocket-generation runner
+current_release = v5.0.0-e78.0
+runtime_slice = 5f335cec3502d6c932e2f40c5c5a3a389eb44b7e
+slice = E78 canonical final_train campaign entrypoint
 base_runtime_slice = 0879a2c004cf6a002bd5639d9cb7a759709a41aa E74 Rust final bake API extraction
 ```
 
-The current GitHub release is the E69-E75 Rust chain:
+The current GitHub release is the E69-E78 Rust chain:
 
 ```text
 E69 persistent Pocket Library store
@@ -23,23 +22,27 @@ E72 curriculum resume preflight
 E73 unified final-bake preflight
 E74 reusable final-bake API extraction
 E75 final curriculum pocket-generation runner
+E76 multi-lane final-training supervisor
+E77 global Pocket Library merge supervisor
+E78 canonical final_train campaign entrypoint
 ```
 
 ## Release Gate Status
 
-The `v5.0.0-e75.0` release was cut only after the E75+ surface had:
+The `v5.0.0-e78.0` release is cut only after the E78 surface has:
 
 - clean Rust formatting, lint, and tests,
 - verified Pocket Library preflight,
-- verified runner preflight,
-- verified queue preflight,
-- verified resume preflight,
-- verified final-bake preflight,
-- verified final curriculum runner,
+- verified runner, queue, and resume preflights,
+- verified final-bake preflight/API,
+- verified final curriculum lane runner,
+- verified multi-lane final-training supervisor,
+- verified global Pocket Library merge/dedupe supervisor,
+- verified canonical `final_train` entrypoint,
 - continuous progress writeout for long runs,
 - documented claim boundary.
 
-This does not claim hosted SaaS availability, public production API readiness, GPT-like/open-domain assistant readiness, safety-aligned deployment, consciousness, or sentience.
+This does not claim hosted SaaS availability, public production API readiness, GPT-like/open-domain assistant readiness, final dataset readiness, trained model/weights readiness, safety-aligned deployment, consciousness, or sentience.
 
 ## What Does Not Count
 
