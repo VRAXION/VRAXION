@@ -493,3 +493,239 @@ blocked unsafe controls:
   3 Quarantine
   1 Banned
 ```
+
+## E90 Text-Evidence Operator Candidates
+
+Source:
+
+```text
+E90_OPERATOR_CURRICULUM_EXPANSION
+decision = e90_operator_curriculum_expansion_confirmed
+```
+
+Boundary:
+
+```text
+These are controlled visible text-evidence Operator candidates.
+They are not open-domain language understanding and not Core / TrueGolden.
+```
+
+### Visible Claim Binding alpha-Syncer
+
+```text
+component_id = visible_claim_binding_alpha_syncer
+status       = StableOperatorCandidate
+family       = alpha_syncer
+```
+
+What it does:
+
+```text
+"A means B" -> canonical binding proposal
+```
+
+If removed:
+
+```text
+mean_resolution_loss = 0.519119
+mean_false_ask_delta = 0.800921
+```
+
+### Numeric Value Binding alpha-Syncer
+
+```text
+component_id = numeric_value_binding_alpha_syncer
+status       = StableOperatorCandidate
+family       = alpha_syncer
+```
+
+What it does:
+
+```text
+"A is N" -> canonical value-binding proposal
+```
+
+If removed:
+
+```text
+mean_resolution_loss = 0.146332
+mean_false_ask_delta = 0.396338
+```
+
+### Temporal Rule-Shift T-Stab
+
+```text
+component_id = temporal_rule_shift_t_stab
+status       = StableOperatorCandidate
+family       = T-Stab
+```
+
+What it does:
+
+```text
+confirmed post-marker rule change -> new stable binding
+```
+
+If removed:
+
+```text
+mean_resolution_loss = 0.074432
+mean_false_ask_delta = 0.201541
+```
+
+### False-Alarm Temporal T-Stab
+
+```text
+component_id = false_alarm_temporal_t_stab
+status       = StableOperatorCandidate
+family       = T-Stab
+```
+
+What it does:
+
+```text
+visible false alarm -> preserve the prior stable binding
+```
+
+If removed:
+
+```text
+mean_resolution_loss = 0.074371
+mean_false_ask_delta = 0.201392
+```
+
+### Revoked Binding Guard
+
+```text
+component_id = revoked_binding_guard
+status       = StableOperatorCandidate
+family       = Guard
+```
+
+What it does:
+
+```text
+"A no longer means B" -> block stale answer commit
+```
+
+If removed:
+
+```text
+mean_resolution_loss = 0.074997
+```
+
+### Contradiction Guard
+
+```text
+component_id = contradiction_guard
+status       = StableOperatorCandidate
+family       = Guard
+```
+
+What it does:
+
+```text
+same-cycle conflicting claims -> reject contradiction
+```
+
+If removed:
+
+```text
+mean_resolution_loss = 0.074219
+mean_wrong_confident_delta = 0.117652
+```
+
+### Unresolved-State Information Guard
+
+```text
+component_id = unresolved_state_info_guard
+status       = StableOperatorCandidate
+family       = Guard
+```
+
+What it does:
+
+```text
+missing/unproven evidence -> ask/search/hold instead of guessing
+```
+
+If removed:
+
+```text
+mean_resolution_loss = 0.556519
+```
+
+### Inactive Quote Scope Guard
+
+```text
+component_id = inactive_quote_scope_guard
+status       = StableOperatorCandidate
+family       = Guard
+```
+
+What it does:
+
+```text
+quoted/archive/example claims are not active evidence
+```
+
+If removed:
+
+```text
+mean_resolution_loss = 0.407379
+```
+
+### Evidence Span Lens
+
+```text
+component_id = evidence_span_lens
+status       = StableOperatorCandidate
+family       = Lens
+```
+
+What it does:
+
+```text
+preserves visible byte-span references for proposal evidence
+```
+
+If removed:
+
+```text
+mean_resolution_loss = 1.000000
+mean_trace_validity_delta = -1.000000
+```
+
+### Canonical Answer Scribe
+
+```text
+component_id = canonical_answer_scribe
+status       = StableOperatorCandidate
+family       = Scribe
+```
+
+What it does:
+
+```text
+resolved canonical state -> external answer action
+```
+
+If removed:
+
+```text
+mean_resolution_loss = 0.369263
+mean_false_ask_delta = 1.000000
+```
+
+### E90 Rejected Controls
+
+```text
+stale_binding_committer       -> Quarantine
+inactive_quote_overreach      -> Quarantine
+marker_only_shift_shortcut    -> Quarantine
+answer_without_span_shortcut  -> Quarantine
+full_text_scan_overreach      -> Quarantine
+always_ask_control            -> Deprecated
+passive_text_observer         -> Deprecated
+claim_binding_clone           -> Redundant
+```

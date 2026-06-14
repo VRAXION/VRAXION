@@ -1,0 +1,178 @@
+{
+  "rows": [
+    {
+      "cost": 0.1,
+      "display_name": "Canonical Answer Scribe",
+      "family": "Scribe",
+      "operator_id": "canonical_answer_scribe",
+      "role": "useful",
+      "selected_count": 16,
+      "selected_frequency": 1.0
+    },
+    {
+      "cost": 0.14,
+      "display_name": "Contradiction Guard",
+      "family": "Guard",
+      "operator_id": "contradiction_guard",
+      "role": "useful",
+      "selected_count": 16,
+      "selected_frequency": 1.0
+    },
+    {
+      "cost": 0.1,
+      "display_name": "Evidence Span Lens",
+      "family": "Lens",
+      "operator_id": "evidence_span_lens",
+      "role": "useful",
+      "selected_count": 16,
+      "selected_frequency": 1.0
+    },
+    {
+      "cost": 0.12,
+      "display_name": "False-Alarm Temporal T-Stab",
+      "family": "T-Stab",
+      "operator_id": "false_alarm_temporal_t_stab",
+      "role": "useful",
+      "selected_count": 16,
+      "selected_frequency": 1.0
+    },
+    {
+      "cost": 0.11,
+      "display_name": "Inactive Quote Scope Guard",
+      "family": "Guard",
+      "operator_id": "inactive_quote_scope_guard",
+      "role": "useful",
+      "selected_count": 16,
+      "selected_frequency": 1.0
+    },
+    {
+      "cost": 0.12,
+      "display_name": "Numeric Value Binding alpha-Syncer",
+      "family": "alpha_syncer",
+      "operator_id": "numeric_value_binding_alpha_syncer",
+      "role": "useful",
+      "selected_count": 16,
+      "selected_frequency": 1.0
+    },
+    {
+      "cost": 0.12,
+      "display_name": "Revoked Binding Guard",
+      "family": "Guard",
+      "operator_id": "revoked_binding_guard",
+      "role": "useful",
+      "selected_count": 16,
+      "selected_frequency": 1.0
+    },
+    {
+      "cost": 0.15,
+      "display_name": "Temporal Rule-Shift T-Stab",
+      "family": "T-Stab",
+      "operator_id": "temporal_rule_shift_t_stab",
+      "role": "useful",
+      "selected_count": 16,
+      "selected_frequency": 1.0
+    },
+    {
+      "cost": 0.13,
+      "display_name": "Unresolved-State Information Guard",
+      "family": "Guard",
+      "operator_id": "unresolved_state_info_guard",
+      "role": "useful",
+      "selected_count": 16,
+      "selected_frequency": 1.0
+    },
+    {
+      "cost": 0.13,
+      "display_name": "Visible Claim Binding alpha-Syncer",
+      "family": "alpha_syncer",
+      "operator_id": "visible_claim_binding_alpha_syncer",
+      "role": "useful",
+      "selected_count": 16,
+      "selected_frequency": 1.0
+    },
+    {
+      "cost": 0.02,
+      "display_name": "Always Ask Control",
+      "family": "control",
+      "operator_id": "always_ask_control",
+      "role": "noop",
+      "selected_count": 0,
+      "selected_frequency": 0.0
+    },
+    {
+      "cost": 0.08,
+      "display_name": "Passive Text Observer",
+      "family": "control",
+      "operator_id": "passive_text_observer",
+      "role": "noop",
+      "selected_count": 0,
+      "selected_frequency": 0.0
+    },
+    {
+      "cost": 0.19,
+      "display_name": "Claim Binding Echo Clone",
+      "family": "alpha_syncer",
+      "operator_id": "claim_binding_clone",
+      "role": "redundant",
+      "selected_count": 0,
+      "selected_frequency": 0.0
+    },
+    {
+      "cost": 0.03,
+      "display_name": "Answer Without Span Shortcut",
+      "family": "unsafe_control",
+      "operator_id": "answer_without_span_shortcut",
+      "role": "unsafe",
+      "selected_count": 0,
+      "selected_frequency": 0.0
+    },
+    {
+      "cost": 0.18,
+      "display_name": "Full Text Scan Overreach",
+      "family": "unsafe_control",
+      "operator_id": "full_text_scan_overreach",
+      "role": "unsafe",
+      "selected_count": 0,
+      "selected_frequency": 0.0
+    },
+    {
+      "cost": 0.05,
+      "display_name": "Inactive Quote Overreach",
+      "family": "unsafe_control",
+      "operator_id": "inactive_quote_overreach",
+      "role": "unsafe",
+      "selected_count": 0,
+      "selected_frequency": 0.0
+    },
+    {
+      "cost": 0.05,
+      "display_name": "Marker-Only Shift Shortcut",
+      "family": "unsafe_control",
+      "operator_id": "marker_only_shift_shortcut",
+      "role": "unsafe",
+      "selected_count": 0,
+      "selected_frequency": 0.0
+    },
+    {
+      "cost": 0.04,
+      "display_name": "Stale Binding Committer",
+      "family": "unsafe_control",
+      "operator_id": "stale_binding_committer",
+      "role": "unsafe",
+      "selected_count": 0,
+      "selected_frequency": 0.0
+    }
+  ],
+  "stable_top": [
+    "visible_claim_binding_alpha_syncer",
+    "numeric_value_binding_alpha_syncer",
+    "temporal_rule_shift_t_stab",
+    "false_alarm_temporal_t_stab",
+    "revoked_binding_guard",
+    "contradiction_guard",
+    "unresolved_state_info_guard",
+    "inactive_quote_scope_guard",
+    "evidence_span_lens",
+    "canonical_answer_scribe"
+  ]
+}

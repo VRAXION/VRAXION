@@ -1,0 +1,270 @@
+{
+  "operator_lifecycle_table": [
+    {
+      "cost": 0.1,
+      "counterfactual": {
+        "mean_false_ask_delta": 1.0,
+        "mean_resolution_loss": 0.3692626953125,
+        "mean_trace_validity_delta": -0.3692626953125,
+        "mean_wrong_confident_delta": 0.0
+      },
+      "description": "Renders resolved canonical bindings into an external answer action.",
+      "display_name": "Canonical Answer Scribe",
+      "family": "Scribe",
+      "final_status": "StableOperatorCandidate",
+      "operator_id": "canonical_answer_scribe",
+      "role": "useful",
+      "selected_count": 16,
+      "selected_frequency": 1.0
+    },
+    {
+      "cost": 0.14,
+      "counterfactual": {
+        "mean_false_ask_delta": 0.0,
+        "mean_resolution_loss": 0.07421875,
+        "mean_trace_validity_delta": -0.07421875,
+        "mean_wrong_confident_delta": 0.11765235006170721
+      },
+      "description": "Detects same-cycle conflicting visible claims and forces contradiction handling.",
+      "display_name": "Contradiction Guard",
+      "family": "Guard",
+      "final_status": "StableOperatorCandidate",
+      "operator_id": "contradiction_guard",
+      "role": "useful",
+      "selected_count": 16,
+      "selected_frequency": 1.0
+    },
+    {
+      "cost": 0.1,
+      "counterfactual": {
+        "mean_false_ask_delta": 1.0,
+        "mean_resolution_loss": 1.0,
+        "mean_trace_validity_delta": -1.0,
+        "mean_wrong_confident_delta": 0.0
+      },
+      "description": "Preserves byte-span references for the visible evidence used by a proposal.",
+      "display_name": "Evidence Span Lens",
+      "family": "Lens",
+      "final_status": "StableOperatorCandidate",
+      "operator_id": "evidence_span_lens",
+      "role": "useful",
+      "selected_count": 16,
+      "selected_frequency": 1.0
+    },
+    {
+      "cost": 0.12,
+      "counterfactual": {
+        "mean_false_ask_delta": 0.20139238015895428,
+        "mean_resolution_loss": 0.074371337890625,
+        "mean_trace_validity_delta": -0.074371337890625,
+        "mean_wrong_confident_delta": 0.0
+      },
+      "description": "Keeps the prior stable binding when a possible shift is explicitly cancelled.",
+      "display_name": "False-Alarm Temporal T-Stab",
+      "family": "T-Stab",
+      "final_status": "StableOperatorCandidate",
+      "operator_id": "false_alarm_temporal_t_stab",
+      "role": "useful",
+      "selected_count": 16,
+      "selected_frequency": 1.0
+    },
+    {
+      "cost": 0.11,
+      "counterfactual": {
+        "mean_false_ask_delta": 0.0,
+        "mean_resolution_loss": 0.407379150390625,
+        "mean_trace_validity_delta": -0.407379150390625,
+        "mean_wrong_confident_delta": 0.0
+      },
+      "description": "Prevents archived, quoted, or inactive example claims from becoming active evidence.",
+      "display_name": "Inactive Quote Scope Guard",
+      "family": "Guard",
+      "final_status": "StableOperatorCandidate",
+      "operator_id": "inactive_quote_scope_guard",
+      "role": "useful",
+      "selected_count": 16,
+      "selected_frequency": 1.0
+    },
+    {
+      "cost": 0.12,
+      "counterfactual": {
+        "mean_false_ask_delta": 0.3963375363440144,
+        "mean_resolution_loss": 0.146331787109375,
+        "mean_trace_validity_delta": -0.146331787109375,
+        "mean_wrong_confident_delta": 0.0
+      },
+      "description": "Maps visible 'A is N' value claims into canonical value-binding proposals.",
+      "display_name": "Numeric Value Binding alpha-Syncer",
+      "family": "alpha_syncer",
+      "final_status": "StableOperatorCandidate",
+      "operator_id": "numeric_value_binding_alpha_syncer",
+      "role": "useful",
+      "selected_count": 16,
+      "selected_frequency": 1.0
+    },
+    {
+      "cost": 0.12,
+      "counterfactual": {
+        "mean_false_ask_delta": 0.0,
+        "mean_resolution_loss": 0.0749969482421875,
+        "mean_trace_validity_delta": -0.0749969482421875,
+        "mean_wrong_confident_delta": 0.0
+      },
+      "description": "Blocks stale answers after visible 'no longer means' revocation evidence.",
+      "display_name": "Revoked Binding Guard",
+      "family": "Guard",
+      "final_status": "StableOperatorCandidate",
+      "operator_id": "revoked_binding_guard",
+      "role": "useful",
+      "selected_count": 16,
+      "selected_frequency": 1.0
+    },
+    {
+      "cost": 0.15,
+      "counterfactual": {
+        "mean_false_ask_delta": 0.20154148335351754,
+        "mean_resolution_loss": 0.074432373046875,
+        "mean_trace_validity_delta": -0.074432373046875,
+        "mean_wrong_confident_delta": 0.0
+      },
+      "description": "Stabilizes confirmed post-marker rule changes over old bindings.",
+      "display_name": "Temporal Rule-Shift T-Stab",
+      "family": "T-Stab",
+      "final_status": "StableOperatorCandidate",
+      "operator_id": "temporal_rule_shift_t_stab",
+      "role": "useful",
+      "selected_count": 16,
+      "selected_frequency": 1.0
+    },
+    {
+      "cost": 0.13,
+      "counterfactual": {
+        "mean_false_ask_delta": 0.0,
+        "mean_resolution_loss": 0.5565185546875,
+        "mean_trace_validity_delta": -0.5565185546875,
+        "mean_wrong_confident_delta": 0.0
+      },
+      "description": "Asks/searches/holds when a query depends on unproven visible evidence.",
+      "display_name": "Unresolved-State Information Guard",
+      "family": "Guard",
+      "final_status": "StableOperatorCandidate",
+      "operator_id": "unresolved_state_info_guard",
+      "role": "useful",
+      "selected_count": 16,
+      "selected_frequency": 1.0
+    },
+    {
+      "cost": 0.13,
+      "counterfactual": {
+        "mean_false_ask_delta": 0.8009214327057126,
+        "mean_resolution_loss": 0.5191192626953125,
+        "mean_trace_validity_delta": -0.5191192626953125,
+        "mean_wrong_confident_delta": 0.0
+      },
+      "description": "Maps visible 'A means B' symbolic claims into canonical binding proposals.",
+      "display_name": "Visible Claim Binding alpha-Syncer",
+      "family": "alpha_syncer",
+      "final_status": "StableOperatorCandidate",
+      "operator_id": "visible_claim_binding_alpha_syncer",
+      "role": "useful",
+      "selected_count": 16,
+      "selected_frequency": 1.0
+    },
+    {
+      "cost": 0.02,
+      "counterfactual": {},
+      "description": "Control: avoids wrong answers by asking even when visible evidence is sufficient.",
+      "display_name": "Always Ask Control",
+      "family": "control",
+      "final_status": "Deprecated",
+      "operator_id": "always_ask_control",
+      "role": "noop",
+      "selected_count": 0,
+      "selected_frequency": 0.0
+    },
+    {
+      "cost": 0.08,
+      "counterfactual": {},
+      "description": "Control: observes text but has no measurable action effect.",
+      "display_name": "Passive Text Observer",
+      "family": "control",
+      "final_status": "Deprecated",
+      "operator_id": "passive_text_observer",
+      "role": "noop",
+      "selected_count": 0,
+      "selected_frequency": 0.0
+    },
+    {
+      "cost": 0.19,
+      "counterfactual": {},
+      "description": "Redundant clone of visible claim binding without unique value.",
+      "display_name": "Claim Binding Echo Clone",
+      "family": "alpha_syncer",
+      "final_status": "Redundant",
+      "operator_id": "claim_binding_clone",
+      "role": "redundant",
+      "selected_count": 0,
+      "selected_frequency": 0.0
+    },
+    {
+      "cost": 0.03,
+      "counterfactual": {},
+      "description": "Unsafe control: emits answers without valid evidence span references.",
+      "display_name": "Answer Without Span Shortcut",
+      "family": "unsafe_control",
+      "final_status": "Quarantine",
+      "operator_id": "answer_without_span_shortcut",
+      "role": "unsafe",
+      "selected_count": 0,
+      "selected_frequency": 0.0
+    },
+    {
+      "cost": 0.18,
+      "counterfactual": {},
+      "description": "Unsafe control: scans all text as evidence regardless of active scope.",
+      "display_name": "Full Text Scan Overreach",
+      "family": "unsafe_control",
+      "final_status": "Quarantine",
+      "operator_id": "full_text_scan_overreach",
+      "role": "unsafe",
+      "selected_count": 0,
+      "selected_frequency": 0.0
+    },
+    {
+      "cost": 0.05,
+      "counterfactual": {},
+      "description": "Unsafe control: treats quoted or archived examples as active evidence.",
+      "display_name": "Inactive Quote Overreach",
+      "family": "unsafe_control",
+      "final_status": "Quarantine",
+      "operator_id": "inactive_quote_overreach",
+      "role": "unsafe",
+      "selected_count": 0,
+      "selected_frequency": 0.0
+    },
+    {
+      "cost": 0.05,
+      "counterfactual": {},
+      "description": "Unsafe control: treats a warning marker itself as a confirmed rule change.",
+      "display_name": "Marker-Only Shift Shortcut",
+      "family": "unsafe_control",
+      "final_status": "Quarantine",
+      "operator_id": "marker_only_shift_shortcut",
+      "role": "unsafe",
+      "selected_count": 0,
+      "selected_frequency": 0.0
+    },
+    {
+      "cost": 0.04,
+      "counterfactual": {},
+      "description": "Unsafe control: answers with old bindings after warnings or revocations.",
+      "display_name": "Stale Binding Committer",
+      "family": "unsafe_control",
+      "final_status": "Quarantine",
+      "operator_id": "stale_binding_committer",
+      "role": "unsafe",
+      "selected_count": 0,
+      "selected_frequency": 0.0
+    }
+  ]
+}

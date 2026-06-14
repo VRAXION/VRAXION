@@ -1,0 +1,17 @@
+{
+  "boundary": "visible text evidence -> canonical proposal/action proxy",
+  "case_count": 9000,
+  "count_per_family": 900,
+  "families": [
+    "contradictory_claims",
+    "false_alarm_shift",
+    "inactive_quote_scope",
+    "long_text_decoy_scope",
+    "missing_post_shift_evidence",
+    "multi_evidence_composition",
+    "numeric_value_binding",
+    "revoked_binding_unresolved",
+    "temporal_rule_shift",
+    "visible_claim_binding"
+  ]
+}
