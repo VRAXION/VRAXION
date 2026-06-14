@@ -1,0 +1,340 @@
+{
+  "variants": [
+    {
+      "active_set": [
+        "arrow_adapter_clone",
+        "arrow_trace_adapter",
+        "calc_scribe_native_seed",
+        "expensive_debug_probe",
+        "full_library_scan_overreach",
+        "invalid_direct_commit",
+        "invalid_trace_rejector",
+        "long_text_plain_overreach",
+        "long_text_scope_guard",
+        "native_seed_clone",
+        "noop_trace_observer",
+        "numeric_alias_overreach",
+        "square_adapter_clone",
+        "square_trace_adapter",
+        "standalone_plain_trace_adapter",
+        "unicode_operator_normalizer"
+      ],
+      "active_set_size": 16,
+      "adversarial_action_min": 0.66796875,
+      "adversarial_false_call_max": 1.0,
+      "adversarial_false_commit_max": 0.33203125,
+      "beat_seed_count": 0,
+      "clean_seed_count": 0,
+      "validation_action_min": 0.6666259765625,
+      "validation_false_call_max": 1.0,
+      "validation_false_commit_max": 0.3333740234375,
+      "variant": "all_dense_library"
+    },
+    {
+      "active_set": [
+        "arrow_adapter_clone",
+        "arrow_trace_adapter",
+        "calc_scribe_native_seed",
+        "invalid_trace_rejector",
+        "long_text_scope_guard",
+        "native_seed_clone",
+        "noop_trace_observer",
+        "square_adapter_clone",
+        "square_trace_adapter",
+        "standalone_plain_trace_adapter",
+        "unicode_operator_normalizer"
+      ],
+      "active_set_size": 11,
+      "adversarial_action_min": 1.0,
+      "adversarial_false_call_max": 0.0,
+      "adversarial_false_commit_max": 0.0,
+      "beat_seed_count": 0,
+      "clean_seed_count": 16,
+      "validation_action_min": 1.0,
+      "validation_false_call_max": 0.0,
+      "validation_false_commit_max": 0.0,
+      "variant": "clone_heavy_redundant"
+    },
+    {
+      "active_set": [
+        "calc_scribe_native_seed",
+        "invalid_trace_rejector",
+        "long_text_scope_guard",
+        "square_trace_adapter",
+        "standalone_plain_trace_adapter",
+        "unicode_operator_normalizer"
+      ],
+      "active_set_size": 6,
+      "adversarial_action_min": 0.89599609375,
+      "adversarial_false_call_max": 0.0,
+      "adversarial_false_commit_max": 0.0,
+      "beat_seed_count": 0,
+      "clean_seed_count": 0,
+      "validation_action_min": 0.8953857421875,
+      "validation_false_call_max": 0.0,
+      "validation_false_commit_max": 0.0,
+      "variant": "drop::arrow_trace_adapter"
+    },
+    {
+      "active_set": [
+        "arrow_trace_adapter",
+        "invalid_trace_rejector",
+        "long_text_scope_guard",
+        "square_trace_adapter",
+        "standalone_plain_trace_adapter",
+        "unicode_operator_normalizer"
+      ],
+      "active_set_size": 6,
+      "adversarial_action_min": 0.5947265625,
+      "adversarial_false_call_max": 0.0,
+      "adversarial_false_commit_max": 0.0,
+      "beat_seed_count": 0,
+      "clean_seed_count": 0,
+      "validation_action_min": 0.5947265625,
+      "validation_false_call_max": 0.0,
+      "validation_false_commit_max": 0.0,
+      "variant": "drop::calc_scribe_native_seed"
+    },
+    {
+      "active_set": [
+        "arrow_trace_adapter",
+        "calc_scribe_native_seed",
+        "long_text_scope_guard",
+        "square_trace_adapter",
+        "standalone_plain_trace_adapter",
+        "unicode_operator_normalizer"
+      ],
+      "active_set_size": 6,
+      "adversarial_action_min": 0.7811279296875,
+      "adversarial_false_call_max": 0.0,
+      "adversarial_false_commit_max": 0.2188720703125,
+      "beat_seed_count": 0,
+      "clean_seed_count": 0,
+      "validation_action_min": 0.778076171875,
+      "validation_false_call_max": 0.0,
+      "validation_false_commit_max": 0.221923828125,
+      "variant": "drop::invalid_trace_rejector"
+    },
+    {
+      "active_set": [
+        "arrow_trace_adapter",
+        "calc_scribe_native_seed",
+        "invalid_trace_rejector",
+        "square_trace_adapter",
+        "standalone_plain_trace_adapter",
+        "unicode_operator_normalizer"
+      ],
+      "active_set_size": 6,
+      "adversarial_action_min": 0.9931640625,
+      "adversarial_false_call_max": 0.059893048128342244,
+      "adversarial_false_commit_max": 0.0,
+      "beat_seed_count": 0,
+      "clean_seed_count": 0,
+      "validation_action_min": 0.9998779296875,
+      "validation_false_call_max": 0.0010504201680672268,
+      "validation_false_commit_max": 0.0,
+      "variant": "drop::long_text_scope_guard"
+    },
+    {
+      "active_set": [
+        "arrow_trace_adapter",
+        "calc_scribe_native_seed",
+        "invalid_trace_rejector",
+        "long_text_scope_guard",
+        "standalone_plain_trace_adapter",
+        "unicode_operator_normalizer"
+      ],
+      "active_set_size": 6,
+      "adversarial_action_min": 0.7918701171875,
+      "adversarial_false_call_max": 0.0,
+      "adversarial_false_commit_max": 0.0,
+      "beat_seed_count": 0,
+      "clean_seed_count": 0,
+      "validation_action_min": 0.7869873046875,
+      "validation_false_call_max": 0.0,
+      "validation_false_commit_max": 0.0,
+      "variant": "drop::square_trace_adapter"
+    },
+    {
+      "active_set": [
+        "arrow_trace_adapter",
+        "calc_scribe_native_seed",
+        "invalid_trace_rejector",
+        "long_text_scope_guard",
+        "square_trace_adapter",
+        "unicode_operator_normalizer"
+      ],
+      "active_set_size": 6,
+      "adversarial_action_min": 0.7969970703125,
+      "adversarial_false_call_max": 0.0,
+      "adversarial_false_commit_max": 0.0,
+      "beat_seed_count": 0,
+      "clean_seed_count": 0,
+      "validation_action_min": 0.79296875,
+      "validation_false_call_max": 0.0,
+      "validation_false_commit_max": 0.0,
+      "variant": "drop::standalone_plain_trace_adapter"
+    },
+    {
+      "active_set": [
+        "arrow_trace_adapter",
+        "calc_scribe_native_seed",
+        "invalid_trace_rejector",
+        "long_text_scope_guard",
+        "square_trace_adapter",
+        "standalone_plain_trace_adapter"
+      ],
+      "active_set_size": 6,
+      "adversarial_action_min": 0.92333984375,
+      "adversarial_false_call_max": 0.0,
+      "adversarial_false_commit_max": 0.0,
+      "beat_seed_count": 0,
+      "clean_seed_count": 0,
+      "validation_action_min": 0.919921875,
+      "validation_false_call_max": 0.0,
+      "validation_false_commit_max": 0.0,
+      "variant": "drop::unicode_operator_normalizer"
+    },
+    {
+      "active_set": [
+        "arrow_trace_adapter",
+        "calc_scribe_native_seed",
+        "invalid_trace_rejector",
+        "long_text_scope_guard",
+        "square_trace_adapter"
+      ],
+      "active_set_size": 5,
+      "adversarial_action_min": 0.7969970703125,
+      "adversarial_false_call_max": 0.0,
+      "adversarial_false_commit_max": 0.0,
+      "beat_seed_count": 0,
+      "clean_seed_count": 0,
+      "validation_action_min": 0.79296875,
+      "validation_false_call_max": 0.0,
+      "validation_false_commit_max": 0.0,
+      "variant": "minimal_safe_native_square_arrow"
+    },
+    {
+      "active_set": [
+        "calc_scribe_native_seed"
+      ],
+      "active_set_size": 1,
+      "adversarial_action_min": 0.38623046875,
+      "adversarial_false_call_max": 0.0,
+      "adversarial_false_commit_max": 0.1109619140625,
+      "beat_seed_count": 0,
+      "clean_seed_count": 0,
+      "validation_action_min": 0.3870849609375,
+      "validation_false_call_max": 0.0,
+      "validation_false_commit_max": 0.1142578125,
+      "variant": "only_localgolden_seed"
+    },
+    {
+      "active_set": [
+        "arrow_trace_adapter",
+        "calc_scribe_native_seed",
+        "invalid_trace_rejector",
+        "long_text_scope_guard",
+        "square_trace_adapter",
+        "standalone_plain_trace_adapter",
+        "unicode_operator_normalizer"
+      ],
+      "active_set_size": 7,
+      "adversarial_action_min": 1.0,
+      "adversarial_false_call_max": 0.0,
+      "adversarial_false_commit_max": 0.0,
+      "beat_seed_count": 0,
+      "clean_seed_count": 16,
+      "validation_action_min": 1.0,
+      "validation_false_call_max": 0.0,
+      "validation_false_commit_max": 0.0,
+      "variant": "stable_top"
+    },
+    {
+      "active_set": [
+        "arrow_trace_adapter",
+        "calc_scribe_native_seed",
+        "full_library_scan_overreach",
+        "invalid_trace_rejector",
+        "long_text_scope_guard",
+        "square_trace_adapter",
+        "standalone_plain_trace_adapter",
+        "unicode_operator_normalizer"
+      ],
+      "active_set_size": 8,
+      "adversarial_action_min": 0.8858642578125,
+      "adversarial_false_call_max": 1.0,
+      "adversarial_false_commit_max": 0.1083984375,
+      "beat_seed_count": 0,
+      "clean_seed_count": 0,
+      "validation_action_min": 0.8819580078125,
+      "validation_false_call_max": 1.0,
+      "validation_false_commit_max": 0.1180419921875,
+      "variant": "with_full_library_scan_overreach"
+    },
+    {
+      "active_set": [
+        "arrow_trace_adapter",
+        "calc_scribe_native_seed",
+        "invalid_trace_rejector",
+        "long_text_scope_guard",
+        "numeric_alias_overreach",
+        "square_trace_adapter",
+        "standalone_plain_trace_adapter",
+        "unicode_operator_normalizer"
+      ],
+      "active_set_size": 8,
+      "adversarial_action_min": 0.8870849609375,
+      "adversarial_false_call_max": 0.9953703703703703,
+      "adversarial_false_commit_max": 0.1129150390625,
+      "beat_seed_count": 0,
+      "clean_seed_count": 0,
+      "validation_action_min": 0.885009765625,
+      "validation_false_call_max": 0.9842436974789915,
+      "validation_false_commit_max": 0.114990234375,
+      "variant": "with_numeric_alias_overreach"
+    },
+    {
+      "active_set": [
+        "arrow_trace_adapter",
+        "calc_scribe_native_seed",
+        "invalid_direct_commit",
+        "long_text_scope_guard",
+        "square_trace_adapter",
+        "standalone_plain_trace_adapter",
+        "unicode_operator_normalizer"
+      ],
+      "active_set_size": 7,
+      "adversarial_action_min": 0.7811279296875,
+      "adversarial_false_call_max": 0.0,
+      "adversarial_false_commit_max": 0.2188720703125,
+      "beat_seed_count": 0,
+      "clean_seed_count": 0,
+      "validation_action_min": 0.778076171875,
+      "validation_false_call_max": 0.0,
+      "validation_false_commit_max": 0.221923828125,
+      "variant": "without_rejector_plus_direct_commit"
+    },
+    {
+      "active_set": [
+        "arrow_trace_adapter",
+        "calc_scribe_native_seed",
+        "invalid_trace_rejector",
+        "long_text_plain_overreach",
+        "square_trace_adapter",
+        "standalone_plain_trace_adapter",
+        "unicode_operator_normalizer"
+      ],
+      "active_set_size": 7,
+      "adversarial_action_min": 0.9931640625,
+      "adversarial_false_call_max": 0.059893048128342244,
+      "adversarial_false_commit_max": 0.0,
+      "beat_seed_count": 0,
+      "clean_seed_count": 0,
+      "validation_action_min": 0.9998779296875,
+      "validation_false_call_max": 0.0010504201680672268,
+      "validation_false_commit_max": 0.0,
+      "variant": "without_scope_guard_plus_overreach"
+    }
+  ]
+}
