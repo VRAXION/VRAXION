@@ -376,6 +376,7 @@ def build_payload(
         "red_flag_count": counts["RedFlag"],
         "deprecated_count": counts["Deprecated"],
         "qualified_activation_total": sum(int(row.get("qualified_activation") or 0) for row in rows),
+        "effective_activation_total": sum(int(row.get("e117_activation_after_gauntlet") or row.get("qualified_activation") or 0) for row in rows),
         "e114_projected_reach_permacore_count": e114_payload["aggregate"]["projected_reach_permacore_count"] if e114_payload else None,
         "e114_projected_need_targeted_data_count": e114_payload["aggregate"]["projected_need_targeted_data_count"] if e114_payload else None,
         "e114_stability_trend": e114_payload["aggregate"]["stability_trend"] if e114_payload else None,
@@ -672,10 +673,14 @@ def render_html(payload: dict[str, Any]) -> str:
       return (n * 100).toFixed(4) + "%";
     }}
     function rankClass(rank) {{ return "r-" + String(rank || "Bronze").replaceAll(" ", ""); }}
+    function effectiveActivation(row) {{
+      return row.e117_activation_after_gauntlet || row.qualified_activation || 0;
+    }}
     function nextTarget(row) {{
       const target = nextTargets[row.rank] || nextTargets.Bronze;
-      const remain = Math.max(0, target.value - (row.qualified_activation || 0));
-      const progress = target.value > 0 ? Math.min(1, (row.qualified_activation || 0) / target.value) : 1;
+      const activation = effectiveActivation(row);
+      const remain = Math.max(0, target.value - activation);
+      const progress = target.value > 0 ? Math.min(1, activation / target.value) : 1;
       return {{...target, remain, progress}};
     }}
     function filtered() {{
@@ -688,7 +693,7 @@ def render_html(payload: dict[str, Any]) -> str:
           .join(" ").toLowerCase().includes(q);
       }});
       out.sort((a,b) => {{
-        if (state.sort === "activation") return (b.qualified_activation||0) - (a.qualified_activation||0);
+        if (state.sort === "activation") return effectiveActivation(b) - effectiveActivation(a);
         if (state.sort === "remaining") return nextTarget(a).remain - nextTarget(b).remain;
         if (state.sort === "value") return (b.counterfactual_value||0) - (a.counterfactual_value||0);
         if (state.sort === "scope") return String(a.scope).localeCompare(String(b.scope)) || (rankOrder[a.rank] - rankOrder[b.rank]);
@@ -704,7 +709,7 @@ def render_html(payload: dict[str, Any]) -> str:
         ["Silver", agg.silver_count, "silver"],
         ["Bronze", agg.bronze_count, "bronze"],
         ["Hard negative", agg.hard_negative_total, agg.hard_negative_total ? "red" : "green"],
-        ["Qualified activations", fmt(agg.qualified_activation_total), "green"],
+        ["Effective activations", fmt(agg.effective_activation_total ?? agg.qualified_activation_total), "green"],
         ["E114 reaches target", agg.e114_projected_reach_permacore_count ?? "n/a", "green"],
         ["E114 targeted needed", agg.e114_projected_need_targeted_data_count ?? "n/a", agg.e114_projected_need_targeted_data_count ? "gold" : "green"],
         ["E116 synthetic reaches", agg.e116_target_reach_count ?? "n/a", "green"],
@@ -742,12 +747,13 @@ def render_html(payload: dict[str, Any]) -> str:
     function renderRows(items) {{
       document.getElementById("rows").innerHTML = items.map(row => {{
         const target = nextTarget(row);
+        const activation = effectiveActivation(row);
         const noharm = row.hard_negative === 0 ? "clean" : "flag";
         return `<tr data-id="${{htmlEscape(row.operator_id)}}">
           <td><span class="pill ${{String(row.rank).toLowerCase()}}">${{htmlEscape(row.rank)}}</span></td>
           <td><strong>${{htmlEscape(row.display_name || row.operator_id)}}</strong><br><span class="detail-id">${{htmlEscape(row.operator_id)}}</span></td>
           <td>${{htmlEscape(row.scope)}}<br><span class="detail-id">${{htmlEscape(row.group_id)}} · ${{htmlEscape(row.family)}}</span></td>
-          <td>${{fmt(row.qualified_activation)}}<div class="bar"><span style="width:${{(target.progress*100).toFixed(1)}}%"></span></div></td>
+          <td>${{fmt(activation)}}<div class="bar"><span style="width:${{(target.progress*100).toFixed(1)}}%"></span></div></td>
           <td>${{target.name}}<br><span class="detail-id">${{fmt(target.remain)}} remaining</span></td>
           <td><span class="pill ${{noharm === "clean" ? "green" : "red"}}">${{noharm}}</span></td>
         </tr>`;
@@ -768,6 +774,7 @@ def render_html(payload: dict[str, Any]) -> str:
       const row = state.selected || items[0] || rows[0];
       state.selected = row;
       const target = nextTarget(row);
+      const activation = effectiveActivation(row);
       document.getElementById("detail").innerHTML = `
         <div class="detail-title">${{htmlEscape(row.display_name || row.operator_id)}}</div>
         <div class="detail-id">${{htmlEscape(row.operator_id)}}</div>
@@ -777,7 +784,8 @@ def render_html(payload: dict[str, Any]) -> str:
           <span class="pill">${{htmlEscape(row.watch_state)}}</span>
         </div>
         <div class="kv">
-          <div>Qualified activation</div><div>${{fmt(row.qualified_activation)}}</div>
+          <div>Effective activation</div><div>${{fmt(activation)}}${{row.e117_activation_after_gauntlet ? " · includes E117 gauntlet" : ""}}</div>
+          <div>Base rank activation</div><div>${{fmt(row.qualified_activation)}}</div>
           <div>Next target</div><div>${{target.name}} · ${{fmt(target.remain)}} remaining<div class="bar"><span style="width:${{(target.progress*100).toFixed(1)}}%"></span></div></div>
           <div>Positive</div><div>${{fmt(row.positive)}}</div>
           <div>Neutral valid</div><div>${{fmt(row.neutral_valid)}}</div>
