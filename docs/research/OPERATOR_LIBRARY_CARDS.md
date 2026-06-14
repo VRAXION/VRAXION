@@ -3,8 +3,11 @@
 Current source of truth:
 
 ```text
-E88_LOCAL_GOLDEN_AND_SUPPORT_COMPONENT_SURVIVAL_GAUNTLET
-decision = e88_local_golden_survival_gauntlet_confirmed
+E112_GOLD_TO_CORE_PRUNE_HEAVY_PROBATION_WAVE
+decision = e112_gold_to_core_prune_heavy_probation_confirmed
+post_wave_rank_summary = 136 CoreMemoryCandidate / 0 Gold / 0 Silver / 0 Bronze / 0 DiamondCandidate / 0 RedFlag / 3 Deprecated
+latest_stress_overlay = E113_FINEWEB_LIGHT_STRESS_HARD_MUTATION_RECYCLE
+latest_stress_result = selected hard negatives 0 after baseline 2624 hard negatives across 88 operators
 ```
 
 Naming lock:
@@ -17,9 +20,9 @@ legacy alias = Pocket
 Boundary:
 
 ```text
-These cards describe the current scoped visible calculation-trace Operator
-family. They are not open-domain reasoning skills and not Core / TrueGolden
-claims.
+These cards describe scoped Operator rank evidence through E112 plus the E113
+FineWeb light-stress overlay. They are not
+open-domain reasoning skills and not PermaCore / TrueGolden claims.
 ```
 
 ## Active Survivor Cards

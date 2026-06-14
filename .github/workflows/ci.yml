@@ -61,3 +61,112 @@ jobs:
           test -f target/ci/e79_final_train_smoke/global_supervisor/global_merge_results.json
           test -f target/ci/e79_final_train_smoke/global_supervisor/global_library_summary.json
           test -f target/ci/e79_final_train_smoke/global_supervisor/lane_supervisor/supervisor_results.json
+
+  evidence-sample-ci:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Python compile
+        run: python -m compileall -q scripts
+
+      - name: Tracked JSON and JSONL parse
+        run: |
+          python - <<'PY'
+          import json
+          import pathlib
+          import subprocess
+
+          files = subprocess.check_output(["git", "ls-files"], text=True).splitlines()
+          for name in files:
+              path = pathlib.Path(name)
+              if path.suffix == ".json":
+                  json.loads(path.read_text(encoding="utf-8"))
+              elif path.suffix == ".jsonl":
+                  for line_no, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
+                      if line.strip():
+                          try:
+                              json.loads(line)
+                          except json.JSONDecodeError as exc:
+                              raise SystemExit(f"{path}:{line_no}: {exc}") from exc
+          print("tracked_json_and_jsonl_parse_ok")
+          PY
+
+      - name: Evidence sample checkers
+        run: |
+          python scripts/probes/run_e89_operator_naming_canonicalization_check.py
+          python scripts/probes/run_e107_operator_library_e90_e106_survival_role_and_regression_gauntlet_check.py --sample-only docs/research/artifact_samples/e107_operator_library_e90_e106_survival_role_and_regression_gauntlet
+          python scripts/probes/run_e108_external_dataset_operator_transfer_and_negative_scope_gauntlet_check.py --sample-only docs/research/artifact_samples/e108_external_dataset_operator_transfer_and_negative_scope_gauntlet
+          python scripts/probes/run_e109_operator_rank_ladder_and_golden_watch_probation_mode_check.py --sample-only docs/research/artifact_samples/e109_operator_rank_ladder_and_golden_watch_probation_mode
+          python scripts/probes/run_e110_promote_or_drop_operator_grind_wave1_check.py --sample-only docs/research/artifact_samples/e110_promote_or_drop_operator_grind_wave1
+          python scripts/probes/run_e111_bronze_mutation_prune_promote_or_drop_wave_check.py --sample-only docs/research/artifact_samples/e111_bronze_mutation_prune_promote_or_drop_wave
+          python scripts/probes/run_e112_gold_to_core_prune_heavy_probation_wave_check.py --sample-only docs/research/artifact_samples/e112_gold_to_core_prune_heavy_probation_wave
+
+      - name: Operator rank dashboard smoke
+        run: |
+          python scripts/tools/generate_operator_rank_dashboard.py --out target/ci/operator_rank_dashboard/index.html
+          python - <<'PY'
+          import pathlib
+          import re
+          import subprocess
+
+          html = pathlib.Path("target/ci/operator_rank_dashboard/index.html").read_text(encoding="utf-8")
+          match = re.search(r"<script>\s*(.*?)\s*</script>", html, re.S)
+          if not match:
+              raise SystemExit("dashboard script block missing")
+          js_path = pathlib.Path("target/ci/operator_rank_dashboard/dashboard.js")
+          js_path.write_text(match.group(1), encoding="utf-8")
+          subprocess.run(["node", "--check", str(js_path)], check=True)
+          if "E112 Wave 3" not in html:
+              raise SystemExit("dashboard did not load E112 rank evidence")
+          PY
+
+      - name: Front-door stale current-claim guard
+        run: |
+          python - <<'PY'
+          import pathlib
+
+          files = [
+              pathlib.Path("README.md"),
+              pathlib.Path("VALIDATED_FINDINGS.md"),
+              pathlib.Path("CHANGELOG.md"),
+              pathlib.Path("BETA.md"),
+              pathlib.Path("docs/CURRENT_STATUS.md"),
+              pathlib.Path("docs/GETTING_STARTED.md"),
+              pathlib.Path("docs/VERSION.json"),
+              pathlib.Path("docs/index.html"),
+          ]
+          stale = [
+              "E85 MAIN",
+              "current_main_head = 56a9cf",
+              '"current_main_head": "56a9cf',
+              "Current main head: 56a9cf",
+              "current_main_subject = Add E85",
+              '"current_main_head_subject": "Add E85',
+              "Current E85 extension",
+              "E80-E85 are tracked post-release evidence",
+              "current E85 mainline",
+              "E111 MAIN",
+              "current_main_head = d71e3657",
+              '"current_main_head": "d71e3657',
+              "current_main_subject = Add E111",
+              '"current_main_head_subject": "Add E111',
+              "E80-E111 are tracked post-release evidence",
+              "current E111 mainline",
+              "E112 EVIDENCE",
+              "current_evidence_subject = Add E112",
+              '"current_evidence_subject": "Add E112',
+              "E80-E112 are tracked post-release evidence",
+              "current E112 evidence anchor",
+          ]
+          failures = []
+          for path in files:
+              text = path.read_text(encoding="utf-8")
+              for pattern in stale:
+                  if pattern in text:
+                      failures.append(f"{path}: stale current pattern {pattern!r}")
+          if failures:
+              raise SystemExit("\n".join(failures))
+          print("frontdoor_stale_current_claim_guard_ok")
+          PY

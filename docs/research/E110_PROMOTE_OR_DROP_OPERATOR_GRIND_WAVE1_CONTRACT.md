@@ -103,4 +103,5 @@ no Diamond/Core/PermaCore labels emitted
 ## Interpretation Rule
 
 E110 Wave 1 can promote Operators to scoped Gold only. Gold remains a scoped
-rank and is not Core memory.
+rank and is not Core memory. The wave is deterministic scoped probe evidence;
+it is not production traffic, hosted API telemetry, or final-training evidence.

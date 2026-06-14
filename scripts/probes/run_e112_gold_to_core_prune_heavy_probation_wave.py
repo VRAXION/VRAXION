@@ -30,6 +30,27 @@ CORE_MIN = 100_000
 CORE_FAMILY_MIN = 15
 CORE_CAMPAIGN_MIN = 8
 PRUNE_SELECTED_RATIO_MIN = 0.50
+ARTIFACT_FILES = (
+    "run_manifest.json",
+    "wave_manifest.json",
+    "input_rank_report.json",
+    "wave_results.json",
+    "promotion_report.json",
+    "operator_stats.json",
+    "mutation_variant_report.json",
+    "mutation_events.json",
+    "mutation_summary.json",
+    "duration_report.json",
+    "progress.jsonl",
+    "partial_aggregate_snapshot.json",
+    "aggregate_metrics.json",
+    "deterministic_replay.json",
+    "decision.json",
+    "summary.json",
+    "report.md",
+    "row_level_samples.jsonl",
+    "checker_summary.json",
+)
 
 CORE_PRESSURE_FAMILIES = (
     "long_horizon_no_harm",
@@ -65,6 +86,20 @@ def read_json(path: Path) -> dict[str, Any]:
 def deterministic_hash(payload: dict[str, Any]) -> str:
     blob = json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
     return hashlib.sha256(blob).hexdigest()
+
+
+def prepare_output_dir(out: Path) -> None:
+    resolved = out.resolve()
+    target_root = (REPO_ROOT / "target").resolve()
+    try:
+        resolved.relative_to(target_root)
+    except ValueError as exc:
+        raise ValueError(f"--out must resolve under {target_root}") from exc
+    out.mkdir(parents=True, exist_ok=True)
+    for name in ARTIFACT_FILES:
+        path = out / name
+        if path.exists():
+            path.unlink()
 
 
 def stable_int(text: str, modulo: int) -> int:
@@ -525,14 +560,9 @@ def main() -> int:
     parser.add_argument("--e109-artifact", default="target/pilot_wave/e109_operator_rank_ladder_and_golden_watch_probation_mode")
     parser.add_argument("--e110-artifact", default="target/pilot_wave/e110_promote_or_drop_operator_grind_wave1")
     parser.add_argument("--e111-artifact", default="target/pilot_wave/e111_bronze_mutation_prune_promote_or_drop_wave")
-    parser.add_argument("--heartbeat-seconds", type=float, default=20.0)
     args = parser.parse_args()
     out = Path(args.out)
-    if out.exists():
-        for child in out.rglob("*"):
-            if child.is_file():
-                child.unlink()
-    out.mkdir(parents=True, exist_ok=True)
+    prepare_output_dir(out)
     started = time.time()
     write_json(out / "run_manifest.json", {
         "artifact_contract": ARTIFACT_CONTRACT,

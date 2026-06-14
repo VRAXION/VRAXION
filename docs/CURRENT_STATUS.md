@@ -7,9 +7,8 @@ _Last updated: 2026-06-14_
 ```text
 Current source of truth: main
 Current GitHub release: v5.0.0-e79.0
-Current main head: 56a9cf0305c1bfddd0e9b763b5e0d80fc9ec3bca E85 CALC-SCRIBE mixed-stream inference integration
+Current evidence anchor: 05415f5b06a43440742715ea93a5e2ec97632f21 Add E113 FineWeb light stress recycle probe
 Latest released runtime slice: a908a838a1119540ed88bc91e10cfcb0bdae92a8 E79 training data/curriculum readiness gate
-Base runtime slice: 0879a2c004cf6a002bd5639d9cb7a759709a41aa E74 Rust final bake API extraction
 Active branch surface: main only
 Historical branch heads: archive/branches/2026-06-13/*
 ```
@@ -17,39 +16,30 @@ Historical branch heads: archive/branches/2026-06-13/*
 ## Current Mainline
 
 ```text
-E69 persistent Pocket Library store
--> E70 curriculum runner preflight
--> E71 curriculum queue preflight
--> E72 curriculum resume preflight
--> E73 unified final-bake preflight
--> E74 reusable final-bake API extraction
--> E75 final curriculum pocket-generation runner
--> E76 multi-lane final-training supervisor
--> E77 global Pocket Library merge supervisor
--> E78 canonical final_train campaign entrypoint
--> E79 training data/curriculum readiness gate
--> E80 dataset-backed pocket capability scoring evidence
--> E81 CALC-SCRIBE v002 multiseed visible-marker training
--> E82 CALC-SCRIBE v003 floor-division confirmation
--> E83 CALC-SCRIBE v003 LocalGolden promotion/reload
--> E84 CALC-SCRIBE transfer and negative-scope probe
--> E85 CALC-SCRIBE mixed-stream inference integration
+E69-E79 released Rust runtime and training-data readiness gate
+-> E80-E85 CALC-SCRIBE visible calculation-trace evidence
+-> E86-E89 LocalGolden curriculum / selector / survival / naming lock
+-> E90-E106 Operator curriculum expansions
+-> E107 Operator survival role and regression gauntlet
+-> E108 external transfer and negative-scope no-harm gauntlet
+-> E109 rank ladder and GoldenWatch probation policy
+-> E110 Silver-to-Gold scoped probation wave
+-> E111 Bronze mutation/prune scoped Gold conversion wave
+-> E112 Gold-to-CoreMemoryCandidate prune-heavy probation wave
+-> E113 FineWeb-Edu light stress hard mutation/recycle probe
 ```
 
-## What Is Current
+## Current Evidence
 
-- `vraxion-runtime/` is the active Rust runtime surface.
-- The current GitHub release is `v5.0.0-e79.0`; E80-E85 are post-release tracked evidence on `main`.
-- The current Pocket Library layer handles registry, tokens, artifacts, ledgers, guarded load, reload snapshot, alias survival, safety blockers, and safe promotion.
-- The current curriculum layer has runner, queue, and resume preflights.
-- The current final-bake layer validates the locked Rust mechanics from one consolidated binary and exposes the same gate through a reusable Rust module.
-- The current final-training layer runs deterministic curriculum queues through the Pocket Library with checkpoint/progress/partial/final artifact writeout and resume support.
-- The current supervisor layer fans out final-training lanes, then merges lane-local candidates into one governed global Pocket Library with dedupe and guarded reload.
-- The current training-data layer validates split/family/capability coverage, scoring policy, inference target coverage, curriculum digest, and candidate rotation before final-training supervisor work starts.
-- The current canonical entrypoints are `training_data_readiness` for the standalone gate and `final_train` for the integrated campaign path.
-- The current post-release evidence layer validates CALC-SCRIBE v003 as a governed LocalGolden scoped Pocket for visible calculation-trace marker validation.
-- E84 confirms transfer across explicit visible calc-trace formats while no-calling word-problem text without visible trace framing.
-- E85 confirms mixed-stream routing: visible calc traces can call CALC-SCRIBE, invalid traces are rejected, and natural text / final-answer-only / marker-stripped rows no-call.
+- `vraxion-runtime/` is the active released Rust runtime surface.
+- The current GitHub release is `v5.0.0-e79.0`; E80-E113 are post-release tracked evidence on `main`.
+- E109 established scoped rank policy: 14 Gold, 35 Silver, 87 Bronze, 0 DiamondCandidate, 0 RedFlag.
+- E110 applied Silver-to-Gold pressure: 35 candidates, 35 scoped Gold promotions, 0 hard negatives.
+- E111 applied Bronze mutation/prune pressure: 87 candidates, 87 scoped Gold variant promotions, 0 hard negatives.
+- E111 post-wave rank summary: 136 Gold, 0 Silver, 0 Bronze, 0 DiamondCandidate, 0 RedFlag, 3 Deprecated.
+- E112 applied prune-heavy CoreMemoryCandidate probation: 136 candidates, 136 CoreMemoryCandidate qualifications, 0 hard negatives, mean selected prune ratio 69.4118%.
+- E112 post-wave rank summary: 136 CoreMemoryCandidate, 0 Gold, 0 Silver, 0 Bronze, 0 DiamondCandidate, 0 RedFlag, 3 Deprecated.
+- E113 applied a FineWeb-Edu 100k light stress/recycle probe: baseline 2,624 hard negatives across 88 operators, selected recycled variants 0 hard negatives, 0 neutral waste, 3,461,003 selected calls/positives, 136 recycled operators.
 - Long-running work must emit continuous partial progress and checkpoint data.
 
 ## What Is Historical
@@ -60,11 +50,7 @@ The old bounded-service, open-vocab assistant, beta release, byte-pipeline, and 
 
 Allowed current claim:
 
-> VRAXION has a Rust mainline for governed Pocket Library state, resumable curriculum execution, multi-lane final-training supervision, global Pocket Library merge/dedupe governance, a training-data/curriculum readiness gate, one canonical `final_train` campaign entrypoint, and post-release evidence for a governed CALC-SCRIBE scoped Pocket that validates visible calculation traces inside a mixed input stream.
-
-Current E85 extension:
-
-> CALC-SCRIBE v003 is a governed LocalGolden scoped Pocket for visible calculation-trace validation. The E85 mixed-stream integration routes to it only when an explicit visible calc trace exists, rejects invalid visible traces, and no-calls natural text or word-problem text without visible trace framing.
+> VRAXION has a Rust mainline for governed Pocket Library state, resumable curriculum execution, multi-lane final-training supervision, global Pocket Library merge/dedupe governance, a training-data/curriculum readiness gate, one canonical `final_train` campaign entrypoint, and post-release Operator evidence through E113. E112 qualifies the scoped Gold pool into CoreMemoryCandidate probation, and E113 stress-tests that pool on a 100k FineWeb-Edu seed pack where selected recycled variants remove the tracked baseline hard negatives.
 
 Not claimed:
 
@@ -75,12 +61,12 @@ Not claimed:
 - natural-language word-problem solving
 - final production dataset completion
 - trained model/weights readiness
-- Core memory or True Golden promotion
+- PermaCore or TrueGolden promotion
 - safety-aligned production deployment
 - consciousness or sentience
 
 ## Next Work
 
-1. Decide whether E80-E85 should become a new tagged release or stay as post-release main evidence.
-2. Convert the E85 managed active-set path from probe evidence into the smallest appropriate runtime-facing surface, if promotion is warranted.
-3. Keep expanding governed pocket inference only under explicit scope guards and negative controls.
+1. Keep E80-E113 as post-release main evidence until a release is explicitly cut.
+2. Decide which scoped Operator evidence should become a small runtime-facing surface.
+3. Keep evidence CI checking tracked sample artifacts so front-door docs cannot drift back to stale current-main claims.

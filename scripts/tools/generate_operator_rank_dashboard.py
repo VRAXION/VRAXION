@@ -14,11 +14,23 @@ DEFAULT_E109 = Path("target/pilot_wave/e109_operator_rank_ladder_and_golden_watc
 DEFAULT_E110 = Path("target/pilot_wave/e110_promote_or_drop_operator_grind_wave1")
 DEFAULT_E111 = Path("target/pilot_wave/e111_bronze_mutation_prune_promote_or_drop_wave")
 DEFAULT_E112 = Path("target/pilot_wave/e112_gold_to_core_prune_heavy_probation_wave")
+SAMPLE_E109 = Path("docs/research/artifact_samples/e109_operator_rank_ladder_and_golden_watch_probation_mode")
+SAMPLE_E110 = Path("docs/research/artifact_samples/e110_promote_or_drop_operator_grind_wave1")
+SAMPLE_E111 = Path("docs/research/artifact_samples/e111_bronze_mutation_prune_promote_or_drop_wave")
+SAMPLE_E112 = Path("docs/research/artifact_samples/e112_gold_to_core_prune_heavy_probation_wave")
 DEFAULT_OUT = Path("target/pilot_wave/operator_rank_dashboard/index.html")
 
 
 def read_json(path: Path) -> dict[str, Any]:
     return json.loads(path.read_text(encoding="utf-8"))
+
+
+def existing_artifact_path(requested: Path, fallback: Path, required_file: str) -> Path:
+    if (requested / required_file).exists():
+        return requested
+    if (fallback / required_file).exists():
+        return fallback
+    raise FileNotFoundError(f"missing artifact {required_file!r} in {requested} or {fallback}")
 
 
 def compact_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -571,11 +583,13 @@ def render_html(payload: dict[str, Any]) -> str:
     function renderFilters() {{
       const ranks = ["All", ...Array.from(new Set(rows.map(r => r.rank))).sort((a,b) => rankOrder[a] - rankOrder[b])];
       const scopes = ["All", ...Array.from(new Set(rows.map(r => r.scope))).sort()];
-      document.getElementById("rankFilter").innerHTML = ranks.map(r => `<option>${{r}}</option>`).join("");
-      document.getElementById("scopeFilter").innerHTML = scopes.map(s => `<option>${{s}}</option>`).join("");
+      document.getElementById("rankFilter").innerHTML = ranks.map(r => `<option value="${{htmlEscape(r)}}">${{htmlEscape(r)}}</option>`).join("");
+      document.getElementById("scopeFilter").innerHTML = scopes.map(s => `<option value="${{htmlEscape(s)}}">${{htmlEscape(s)}}</option>`).join("");
+      document.getElementById("rankFilter").value = ranks.includes(state.rank) ? state.rank : "All";
+      document.getElementById("scopeFilter").value = scopes.includes(state.scope) ? state.scope : "All";
       document.getElementById("rankButtons").innerHTML = ranks.map(r => {{
         const count = r === "All" ? rows.length : rows.filter(x => x.rank === r).length;
-        return `<button data-rank="${{r}}" class="${{state.rank === r ? "active" : ""}}">${{r}} <span class="pill">${{count}}</span></button>`;
+        return `<button data-rank="${{htmlEscape(r)}}" class="${{state.rank === r ? "active" : ""}}">${{htmlEscape(r)}} <span class="pill">${{count}}</span></button>`;
       }}).join("");
       document.querySelectorAll("#rankButtons button").forEach(btn => btn.onclick = () => {{
         state.rank = btn.dataset.rank;
@@ -585,7 +599,7 @@ def render_html(payload: dict[str, Any]) -> str:
     }}
     function renderGrid(items) {{
       document.getElementById("rankGrid").innerHTML = items.map(row =>
-        `<div class="cell ${{rankClass(row.rank)}}" title="${{row.rank}} · ${{row.operator_id}} · ${{row.scope}}" data-id="${{row.operator_id}}"></div>`
+        `<div class="cell ${{rankClass(row.rank)}}" title="${{htmlEscape(row.rank)}} · ${{htmlEscape(row.operator_id)}} · ${{htmlEscape(row.scope)}}" data-id="${{htmlEscape(row.operator_id)}}"></div>`
       ).join("");
       document.querySelectorAll(".cell").forEach(cell => cell.onclick = () => select(cell.dataset.id));
     }}
@@ -593,8 +607,8 @@ def render_html(payload: dict[str, Any]) -> str:
       document.getElementById("rows").innerHTML = items.map(row => {{
         const target = nextTarget(row);
         const noharm = row.hard_negative === 0 ? "clean" : "flag";
-        return `<tr data-id="${{row.operator_id}}">
-          <td><span class="pill ${{String(row.rank).toLowerCase()}}">${{row.rank}}</span></td>
+        return `<tr data-id="${{htmlEscape(row.operator_id)}}">
+          <td><span class="pill ${{String(row.rank).toLowerCase()}}">${{htmlEscape(row.rank)}}</span></td>
           <td><strong>${{htmlEscape(row.display_name || row.operator_id)}}</strong><br><span class="detail-id">${{htmlEscape(row.operator_id)}}</span></td>
           <td>${{htmlEscape(row.scope)}}<br><span class="detail-id">${{htmlEscape(row.group_id)}} · ${{htmlEscape(row.family)}}</span></td>
           <td>${{fmt(row.qualified_activation)}}<div class="bar"><span style="width:${{(target.progress*100).toFixed(1)}}%"></span></div></td>
@@ -608,18 +622,21 @@ def render_html(payload: dict[str, Any]) -> str:
       return String(value ?? "").replace(/[&<>"']/g, ch => ({{"&":"&amp;","<":"&lt;",">":"&gt;","\\"":"&quot;","'":"&#39;"}}[ch]));
     }}
     function select(id) {{
-      state.selected = rows.find(r => r.operator_id === id) || state.selected;
+      state.selected = rows.find(r => r.operator_id === id) || null;
       renderDetail();
     }}
-    function renderDetail() {{
-      const row = state.selected || filtered()[0] || rows[0];
+    function renderDetail(items = filtered()) {{
+      if (state.selected && !items.some(row => row.operator_id === state.selected.operator_id)) {{
+        state.selected = null;
+      }}
+      const row = state.selected || items[0] || rows[0];
       state.selected = row;
       const target = nextTarget(row);
       document.getElementById("detail").innerHTML = `
         <div class="detail-title">${{htmlEscape(row.display_name || row.operator_id)}}</div>
         <div class="detail-id">${{htmlEscape(row.operator_id)}}</div>
         <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
-          <span class="pill ${{String(row.rank).toLowerCase()}}">${{row.rank}}</span>
+          <span class="pill ${{String(row.rank).toLowerCase()}}">${{htmlEscape(row.rank)}}</span>
           <span class="pill">${{htmlEscape(row.scope)}}</span>
           <span class="pill">${{htmlEscape(row.watch_state)}}</span>
         </div>
@@ -650,7 +667,7 @@ def render_html(payload: dict[str, Any]) -> str:
       const items = filtered();
       renderGrid(items);
       renderRows(items);
-      renderDetail();
+      renderDetail(items);
     }}
     document.getElementById("search").oninput = e => {{ state.q = e.target.value; render(); }};
     document.getElementById("rankFilter").onchange = e => {{ state.rank = e.target.value; render(); }};
@@ -671,12 +688,15 @@ def main() -> int:
     parser.add_argument("--e112", default=str(DEFAULT_E112))
     parser.add_argument("--out", default=str(DEFAULT_OUT))
     args = parser.parse_args()
-    e109 = Path(args.e109)
-    e110 = Path(args.e110)
-    e111 = Path(args.e111)
-    e112 = Path(args.e112)
+    e109 = existing_artifact_path(Path(args.e109), SAMPLE_E109, "rank_results.json")
+    e110_requested = Path(args.e110)
+    e111_requested = Path(args.e111)
+    e112_requested = Path(args.e112)
+    e110 = e110_requested if (e110_requested / "wave_results.json").exists() else SAMPLE_E110 if (SAMPLE_E110 / "wave_results.json").exists() else None
+    e111 = e111_requested if (e111_requested / "wave_results.json").exists() else SAMPLE_E111 if (SAMPLE_E111 / "wave_results.json").exists() else None
+    e112 = e112_requested if (e112_requested / "wave_results.json").exists() else SAMPLE_E112 if (SAMPLE_E112 / "wave_results.json").exists() else None
     out = Path(args.out)
-    payload = build_payload(e109, e110 if e110.exists() else None, e111 if e111.exists() else None, e112 if e112.exists() else None)
+    payload = build_payload(e109, e110, e111, e112)
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(render_html(payload), encoding="utf-8")
     print(json.dumps({"out": str(out), "operator_count": len(payload["rows"])}, sort_keys=True))

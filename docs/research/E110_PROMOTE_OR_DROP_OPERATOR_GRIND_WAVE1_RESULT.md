@@ -98,6 +98,10 @@ reload/challenger/prune pass
 This is a scoped Gold promotion only. It does not create Diamond, Core,
 PermaCore, or TrueGolden memory.
 
+The no-harm counters are scoped deterministic probe evidence from the tracked
+E110 artifact rows. They are not production traffic, hosted API telemetry, or
+final-training evidence.
+
 ## Artifacts
 
 ```text

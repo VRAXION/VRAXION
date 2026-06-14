@@ -33,6 +33,23 @@ from scripts.probes.run_e84_calc_scribe_transfer_negative_scope_probe import app
 ARTIFACT_CONTRACT = "E113_FINEWEB_LIGHT_STRESS_HARD_MUTATION_RECYCLE"
 DEFAULT_DATASET = Path("data/high_quality_seed_v1/fineweb_edu/local_fineweb_edu_sample_100000.jsonl")
 DEFAULT_E112 = Path("target/pilot_wave/e112_gold_to_core_prune_heavy_probation_wave")
+ARTIFACT_FILES = (
+    "run_manifest.json",
+    "dataset_report.json",
+    "operator_stress_results.json",
+    "mutation_variant_report.json",
+    "mutation_events.jsonl",
+    "mutation_summary.json",
+    "progress.jsonl",
+    "partial_aggregate_snapshot.json",
+    "aggregate_metrics.json",
+    "deterministic_replay.json",
+    "decision.json",
+    "summary.json",
+    "report.md",
+    "row_level_samples.jsonl",
+    "checker_summary.json",
+)
 VARIANTS = (
     "current_core_candidate_baseline",
     "hard_scope_prune_copy",
@@ -64,6 +81,20 @@ def read_json(path: Path) -> dict[str, Any]:
 def deterministic_hash(payload: Any) -> str:
     blob = json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
     return hashlib.sha256(blob).hexdigest()
+
+
+def prepare_output_dir(out: Path) -> None:
+    resolved = out.resolve()
+    target_root = (REPO_ROOT / "target").resolve()
+    try:
+        resolved.relative_to(target_root)
+    except ValueError as exc:
+        raise ValueError(f"--out must resolve under {target_root}") from exc
+    out.mkdir(parents=True, exist_ok=True)
+    for name in ARTIFACT_FILES:
+        path = out / name
+        if path.exists():
+            path.unlink()
 
 
 def stable_float(text: str) -> float:
@@ -268,10 +299,8 @@ def iter_dataset(path: Path, limit: int):
 
 def run(args: argparse.Namespace) -> dict[str, Any]:
     out = Path(args.out)
-    out.mkdir(parents=True, exist_ok=True)
+    prepare_output_dir(out)
     progress = out / "progress.jsonl"
-    if progress.exists():
-        progress.unlink()
 
     start = time.time()
     dataset = Path(args.dataset)
