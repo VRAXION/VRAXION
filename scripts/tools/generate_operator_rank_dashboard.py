@@ -21,10 +21,12 @@ DEFAULT_E118 = Path("target/pilot_wave/e118_core_candidate_cross_source_no_harm_
 DEFAULT_E120 = Path("target/pilot_wave/e120_fineweb_skill_farm_to_gold_wave")
 DEFAULT_E121 = Path("target/pilot_wave/e121_e120_gold_to_orange_legendary_probation_gauntlet")
 DEFAULT_E122 = Path("target/pilot_wave/e122_orange_only_baseline_and_negative_card_recall_probe")
+DEFAULT_E127 = Path("target/pilot_wave/e127_overnight_text_skill_farm_orange_cycle")
 SAMPLE_E109 = Path("docs/research/artifact_samples/e109_operator_rank_ladder_and_golden_watch_probation_mode")
 SAMPLE_E110 = Path("docs/research/artifact_samples/e110_promote_or_drop_operator_grind_wave1")
 SAMPLE_E111 = Path("docs/research/artifact_samples/e111_bronze_mutation_prune_promote_or_drop_wave")
 SAMPLE_E112 = Path("docs/research/artifact_samples/e112_gold_to_core_prune_heavy_probation_wave")
+SAMPLE_E127 = Path("docs/research/artifact_samples/e127_overnight_text_skill_farm_orange_cycle")
 DEFAULT_OUT = Path("target/pilot_wave/operator_rank_dashboard/index.html")
 
 
@@ -146,6 +148,19 @@ def compact_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
         "e122_negative_card_recall_count",
         "e122_prevented_repeat_failure_count",
         "e122_false_block_count",
+        "e127_cycle",
+        "e127_reaches_orange_legendary",
+        "e127_remaining_to_orange",
+        "e127_hard_negative",
+        "e127_wrong_scope_call",
+        "e127_false_commit",
+        "e127_unsupported_answer",
+        "e127_direct_flow_write",
+        "e127_selected_variant_type",
+        "e127_selected_prune_ratio",
+        "e127_family_coverage",
+        "e127_campaign_count",
+        "e127_description",
     ]
     return [{key: row.get(key) for key in keep} for row in rows]
 
@@ -637,6 +652,89 @@ def merge_e122(rows: list[dict[str, Any]], e122: Path | None) -> tuple[list[dict
     }
 
 
+def merge_e127(rows: list[dict[str, Any]], e127: Path | None) -> tuple[list[dict[str, Any]], dict[str, Any] | None]:
+    if not e127 or not (e127 / "cycles").exists():
+        return rows, None
+    result_files = sorted((e127 / "cycles").glob("cycle_*/operator_orange_results.json"))
+    if not result_files:
+        return rows, None
+    merged = list(rows)
+    by_id = {row["operator_id"]: row for row in merged}
+    cycle_rows: list[dict[str, Any]] = []
+    for path in result_files:
+        try:
+            cycle_index = int(path.parent.name.split("_")[-1])
+        except ValueError:
+            cycle_index = 0
+        for update in read_json(path)["rows"]:
+            if update.get("rank_after") != "OrangeLegendaryCandidate":
+                continue
+            row = {
+                "operator_id": update["operator_id"],
+                "display_name": update.get("display_name", update["operator_id"]),
+                "scope": update.get("scope"),
+                "family": update.get("family"),
+                "group_id": "E127",
+                "rank": update.get("rank_after", "OrangeLegendaryCandidate"),
+                "watch_state": update.get("watch_state", "E127OrangeLegendaryCandidateConfirmed"),
+                "qualified_activation": update.get("qualified_activation"),
+                "positive": update.get("positive"),
+                "neutral_valid": update.get("neutral_valid"),
+                "neutral_waste": update.get("neutral_waste"),
+                "neutral_waste_rate": 0,
+                "hard_negative": update.get("hard_negative"),
+                "rule_of_three_upper_failure_bound": update.get("rule_of_three_upper_failure_bound"),
+                "combined_family_coverage": update.get("family_coverage"),
+                "campaign_count": update.get("campaign_count"),
+                "counterfactual_value": update.get("selected_variant_net_score", 0),
+                "activated_gain": update.get("selected_variant_utility", 0),
+                "ablation_loss": 0,
+                "reload_shadow_pass": update.get("reload_shadow_pass"),
+                "challenger_pass": update.get("challenger_pass"),
+                "prune_pass": update.get("prune_pass"),
+                "rank_before": update.get("rank_before"),
+                "rank_after": update.get("rank_after"),
+                "selected_variant_id": update.get("selected_variant_id"),
+                "selected_variant_type": update.get("selected_variant_type"),
+                "selected_variant_net_score": update.get("selected_variant_net_score"),
+                "selected_prune_ratio": update.get("selected_prune_ratio"),
+                "long_horizon_no_harm_pass": update.get("no_harm_pass"),
+                "negative_scope_pass": update.get("negative_scope_pass"),
+                "mutation_attempts": update.get("mutation_attempts"),
+                "accepted_mutations": update.get("accepted_mutations"),
+                "rejected_mutations": update.get("rejected_mutations"),
+                "rollback_count": update.get("rollback_count"),
+                "e127_cycle": cycle_index,
+                "e127_reaches_orange_legendary": update.get("e127_reaches_orange_legendary"),
+                "e127_remaining_to_orange": update.get("e127_remaining_to_orange"),
+                "e127_hard_negative": update.get("hard_negative"),
+                "e127_wrong_scope_call": update.get("wrong_scope_call"),
+                "e127_false_commit": update.get("false_commit"),
+                "e127_unsupported_answer": update.get("unsupported_answer"),
+                "e127_direct_flow_write": update.get("direct_flow_write"),
+                "e127_selected_variant_type": update.get("selected_variant_type"),
+                "e127_selected_prune_ratio": update.get("selected_prune_ratio"),
+                "e127_family_coverage": update.get("family_coverage"),
+                "e127_campaign_count": update.get("campaign_count"),
+                "e127_description": update.get("description"),
+            }
+            existing = by_id.get(update["operator_id"])
+            if existing:
+                existing.update(row)
+            else:
+                merged.append(row)
+                by_id[row["operator_id"]] = row
+            cycle_rows.append(row)
+    aggregate = read_json(e127 / "aggregate_metrics.json") if (e127 / "aggregate_metrics.json").exists() else {}
+    summary = read_json(e127 / "summary.json") if (e127 / "summary.json").exists() else aggregate
+    return merged, {
+        "summary": summary,
+        "aggregate": aggregate,
+        "operator_count": len(cycle_rows),
+        "cycle_count": aggregate.get("cycle_count"),
+    }
+
+
 def build_payload(
     e109: Path,
     e110: Path | None = None,
@@ -649,6 +747,7 @@ def build_payload(
     e120: Path | None = None,
     e121: Path | None = None,
     e122: Path | None = None,
+    e127: Path | None = None,
 ) -> dict[str, Any]:
     rank_results = read_json(e109 / "rank_results.json")
     rows, e110_payload = merge_e110(compact_rows(rank_results["rows"]), e110)
@@ -661,6 +760,7 @@ def build_payload(
     rows, e120_payload = merge_e120(rows, e120)
     rows, e121_payload = merge_e121(rows, e121)
     rows, e122_payload = merge_e122(rows, e122)
+    rows, e127_payload = merge_e127(rows, e127)
     counts = rank_counts(rows)
     orange_300k_count = sum(
         1 for row in rows
@@ -713,12 +813,20 @@ def build_payload(
         "e122_prevented_repeat_failure_count": e122_payload["aggregate"]["prevented_repeat_failure_count"] if e122_payload else None,
         "e122_false_block_count": e122_payload["aggregate"]["false_block_count"] if e122_payload else None,
         "e122_negative_card_recall_rate": e122_payload["aggregate"]["negative_card_recall_rate"] if e122_payload else None,
+        "e127_orange_legendary_candidate_count": e127_payload["aggregate"].get("orange_legendary_candidate_total") if e127_payload else None,
+        "e127_selected_candidate_total": e127_payload["aggregate"].get("selected_candidate_total") if e127_payload else None,
+        "e127_cycle_count": e127_payload["aggregate"].get("cycle_count") if e127_payload else None,
+        "e127_hard_negative_total": e127_payload["aggregate"].get("hard_negative_total") if e127_payload else None,
+        "e127_false_commit_total": e127_payload["aggregate"].get("false_commit_total") if e127_payload else None,
+        "e127_wrong_scope_call_total": e127_payload["aggregate"].get("wrong_scope_call_total") if e127_payload else None,
+        "e127_unsupported_answer_total": e127_payload["aggregate"].get("unsupported_answer_total") if e127_payload else None,
+        "e127_mutation_attempts_total": e127_payload["aggregate"].get("mutation_attempts_total") if e127_payload else None,
     }
     summary = read_json(e109 / "summary.json")
     summary = {
         **summary,
         "rank_counts": counts,
-        "latest_wave": "E122 orange-only baseline and negative-card recall" if e122_payload else "E121 E120 Gold to Orange/Legendary probation gauntlet" if e121_payload else "E120 FineWeb skill farm to Gold wave" if e120_payload else "E118 cross-source no-harm gauntlet" if e118_payload else "E117 alpha-Weave targeted pressure gauntlet" if e117_payload else "E116 alpha-Weave targeted pressure" if e116_payload else "E114 FineWeb projection" if e114_payload else "E112 Wave 3" if e112_payload else "E111 Wave 2" if e111_payload else "E110 Wave 1" if e110_payload else "E109",
+        "latest_wave": "E127 overnight text skill farm Orange cycle" if e127_payload else "E122 orange-only baseline and negative-card recall" if e122_payload else "E121 E120 Gold to Orange/Legendary probation gauntlet" if e121_payload else "E120 FineWeb skill farm to Gold wave" if e120_payload else "E118 cross-source no-harm gauntlet" if e118_payload else "E117 alpha-Weave targeted pressure gauntlet" if e117_payload else "E116 alpha-Weave targeted pressure" if e116_payload else "E114 FineWeb projection" if e114_payload else "E112 Wave 3" if e112_payload else "E111 Wave 2" if e111_payload else "E110 Wave 1" if e110_payload else "E109",
     }
     return {
         "summary": summary,
@@ -732,6 +840,7 @@ def build_payload(
         "e120": e120_payload,
         "e121": e121_payload,
         "e122": e122_payload,
+        "e127": e127_payload,
         "aggregate": aggregate,
         "policy": read_json(e109 / "rank_policy_manifest.json"),
         "watch": read_json(e109 / "golden_watch_report.json"),
@@ -1068,7 +1177,11 @@ def render_html(payload: dict[str, Any]) -> str:
         ["Negative cards", agg.e122_negative_card_count ?? "n/a", "gold"],
         ["Negative recalls", agg.e122_negative_card_recall_event_count ?? "n/a", "green"],
         ["Prevented repeats", agg.e122_prevented_repeat_failure_count ?? "n/a", "green"],
-        ["False blocks", agg.e122_false_block_count ?? "n/a", agg.e122_false_block_count ? "red" : "green"]
+        ["False blocks", agg.e122_false_block_count ?? "n/a", agg.e122_false_block_count ? "red" : "green"],
+        ["E127 Orange", agg.e127_orange_legendary_candidate_count ?? "n/a", "orange"],
+        ["E127 cycles", agg.e127_cycle_count ?? "n/a", "green"],
+        ["E127 hard negatives", agg.e127_hard_negative_total ?? "n/a", agg.e127_hard_negative_total ? "red" : "green"],
+        ["E127 false commits", agg.e127_false_commit_total ?? "n/a", agg.e127_false_commit_total ? "red" : "green"]
       ];
       document.getElementById("cards").innerHTML = cards.map(([label,value,cls]) =>
         `<div class="card"><div class="label">${{label}}</div><div class="value ${{cls}}">${{value}}</div></div>`
@@ -1175,8 +1288,11 @@ def render_html(payload: dict[str, Any]) -> str:
           <div>E121 selected form</div><div>${{htmlEscape(row.e121_selected_variant_type || "")}}${{typeof row.e121_selected_prune_ratio === "number" ? " · prune " + (row.e121_selected_prune_ratio * 100).toFixed(1) + "%" : ""}} · families ${{fmt(row.e121_family_coverage || 0)}} · campaigns ${{fmt(row.e121_campaign_count || 0)}}</div>
           <div>E122 orange-only baseline</div><div>${{row.e122_orange_only_baseline ? "active orange-only baseline member" : "not active in E122"}} · was already orange ${{row.e122_was_previously_orange ? "yes" : "no"}} · remaining ${{fmt(row.e122_remaining_to_orange || 0)}}</div>
           <div>E122 negative cards</div><div>${{fmt(row.e122_negative_card_count || 0)}} cards · ${{fmt(row.e122_negative_card_recall_count || 0)}} recall events · ${{fmt(row.e122_prevented_repeat_failure_count || 0)}} prevented repeats · false blocks ${{fmt(row.e122_false_block_count || 0)}}</div>
+          <div>E127 overnight farm</div><div>${{row.group_id === "E127" ? "new scoped Orange/Legendary from overnight farm" : "not E127"}} · cycle ${{fmt(row.e127_cycle || 0)}} · hard negatives ${{fmt(row.e127_hard_negative || 0)}} · wrong scope ${{fmt(row.e127_wrong_scope_call || 0)}} · false commits ${{fmt(row.e127_false_commit || 0)}}</div>
+          <div>E127 selected form</div><div>${{htmlEscape(row.e127_selected_variant_type || "")}}${{typeof row.e127_selected_prune_ratio === "number" ? " · prune " + (row.e127_selected_prune_ratio * 100).toFixed(1) + "%" : ""}} · families ${{fmt(row.e127_family_coverage || 0)}} · campaigns ${{fmt(row.e127_campaign_count || 0)}}</div>
+          <div>E127 description</div><div>${{htmlEscape(row.e127_description || "")}}</div>
         </div>
-        <div class="note">${{row.e122_orange_only_baseline ? "Interpretation: this active Operator is part of the E122 scoped orange-only baseline. Negative cards attached here are mutation-planner priors, not normal callable skills. It is still not Core, PermaCore, or TrueGolden." : row.rank === "OrangeLegendaryCandidate" ? "Interpretation: this E121 operator reached scoped Orange/LegendaryCandidate status. It is still not Core, PermaCore, or TrueGolden; that would need a later much larger no-harm grind." : row.group_id === "E120" ? "Interpretation: E120 created this as a scoped Gold Operator from FineWeb skill farming. It is not Core, PermaCore, or TrueGolden yet." : row.rank === "CoreMemoryCandidate" ? "Interpretation: this operator passed scoped CoreMemoryCandidate probation. It is still not PermaCore or TrueGolden without a later larger no-harm grind." : "Interpretation: rank is scoped. This operator is not Core memory unless a later Core probation grind passes the much higher qualified-activation and no-harm gates."}}</div>
+        <div class="note">${{row.group_id === "E127" ? "Interpretation: this E127 operator reached scoped Orange/LegendaryCandidate status during the overnight text-skill farm. It is still not Core, PermaCore, or TrueGolden; that requires much larger no-harm grind and cross-source evidence." : row.e122_orange_only_baseline ? "Interpretation: this active Operator is part of the E122 scoped orange-only baseline. Negative cards attached here are mutation-planner priors, not normal callable skills. It is still not Core, PermaCore, or TrueGolden." : row.rank === "OrangeLegendaryCandidate" ? "Interpretation: this operator reached scoped Orange/LegendaryCandidate status. It is still not Core, PermaCore, or TrueGolden; that would need a later much larger no-harm grind." : row.group_id === "E120" ? "Interpretation: E120 created this as a scoped Gold Operator from FineWeb skill farming. It is not Core, PermaCore, or TrueGolden yet." : row.rank === "CoreMemoryCandidate" ? "Interpretation: this operator passed scoped CoreMemoryCandidate probation. It is still not PermaCore or TrueGolden without a later larger no-harm grind." : "Interpretation: rank is scoped. This operator is not Core memory unless a later Core probation grind passes the much higher qualified-activation and no-harm gates."}}</div>
       `;
     }}
     function render() {{
@@ -1211,6 +1327,7 @@ def main() -> int:
     parser.add_argument("--e120", default=str(DEFAULT_E120))
     parser.add_argument("--e121", default=str(DEFAULT_E121))
     parser.add_argument("--e122", default=str(DEFAULT_E122))
+    parser.add_argument("--e127", default=str(DEFAULT_E127))
     parser.add_argument("--out", default=str(DEFAULT_OUT))
     args = parser.parse_args()
     e109 = existing_artifact_path(Path(args.e109), SAMPLE_E109, "rank_results.json")
@@ -1224,6 +1341,7 @@ def main() -> int:
     e120_requested = Path(args.e120)
     e121_requested = Path(args.e121)
     e122_requested = Path(args.e122)
+    e127_requested = Path(args.e127)
     e110 = e110_requested if (e110_requested / "wave_results.json").exists() else SAMPLE_E110 if (SAMPLE_E110 / "wave_results.json").exists() else None
     e111 = e111_requested if (e111_requested / "wave_results.json").exists() else SAMPLE_E111 if (SAMPLE_E111 / "wave_results.json").exists() else None
     e112 = e112_requested if (e112_requested / "wave_results.json").exists() else SAMPLE_E112 if (SAMPLE_E112 / "wave_results.json").exists() else None
@@ -1234,8 +1352,9 @@ def main() -> int:
     e120 = e120_requested if (e120_requested / "operator_gold_results.json").exists() else None
     e121 = e121_requested if (e121_requested / "operator_orange_results.json").exists() else None
     e122 = e122_requested if (e122_requested / "orange_only_results.json").exists() else None
+    e127 = e127_requested if (e127_requested / "cycles").exists() else SAMPLE_E127 if (SAMPLE_E127 / "cycles").exists() else None
     out = Path(args.out)
-    payload = build_payload(e109, e110, e111, e112, e114, e116, e117, e118, e120, e121, e122)
+    payload = build_payload(e109, e110, e111, e112, e114, e116, e117, e118, e120, e121, e122, e127)
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(render_html(payload), encoding="utf-8")
     print(json.dumps({"out": str(out), "operator_count": len(payload["rows"])}, sort_keys=True))
