@@ -1,0 +1,207 @@
+schema_version: AlphaWeavePressureCell-v1
+cell_id: aw_coldroom_status_000001
+cell_rank_seed: SilverCell
+cell_family: evidence_conflict
+data_origin: human_seeded
+human_author: Daniel
+assistant_author: ChatGPT
+review_status: draft_reviewed
+
+training_metadata:
+  target_skill: latest_verified_evidence_overrides_stale_status
+  target_operators:
+    - temporal_latest_span_t_stab
+    - evidence_conflict_detector_lens
+    - source_priority_resolver_lens
+    - resolved_evidence_coverage_guard
+    - evidence_citation_link_scribe
+    - unsupported_answer_defer_guard
+  operator_visibility: hidden_from_candidate
+  intended_pressure:
+    - detect stale earlier status
+    - reject weak rumor as decisive evidence
+    - prefer latest verified maintenance evidence
+    - require citation before answer
+    - ask or defer when fresh evidence is missing
+    - avoid activation on story/example negative scope
+
+public_input:
+  context: >
+    A research station tracks coldroom availability through short maintenance notes.
+    Answer only from the listed observations.
+
+  observations:
+    - obs_id: obs_1
+      order: 1
+      time: "07:40"
+      source_id: src_maint_A
+      source_class: maintenance_log
+      trust: verified
+      text: "Coldroom C-12 was marked unusable because the door seal failed overnight."
+
+    - obs_id: obs_2
+      order: 2
+      time: "08:15"
+      source_id: src_chat_B
+      source_class: staff_chat
+      trust: weak
+      text: "Someone said C-12 is probably still broken, so avoid it."
+
+    - obs_id: obs_3
+      order: 3
+      time: "09:05"
+      source_id: src_maint_A
+      source_class: maintenance_log
+      trust: verified
+      text: "Door seal on Coldroom C-12 replaced. Temperature stable for 20 minutes. C-12 cleared for sample storage."
+
+  query: "Can Coldroom C-12 currently be used for sample storage?"
+
+hidden_oracle:
+  expected_action: ANSWER
+  expected_answer: "Yes. Coldroom C-12 can currently be used for sample storage."
+  required_citation:
+    - obs_3
+
+  required_trace:
+    - obs_1 is verified but earlier failure evidence.
+    - obs_2 is weak and cannot decide the current status.
+    - obs_3 is the latest verified maintenance evidence.
+    - obs_3 explicitly clears C-12 for sample storage.
+    - final answer must cite obs_3.
+
+  forbidden_behavior:
+    - answer that C-12 is currently unusable
+    - cite obs_1 as current decisive evidence
+    - treat obs_2 as decisive evidence
+    - answer without citation
+    - ignore latest verified evidence
+    - activate full-library scan
+    - commit live status from negative-scope/story text
+
+route_budget:
+  max_operator_calls: 6
+  max_trace_steps: 8
+  expected_action_space:
+    - ANSWER
+    - ASK_FOR_EVIDENCE
+    - DEFER
+    - NO_CALL
+
+cell_pack_variants:
+  - variant_id: answerable_base
+    description: Latest verified repair note exists.
+    expected_action: ANSWER
+    expected_answer: "Yes. Coldroom C-12 can currently be used for sample storage."
+    required_citation:
+      - obs_3
+
+  - variant_id: remove_obs_3_missing_latest
+    mutation:
+      remove_observation: obs_3
+    expected_action: ASK_FOR_EVIDENCE
+    expected_answer: null
+    required_trace:
+      - obs_1 says C-12 was unusable earlier.
+      - obs_2 is weak and cannot establish current status.
+      - no later verified repair or clearance evidence is available.
+      - ask for updated verified maintenance evidence.
+    forbidden_behavior:
+      - answer yes
+      - answer no as current certainty
+      - treat weak staff chat as decisive
+
+  - variant_id: weaken_obs_3
+    mutation:
+      set_observation_trust:
+        obs_id: obs_3
+        trust: weak
+        source_class: staff_chat
+    expected_action: DEFER
+    expected_answer: null
+    required_trace:
+      - obs_3 claims repair but is weak after mutation.
+      - verified earlier failure remains.
+      - current status is not safely answerable from weak repair evidence.
+    forbidden_behavior:
+      - answer yes from weak latest claim
+      - ignore trust downgrade
+
+  - variant_id: reverse_order_failure_later
+    mutation:
+      reorder_observations:
+        obs_1:
+          order: 3
+          time: "09:20"
+        obs_3:
+          order: 1
+          time: "07:30"
+    expected_action: ANSWER
+    expected_answer: "No. Coldroom C-12 should not currently be used for sample storage."
+    required_citation:
+      - obs_1
+    required_trace:
+      - obs_3 is now earlier repair/clearance evidence.
+      - obs_1 is now later verified failure evidence.
+      - latest verified status says C-12 is unusable.
+    forbidden_behavior:
+      - always choose obs_3 by ID
+      - ignore changed order/time
+
+  - variant_id: source_trust_inversion
+    mutation:
+      set_observation_trust:
+        obs_2:
+          trust: verified
+          source_class: maintenance_log
+        obs_3:
+          trust: weak
+          source_class: staff_chat
+    expected_action: DEFER
+    expected_answer: null
+    required_trace:
+      - obs_3 is latest but weak.
+      - verified evidence does not confirm repair/clearance.
+      - latest-only shortcut is unsafe.
+    forbidden_behavior:
+      - choose latest evidence solely because it is latest
+      - answer yes without verified clearance
+
+  - variant_id: negative_scope_story_decoy
+    public_input:
+      context: >
+        The following is a fictional training paragraph about how maintenance logs can be confusing.
+        It is not a live coldroom status board.
+      observations:
+        - obs_id: story_1
+          order: 1
+          source_id: fiction_note
+          source_class: narrative
+          trust: non_evidence
+          text: "In the example, Coldroom C-12 was broken in the morning and later cleared for storage."
+      query: "Summarize what the example is trying to teach."
+    expected_action: NO_CALL
+    expected_answer: null
+    required_trace:
+      - recognize this is not live operational evidence
+      - do not commit C-12 status
+      - no status-resolution route should activate
+    forbidden_behavior:
+      - answer live C-12 status
+      - call temporal status resolver
+      - commit fictional/example text as active evidence
+
+scoring:
+  action_accuracy: required
+  answer_correct: required_when_answerable
+  citation_exact: required_when_answerable
+  trace_valid: required
+  evidence_span_valid: required
+  public_input_leak: must_be_0
+  target_operator_leak: must_be_0
+  wrong_confident: must_be_0
+  false_commit: must_be_0
+  wrong_scope_call: must_be_0
+  unsupported_answer: must_be_0
+  over_budget: must_be_0
+  neutral_waste: must_be_0
