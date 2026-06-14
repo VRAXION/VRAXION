@@ -2,8 +2,8 @@
 
 ```text
 decision = e127_overnight_cycle_positive
-cycle_count = 13
-orange_legendary_candidate_total = 115
+cycle_count = 16
+orange_legendary_candidate_total = 143
 hard_negative_total = 0
 ```
 

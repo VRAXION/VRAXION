@@ -1,0 +1,164 @@
+{
+  "rows": [
+    {
+      "candidate_id": "modal_obligation_permission_lens",
+      "candidate_status": "Farmable",
+      "family": "Lens",
+      "gap_score": 56884.3044,
+      "need": "preserve modal strength so permission, obligation, and possibility do not collapse",
+      "scope": "text_modal_obligation_permission",
+      "support_count": 31724,
+      "title": "Modal Obligation / Permission Lens"
+    },
+    {
+      "candidate_id": "alternative_choice_lens",
+      "candidate_status": "Farmable",
+      "family": "Lens",
+      "gap_score": 48854.76,
+      "need": "preserve alternative branches and avoid committing mutually exclusive choices together",
+      "scope": "text_alternative_choice_boundary",
+      "support_count": 28520,
+      "title": "Alternative Choice Lens"
+    },
+    {
+      "candidate_id": "spec_requirement_keyword_lens",
+      "candidate_status": "Farmable",
+      "family": "Lens",
+      "gap_score": 29952.0144,
+      "need": "preserve RFC-style requirement keywords and their normative strength",
+      "scope": "text_spec_requirement_keyword",
+      "support_count": 19976,
+      "title": "Spec Requirement Keyword Lens"
+    },
+    {
+      "candidate_id": "math_word_operator_lens",
+      "candidate_status": "Farmable",
+      "family": "Lens",
+      "gap_score": 11291.187225,
+      "need": "ground natural-language math operator words before calculation or defer",
+      "scope": "text_math_word_operator_grounding",
+      "support_count": 9183,
+      "title": "Math Word Operator Lens"
+    },
+    {
+      "candidate_id": "confidence_phrase_without_number_lens",
+      "candidate_status": "Farmable",
+      "family": "Lens",
+      "gap_score": 10077.473025,
+      "need": "ground qualitative confidence without inventing numeric probability",
+      "scope": "text_confidence_phrase_without_number",
+      "support_count": 8339,
+      "title": "Confidence Phrase Without Number Lens"
+    },
+    {
+      "candidate_id": "git_branch_tag_lens",
+      "candidate_status": "Farmable",
+      "family": "Lens",
+      "gap_score": 8361.605025,
+      "need": "ground git branch/tag references without confusing them with file paths",
+      "scope": "text_git_branch_tag_reference",
+      "support_count": 7101,
+      "title": "Git Branch / Tag Lens"
+    },
+    {
+      "candidate_id": "cross_reference_pronoun_guard",
+      "candidate_status": "Farmable",
+      "family": "Guard",
+      "gap_score": 5874.740025,
+      "need": "avoid committing pronoun references when the antecedent is unstable",
+      "scope": "text_cross_reference_pronoun_scope",
+      "support_count": 5199,
+      "title": "Cross-Reference Pronoun Guard"
+    },
+    {
+      "candidate_id": "multi_source_claim_merge_lens",
+      "candidate_status": "Farmable",
+      "family": "Lens",
+      "gap_score": 5305.401225,
+      "need": "merge or separate claims by source without losing provenance",
+      "scope": "text_multi_source_claim_merge",
+      "support_count": 4743,
+      "title": "Multi-Source Claim Merge Lens"
+    },
+    {
+      "candidate_id": "pros_cons_tradeoff_lens",
+      "candidate_status": "Farmable",
+      "family": "Lens",
+      "gap_score": 4320.9089,
+      "need": "bind tradeoff language to its option instead of flattening all claims as equal",
+      "scope": "text_pros_cons_tradeoff",
+      "support_count": 3934,
+      "title": "Pros / Cons Tradeoff Lens"
+    },
+    {
+      "candidate_id": "schedule_recurrence_lens",
+      "candidate_status": "Farmable",
+      "family": "Lens",
+      "gap_score": 3761.6361,
+      "need": "ground recurrence expressions separately from one-time dates",
+      "scope": "text_schedule_recurrence_grounding",
+      "support_count": 3462,
+      "title": "Schedule Recurrence Lens"
+    },
+    {
+      "candidate_id": "correction_retraction_lens",
+      "candidate_status": "Farmable",
+      "family": "Lens",
+      "gap_score": 3586.2336,
+      "need": "ground corrections and retractions so stale statements are not reused",
+      "scope": "text_correction_retraction_grounding",
+      "support_count": 3312,
+      "title": "Correction / Retraction Lens"
+    },
+    {
+      "candidate_id": "test_assertion_lens",
+      "candidate_status": "Farmable",
+      "family": "Lens",
+      "gap_score": 2975.4881,
+      "need": "bind expected and actual outcomes without swapping them",
+      "scope": "text_test_assertion_grounding",
+      "support_count": 2782,
+      "title": "Test Assertion Lens"
+    },
+    {
+      "candidate_id": "legal_rights_obligation_lens",
+      "candidate_status": "Farmable",
+      "family": "Lens",
+      "gap_score": 1866.834225,
+      "need": "bind legal-like rights and obligations to the correct party and scope",
+      "scope": "text_legal_rights_obligation",
+      "support_count": 1787,
+      "title": "Legal Rights / Obligation Lens"
+    },
+    {
+      "candidate_id": "training_signal_label_lens",
+      "candidate_status": "Farmable",
+      "family": "Lens",
+      "gap_score": 1213.751025,
+      "need": "separate training labels from observed facts and model outputs",
+      "scope": "text_training_signal_label_grounding",
+      "support_count": 1179,
+      "title": "Training Signal / Label Lens"
+    },
+    {
+      "candidate_id": "api_response_field_lens",
+      "candidate_status": "Farmable",
+      "family": "Lens",
+      "gap_score": 852.430625,
+      "need": "bind API response fields to their values or schema role",
+      "scope": "text_api_response_field_binding",
+      "support_count": 835,
+      "title": "API Response Field Lens"
+    },
+    {
+      "candidate_id": "task_owner_assignment_lens",
+      "candidate_status": "Farmable",
+      "family": "Lens",
+      "gap_score": 598.7025,
+      "need": "bind tasks to owners without leaking ownership across nearby tasks",
+      "scope": "text_task_owner_assignment",
+      "support_count": 590,
+      "title": "Task Owner Assignment Lens"
+    }
+  ]
+}

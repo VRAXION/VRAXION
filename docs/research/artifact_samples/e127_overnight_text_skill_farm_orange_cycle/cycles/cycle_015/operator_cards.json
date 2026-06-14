@@ -1,0 +1,124 @@
+{
+  "rows": [
+    {
+      "candidate_id": "unit_conversion_phrase_lens",
+      "candidate_status": "Farmable",
+      "family": "Lens",
+      "gap_score": 526.76,
+      "need": "detect unit conversion/equivalence phrases without committing unsupported conversions",
+      "scope": "text_unit_conversion_phrase",
+      "support_count": 520,
+      "title": "Unit Conversion Phrase Lens"
+    },
+    {
+      "candidate_id": "survey_response_scale_lens",
+      "candidate_status": "Farmable",
+      "family": "Lens",
+      "gap_score": 524.7081,
+      "need": "ground survey response scales and avoid treating ordinal labels as numeric facts",
+      "scope": "text_survey_response_scale",
+      "support_count": 518,
+      "title": "Survey Response Scale Lens"
+    },
+    {
+      "candidate_id": "benchmark_leakage_guard",
+      "candidate_status": "Farmable",
+      "family": "Guard",
+      "gap_score": 454.040025,
+      "need": "flag benchmark leakage caveats before treating metrics as valid evidence",
+      "scope": "text_benchmark_leakage_boundary",
+      "support_count": 449,
+      "title": "Benchmark Leakage Guard"
+    },
+    {
+      "candidate_id": "privacy_personal_data_lens",
+      "candidate_status": "Farmable",
+      "family": "Lens",
+      "gap_score": 335.772225,
+      "need": "detect personal-data/privacy spans and keep them from unsafe broad reuse",
+      "scope": "text_privacy_personal_data",
+      "support_count": 333,
+      "title": "Privacy / Personal Data Lens"
+    },
+    {
+      "candidate_id": "dataset_provenance_lens",
+      "candidate_status": "Farmable",
+      "family": "Lens",
+      "gap_score": 307.325625,
+      "need": "bind dataset provenance and source information to the dataset claim",
+      "scope": "text_dataset_provenance_grounding",
+      "support_count": 305,
+      "title": "Dataset Provenance Lens"
+    },
+    {
+      "candidate_id": "file_permission_mode_lens",
+      "candidate_status": "Farmable",
+      "family": "Lens",
+      "gap_score": 187.874225,
+      "need": "bind permission modes and access verbs to the right file or role",
+      "scope": "text_file_permission_mode",
+      "support_count": 187,
+      "title": "File Permission Mode Lens"
+    },
+    {
+      "candidate_id": "model_checkpoint_lens",
+      "candidate_status": "Farmable",
+      "family": "Lens",
+      "gap_score": 179.801025,
+      "need": "detect model checkpoint references as artifacts rather than content claims",
+      "scope": "text_model_checkpoint_reference",
+      "support_count": 179,
+      "title": "Model Checkpoint Lens"
+    },
+    {
+      "candidate_id": "mitigation_action_lens",
+      "candidate_status": "Farmable",
+      "family": "Lens",
+      "gap_score": 173.748225,
+      "need": "bind mitigation actions to the failure or risk they address",
+      "scope": "text_mitigation_action_grounding",
+      "support_count": 173,
+      "title": "Mitigation Action Lens"
+    },
+    {
+      "candidate_id": "chart_axis_legend_lens",
+      "candidate_status": "Farmable",
+      "family": "Lens",
+      "gap_score": 128.4096,
+      "need": "bind chart labels and legends to represented variables",
+      "scope": "text_chart_axis_legend_grounding",
+      "support_count": 128,
+      "title": "Chart Axis / Legend Lens"
+    },
+    {
+      "candidate_id": "failure_mode_phrase_lens",
+      "candidate_status": "Farmable",
+      "family": "Lens",
+      "gap_score": 124.3844,
+      "need": "ground failure-mode descriptions for later negative-card reuse",
+      "scope": "text_failure_mode_phrase",
+      "support_count": 124,
+      "title": "Failure Mode Phrase Lens"
+    },
+    {
+      "candidate_id": "reproducibility_seed_lens",
+      "candidate_status": "Farmable",
+      "family": "Lens",
+      "gap_score": 109.297025,
+      "need": "bind reproducibility seed and replay evidence to the correct run",
+      "scope": "text_reproducibility_seed_grounding",
+      "support_count": 109,
+      "title": "Reproducibility Seed Lens"
+    },
+    {
+      "candidate_id": "table_row_value_lens",
+      "candidate_status": "Farmable",
+      "family": "Lens",
+      "gap_score": 80.16,
+      "need": "bind table row/column references to the correct value span",
+      "scope": "text_table_row_value_binding",
+      "support_count": 80,
+      "title": "Table Row / Value Lens"
+    }
+  ]
+}
