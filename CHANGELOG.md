@@ -1,13 +1,28 @@
 # Changelog
 
-This changelog is narrowed to the current E78 mainline. Full historical beta,
+This changelog is narrowed to the current E79 mainline. Full historical beta,
 probe, Python SDK, legacy Rust, and research-output history is preserved in git
 history and archive tags.
 
+## 2026-06-14 - E79 Training Data Curriculum Readiness Gate
+
+- Current GitHub release: `v5.0.0-e79.0`.
+- Current runtime slice: `a908a838a1119540ed88bc91e10cfcb0bdae92a8`
+  (`Add training data curriculum readiness gate`).
+- E79 adds `vraxion-runtime/src/training_data.rs` and the
+  `training_data_readiness` CLI.
+- `final_train` now runs the E79 gate before global supervisor work and blocks
+  fail-fast if the data/curriculum contract cannot cover the full candidate
+  rotation.
+- The E79 gate writes readiness progress, result, manifest, report, and
+  curriculum manifest artifacts.
+- CI now smokes the standalone E79 readiness command and checks the nested
+  readiness artifact tree inside the E79 `final_train` smoke.
+
 ## 2026-06-14 - E78 Canonical Final Train Entrypoint
 
-- Current GitHub release: `v5.0.0-e78.0`.
-- Current runtime slice: `5f335cec3502d6c932e2f40c5c5a3a389eb44b7e`
+- GitHub release at that point: `v5.0.0-e78.0`.
+- Runtime slice at that point: `5f335cec3502d6c932e2f40c5c5a3a389eb44b7e`
   (`Add canonical final train entrypoint`).
 - E77 runtime slice: `7e91aaaa8a5e1571f60d06baa0b00c56e096c5cc`
   (`Add global Pocket Library merge supervisor`).
@@ -40,10 +55,11 @@ history and archive tags.
 | E76 | `3b44cfe0` | Multi-lane final-training supervisor |
 | E77 | `7e91aaaa` | Global Pocket Library merge supervisor |
 | E78 | `5f335cec` | Canonical `final_train` campaign entrypoint |
+| E79 | `a908a838` | Training data/curriculum readiness gate |
 
 ## Historical Access
 
-Historical release notes before E78 were removed from the active front door
+Historical release notes before E79 were removed from the active front door
 because they described superseded beta/grower/byte-pipeline lines. Restore or
 inspect them from:
 

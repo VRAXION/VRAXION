@@ -8,8 +8,8 @@ This is the active evidence summary for the current repo state. Historical findi
 
 ```text
 branch = main
-runtime_slice = 5f335cec3502d6c932e2f40c5c5a3a389eb44b7e
-current_runtime_slice = E78 canonical final_train campaign entrypoint
+runtime_slice = a908a838a1119540ed88bc91e10cfcb0bdae92a8
+current_runtime_slice = E79 training data/curriculum readiness gate
 base_runtime_slice = 0879a2c004cf6a002bd5639d9cb7a759709a41aa E74 Rust final bake API extraction
 ```
 
@@ -27,18 +27,19 @@ base_runtime_slice = 0879a2c004cf6a002bd5639d9cb7a759709a41aa E74 Rust final bak
 | E76 | `3b44cfe0` | Multi-lane final-training supervisor with lane fanout, lane artifact preservation, aggregate progress, and zero bad/unsafe lane promotions. | Current mainline |
 | E77 | `7e91aaaa` | Global Pocket Library merge supervisor with uid/digest/token dedupe, guarded reload, clone blocking, and global registry artifacts. | Current mainline |
 | E78 | `5f335cec` | Canonical `final_train` campaign entrypoint over the global supervisor, multi-lane supervisor, and E75 lane runner stack. | Current mainline |
+| E79 | `a908a838` | Training-data/curriculum readiness gate with split/family/capability coverage, scoring/inference contract checks, and `final_train` fail-fast blocking before global supervisor work. | Current mainline |
 
 ## Current Validated Claim
 
-> VRAXION has a Rust mainline for governed Pocket Library state, resumable curriculum execution, multi-lane final-training supervision, global Pocket Library merge/dedupe governance, and one canonical `final_train` campaign entrypoint.
+> VRAXION has a Rust mainline for governed Pocket Library state, resumable curriculum execution, multi-lane final-training supervision, global Pocket Library merge/dedupe governance, a training-data/curriculum readiness gate, and one canonical `final_train` campaign entrypoint.
 
-Current E78 extension:
+Current E79 extension:
 
-> VRAXION has a deterministic Rust `final_train` command that runs the global Pocket Library supervisor over multi-lane E75 final-training lanes, writes progress/manifests/results, blocks redundant clones, and records zero bad commits or unsafe promotions in the E78 evidence run.
+> VRAXION has a deterministic Rust `training_data_readiness` command and an integrated `final_train` gate that validates 24 curriculum lessons across train/validation/adversarial splits, 8 families, 8 capability signatures, 16 candidate pockets, scoring policy, and inference target coverage before any global supervisor work starts.
 
 ## Operational Finding
 
-Long-running work must write progress continuously and support resume. The E72 resume preflight proves the resume path; the E73 final-bake preflight proves the locked chain can be validated from one consolidated Rust entrypoint with progress artifacts; E74 keeps that CLI contract and makes the final-bake gate reusable from Rust code; E75 runs the first deterministic final-training-shaped curriculum and Pocket generation loop with checkpoints and resume; E76 fans that lane work out in parallel; E77 merges lane-local candidates into one governed global Pocket Library; E78 makes that full path available through one canonical command.
+Long-running work must write progress continuously and support resume. The E72 resume preflight proves the resume path; the E73 final-bake preflight proves the locked chain can be validated from one consolidated Rust entrypoint with progress artifacts; E74 keeps that CLI contract and makes the final-bake gate reusable from Rust code; E75 runs the first deterministic final-training-shaped curriculum and Pocket generation loop with checkpoints and resume; E76 fans that lane work out in parallel; E77 merges lane-local candidates into one governed global Pocket Library; E78 makes that full path available through one canonical command; E79 blocks `final_train` before global supervisor work unless the dataset/curriculum contract is complete.
 
 ## Hard Boundary
 
@@ -47,7 +48,7 @@ This file does not claim:
 - hosted SaaS
 - public production API readiness
 - GPT-like/open-domain assistant readiness
-- final dataset readiness
+- final production dataset completion
 - trained model/weights readiness
 - safety-aligned production deployment
 - consciousness or sentience
@@ -55,7 +56,7 @@ This file does not claim:
 
 ## Historical Evidence
 
-Previous bounded-service, open-vocab assistant, beta release, grower, byte-pipeline, and C19/EP results are historical evidence. They can still be useful for research context, but they are not the current mainline unless promoted back into E78+ code and docs.
+Previous bounded-service, open-vocab assistant, beta release, grower, byte-pipeline, and C19/EP results are historical evidence. They can still be useful for research context, but they are not the current mainline unless promoted back into E79+ code and docs.
 
 Primary archive surfaces:
 

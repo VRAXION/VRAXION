@@ -108,9 +108,9 @@ training_data_readiness
 -> global supervisor only after readiness passes
 ```
 
-This turns the previous "final dataset readiness not claimed" boundary into a
-concrete next gate: future real datasets must satisfy this contract before they
-can feed the final-training supervisor.
+This turns the previous "final production dataset completion not claimed"
+boundary into a concrete next gate: future real datasets must satisfy this
+contract before they can feed the final-training supervisor.
 
 ## Artifact Samples
 

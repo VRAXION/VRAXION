@@ -6,9 +6,9 @@ _Last updated: 2026-06-14_
 
 ```text
 branch = main
-current_release = v5.0.0-e78.0
-runtime_slice = 5f335cec3502d6c932e2f40c5c5a3a389eb44b7e
-runtime_subject = Add canonical final train entrypoint
+current_release = v5.0.0-e79.0
+runtime_slice = a908a838a1119540ed88bc91e10cfcb0bdae92a8
+runtime_subject = Add training data curriculum readiness gate
 base_runtime_slice = 0879a2c004cf6a002bd5639d9cb7a759709a41aa Extract Rust final bake API
 ```
 
@@ -25,6 +25,7 @@ E75 final curriculum pocket-generation runner
 E76 multi-lane final-training supervisor
 E77 global Pocket Library merge supervisor
 E78 canonical final_train campaign entrypoint
+E79 training data/curriculum readiness gate
 ```
 
 ## Repository Layout
@@ -32,8 +33,9 @@ E78 canonical final_train campaign entrypoint
 | Path | Purpose |
 |---|---|
 | `vraxion-runtime/` | Active Rust runtime and preflight/final-training binaries |
-| `docs/research/E78_FINAL_TRAIN_CAMPAIGN_ENTRYPOINT_*.md` | Current canonical final-training entrypoint contract/result evidence |
-| `docs/research/artifact_samples/e78_final_train_campaign_entrypoint/` | Current sample manifest/progress/result/global-supervisor artifacts |
+| `docs/research/E79_TRAINING_DATA_CURRICULUM_READINESS_*.md` | Current training-data/curriculum readiness gate contract/result evidence |
+| `docs/research/artifact_samples/e79_training_data_curriculum_readiness/` | Current sample readiness manifest/progress/result/curriculum artifacts |
+| `docs/research/E78_FINAL_TRAIN_CAMPAIGN_ENTRYPOINT_*.md` | Canonical final-training entrypoint contract/result evidence below the E79 gate |
 | `docs/research/E76_*`, `docs/research/E77_*` | Current supervisor evidence below the canonical E78 entrypoint |
 | `docs/` | Current public docs |
 | `target/` | Generated local evidence artifacts; ignored by Git |
@@ -55,7 +57,8 @@ cargo run --release -p vraxion-runtime --bin curriculum_runner_preflight -- --he
 cargo run --release -p vraxion-runtime --bin curriculum_queue_preflight -- --help
 cargo run --release -p vraxion-runtime --bin curriculum_resume_preflight -- --help
 cargo run --release -p vraxion-runtime --bin final_bake_preflight -- --help
-cargo run --release -p vraxion-runtime --bin final_train -- 3 8 target/ci/e78_final_train_smoke --preflight-rounds 4 --checkpoint-interval 4
+cargo run --release -p vraxion-runtime --bin training_data_readiness -- 3 8 target/ci/e79_training_data_readiness_smoke
+cargo run --release -p vraxion-runtime --bin final_train -- 3 8 target/ci/e79_final_train_smoke --preflight-rounds 4 --checkpoint-interval 4
 ```
 
 ## Operating Rule
@@ -68,8 +71,8 @@ Long runs must continuously write partial outcomes and resumable progress. A run
 |---|---|---|
 | 1 | [`README.md`](../README.md) | Current front-door summary |
 | 2 | [`docs/CURRENT_STATUS.md`](CURRENT_STATUS.md) | Current status and claim boundary |
-| 3 | [`VALIDATED_FINDINGS.md`](../VALIDATED_FINDINGS.md) | Current validated E69-E78 chain |
-| 4 | [`docs/research/E78_FINAL_TRAIN_CAMPAIGN_ENTRYPOINT_RESULT.md`](research/E78_FINAL_TRAIN_CAMPAIGN_ENTRYPOINT_RESULT.md) | Canonical final-training entrypoint evidence |
+| 3 | [`VALIDATED_FINDINGS.md`](../VALIDATED_FINDINGS.md) | Current validated E69-E79 chain |
+| 4 | [`docs/research/E79_TRAINING_DATA_CURRICULUM_READINESS_RESULT.md`](research/E79_TRAINING_DATA_CURRICULUM_READINESS_RESULT.md) | Training-data/curriculum readiness gate evidence |
 | 5 | [Timeline Archive wiki](https://github.com/VRAXION/VRAXION/wiki/Timeline-Archive) | Chronology and cleanup record |
 | 6 | [Consolidation Archive wiki](https://github.com/VRAXION/VRAXION/wiki/Consolidation-Archive-2026-06-13) | Branch/wiki deletion manifest |
 
