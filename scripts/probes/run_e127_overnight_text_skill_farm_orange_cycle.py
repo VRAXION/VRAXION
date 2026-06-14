@@ -285,7 +285,7 @@ def load_active_operator_ids(e122: Path, e126: Path, root: Path) -> set[str]:
         ids.update(row["operator_id"] for row in read_json(e122 / "orange_only_results.json")["rows"])
     if (e126 / "operator_orange_results.json").exists():
         ids.update(row["operator_id"] for row in read_json(e126 / "operator_orange_results.json")["rows"])
-    for cycle_dir in sorted(root.glob("cycle_*")):
+    for cycle_dir in sorted((root / "cycles").glob("cycle_*")):
         path = cycle_dir / "operator_orange_results.json"
         if path.exists():
             ids.update(row["operator_id"] for row in read_json(path)["rows"] if row.get("rank_after") == "OrangeLegendaryCandidate")
