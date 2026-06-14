@@ -2502,3 +2502,201 @@ budgetless_curriculum_expander  -> Quarantine
 stale_gap_repeater              -> Deprecated
 gap_detector_echo_clone         -> Redundant
 ```
+
+## E100 Text Evidence Span Ingress And Proposal Expansion
+
+Source:
+
+```text
+target/pilot_wave/e100_text_evidence_span_ingress_and_proposal_expansion/
+docs/research/artifact_samples/e100_text_evidence_span_ingress_and_proposal_expansion/
+```
+
+Boundary:
+
+```text
+controlled text evidence-span ingress proxy
+not natural-language understanding
+not direct text answer
+```
+
+### Text Frame Boundary Lens
+
+```text
+component_id = text_frame_boundary_lens
+status       = StableOperatorCandidate
+family       = Lens
+```
+
+What it does:
+
+```text
+finds the valid byte/text frame boundary before span extraction
+```
+
+If removed:
+
+```text
+mean_span_ingress_success_loss = 0.794752
+mean_unsafe_text_commit_delta = 0.000000
+```
+
+### Evidence Span Locator Lens
+
+```text
+component_id = evidence_span_locator_lens
+status       = StableOperatorCandidate
+family       = Lens
+```
+
+What it does:
+
+```text
+locates the minimal visible text span that supports a proposal
+```
+
+If removed:
+
+```text
+mean_span_ingress_success_loss = 0.794752
+mean_unsafe_text_commit_delta = 0.000000
+```
+
+### Source Attribution Lens
+
+```text
+component_id = source_attribution_lens
+status       = StableOperatorCandidate
+family       = Lens
+```
+
+What it does:
+
+```text
+attaches mechanical source/provenance context to the candidate span
+```
+
+If removed:
+
+```text
+mean_span_ingress_success_loss = 0.794752
+mean_unsafe_text_commit_delta = 0.000000
+```
+
+### Negation Contrast Scope Guard
+
+```text
+component_id = negation_contrast_scope_guard
+status       = StableOperatorCandidate
+family       = Guard
+```
+
+What it does:
+
+```text
+blocks spans invalidated by nearby negation or contrast boundaries
+```
+
+If removed:
+
+```text
+mean_span_ingress_success_loss = 0.395402
+mean_unsafe_text_commit_delta = 0.000000
+```
+
+### Quote Scope Boundary Guard
+
+```text
+component_id = quote_scope_boundary_guard
+status       = StableOperatorCandidate
+family       = Guard
+```
+
+What it does:
+
+```text
+prevents quoted or reported text from being committed as current evidence without attribution
+```
+
+If removed:
+
+```text
+mean_span_ingress_success_loss = 0.194205
+mean_unsafe_text_commit_delta = 0.000000
+```
+
+### Irrelevant Span Filter Guard
+
+```text
+component_id = irrelevant_span_filter_guard
+status       = StableOperatorCandidate
+family       = Guard
+```
+
+What it does:
+
+```text
+rejects nearby but task-irrelevant spans
+```
+
+If removed:
+
+```text
+mean_span_ingress_success_loss = 0.203077
+mean_unsafe_text_commit_delta = 0.000000
+```
+
+### Weak Claim Uncertainty T-Stab
+
+```text
+component_id = weak_claim_uncertainty_t_stab
+status       = StableOperatorCandidate
+family       = T-Stab
+```
+
+What it does:
+
+```text
+stabilizes uncertain text evidence into ASK/DEFER instead of forced commit
+```
+
+If removed:
+
+```text
+mean_span_ingress_success_loss = 0.205247
+mean_unsafe_text_commit_delta = 0.000000
+```
+
+### Text Evidence Proposal Scribe
+
+```text
+component_id = text_evidence_proposal_scribe
+status       = StableOperatorCandidate
+family       = Scribe
+```
+
+What it does:
+
+```text
+renders a normalized evidence-span proposal for Agency review
+```
+
+If removed:
+
+```text
+mean_span_ingress_success_loss = 0.794752
+mean_unsafe_text_commit_delta = 0.000000
+```
+
+### E100 Rejected Controls
+
+```text
+keyword_only_span_picker                  -> Quarantine
+first_number_committer                    -> Quarantine
+negation_blind_extractor                  -> Quarantine
+quote_bleed_extractor                     -> Quarantine
+source_blind_extractor                    -> Quarantine
+whole_sentence_dump_control               -> Quarantine
+answer_from_text_without_evidence_control -> Quarantine
+span_locator_echo_clone                   -> Redundant
+```
