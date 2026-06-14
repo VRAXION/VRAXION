@@ -20,6 +20,7 @@ DEFAULT_E117 = Path("target/pilot_wave/e117_alpha_weave_targeted_pressure_gauntl
 DEFAULT_E118 = Path("target/pilot_wave/e118_core_candidate_cross_source_no_harm_gauntlet")
 DEFAULT_E120 = Path("target/pilot_wave/e120_fineweb_skill_farm_to_gold_wave")
 DEFAULT_E121 = Path("target/pilot_wave/e121_e120_gold_to_orange_legendary_probation_gauntlet")
+DEFAULT_E122 = Path("target/pilot_wave/e122_orange_only_baseline_and_negative_card_recall_probe")
 SAMPLE_E109 = Path("docs/research/artifact_samples/e109_operator_rank_ladder_and_golden_watch_probation_mode")
 SAMPLE_E110 = Path("docs/research/artifact_samples/e110_promote_or_drop_operator_grind_wave1")
 SAMPLE_E111 = Path("docs/research/artifact_samples/e111_bronze_mutation_prune_promote_or_drop_wave")
@@ -138,6 +139,13 @@ def compact_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
         "e121_selected_prune_ratio",
         "e121_family_coverage",
         "e121_campaign_count",
+        "e122_orange_only_baseline",
+        "e122_was_previously_orange",
+        "e122_remaining_to_orange",
+        "e122_negative_card_count",
+        "e122_negative_card_recall_count",
+        "e122_prevented_repeat_failure_count",
+        "e122_false_block_count",
     ]
     return [{key: row.get(key) for key in keep} for row in rows]
 
@@ -553,6 +561,82 @@ def merge_e121(rows: list[dict[str, Any]], e121: Path | None) -> tuple[list[dict
     }
 
 
+def merge_e122(rows: list[dict[str, Any]], e122: Path | None) -> tuple[list[dict[str, Any]], dict[str, Any] | None]:
+    if not e122 or not (e122 / "orange_only_results.json").exists():
+        return rows, None
+    results = read_json(e122 / "orange_only_results.json")["rows"]
+    cards = read_json(e122 / "negative_knowledge_cards.json")["rows"] if (e122 / "negative_knowledge_cards.json").exists() else []
+    card_count_by_id: dict[str, int] = {}
+    card_recall_by_id: dict[str, int] = {}
+    card_prevent_by_id: dict[str, int] = {}
+    false_block_by_id: dict[str, int] = {}
+    for card in cards:
+        oid = card["operator_id"]
+        card_count_by_id[oid] = card_count_by_id.get(oid, 0) + 1
+        card_recall_by_id[oid] = card_recall_by_id.get(oid, 0) + int(card.get("hit_count") or 0)
+        card_prevent_by_id[oid] = card_prevent_by_id.get(oid, 0) + int(card.get("prevented_bad_attempts") or 0)
+        false_block_by_id[oid] = false_block_by_id.get(oid, 0) + int(card.get("false_block_count") or 0)
+    merged = list(rows)
+    by_id = {row["operator_id"]: row for row in merged}
+    for update in results:
+        oid = update["operator_id"]
+        next_row = {
+            "operator_id": oid,
+            "display_name": update.get("display_name", oid),
+            "scope": update.get("scope"),
+            "family": update.get("family"),
+            "group_id": "E122",
+            "rank": update.get("rank_after", "OrangeLegendaryCandidate"),
+            "watch_state": update.get("watch_state", "E122OrangeOnlyBaselineConfirmed"),
+            "qualified_activation": update.get("qualified_activation"),
+            "positive": update.get("positive"),
+            "neutral_valid": update.get("neutral_valid"),
+            "neutral_waste": update.get("neutral_waste"),
+            "neutral_waste_rate": update.get("neutral_waste_rate", 0),
+            "hard_negative": update.get("hard_negative"),
+            "rule_of_three_upper_failure_bound": update.get("rule_of_three_upper_failure_bound"),
+            "combined_family_coverage": update.get("family_coverage"),
+            "campaign_count": update.get("campaign_count"),
+            "counterfactual_value": update.get("selected_variant_net_score", 0),
+            "activated_gain": update.get("selected_variant_net_score", 0),
+            "ablation_loss": 0,
+            "reload_shadow_pass": update.get("reload_shadow_pass"),
+            "challenger_pass": update.get("challenger_pass"),
+            "prune_pass": update.get("prune_pass"),
+            "rank_before": update.get("rank_before"),
+            "rank_after": update.get("rank_after"),
+            "selected_variant_id": update.get("selected_variant_id"),
+            "selected_variant_type": update.get("selected_variant_type"),
+            "selected_variant_net_score": update.get("selected_variant_net_score"),
+            "selected_prune_ratio": update.get("selected_prune_ratio"),
+            "long_horizon_no_harm_pass": update.get("long_horizon_no_harm_pass"),
+            "negative_scope_pass": update.get("negative_scope_pass"),
+            "mutation_attempts": update.get("mutation_attempts"),
+            "accepted_mutations": update.get("accepted_mutations"),
+            "rejected_mutations": update.get("rejected_mutations"),
+            "rollback_count": update.get("rollback_count"),
+            "e122_orange_only_baseline": update.get("e122_orange_only_baseline"),
+            "e122_was_previously_orange": update.get("e122_was_previously_orange"),
+            "e122_remaining_to_orange": update.get("e122_remaining_to_orange"),
+            "e122_negative_card_count": card_count_by_id.get(oid, update.get("negative_card_count", 0)),
+            "e122_negative_card_recall_count": card_recall_by_id.get(oid, update.get("negative_card_recall_count", 0)),
+            "e122_prevented_repeat_failure_count": card_prevent_by_id.get(oid, update.get("prevented_repeat_failure_count", 0)),
+            "e122_false_block_count": false_block_by_id.get(oid, update.get("false_block_count", 0)),
+        }
+        existing = by_id.get(oid)
+        if existing:
+            existing.update(next_row)
+        else:
+            merged.append(next_row)
+            by_id[oid] = next_row
+    return merged, {
+        "summary": read_json(e122 / "summary.json"),
+        "aggregate": read_json(e122 / "aggregate_metrics.json"),
+        "usage": read_json(e122 / "negative_card_usage_report.json"),
+        "checker": read_json(e122 / "checker_summary.json") if (e122 / "checker_summary.json").exists() else None,
+    }
+
+
 def build_payload(
     e109: Path,
     e110: Path | None = None,
@@ -564,6 +648,7 @@ def build_payload(
     e118: Path | None = None,
     e120: Path | None = None,
     e121: Path | None = None,
+    e122: Path | None = None,
 ) -> dict[str, Any]:
     rank_results = read_json(e109 / "rank_results.json")
     rows, e110_payload = merge_e110(compact_rows(rank_results["rows"]), e110)
@@ -575,6 +660,7 @@ def build_payload(
     rows, e118_payload = merge_e118(rows, e118)
     rows, e120_payload = merge_e120(rows, e120)
     rows, e121_payload = merge_e121(rows, e121)
+    rows, e122_payload = merge_e122(rows, e122)
     counts = rank_counts(rows)
     orange_300k_count = sum(
         1 for row in rows
@@ -618,12 +704,21 @@ def build_payload(
         "e121_hard_negative_total": e121_payload["aggregate"]["hard_negative_total"] if e121_payload else None,
         "e121_qualified_activation_total": e121_payload["aggregate"]["qualified_activation_total"] if e121_payload else None,
         "e121_mean_selected_prune_ratio": e121_payload["aggregate"]["mean_selected_prune_ratio"] if e121_payload else None,
+        "e122_active_operator_count": e122_payload["aggregate"]["active_operator_count"] if e122_payload else None,
+        "e122_orange_only_active_count": e122_payload["aggregate"]["orange_only_active_count"] if e122_payload else None,
+        "e122_non_orange_active_count": e122_payload["aggregate"]["non_orange_active_count"] if e122_payload else None,
+        "e122_negative_card_count": e122_payload["aggregate"]["negative_card_count"] if e122_payload else None,
+        "e122_recalled_card_count": e122_payload["aggregate"]["recalled_card_count"] if e122_payload else None,
+        "e122_negative_card_recall_event_count": e122_payload["aggregate"]["negative_card_recall_event_count"] if e122_payload else None,
+        "e122_prevented_repeat_failure_count": e122_payload["aggregate"]["prevented_repeat_failure_count"] if e122_payload else None,
+        "e122_false_block_count": e122_payload["aggregate"]["false_block_count"] if e122_payload else None,
+        "e122_negative_card_recall_rate": e122_payload["aggregate"]["negative_card_recall_rate"] if e122_payload else None,
     }
     summary = read_json(e109 / "summary.json")
     summary = {
         **summary,
         "rank_counts": counts,
-        "latest_wave": "E121 E120 Gold to Orange/Legendary probation gauntlet" if e121_payload else "E120 FineWeb skill farm to Gold wave" if e120_payload else "E118 cross-source no-harm gauntlet" if e118_payload else "E117 alpha-Weave targeted pressure gauntlet" if e117_payload else "E116 alpha-Weave targeted pressure" if e116_payload else "E114 FineWeb projection" if e114_payload else "E112 Wave 3" if e112_payload else "E111 Wave 2" if e111_payload else "E110 Wave 1" if e110_payload else "E109",
+        "latest_wave": "E122 orange-only baseline and negative-card recall" if e122_payload else "E121 E120 Gold to Orange/Legendary probation gauntlet" if e121_payload else "E120 FineWeb skill farm to Gold wave" if e120_payload else "E118 cross-source no-harm gauntlet" if e118_payload else "E117 alpha-Weave targeted pressure gauntlet" if e117_payload else "E116 alpha-Weave targeted pressure" if e116_payload else "E114 FineWeb projection" if e114_payload else "E112 Wave 3" if e112_payload else "E111 Wave 2" if e111_payload else "E110 Wave 1" if e110_payload else "E109",
     }
     return {
         "summary": summary,
@@ -636,6 +731,7 @@ def build_payload(
         "e118": e118_payload,
         "e120": e120_payload,
         "e121": e121_payload,
+        "e122": e122_payload,
         "aggregate": aggregate,
         "policy": read_json(e109 / "rank_policy_manifest.json"),
         "watch": read_json(e109 / "golden_watch_report.json"),
@@ -966,7 +1062,13 @@ def render_html(payload: dict[str, Any]) -> str:
         ["E120 new Gold", agg.e120_promoted_to_gold_count ?? "n/a", "gold"],
         ["E120 hard negatives", agg.e120_hard_negative_total ?? "n/a", agg.e120_hard_negative_total ? "red" : "green"],
         ["E121 Orange", agg.e121_orange_legendary_candidate_count ?? "n/a", "orange"],
-        ["E121 hard negatives", agg.e121_hard_negative_total ?? "n/a", agg.e121_hard_negative_total ? "red" : "green"]
+        ["E121 hard negatives", agg.e121_hard_negative_total ?? "n/a", agg.e121_hard_negative_total ? "red" : "green"],
+        ["E122 orange-only", (agg.e122_orange_only_active_count ?? "n/a") + "/" + (agg.e122_active_operator_count ?? "n/a"), "orange"],
+        ["E122 non-orange", agg.e122_non_orange_active_count ?? "n/a", agg.e122_non_orange_active_count ? "red" : "green"],
+        ["Negative cards", agg.e122_negative_card_count ?? "n/a", "gold"],
+        ["Negative recalls", agg.e122_negative_card_recall_event_count ?? "n/a", "green"],
+        ["Prevented repeats", agg.e122_prevented_repeat_failure_count ?? "n/a", "green"],
+        ["False blocks", agg.e122_false_block_count ?? "n/a", agg.e122_false_block_count ? "red" : "green"]
       ];
       document.getElementById("cards").innerHTML = cards.map(([label,value,cls]) =>
         `<div class="card"><div class="label">${{label}}</div><div class="value ${{cls}}">${{value}}</div></div>`
@@ -1071,8 +1173,10 @@ def render_html(payload: dict[str, Any]) -> str:
           <div>E120 description</div><div>${{htmlEscape(row.e120_description || "")}}</div>
           <div>E121 Orange probation</div><div>${{row.e121_reaches_orange_legendary ? "Orange/LegendaryCandidate reached" : "not E121 Orange"}} · remaining ${{fmt(row.e121_remaining_to_orange || 0)}} · hard negatives ${{fmt(row.e121_hard_negative || 0)}} · wrong scope ${{fmt(row.e121_wrong_scope_call || 0)}} · direct writes ${{fmt(row.e121_direct_flow_write || 0)}}</div>
           <div>E121 selected form</div><div>${{htmlEscape(row.e121_selected_variant_type || "")}}${{typeof row.e121_selected_prune_ratio === "number" ? " · prune " + (row.e121_selected_prune_ratio * 100).toFixed(1) + "%" : ""}} · families ${{fmt(row.e121_family_coverage || 0)}} · campaigns ${{fmt(row.e121_campaign_count || 0)}}</div>
+          <div>E122 orange-only baseline</div><div>${{row.e122_orange_only_baseline ? "active orange-only baseline member" : "not active in E122"}} · was already orange ${{row.e122_was_previously_orange ? "yes" : "no"}} · remaining ${{fmt(row.e122_remaining_to_orange || 0)}}</div>
+          <div>E122 negative cards</div><div>${{fmt(row.e122_negative_card_count || 0)}} cards · ${{fmt(row.e122_negative_card_recall_count || 0)}} recall events · ${{fmt(row.e122_prevented_repeat_failure_count || 0)}} prevented repeats · false blocks ${{fmt(row.e122_false_block_count || 0)}}</div>
         </div>
-        <div class="note">${{row.rank === "OrangeLegendaryCandidate" ? "Interpretation: this E121 operator reached scoped Orange/LegendaryCandidate status. It is still not Core, PermaCore, or TrueGolden; that would need a later much larger no-harm grind." : row.group_id === "E120" ? "Interpretation: E120 created this as a scoped Gold Operator from FineWeb skill farming. It is not Core, PermaCore, or TrueGolden yet." : row.rank === "CoreMemoryCandidate" ? "Interpretation: this operator passed scoped CoreMemoryCandidate probation. It is still not PermaCore or TrueGolden without a later larger no-harm grind." : "Interpretation: rank is scoped. This operator is not Core memory unless a later Core probation grind passes the much higher qualified-activation and no-harm gates."}}</div>
+        <div class="note">${{row.e122_orange_only_baseline ? "Interpretation: this active Operator is part of the E122 scoped orange-only baseline. Negative cards attached here are mutation-planner priors, not normal callable skills. It is still not Core, PermaCore, or TrueGolden." : row.rank === "OrangeLegendaryCandidate" ? "Interpretation: this E121 operator reached scoped Orange/LegendaryCandidate status. It is still not Core, PermaCore, or TrueGolden; that would need a later much larger no-harm grind." : row.group_id === "E120" ? "Interpretation: E120 created this as a scoped Gold Operator from FineWeb skill farming. It is not Core, PermaCore, or TrueGolden yet." : row.rank === "CoreMemoryCandidate" ? "Interpretation: this operator passed scoped CoreMemoryCandidate probation. It is still not PermaCore or TrueGolden without a later larger no-harm grind." : "Interpretation: rank is scoped. This operator is not Core memory unless a later Core probation grind passes the much higher qualified-activation and no-harm gates."}}</div>
       `;
     }}
     function render() {{
@@ -1106,6 +1210,7 @@ def main() -> int:
     parser.add_argument("--e118", default=str(DEFAULT_E118))
     parser.add_argument("--e120", default=str(DEFAULT_E120))
     parser.add_argument("--e121", default=str(DEFAULT_E121))
+    parser.add_argument("--e122", default=str(DEFAULT_E122))
     parser.add_argument("--out", default=str(DEFAULT_OUT))
     args = parser.parse_args()
     e109 = existing_artifact_path(Path(args.e109), SAMPLE_E109, "rank_results.json")
@@ -1118,6 +1223,7 @@ def main() -> int:
     e118_requested = Path(args.e118)
     e120_requested = Path(args.e120)
     e121_requested = Path(args.e121)
+    e122_requested = Path(args.e122)
     e110 = e110_requested if (e110_requested / "wave_results.json").exists() else SAMPLE_E110 if (SAMPLE_E110 / "wave_results.json").exists() else None
     e111 = e111_requested if (e111_requested / "wave_results.json").exists() else SAMPLE_E111 if (SAMPLE_E111 / "wave_results.json").exists() else None
     e112 = e112_requested if (e112_requested / "wave_results.json").exists() else SAMPLE_E112 if (SAMPLE_E112 / "wave_results.json").exists() else None
@@ -1127,8 +1233,9 @@ def main() -> int:
     e118 = e118_requested if (e118_requested / "operator_cross_source_results.json").exists() else None
     e120 = e120_requested if (e120_requested / "operator_gold_results.json").exists() else None
     e121 = e121_requested if (e121_requested / "operator_orange_results.json").exists() else None
+    e122 = e122_requested if (e122_requested / "orange_only_results.json").exists() else None
     out = Path(args.out)
-    payload = build_payload(e109, e110, e111, e112, e114, e116, e117, e118, e120, e121)
+    payload = build_payload(e109, e110, e111, e112, e114, e116, e117, e118, e120, e121, e122)
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(render_html(payload), encoding="utf-8")
     print(json.dumps({"out": str(out), "operator_count": len(payload["rows"])}, sort_keys=True))
