@@ -1,0 +1,149 @@
+{
+  "rows": [
+    {
+      "cost": 0.14,
+      "display_name": "Bit-Slip Resync T-Stab",
+      "family": "T-Stab",
+      "operator_id": "bit_slip_resync_t_stab",
+      "role": "useful",
+      "selected_count": 16,
+      "selected_frequency": 1.0
+    },
+    {
+      "cost": 0.12,
+      "display_name": "CRC-Parity Frame Guard",
+      "family": "Guard",
+      "operator_id": "crc_parity_frame_guard",
+      "role": "useful",
+      "selected_count": 16,
+      "selected_frequency": 1.0
+    },
+    {
+      "cost": 0.11,
+      "display_name": "Delayed Evidence Buffer Lens",
+      "family": "Lens",
+      "operator_id": "delayed_evidence_buffer_lens",
+      "role": "useful",
+      "selected_count": 16,
+      "selected_frequency": 1.0
+    },
+    {
+      "cost": 0.13,
+      "display_name": "Frame Sequence T-Stab",
+      "family": "T-Stab",
+      "operator_id": "frame_sequence_t_stab",
+      "role": "useful",
+      "selected_count": 16,
+      "selected_frequency": 1.0
+    },
+    {
+      "cost": 0.15,
+      "display_name": "Repeat-Vote Stabilizer T-Stab",
+      "family": "T-Stab",
+      "operator_id": "repeat_vote_stabilizer_t_stab",
+      "role": "useful",
+      "selected_count": 16,
+      "selected_frequency": 1.0
+    },
+    {
+      "cost": 0.12,
+      "display_name": "Source Trust Guard",
+      "family": "Guard",
+      "operator_id": "source_trust_guard",
+      "role": "useful",
+      "selected_count": 16,
+      "selected_frequency": 1.0
+    },
+    {
+      "cost": 0.13,
+      "display_name": "Stale Replay Guard",
+      "family": "Guard",
+      "operator_id": "stale_replay_guard",
+      "role": "useful",
+      "selected_count": 16,
+      "selected_frequency": 1.0
+    },
+    {
+      "cost": 0.1,
+      "display_name": "Temporal Commit Scribe",
+      "family": "Scribe",
+      "operator_id": "temporal_commit_scribe",
+      "role": "useful",
+      "selected_count": 16,
+      "selected_frequency": 1.0
+    },
+    {
+      "cost": 0.02,
+      "display_name": "Always Hold Control",
+      "family": "control",
+      "operator_id": "always_hold_control",
+      "role": "noop",
+      "selected_count": 0,
+      "selected_frequency": 0.0
+    },
+    {
+      "cost": 0.18,
+      "display_name": "Sequence Echo Clone",
+      "family": "T-Stab",
+      "operator_id": "sequence_clone",
+      "role": "redundant",
+      "selected_count": 0,
+      "selected_frequency": 0.0
+    },
+    {
+      "cost": 0.03,
+      "display_name": "First Frame Committer",
+      "family": "unsafe_control",
+      "operator_id": "first_frame_committer",
+      "role": "unsafe",
+      "selected_count": 0,
+      "selected_frequency": 0.0
+    },
+    {
+      "cost": 0.18,
+      "display_name": "Full Stream Overreach",
+      "family": "unsafe_control",
+      "operator_id": "full_stream_overreach",
+      "role": "unsafe",
+      "selected_count": 0,
+      "selected_frequency": 0.0
+    },
+    {
+      "cost": 0.03,
+      "display_name": "No-CRC Acceptor",
+      "family": "unsafe_control",
+      "operator_id": "no_crc_acceptor",
+      "role": "unsafe",
+      "selected_count": 0,
+      "selected_frequency": 0.0
+    },
+    {
+      "cost": 0.04,
+      "display_name": "Rumor Over Trust Committer",
+      "family": "unsafe_control",
+      "operator_id": "rumor_over_trust_committer",
+      "role": "unsafe",
+      "selected_count": 0,
+      "selected_frequency": 0.0
+    },
+    {
+      "cost": 0.04,
+      "display_name": "Stale Replay Committer",
+      "family": "unsafe_control",
+      "operator_id": "stale_replay_committer",
+      "role": "unsafe",
+      "selected_count": 0,
+      "selected_frequency": 0.0
+    }
+  ],
+  "stable_top": [
+    "frame_sequence_t_stab",
+    "crc_parity_frame_guard",
+    "bit_slip_resync_t_stab",
+    "repeat_vote_stabilizer_t_stab",
+    "stale_replay_guard",
+    "source_trust_guard",
+    "delayed_evidence_buffer_lens",
+    "temporal_commit_scribe"
+  ]
+}

@@ -729,3 +729,198 @@ always_ask_control            -> Deprecated
 passive_text_observer         -> Deprecated
 claim_binding_clone           -> Redundant
 ```
+
+## E91 Temporal Stream T-Stab Candidates
+
+Source:
+
+```text
+E91_T_STAB_TEMPORAL_STREAM_EXPANSION
+decision = e91_t_stab_temporal_stream_expansion_confirmed
+```
+
+Boundary:
+
+```text
+These are controlled temporal stream stabilization Operators.
+They are not raw production bitstream handling and not Core / TrueGolden.
+```
+
+### Frame Sequence T-Stab
+
+```text
+component_id = frame_sequence_t_stab
+status       = StableOperatorCandidate
+family       = T-Stab
+```
+
+What it does:
+
+```text
+orders temporal frames by sequence/cycle
+```
+
+If removed:
+
+```text
+mean_stabilization_loss = 0.458598
+mean_false_hold_delta = 0.498650
+```
+
+### CRC-Parity Frame Guard
+
+```text
+component_id = crc_parity_frame_guard
+status       = StableOperatorCandidate
+family       = Guard
+```
+
+What it does:
+
+```text
+rejects corrupt frames before commit
+```
+
+If removed:
+
+```text
+mean_stabilization_loss = 0.919670
+mean_false_hold_delta = 1.000000
+```
+
+### Bit-Slip Resync T-Stab
+
+```text
+component_id = bit_slip_resync_t_stab
+status       = StableOperatorCandidate
+family       = T-Stab
+```
+
+What it does:
+
+```text
+finds valid frame start after offset/noise slip
+```
+
+If removed:
+
+```text
+mean_stabilization_loss = 0.081271
+mean_false_hold_delta = 0.088374
+```
+
+### Repeat-Vote Stabilizer T-Stab
+
+```text
+component_id = repeat_vote_stabilizer_t_stab
+status       = StableOperatorCandidate
+family       = T-Stab
+```
+
+What it does:
+
+```text
+uses repeated frames to stabilize noisy payload bits
+```
+
+If removed:
+
+```text
+mean_stabilization_loss = 0.081235
+mean_false_hold_delta = 0.088330
+```
+
+### Stale Replay Guard
+
+```text
+component_id = stale_replay_guard
+status       = StableOperatorCandidate
+family       = Guard
+```
+
+What it does:
+
+```text
+blocks old-cycle frames replayed as current evidence
+```
+
+If removed:
+
+```text
+mean_stabilization_loss = 0.220198
+mean_false_hold_delta = 0.239432
+```
+
+### Source Trust Guard
+
+```text
+component_id = source_trust_guard
+status       = StableOperatorCandidate
+family       = Guard
+```
+
+What it does:
+
+```text
+prefers verified frames over rumor/untrusted frames
+```
+
+If removed:
+
+```text
+mean_stabilization_loss = 0.220198
+mean_false_hold_delta = 0.239432
+```
+
+### Delayed Evidence Buffer Lens
+
+```text
+component_id = delayed_evidence_buffer_lens
+status       = StableOperatorCandidate
+family       = Lens
+```
+
+What it does:
+
+```text
+holds partial streams until required frames are visible
+```
+
+If removed:
+
+```text
+mean_stabilization_loss = 0.080330
+```
+
+### Temporal Commit Scribe
+
+```text
+component_id = temporal_commit_scribe
+status       = StableOperatorCandidate
+family       = Scribe
+```
+
+What it does:
+
+```text
+renders stabilized temporal state into answer/hold action
+```
+
+If removed:
+
+```text
+mean_stabilization_loss = 1.000000
+mean_false_hold_delta = 1.000000
+```
+
+### E91 Rejected Controls
+
+```text
+first_frame_committer       -> Quarantine
+no_crc_acceptor             -> Quarantine
+stale_replay_committer      -> Quarantine
+rumor_over_trust_committer  -> Quarantine
+full_stream_overreach       -> Quarantine
+always_hold_control         -> Deprecated
+sequence_clone              -> Redundant
+```

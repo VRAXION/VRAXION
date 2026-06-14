@@ -1,0 +1,20 @@
+{
+  "accepted_mutations_total": 16,
+  "active_operator_count_max": 8,
+  "active_operator_count_mean": 8,
+  "active_operator_count_min": 8,
+  "adversarial_false_commit_max": 0.0,
+  "adversarial_stabilization_success_mean": 1.0,
+  "adversarial_stabilization_success_min": 1.0,
+  "adversarial_wrong_confident_max": 0.0,
+  "operator_library_size": 15,
+  "plateau_rounds_mean": 29,
+  "rejected_mutations_total": 464,
+  "rollback_count_total": 464,
+  "seconds": 12.437060594558716,
+  "seed_count": 16,
+  "useful_operator_count": 8,
+  "validation_false_hold_max": 0.0,
+  "validation_stabilization_success_mean": 1.0,
+  "validation_stabilization_success_min": 1.0
+}

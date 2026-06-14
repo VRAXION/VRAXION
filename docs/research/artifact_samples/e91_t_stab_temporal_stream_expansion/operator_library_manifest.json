@@ -1,0 +1,133 @@
+{
+  "canonical_term": "Operator",
+  "families": [
+    "Guard",
+    "Lens",
+    "Scribe",
+    "T-Stab",
+    "control",
+    "unsafe_control"
+  ],
+  "operators": [
+    {
+      "cost": 0.13,
+      "description": "Orders temporal frames by sequence/cycle.",
+      "display_name": "Frame Sequence T-Stab",
+      "family": "T-Stab",
+      "operator_id": "frame_sequence_t_stab",
+      "role": "useful"
+    },
+    {
+      "cost": 0.12,
+      "description": "Rejects corrupt frames before commit.",
+      "display_name": "CRC-Parity Frame Guard",
+      "family": "Guard",
+      "operator_id": "crc_parity_frame_guard",
+      "role": "useful"
+    },
+    {
+      "cost": 0.14,
+      "description": "Finds valid frame start after offset/noise slip.",
+      "display_name": "Bit-Slip Resync T-Stab",
+      "family": "T-Stab",
+      "operator_id": "bit_slip_resync_t_stab",
+      "role": "useful"
+    },
+    {
+      "cost": 0.15,
+      "description": "Uses repeated frames to stabilize noisy payload bits.",
+      "display_name": "Repeat-Vote Stabilizer T-Stab",
+      "family": "T-Stab",
+      "operator_id": "repeat_vote_stabilizer_t_stab",
+      "role": "useful"
+    },
+    {
+      "cost": 0.13,
+      "description": "Blocks old-cycle frames replayed as current evidence.",
+      "display_name": "Stale Replay Guard",
+      "family": "Guard",
+      "operator_id": "stale_replay_guard",
+      "role": "useful"
+    },
+    {
+      "cost": 0.12,
+      "description": "Prefers verified frames over rumor/untrusted frames.",
+      "display_name": "Source Trust Guard",
+      "family": "Guard",
+      "operator_id": "source_trust_guard",
+      "role": "useful"
+    },
+    {
+      "cost": 0.11,
+      "description": "Holds partial streams until required frames are visible.",
+      "display_name": "Delayed Evidence Buffer Lens",
+      "family": "Lens",
+      "operator_id": "delayed_evidence_buffer_lens",
+      "role": "useful"
+    },
+    {
+      "cost": 0.1,
+      "description": "Renders stabilized temporal state into answer/hold action.",
+      "display_name": "Temporal Commit Scribe",
+      "family": "Scribe",
+      "operator_id": "temporal_commit_scribe",
+      "role": "useful"
+    },
+    {
+      "cost": 0.03,
+      "description": "Commits the first visible frame without temporal checks.",
+      "display_name": "First Frame Committer",
+      "family": "unsafe_control",
+      "operator_id": "first_frame_committer",
+      "role": "unsafe"
+    },
+    {
+      "cost": 0.03,
+      "description": "Accepts corrupt frames as valid.",
+      "display_name": "No-CRC Acceptor",
+      "family": "unsafe_control",
+      "operator_id": "no_crc_acceptor",
+      "role": "unsafe"
+    },
+    {
+      "cost": 0.04,
+      "description": "Accepts old-cycle replay as current evidence.",
+      "display_name": "Stale Replay Committer",
+      "family": "unsafe_control",
+      "operator_id": "stale_replay_committer",
+      "role": "unsafe"
+    },
+    {
+      "cost": 0.04,
+      "description": "Prefers rumor frames over verified frames.",
+      "display_name": "Rumor Over Trust Committer",
+      "family": "unsafe_control",
+      "operator_id": "rumor_over_trust_committer",
+      "role": "unsafe"
+    },
+    {
+      "cost": 0.02,
+      "description": "Holds even when enough evidence is visible.",
+      "display_name": "Always Hold Control",
+      "family": "control",
+      "operator_id": "always_hold_control",
+      "role": "noop"
+    },
+    {
+      "cost": 0.18,
+      "description": "Scans all stream bits without frame contract.",
+      "display_name": "Full Stream Overreach",
+      "family": "unsafe_control",
+      "operator_id": "full_stream_overreach",
+      "role": "unsafe"
+    },
+    {
+      "cost": 0.18,
+      "description": "Redundant sequence-order support.",
+      "display_name": "Sequence Echo Clone",
+      "family": "T-Stab",
+      "operator_id": "sequence_clone",
+      "role": "redundant"
+    }
+  ]
+}
