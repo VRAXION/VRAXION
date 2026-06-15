@@ -2,7 +2,7 @@
 
 ```text
 decision = e127_overnight_cycle_positive
-cycle_count = 28
+cycle_count = 29
 orange_legendary_candidate_total = 252
 hard_negative_total = 0
 false_commit_total = 0
@@ -21,7 +21,7 @@ candidate discovery
 -> repeat with already-promoted operators excluded
 ```
 
-The supervised overnight loop has completed 28 checkpointed cycles so far. Several candidate
+The supervised overnight loop has completed 29 checkpointed cycles so far. Several candidate
 spec packs were added as the currently visible candidate space was exhausted;
 each pack was validated by running the next cycle with active already-promoted
 operators excluded.
@@ -82,8 +82,28 @@ e128_question_scope_guard
 e128_partial_success_failure_lens
 ```
 
-Cycle 029 started after this checkpoint. Later cycle results should be treated
-as provisional until their cycle artifacts are checkpointed.
+## Latest Boundary Cycle 029 Metrics
+
+Cycle 029 found no additional farmable candidates in the current candidate
+spec pack. This is a clean exhaustion boundary, not a regression.
+
+```text
+decision = e127_cycle_no_candidates
+rows_seen = 40000
+candidate_pool_count = 49
+farmable_candidate_count = 0
+selected_candidate_count = 0
+orange_legendary_candidate_count = 0
+
+hard_negative_total = 0
+false_commit_total = 0
+wrong_scope_call_total = 0
+unsupported_answer_total = 0
+```
+
+Cycle 030 should only be started after adding a fresh candidate spec pack or
+changing the data/curriculum source. Later cycle results should be treated as
+provisional until their cycle artifacts are checkpointed.
 
 ## Current Boundary
 
