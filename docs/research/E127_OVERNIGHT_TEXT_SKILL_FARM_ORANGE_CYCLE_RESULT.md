@@ -2,8 +2,8 @@
 
 ```text
 decision = e127_overnight_cycle_positive
-cycle_count = 30
-orange_legendary_candidate_total = 268
+cycle_count = 31
+orange_legendary_candidate_total = 284
 hard_negative_total = 0
 false_commit_total = 0
 wrong_scope_call_total = 0
@@ -21,7 +21,7 @@ candidate discovery
 -> repeat with already-promoted operators excluded
 ```
 
-The supervised overnight loop has completed 30 checkpointed cycles so far. Several candidate
+The supervised overnight loop has completed 31 checkpointed cycles so far. Several candidate
 spec packs were added as the currently visible candidate space was exhausted;
 each pack was validated by running the next cycle with active already-promoted
 operators excluded.
@@ -32,11 +32,11 @@ final training, Gemma-level generation, or open-domain reasoning.
 ## Aggregate Metrics
 
 ```text
-selected_candidate_total = 268
-orange_legendary_candidate_total = 268
-mutation_attempts_total = 1297730
-accepted_mutations_total = 8517
-rollback_count_total = 1289213
+selected_candidate_total = 284
+orange_legendary_candidate_total = 284
+mutation_attempts_total = 1374205
+accepted_mutations_total = 9016
+rollback_count_total = 1365189
 
 hard_negative_total = 0
 false_commit_total = 0
@@ -101,20 +101,20 @@ wrong_scope_call_total = 0
 unsupported_answer_total = 0
 ```
 
-## Latest Successful Cycle 030 Metrics
+## Latest Successful Cycle 031 Metrics
 
-Cycle 030 used the fresh `e129_` candidate spec pack added after the cycle 029
-exhaustion boundary.
+Cycle 031 continued the fresh `e129_` candidate spec pack after cycle 030
+promoted the first 16 candidates from that pack.
 
 ```text
 selected_candidate_count = 16
 orange_legendary_candidate_count = 16
-candidate_pool_count = 107
-farmable_candidate_count = 48
-qualified_activation_min = 300816
-mutation_attempts_total = 77578
-accepted_mutations_total = 507
-rollback_count_total = 77071
+candidate_pool_count = 91
+farmable_candidate_count = 32
+qualified_activation_min = 300759
+mutation_attempts_total = 76475
+accepted_mutations_total = 499
+rollback_count_total = 75976
 mean_selected_prune_ratio = 0.62
 
 reload_match_rate = 1.0
@@ -128,28 +128,28 @@ wrong_scope_call_total = 0
 unsupported_answer_total = 0
 ```
 
-## Latest Successful Cycle 030 Orange Operators
+## Latest Successful Cycle 031 Orange Operators
 
 ```text
-e129_range_endpoint_inclusive_lens
-e129_pronoun_antecedent_guard
-e129_scope_creep_request_lens
-e129_objective_subjective_split_lens
-e129_timeline_chain_lens
-e129_private_public_boundary_guard
-e129_inequality_direction_guard
-e129_unit_conversion_context_guard
-e129_aggregation_granularity_lens
-e129_tradeoff_preference_lens
-e129_rank_order_tie_guard
-e129_metaphor_literal_boundary_guard
-e129_user_preference_constraint_lens
-e129_list_item_negative_scope_guard
-e129_step_numbering_sequence_lens
-e129_batch_stream_boundary_lens
+e129_alias_identity_resolution_lens
+e129_security_permission_boundary_guard
+e129_assumption_dependency_guard
+e129_exception_to_general_rule_lens
+e129_temporal_order_causality_guard
+e129_promise_capability_guard
+e129_data_license_usage_guard
+e129_hypothetical_scenario_guard
+e129_action_reversibility_guard
+e129_absolute_relative_delta_lens
+e129_evidence_quality_hierarchy_lens
+e129_intervention_causality_lens
+e129_budget_time_constraint_lens
+e129_significance_claim_guard
+e129_quote_question_answer_split_lens
+e129_outlier_exception_lens
 ```
 
-Cycle 031 started after this checkpoint. Later cycle results should be treated
+Cycle 032 started after this checkpoint. Later cycle results should be treated
 as provisional until their cycle artifacts are checkpointed.
 
 ## Current Boundary
