@@ -1,0 +1,164 @@
+{
+  "rows": [
+    {
+      "candidate_id": "e129_range_endpoint_inclusive_lens",
+      "candidate_status": "Farmable",
+      "family": "Lens",
+      "gap_score": 42624.36,
+      "need": "bind numeric range endpoints and inclusive/exclusive semantics",
+      "scope": "text_range_endpoint_inclusive",
+      "support_count": 25880,
+      "title": "Range Endpoint / Inclusive Lens"
+    },
+    {
+      "candidate_id": "e129_pronoun_antecedent_guard",
+      "candidate_status": "Farmable",
+      "family": "Guard",
+      "gap_score": 31883.669025,
+      "need": "defer pronoun-dependent claims when the antecedent is ambiguous",
+      "scope": "text_pronoun_antecedent_ambiguity",
+      "support_count": 20931,
+      "title": "Pronoun Antecedent Guard"
+    },
+    {
+      "candidate_id": "e129_scope_creep_request_lens",
+      "candidate_status": "Farmable",
+      "family": "Lens",
+      "gap_score": 30874.730625,
+      "need": "separate added requests from the original task before planning work",
+      "scope": "text_scope_creep_request",
+      "support_count": 20435,
+      "title": "Scope Creep Request Lens"
+    },
+    {
+      "candidate_id": "e129_objective_subjective_split_lens",
+      "candidate_status": "Farmable",
+      "family": "Lens",
+      "gap_score": 7565.526225,
+      "need": "keep preferences and opinions separate from measured facts",
+      "scope": "text_objective_subjective_split",
+      "support_count": 6507,
+      "title": "Objective / Subjective Split Lens"
+    },
+    {
+      "candidate_id": "e129_timeline_chain_lens",
+      "candidate_status": "Farmable",
+      "family": "Lens",
+      "gap_score": 7030.25,
+      "need": "preserve ordered event chains before rendering progress or causal summaries",
+      "scope": "text_timeline_chain",
+      "support_count": 6100,
+      "title": "Timeline Chain Lens"
+    },
+    {
+      "candidate_id": "e129_private_public_boundary_guard",
+      "candidate_status": "Farmable",
+      "family": "Guard",
+      "gap_score": 6036.423225,
+      "need": "preserve privacy boundary before exposing or using information",
+      "scope": "text_private_public_boundary",
+      "support_count": 5327,
+      "title": "Private / Public Boundary Guard"
+    },
+    {
+      "candidate_id": "e129_inequality_direction_guard",
+      "candidate_status": "Farmable",
+      "family": "Guard",
+      "gap_score": 5367.321225,
+      "need": "preserve inequality direction before filtering or answering numeric constraints",
+      "scope": "text_inequality_direction",
+      "support_count": 4793,
+      "title": "Inequality Direction Guard"
+    },
+    {
+      "candidate_id": "e129_unit_conversion_context_guard",
+      "candidate_status": "Farmable",
+      "family": "Guard",
+      "gap_score": 5297.979225,
+      "need": "require unit context before comparing or transforming numeric values",
+      "scope": "text_unit_conversion_context",
+      "support_count": 4737,
+      "title": "Unit Conversion Context Guard"
+    },
+    {
+      "candidate_id": "e129_aggregation_granularity_lens",
+      "candidate_status": "Farmable",
+      "family": "Lens",
+      "gap_score": 4112.252025,
+      "need": "bind aggregate values to their granularity and grouping",
+      "scope": "text_aggregation_granularity",
+      "support_count": 3759,
+      "title": "Aggregation Granularity Lens"
+    },
+    {
+      "candidate_id": "e129_tradeoff_preference_lens",
+      "candidate_status": "Farmable",
+      "family": "Lens",
+      "gap_score": 4010.273225,
+      "need": "bind stated preference and tradeoff direction before choosing an action",
+      "scope": "text_tradeoff_preference",
+      "support_count": 3673,
+      "title": "Tradeoff / Preference Lens"
+    },
+    {
+      "candidate_id": "e129_rank_order_tie_guard",
+      "candidate_status": "Farmable",
+      "family": "Guard",
+      "gap_score": 3727.637225,
+      "need": "preserve tie and ordering rules before selecting winners",
+      "scope": "text_rank_order_tie",
+      "support_count": 3433,
+      "title": "Rank Order / Tie Guard"
+    },
+    {
+      "candidate_id": "e129_metaphor_literal_boundary_guard",
+      "candidate_status": "Farmable",
+      "family": "Guard",
+      "gap_score": 2521.61,
+      "need": "keep analogies and metaphors from becoming literal mechanistic claims",
+      "scope": "text_metaphor_literal_boundary",
+      "support_count": 2380,
+      "title": "Metaphor / Literal Boundary Guard"
+    },
+    {
+      "candidate_id": "e129_user_preference_constraint_lens",
+      "candidate_status": "Farmable",
+      "family": "Lens",
+      "gap_score": 2023.1225,
+      "need": "bind user preference constraints to the current task plan",
+      "scope": "text_user_preference_constraint",
+      "support_count": 1930,
+      "title": "User Preference / Constraint Lens"
+    },
+    {
+      "candidate_id": "e129_list_item_negative_scope_guard",
+      "candidate_status": "Farmable",
+      "family": "Guard",
+      "gap_score": 1942.1184,
+      "need": "keep negation inside the relevant list item instead of leaking it to neighbors",
+      "scope": "text_list_item_negative_scope",
+      "support_count": 1856,
+      "title": "List Item Negative Scope Guard"
+    },
+    {
+      "candidate_id": "e129_step_numbering_sequence_lens",
+      "candidate_status": "Farmable",
+      "family": "Lens",
+      "gap_score": 1702.9124,
+      "need": "bind numbered steps to sequence order and prevent skipped-step completion",
+      "scope": "text_step_numbering_sequence",
+      "support_count": 1636,
+      "title": "Step Numbering / Sequence Lens"
+    },
+    {
+      "candidate_id": "e129_batch_stream_boundary_lens",
+      "candidate_status": "Farmable",
+      "family": "Lens",
+      "gap_score": 1647.805625,
+      "need": "ground whether data is processed as a batch, stream, chunk, or overlapping frame",
+      "scope": "text_batch_stream_boundary",
+      "support_count": 1585,
+      "title": "Batch / Stream Boundary Lens"
+    }
+  ]
+}

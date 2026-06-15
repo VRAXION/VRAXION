@@ -1,0 +1,22 @@
+{"active_operator_count": 416, "cycle": 30, "event": "cycle_start", "timestamp_ms": 1781483829350}
+{"candidate_seen_count": 83, "cycle": 30, "event": "scan_chunk", "farmable_seen_count": 19, "rows_seen": 2000, "timestamp_ms": 1781483851226}
+{"candidate_seen_count": 96, "cycle": 30, "event": "scan_chunk", "farmable_seen_count": 27, "rows_seen": 4000, "timestamp_ms": 1781483875059}
+{"candidate_seen_count": 96, "cycle": 30, "event": "scan_chunk", "farmable_seen_count": 31, "rows_seen": 6000, "timestamp_ms": 1781483897362}
+{"candidate_seen_count": 96, "cycle": 30, "event": "scan_chunk", "farmable_seen_count": 32, "rows_seen": 8000, "timestamp_ms": 1781483922927}
+{"candidate_seen_count": 96, "cycle": 30, "event": "scan_chunk", "farmable_seen_count": 34, "rows_seen": 10000, "timestamp_ms": 1781483945326}
+{"candidate_seen_count": 98, "cycle": 30, "event": "scan_chunk", "farmable_seen_count": 36, "rows_seen": 12000, "timestamp_ms": 1781483968196}
+{"candidate_seen_count": 100, "cycle": 30, "event": "scan_chunk", "farmable_seen_count": 38, "rows_seen": 14000, "timestamp_ms": 1781483990750}
+{"candidate_seen_count": 102, "cycle": 30, "event": "scan_chunk", "farmable_seen_count": 38, "rows_seen": 16000, "timestamp_ms": 1781484014589}
+{"candidate_seen_count": 105, "cycle": 30, "event": "scan_chunk", "farmable_seen_count": 38, "rows_seen": 18000, "timestamp_ms": 1781484038046}
+{"candidate_seen_count": 105, "cycle": 30, "event": "scan_chunk", "farmable_seen_count": 39, "rows_seen": 20000, "timestamp_ms": 1781484061166}
+{"candidate_seen_count": 105, "cycle": 30, "event": "scan_chunk", "farmable_seen_count": 39, "rows_seen": 22000, "timestamp_ms": 1781484083471}
+{"candidate_seen_count": 105, "cycle": 30, "event": "scan_chunk", "farmable_seen_count": 40, "rows_seen": 24000, "timestamp_ms": 1781484106131}
+{"candidate_seen_count": 106, "cycle": 30, "event": "scan_chunk", "farmable_seen_count": 41, "rows_seen": 26000, "timestamp_ms": 1781484128694}
+{"candidate_seen_count": 107, "cycle": 30, "event": "scan_chunk", "farmable_seen_count": 44, "rows_seen": 28000, "timestamp_ms": 1781484153590}
+{"candidate_seen_count": 107, "cycle": 30, "event": "scan_chunk", "farmable_seen_count": 45, "rows_seen": 30000, "timestamp_ms": 1781484175230}
+{"candidate_seen_count": 107, "cycle": 30, "event": "scan_chunk", "farmable_seen_count": 46, "rows_seen": 32000, "timestamp_ms": 1781484198697}
+{"candidate_seen_count": 107, "cycle": 30, "event": "scan_chunk", "farmable_seen_count": 47, "rows_seen": 34000, "timestamp_ms": 1781484222452}
+{"candidate_seen_count": 107, "cycle": 30, "event": "scan_chunk", "farmable_seen_count": 47, "rows_seen": 36000, "timestamp_ms": 1781484245252}
+{"candidate_seen_count": 107, "cycle": 30, "event": "scan_chunk", "farmable_seen_count": 47, "rows_seen": 38000, "timestamp_ms": 1781484268190}
+{"candidate_seen_count": 107, "cycle": 30, "event": "scan_chunk", "farmable_seen_count": 48, "rows_seen": 40000, "timestamp_ms": 1781484291017}
+{"aggregate": {"accepted_mutations_total": 507, "artifact_contract": "E127_OVERNIGHT_TEXT_SKILL_FARM_ORANGE_CYCLE", "campaign_count_min": 8, "candidate_pool_count": 107, "challenger_attempts_total": 369, "challenger_pass_rate": 1.0, "cycle": 30, "direct_flow_write_total": 0, "false_commit_total": 0, "family_coverage_min": 12, "farmable_candidate_count": 48, "gold_only_count": 0, "hard_negative_total": 0, "mean_selected_prune_ratio": 0.62, "mutation_attempts_total": 77578, "mutation_lane_count": 6, "negative_scope_pass_rate": 1.0, "negative_transfer_total": 0, "orange_legendary_candidate_count": 16, "prune_attempts_total": 782, "prune_pass_rate": 1.0, "qualified_activation_min": 300816, "reload_match_rate": 1.0, "rollback_count_total": 77071, "rows_seen": 40000, "selected_candidate_count": 16, "unsupported_answer_total": 0, "wrong_scope_call_total": 0}, "cycle": 30, "decision": "e127_cycle_orange_legendary_positive", "event": "complete", "timestamp_ms": 1781484291091}

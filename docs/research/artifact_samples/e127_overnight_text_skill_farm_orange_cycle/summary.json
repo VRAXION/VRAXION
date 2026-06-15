@@ -1,15 +1,15 @@
 {
-  "accepted_mutations_total": 8010,
   "artifact_contract": "E127_OVERNIGHT_TEXT_SKILL_FARM_ORANGE_CYCLE",
-  "cycle_count": 29,
-  "decision": "e127_overnight_cycle_positive",
-  "false_commit_total": 0,
+  "cycle_count": 30,
+  "orange_legendary_candidate_total": 268,
+  "selected_candidate_total": 268,
   "hard_negative_total": 0,
-  "mutation_attempts_total": 1220152,
-  "orange_legendary_candidate_total": 252,
-  "rollback_count_total": 1212142,
-  "seconds": 1244.405,
-  "selected_candidate_total": 252,
+  "false_commit_total": 0,
+  "wrong_scope_call_total": 0,
   "unsupported_answer_total": 0,
-  "wrong_scope_call_total": 0
+  "mutation_attempts_total": 1297730,
+  "accepted_mutations_total": 8517,
+  "rollback_count_total": 1289213,
+  "seconds": 1706.147,
+  "decision": "e127_overnight_cycle_positive"
 }
