@@ -2,8 +2,8 @@
 
 ```text
 decision = e127_overnight_cycle_positive
-cycle_count = 35
-orange_legendary_candidate_total = 332
+cycle_count = 36
+orange_legendary_candidate_total = 334
 hard_negative_total = 0
 false_commit_total = 0
 wrong_scope_call_total = 0
@@ -21,7 +21,7 @@ candidate discovery
 -> repeat with already-promoted operators excluded
 ```
 
-The supervised overnight loop has completed 35 checkpointed cycles so far. Several candidate
+The supervised overnight loop has completed 36 checkpointed cycles so far. Several candidate
 spec packs were added as the currently visible candidate space was exhausted;
 each pack was validated by running the next cycle with active already-promoted
 operators excluded.
@@ -32,11 +32,11 @@ final training, Gemma-level generation, or open-domain reasoning.
 ## Aggregate Metrics
 
 ```text
-selected_candidate_total = 332
-orange_legendary_candidate_total = 332
-mutation_attempts_total = 1606604
-accepted_mutations_total = 10539
-rollback_count_total = 1596065
+selected_candidate_total = 334
+orange_legendary_candidate_total = 334
+mutation_attempts_total = 1616547
+accepted_mutations_total = 10598
+rollback_count_total = 1605949
 
 hard_negative_total = 0
 false_commit_total = 0
@@ -264,7 +264,41 @@ e130_active_set_filter_lens
 e130_prohibition_exception_guard
 ```
 
-Cycle 036 is live-runner state only until its cycle artifacts are checkpointed.
+## Latest Tail Cycle 036 Metrics
+
+Cycle 036 scanned the remaining `e130_` candidate space and found a small
+2-candidate tail batch.
+
+```text
+selected_candidate_count = 2
+orange_legendary_candidate_count = 2
+candidate_pool_count = 74
+farmable_candidate_count = 2
+qualified_activation_min = 301518
+mutation_attempts_total = 9943
+accepted_mutations_total = 59
+rollback_count_total = 9884
+mean_selected_prune_ratio = 0.62
+
+reload_match_rate = 1.0
+negative_scope_pass_rate = 1.0
+prune_pass_rate = 1.0
+challenger_pass_rate = 1.0
+
+hard_negative_total = 0
+false_commit_total = 0
+wrong_scope_call_total = 0
+unsupported_answer_total = 0
+```
+
+## Latest Tail Cycle 036 Orange Operators
+
+```text
+e130_partial_artifact_progress_lens
+e130_generated_observed_data_lens
+```
+
+Cycle 037 is live-runner state only until its cycle artifacts are checkpointed.
 
 ## Current Boundary
 
