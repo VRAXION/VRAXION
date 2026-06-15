@@ -2,8 +2,8 @@
 
 ```text
 decision = e127_overnight_cycle_positive
-cycle_count = 37
-orange_legendary_candidate_total = 334
+cycle_count = 38
+orange_legendary_candidate_total = 350
 hard_negative_total = 0
 false_commit_total = 0
 wrong_scope_call_total = 0
@@ -21,7 +21,7 @@ candidate discovery
 -> repeat with already-promoted operators excluded
 ```
 
-The supervised overnight loop has completed 37 checkpointed cycles so far. Several candidate
+The supervised overnight loop has completed 38 checkpointed cycles so far. Several candidate
 spec packs were added as the currently visible candidate space was exhausted;
 each pack was validated by running the next cycle with active already-promoted
 operators excluded.
@@ -32,11 +32,11 @@ final training, Gemma-level generation, or open-domain reasoning.
 ## Aggregate Metrics
 
 ```text
-selected_candidate_total = 334
-orange_legendary_candidate_total = 334
-mutation_attempts_total = 1616547
-accepted_mutations_total = 10598
-rollback_count_total = 1605949
+selected_candidate_total = 350
+orange_legendary_candidate_total = 350
+mutation_attempts_total = 1693159
+accepted_mutations_total = 11121
+rollback_count_total = 1682038
 
 hard_negative_total = 0
 false_commit_total = 0
@@ -319,8 +319,55 @@ wrong_scope_call_total = 0
 unsupported_answer_total = 0
 ```
 
-Cycle 038 should only be started after adding a fresh candidate spec pack or
-changing the data/curriculum source.
+## Latest Successful Cycle 038 Metrics
+
+Cycle 038 started the fresh `e131_` candidate spec pack and produced a full
+16-candidate Orange/Legendary batch. This pack shifted the farm toward more
+general text-understanding operators rather than only safety/negative-scope
+guards.
+
+```text
+selected_candidate_count = 16
+orange_legendary_candidate_count = 16
+candidate_pool_count = 130
+farmable_candidate_count = 51
+qualified_activation_min = 300662
+mutation_attempts_total = 76612
+accepted_mutations_total = 523
+rollback_count_total = 76089
+mean_selected_prune_ratio = 0.62
+
+reload_match_rate = 1.0
+negative_scope_pass_rate = 1.0
+prune_pass_rate = 1.0
+challenger_pass_rate = 1.0
+
+hard_negative_total = 0
+false_commit_total = 0
+wrong_scope_call_total = 0
+unsupported_answer_total = 0
+```
+
+## Latest Successful Cycle 038 Orange Operators
+
+```text
+e131_time_window_validity_lens
+e131_sequence_precondition_lens
+e131_cause_effect_lens
+e131_example_counterexample_lens
+e131_conditional_if_then_lens
+e131_analogy_mapping_lens
+e131_comparison_contrast_lens
+e131_ambiguous_reference_guard
+e131_part_whole_lens
+e131_threshold_boundary_lens
+e131_git_sync_status_lens
+e131_internal_external_boundary_lens
+e131_category_membership_lens
+e131_done_vs_started_lens
+e131_probability_confidence_lens
+e131_process_liveness_lens
+```
 
 ## Current Boundary
 

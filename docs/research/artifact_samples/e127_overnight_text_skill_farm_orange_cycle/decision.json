@@ -1,6 +1,6 @@
 {
   "artifact_contract": "E127_OVERNIGHT_TEXT_SKILL_FARM_ORANGE_CYCLE",
+  "cycle_count": 38,
   "decision": "e127_overnight_cycle_positive",
-  "failure_count": 0,
-  "failures": []
+  "failure_count": 0
 }

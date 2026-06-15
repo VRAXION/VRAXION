@@ -1,0 +1,164 @@
+{
+  "rows": [
+    {
+      "candidate_id": "e131_time_window_validity_lens",
+      "candidate_status": "Farmable",
+      "family": "Lens",
+      "gap_score": 54455.0544,
+      "need": "bind facts and permissions to their valid time window",
+      "scope": "text_time_window_validity",
+      "support_count": 30776,
+      "title": "Time Window / Validity Lens"
+    },
+    {
+      "candidate_id": "e131_sequence_precondition_lens",
+      "candidate_status": "Farmable",
+      "family": "Lens",
+      "gap_score": 39865.123025,
+      "need": "preserve required order and prerequisites before marking an action ready",
+      "scope": "text_sequence_precondition",
+      "support_count": 24661,
+      "title": "Sequence / Precondition Lens"
+    },
+    {
+      "candidate_id": "e131_cause_effect_lens",
+      "candidate_status": "Farmable",
+      "family": "Lens",
+      "gap_score": 23576.8976,
+      "need": "bind cause claims to their stated effect without reversing direction",
+      "scope": "text_cause_effect",
+      "support_count": 16648,
+      "title": "Cause / Effect Lens"
+    },
+    {
+      "candidate_id": "e131_example_counterexample_lens",
+      "candidate_status": "Farmable",
+      "family": "Lens",
+      "gap_score": 18372.0336,
+      "need": "separate illustrative examples from rules and detect counterexamples",
+      "scope": "text_example_counterexample",
+      "support_count": 13688,
+      "title": "Example / Counterexample Lens"
+    },
+    {
+      "candidate_id": "e131_conditional_if_then_lens",
+      "candidate_status": "Farmable",
+      "family": "Lens",
+      "gap_score": 15777.908025,
+      "need": "preserve condition-action boundaries before committing conclusions",
+      "scope": "text_conditional_if_then",
+      "support_count": 12111,
+      "title": "Conditional If / Then Lens"
+    },
+    {
+      "candidate_id": "e131_analogy_mapping_lens",
+      "candidate_status": "Farmable",
+      "family": "Lens",
+      "gap_score": 15548.8256,
+      "need": "preserve analogy mappings without upgrading them to literal equivalence",
+      "scope": "text_analogy_mapping",
+      "support_count": 11968,
+      "title": "Analogy / Mapping Lens"
+    },
+    {
+      "candidate_id": "e131_comparison_contrast_lens",
+      "candidate_status": "Farmable",
+      "family": "Lens",
+      "gap_score": 15160.3044,
+      "need": "bind each side of a comparison before drawing a preference or difference",
+      "scope": "text_comparison_contrast",
+      "support_count": 11724,
+      "title": "Comparison / Contrast Lens"
+    },
+    {
+      "candidate_id": "e131_ambiguous_reference_guard",
+      "candidate_status": "Farmable",
+      "family": "Guard",
+      "gap_score": 14714.9841,
+      "need": "block commits when pronoun or pointer references are ambiguous",
+      "scope": "text_ambiguous_reference",
+      "support_count": 11442,
+      "title": "Ambiguous Reference Guard"
+    },
+    {
+      "candidate_id": "e131_part_whole_lens",
+      "candidate_status": "Farmable",
+      "family": "Lens",
+      "gap_score": 14464.0881,
+      "need": "bind components to the whole system or document they belong to",
+      "scope": "text_part_whole",
+      "support_count": 11282,
+      "title": "Part / Whole Lens"
+    },
+    {
+      "candidate_id": "e131_threshold_boundary_lens",
+      "candidate_status": "Farmable",
+      "family": "Lens",
+      "gap_score": 11280.9744,
+      "need": "bind threshold direction and boundary values before decisions",
+      "scope": "text_threshold_boundary",
+      "support_count": 9176,
+      "title": "Threshold / Boundary Lens"
+    },
+    {
+      "candidate_id": "e131_git_sync_status_lens",
+      "candidate_status": "Farmable",
+      "family": "Lens",
+      "gap_score": 9581.804225,
+      "need": "bind repository sync claims to concrete git state",
+      "scope": "text_git_sync_status",
+      "support_count": 7987,
+      "title": "Git Sync Status Lens"
+    },
+    {
+      "candidate_id": "e131_internal_external_boundary_lens",
+      "candidate_status": "Farmable",
+      "family": "Lens",
+      "gap_score": 9517.487025,
+      "need": "bind whether a statement concerns internal mechanics or external behavior",
+      "scope": "text_internal_external_boundary",
+      "support_count": 7941,
+      "title": "Internal / External Boundary Lens"
+    },
+    {
+      "candidate_id": "e131_category_membership_lens",
+      "candidate_status": "Farmable",
+      "family": "Lens",
+      "gap_score": 8502.800625,
+      "need": "ground category membership without treating examples as exhaustive sets",
+      "scope": "text_category_membership",
+      "support_count": 7205,
+      "title": "Category / Membership Lens"
+    },
+    {
+      "candidate_id": "e131_done_vs_started_lens",
+      "candidate_status": "Farmable",
+      "family": "Lens",
+      "gap_score": 8041.8624,
+      "need": "separate started work from completed evidence-backed work",
+      "scope": "text_done_vs_started",
+      "support_count": 6864,
+      "title": "Done / Started Lens"
+    },
+    {
+      "candidate_id": "e131_probability_confidence_lens",
+      "candidate_status": "Farmable",
+      "family": "Lens",
+      "gap_score": 7529.76,
+      "need": "keep probabilistic statements separate from confirmed facts",
+      "scope": "text_probability_confidence",
+      "support_count": 6480,
+      "title": "Probability / Confidence Lens"
+    },
+    {
+      "candidate_id": "e131_process_liveness_lens",
+      "candidate_status": "Farmable",
+      "family": "Lens",
+      "gap_score": 7233.125625,
+      "need": "bind long-running job status to process and heartbeat evidence",
+      "scope": "text_process_liveness",
+      "support_count": 6255,
+      "title": "Process Liveness Lens"
+    }
+  ]
+}
