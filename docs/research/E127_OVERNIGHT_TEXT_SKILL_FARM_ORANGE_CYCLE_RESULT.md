@@ -2,8 +2,8 @@
 
 ```text
 decision = e127_overnight_cycle_positive
-cycle_count = 33
-orange_legendary_candidate_total = 300
+cycle_count = 34
+orange_legendary_candidate_total = 316
 hard_negative_total = 0
 false_commit_total = 0
 wrong_scope_call_total = 0
@@ -21,7 +21,7 @@ candidate discovery
 -> repeat with already-promoted operators excluded
 ```
 
-The supervised overnight loop has completed 33 checkpointed cycles so far. Several candidate
+The supervised overnight loop has completed 34 checkpointed cycles so far. Several candidate
 spec packs were added as the currently visible candidate space was exhausted;
 each pack was validated by running the next cycle with active already-promoted
 operators excluded.
@@ -32,11 +32,11 @@ final training, Gemma-level generation, or open-domain reasoning.
 ## Aggregate Metrics
 
 ```text
-selected_candidate_total = 300
-orange_legendary_candidate_total = 300
-mutation_attempts_total = 1452069
-accepted_mutations_total = 9531
-rollback_count_total = 1442538
+selected_candidate_total = 316
+orange_legendary_candidate_total = 316
+mutation_attempts_total = 1530439
+accepted_mutations_total = 10033
+rollback_count_total = 1520406
 
 hard_negative_total = 0
 false_commit_total = 0
@@ -168,9 +168,55 @@ wrong_scope_call_total = 0
 unsupported_answer_total = 0
 ```
 
-Cycle 034 should only be started after adding a fresh candidate spec pack or
-changing the data/curriculum source. Later cycle results should be treated
-as provisional until their cycle artifacts are checkpointed.
+## Latest Successful Cycle 034 Metrics
+
+Cycle 034 started the fresh `e130_` candidate spec pack and found a full
+16-candidate Orange/Legendary batch with clean safety counters.
+
+```text
+selected_candidate_count = 16
+orange_legendary_candidate_count = 16
+candidate_pool_count = 106
+farmable_candidate_count = 34
+qualified_activation_min = 300663
+mutation_attempts_total = 78370
+accepted_mutations_total = 502
+rollback_count_total = 77868
+mean_selected_prune_ratio = 0.62
+
+reload_match_rate = 1.0
+negative_scope_pass_rate = 1.0
+prune_pass_rate = 1.0
+challenger_pass_rate = 1.0
+
+hard_negative_total = 0
+false_commit_total = 0
+wrong_scope_call_total = 0
+unsupported_answer_total = 0
+```
+
+## Latest Successful Cycle 034 Orange Operators
+
+```text
+e130_risk_severity_lens
+e130_high_stakes_domain_guard
+e130_latest_instruction_override_lens
+e130_ask_answer_policy_lens
+e130_dependency_blocker_lens
+e130_config_env_var_lens
+e130_visual_observation_lens
+e130_default_minimal_action_lens
+e130_rank_promotion_lens
+e130_network_dependency_guard
+e130_place_entity_disambiguation_lens
+e130_stop_resume_control_lens
+e130_capacity_limit_lens
+e130_action_owner_lens
+e130_deadline_timezone_lens
+e130_failure_recycle_lens
+```
+
+Cycle 035 is live-runner state only until its cycle artifacts are checkpointed.
 
 ## Current Boundary
 
