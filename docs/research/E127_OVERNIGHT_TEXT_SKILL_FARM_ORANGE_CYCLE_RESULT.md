@@ -2,8 +2,8 @@
 
 ```text
 decision = e127_overnight_cycle_positive
-cycle_count = 31
-orange_legendary_candidate_total = 284
+cycle_count = 32
+orange_legendary_candidate_total = 300
 hard_negative_total = 0
 false_commit_total = 0
 wrong_scope_call_total = 0
@@ -21,7 +21,7 @@ candidate discovery
 -> repeat with already-promoted operators excluded
 ```
 
-The supervised overnight loop has completed 31 checkpointed cycles so far. Several candidate
+The supervised overnight loop has completed 32 checkpointed cycles so far. Several candidate
 spec packs were added as the currently visible candidate space was exhausted;
 each pack was validated by running the next cycle with active already-promoted
 operators excluded.
@@ -32,11 +32,11 @@ final training, Gemma-level generation, or open-domain reasoning.
 ## Aggregate Metrics
 
 ```text
-selected_candidate_total = 284
-orange_legendary_candidate_total = 284
-mutation_attempts_total = 1374205
-accepted_mutations_total = 9016
-rollback_count_total = 1365189
+selected_candidate_total = 300
+orange_legendary_candidate_total = 300
+mutation_attempts_total = 1452069
+accepted_mutations_total = 9531
+rollback_count_total = 1442538
 
 hard_negative_total = 0
 false_commit_total = 0
@@ -101,20 +101,20 @@ wrong_scope_call_total = 0
 unsupported_answer_total = 0
 ```
 
-## Latest Successful Cycle 031 Metrics
+## Latest Successful Cycle 032 Metrics
 
-Cycle 031 continued the fresh `e129_` candidate spec pack after cycle 030
-promoted the first 16 candidates from that pack.
+Cycle 032 continued the fresh `e129_` candidate spec pack and still found a
+full 16-candidate batch, though the candidate density had started dropping.
 
 ```text
 selected_candidate_count = 16
 orange_legendary_candidate_count = 16
-candidate_pool_count = 91
-farmable_candidate_count = 32
-qualified_activation_min = 300759
-mutation_attempts_total = 76475
-accepted_mutations_total = 499
-rollback_count_total = 75976
+candidate_pool_count = 75
+farmable_candidate_count = 16
+qualified_activation_min = 300898
+mutation_attempts_total = 77864
+accepted_mutations_total = 515
+rollback_count_total = 77349
 mean_selected_prune_ratio = 0.62
 
 reload_match_rate = 1.0
@@ -128,28 +128,28 @@ wrong_scope_call_total = 0
 unsupported_answer_total = 0
 ```
 
-## Latest Successful Cycle 031 Orange Operators
+## Latest Successful Cycle 032 Orange Operators
 
 ```text
-e129_alias_identity_resolution_lens
-e129_security_permission_boundary_guard
-e129_assumption_dependency_guard
-e129_exception_to_general_rule_lens
-e129_temporal_order_causality_guard
-e129_promise_capability_guard
-e129_data_license_usage_guard
-e129_hypothetical_scenario_guard
-e129_action_reversibility_guard
-e129_absolute_relative_delta_lens
-e129_evidence_quality_hierarchy_lens
-e129_intervention_causality_lens
-e129_budget_time_constraint_lens
-e129_significance_claim_guard
-e129_quote_question_answer_split_lens
-e129_outlier_exception_lens
+e129_deprecation_warning_guard
+e129_self_reported_claim_guard
+e129_encoding_normalization_lens
+e129_conditional_permission_guard
+e129_metric_directionality_lens
+e129_path_location_binding_lens
+e129_table_row_column_binding_lens
+e129_train_test_split_lens
+e129_stale_cache_guard
+e129_retry_resume_boundary_lens
+e129_official_doc_version_lens
+e129_personal_data_redaction_guard
+e129_missing_baseline_guard
+e129_resource_limit_lens
+e129_benchmark_leakage_guard
+e129_command_error_status_lens
 ```
 
-Cycle 032 started after this checkpoint. Later cycle results should be treated
+Cycle 033 started after this checkpoint. Later cycle results should be treated
 as provisional until their cycle artifacts are checkpointed.
 
 ## Current Boundary

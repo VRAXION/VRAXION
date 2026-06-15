@@ -1,0 +1,164 @@
+{
+  "rows": [
+    {
+      "candidate_id": "e129_deprecation_warning_guard",
+      "candidate_status": "Farmable",
+      "family": "Guard",
+      "gap_score": 297.175625,
+      "need": "avoid selecting deprecated APIs or stale behavior without a compatibility reason",
+      "scope": "text_deprecation_warning",
+      "support_count": 295,
+      "title": "Deprecation Warning Guard"
+    },
+    {
+      "candidate_id": "e129_self_reported_claim_guard",
+      "candidate_status": "Farmable",
+      "family": "Guard",
+      "gap_score": 231.3225,
+      "need": "keep self-reported claims below verified evidence until corroborated",
+      "scope": "text_self_reported_claim",
+      "support_count": 230,
+      "title": "Self-Reported Claim Guard"
+    },
+    {
+      "candidate_id": "e129_encoding_normalization_lens",
+      "candidate_status": "Farmable",
+      "family": "Lens",
+      "gap_score": 191.912025,
+      "need": "bind text/byte normalization before interpreting symbols as evidence",
+      "scope": "text_encoding_normalization",
+      "support_count": 191,
+      "title": "Encoding / Normalization Lens"
+    },
+    {
+      "candidate_id": "e129_conditional_permission_guard",
+      "candidate_status": "Farmable",
+      "family": "Guard",
+      "gap_score": 178.7921,
+      "need": "block permission claims unless their condition is satisfied",
+      "scope": "text_conditional_permission",
+      "support_count": 178,
+      "title": "Conditional Permission Guard"
+    },
+    {
+      "candidate_id": "e129_metric_directionality_lens",
+      "candidate_status": "Farmable",
+      "family": "Lens",
+      "gap_score": 178.7921,
+      "need": "bind metric direction before judging whether a result improved",
+      "scope": "text_metric_directionality",
+      "support_count": 178,
+      "title": "Metric Directionality Lens"
+    },
+    {
+      "candidate_id": "e129_path_location_binding_lens",
+      "candidate_status": "Farmable",
+      "family": "Lens",
+      "gap_score": 149.555025,
+      "need": "bind file paths to the correct workspace and operation",
+      "scope": "text_path_location_binding",
+      "support_count": 149,
+      "title": "Path / Location Binding Lens"
+    },
+    {
+      "candidate_id": "e129_table_row_column_binding_lens",
+      "candidate_status": "Farmable",
+      "family": "Lens",
+      "gap_score": 125.390625,
+      "need": "bind table values to row and column context before using them as facts",
+      "scope": "text_table_row_column_binding",
+      "support_count": 125,
+      "title": "Table Row / Column Binding Lens"
+    },
+    {
+      "candidate_id": "e129_train_test_split_lens",
+      "candidate_status": "Farmable",
+      "family": "Lens",
+      "gap_score": 116.3364,
+      "need": "bind results to the split they were measured on",
+      "scope": "text_train_test_split",
+      "support_count": 116,
+      "title": "Train / Test Split Lens"
+    },
+    {
+      "candidate_id": "e129_stale_cache_guard",
+      "candidate_status": "Farmable",
+      "family": "Guard",
+      "gap_score": 111.308025,
+      "need": "avoid trusting cached information after invalidation or recency changes",
+      "scope": "text_stale_cache",
+      "support_count": 111,
+      "title": "Stale Cache Guard"
+    },
+    {
+      "candidate_id": "e129_retry_resume_boundary_lens",
+      "candidate_status": "Farmable",
+      "family": "Lens",
+      "gap_score": 92.2116,
+      "need": "bind retry/resume actions to checkpoint state to avoid duplicate or lost work",
+      "scope": "text_retry_resume_boundary",
+      "support_count": 92,
+      "title": "Retry / Resume Boundary Lens"
+    },
+    {
+      "candidate_id": "e129_official_doc_version_lens",
+      "candidate_status": "Farmable",
+      "family": "Lens",
+      "gap_score": 88.1936,
+      "need": "bind documentation claims to official source and version",
+      "scope": "text_official_doc_version",
+      "support_count": 88,
+      "title": "Official Doc / Version Lens"
+    },
+    {
+      "candidate_id": "e129_personal_data_redaction_guard",
+      "candidate_status": "Farmable",
+      "family": "Guard",
+      "gap_score": 88.1936,
+      "need": "protect personal data fields before publishing or logging outputs",
+      "scope": "text_personal_data_redaction",
+      "support_count": 88,
+      "title": "Personal Data / Redaction Guard"
+    },
+    {
+      "candidate_id": "e129_missing_baseline_guard",
+      "candidate_status": "Farmable",
+      "family": "Guard",
+      "gap_score": 84.1764,
+      "need": "defer improvement claims when the comparison baseline is absent",
+      "scope": "text_missing_baseline",
+      "support_count": 84,
+      "title": "Missing Baseline Guard"
+    },
+    {
+      "candidate_id": "e129_resource_limit_lens",
+      "candidate_status": "Farmable",
+      "family": "Lens",
+      "gap_score": 78.1521,
+      "need": "bind hardware/resource constraints to scheduling decisions",
+      "scope": "text_resource_limit",
+      "support_count": 78,
+      "title": "Resource Limit Lens"
+    },
+    {
+      "candidate_id": "e129_benchmark_leakage_guard",
+      "candidate_status": "Farmable",
+      "family": "Guard",
+      "gap_score": 74.1369,
+      "need": "block benchmark conclusions when train/test leakage is indicated",
+      "scope": "text_benchmark_leakage",
+      "support_count": 74,
+      "title": "Benchmark Leakage Guard"
+    },
+    {
+      "candidate_id": "e129_command_error_status_lens",
+      "candidate_status": "Farmable",
+      "family": "Lens",
+      "gap_score": 65.105625,
+      "need": "ground command failure status before reporting success or continuing",
+      "scope": "text_command_error_status",
+      "support_count": 65,
+      "title": "Command Error / Status Lens"
+    }
+  ]
+}
