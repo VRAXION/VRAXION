@@ -91,4 +91,28 @@ See [`ARCHIVE.md`](ARCHIVE.md) and the [Consolidation Archive wiki page](https:/
 
 ## License
 
-See [`LICENSE`](LICENSE).
+VRAXION is released under the **VRAXION Community Source License 1.0**. It is a
+custom source-available community license, not an OSI-approved open source
+license.
+
+Community use is free for personal, research, education, nonprofit, internal,
+self-hosted, community-fork, benchmark, and non-monetized demo use.
+
+Monetized third-party access to VRAXION-powered functionality is Royalty Use and
+requires either compliance with the license royalty terms or a separate written
+agreement. The default royalty is **19% of Attributable Net Revenue**:
+
+```text
+1% Founder Allocation
+18% VRAXION Forever Prize Allocation
+```
+
+After a Founder Redirect Event, the Founder Allocation redirects to the Prize,
+so the full 19% goes to the VRAXION Forever Prize Allocation.
+
+Start here:
+
+- [`LICENSE`](LICENSE)
+- [`legal/LEGAL.md`](legal/LEGAL.md)
+- [`legal/COMMERCIAL_USE_GUIDE.md`](legal/COMMERCIAL_USE_GUIDE.md)
+- [`legal/VRAXION_FOREVER_PRIZE_CHARTER.md`](legal/VRAXION_FOREVER_PRIZE_CHARTER.md)

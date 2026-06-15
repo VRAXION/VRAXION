@@ -3,6 +3,13 @@
 Date: 2026-06-13
 Scope: license model for broad free community use + 19% royalty on monetized third-party access.
 
+## Status note
+
+This is a historical adversarial review from the 2026-06-13 license-package
+work. The repository now uses the root `LICENSE` as the installed controlling
+license. The baseline repo-state section below describes the state observed
+before that package was installed.
+
 ## Baseline repo state checked
 
 Current public repo state observed before this package:

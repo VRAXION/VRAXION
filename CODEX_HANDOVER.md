@@ -71,6 +71,31 @@ docs/research/artifact_samples/e127_overnight_text_skill_farm_orange_cycle/
 docs/research/artifact_samples/e127_text_to_text_render_smoke_current/
 ```
 
+## Legal / License
+
+The root [`LICENSE`](LICENSE) is the controlling license text. VRAXION uses the
+custom **VRAXION Community Source License 1.0**: broad free community use, but
+not OSI-approved open source.
+
+Commercial monetization of third-party access to VRAXION-powered functionality
+is Royalty Use under the license unless a separate written agreement exists.
+The default royalty is 19% of Attributable Net Revenue:
+
+```text
+1% Founder Allocation
+18% VRAXION Forever Prize Allocation
+```
+
+Read these before changing release/legal language:
+
+```text
+LICENSE
+legal/LEGAL.md
+legal/COMMERCIAL_USE_GUIDE.md
+legal/VRAXION_FOREVER_PRIZE_CHARTER.md
+docs/legal/PRIOR_ART_AND_PROVENANCE_CHECKLIST.md
+```
+
 ## Dashboard
 
 Generate the local operator dashboard:
