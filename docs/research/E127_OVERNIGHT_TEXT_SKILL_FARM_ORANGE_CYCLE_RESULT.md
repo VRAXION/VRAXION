@@ -2,8 +2,8 @@
 
 ```text
 decision = e127_overnight_cycle_positive
-cycle_count = 26
-orange_legendary_candidate_total = 227
+cycle_count = 27
+orange_legendary_candidate_total = 243
 hard_negative_total = 0
 false_commit_total = 0
 wrong_scope_call_total = 0
@@ -21,7 +21,7 @@ candidate discovery
 -> repeat with already-promoted operators excluded
 ```
 
-The supervised overnight loop completed 26 cycles in this checkpoint. Several candidate
+The supervised overnight loop has completed 27 checkpointed cycles so far. Several candidate
 spec packs were added as the currently visible candidate space was exhausted;
 each pack was validated by running the next cycle with active already-promoted
 operators excluded.
@@ -32,11 +32,11 @@ final training, Gemma-level generation, or open-domain reasoning.
 ## Aggregate Metrics
 
 ```text
-selected_candidate_total = 227
-orange_legendary_candidate_total = 227
-mutation_attempts_total = 1103119
-accepted_mutations_total = 7158
-rollback_count_total = 1095961
+selected_candidate_total = 243
+orange_legendary_candidate_total = 243
+mutation_attempts_total = 1179405
+accepted_mutations_total = 7703
+rollback_count_total = 1171702
 
 hard_negative_total = 0
 false_commit_total = 0
@@ -44,17 +44,17 @@ wrong_scope_call_total = 0
 unsupported_answer_total = 0
 ```
 
-## Latest Successful Cycle 025 Metrics
+## Latest Successful Cycle 027 Metrics
 
 ```text
-selected_candidate_count = 3
-orange_legendary_candidate_count = 3
-candidate_pool_count = 32
-farmable_candidate_count = 3
-qualified_activation_min = 301217
-mutation_attempts_total = 14802
-accepted_mutations_total = 99
-rollback_count_total = 14703
+selected_candidate_count = 16
+orange_legendary_candidate_count = 16
+candidate_pool_count = 74
+farmable_candidate_count = 25
+qualified_activation_min = 300740
+mutation_attempts_total = 76286
+accepted_mutations_total = 545
+rollback_count_total = 75741
 mean_selected_prune_ratio = 0.62
 
 reload_match_rate = 1.0
@@ -68,18 +68,29 @@ wrong_scope_call_total = 0
 unsupported_answer_total = 0
 ```
 
-## Latest Successful Cycle 025 Orange Operators
+## Latest Successful Cycle 027 Orange Operators
 
 ```text
-hypothesis_test_result_lens
-observation_inference_split_lens
-root_cause_evidence_lens
+e128_progress_ledger_status_lens
+e128_answer_format_constraint_lens
+e128_multi_condition_rule_lens
+e128_external_side_effect_guard
+e128_correlation_causation_guard
+e128_official_unofficial_source_lens
+e128_user_intent_background_split_lens
+e128_multi_turn_continuity_lens
+e128_tool_output_status_lens
+e128_future_prediction_guard
+e128_followup_dependency_lens
+e128_before_after_state_update_lens
+e128_active_evidence_request_lens
+e128_claim_source_date_lens
+e128_non_actionable_note_guard
+e128_unresolved_reference_guard
 ```
 
-Cycle 026 was an exhaustion boundary: it scanned 40,000 rows, saw 29 candidate
-patterns, found 0 farmable candidates, and stopped cleanly with no safety
-failures. Continuing the overnight loop now requires adding a new candidate
-spec pack and restarting from this checkpoint.
+Cycle 028 started after this checkpoint. Later cycle results should be treated
+as provisional until their cycle artifacts are checkpointed.
 
 ## Current Boundary
 
