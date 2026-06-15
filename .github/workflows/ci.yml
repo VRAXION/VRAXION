@@ -118,8 +118,10 @@ jobs:
           js_path = pathlib.Path("target/ci/operator_rank_dashboard/dashboard.js")
           js_path.write_text(match.group(1), encoding="utf-8")
           subprocess.run(["node", "--check", str(js_path)], check=True)
-          if "E130A CoreMemory to Orange backfill" not in html:
-              raise SystemExit("dashboard did not load E130A Orange backfill evidence")
+          if "E130B arithmetic text-IO transfer" not in html:
+              raise SystemExit("dashboard did not load E130B arithmetic text-IO transfer evidence")
+          if "E130A backfill" not in html:
+              raise SystemExit("dashboard did not retain E130A Orange backfill evidence")
           if "E129 arithmetic trace" not in html:
               raise SystemExit("dashboard did not retain E129 arithmetic trace evidence")
           PY
@@ -165,6 +167,10 @@ jobs:
               '"current_evidence_anchor": "E129_ARITHMETIC_TRACE_ORANGE_LEGENDARY_PROBATION"',
               "current_evidence_anchor = E129 arithmetic trace Orange/Legendary probation",
               "Current evidence anchor: E129 arithmetic trace Orange/Legendary probation",
+              "current_evidence_anchor = E130A_COREMEMORY_TO_ORANGE_BACKFILL_GAUNTLET",
+              '"current_evidence_anchor": "E130A_COREMEMORY_TO_ORANGE_BACKFILL_GAUNTLET"',
+              "current_evidence_anchor = E130A CoreMemoryCandidate-to-Orange backfill gauntlet",
+              "Current evidence anchor: E130A CoreMemoryCandidate-to-Orange backfill gauntlet",
           ]
           failures = []
           for path in files:

@@ -97,6 +97,23 @@ negative transfer = 0
 direct flow writes = 0
 ```
 
+Current E130B arithmetic text-IO transfer evidence:
+
+```text
+transfer pass operators = 9 / 9
+visible transfer cases = 270000
+word-problem no-call cases = 135000
+visible transfer accuracy min = 1.000
+word-problem no-call accuracy min = 1.000
+qualified transfer activation total = 270000
+hard negatives = 0
+false commits = 0
+wrong-scope calls = 0
+unsupported answers = 0
+direct flow writes = 0
+overbroad control wrong-scope calls = 18000
+```
+
 These are scoped operators, not general-purpose neural skills. A larger count is
 not automatically better; value depends on safe activation, low cost, correct
 scope, reloadability, and no-harm evidence.
@@ -153,6 +170,8 @@ scope, reloadability, and no-harm evidence.
 - cover plus/minus, multiplication, exact division, floor division, signed
   integers, decimal/fraction rendering, mixed precedence, invalid-trace
   rejection, and division-by-zero rejection;
+- transfer those visible arithmetic expression/trace skills into longer
+  text-IO wrappers when the arithmetic payload is explicit;
 - no-call natural-language word problems that lack a visible arithmetic
   expression or trace.
 

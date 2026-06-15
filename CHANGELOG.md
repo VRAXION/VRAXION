@@ -1,6 +1,24 @@
 # Changelog
 
-This changelog is narrowed to the current v6 / E127-E130A evidence anchor. Full historical beta, probe, Python SDK, legacy Rust, and research-output history is preserved in git history and archive tags.
+This changelog is narrowed to the current v6 / E127-E130B evidence anchor. Full historical beta, probe, Python SDK, legacy Rust, and research-output history is preserved in git history and archive tags.
+
+## 2026-06-15 - E130B Arithmetic Text-IO Transfer And Word-Problem No-Call
+
+- Added `scripts/probes/run_e130b_arithmetic_text_io_transfer_and_word_problem_no_call_gauntlet.py`.
+- Transferred the 9 E129 scoped arithmetic trace Operators into longer
+  visible-expression text-IO wrappers.
+- Result: 9/9 arithmetic Operators passed the E130B transfer gate.
+- Positive transfer: 270,000 visible-transfer cases, visible transfer accuracy
+  minimum 1.000, and 270,000 qualified transfer activations.
+- Negative-scope guard: 135,000 hidden natural-language word-problem cases
+  produced word-problem no-call accuracy minimum 1.000.
+- Confirmed: 0 hard negatives, 0 false commits, 0 wrong-scope calls, 0
+  unsupported answers, and 0 direct flow writes.
+- Challenger/control: the overbroad word-problem solver control produced 18,000
+  wrong-scope calls and was rejected.
+- Boundary: visible arithmetic expression/trace text IO only; not hidden
+  natural-language word-problem solving, GSM8K solving, open-domain reasoning,
+  or neural LLM training.
 
 ## 2026-06-15 - E130A CoreMemoryCandidate To Orange Backfill Gauntlet
 

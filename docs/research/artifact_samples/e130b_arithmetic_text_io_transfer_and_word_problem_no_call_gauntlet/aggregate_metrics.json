@@ -1,0 +1,20 @@
+{
+  "artifact_contract": "E130B_ARITHMETIC_TEXT_IO_TRANSFER_AND_WORD_PROBLEM_NO_CALL_GAUNTLET",
+  "direct_flow_write_total": 0,
+  "false_commit_total": 0,
+  "hard_negative_total": 0,
+  "operator_count": 9,
+  "overbroad_control_false_commit_total": 18000,
+  "overbroad_control_wrong_scope_call_total": 18000,
+  "qualified_transfer_activation_min": 30000,
+  "qualified_transfer_activation_total": 270000,
+  "seconds": 48.65,
+  "transfer_pass_operator_count": 9,
+  "unsupported_answer_total": 0,
+  "variant_count": 27,
+  "visible_transfer_accuracy_min": 1.0,
+  "visible_transfer_case_count_total": 270000,
+  "word_problem_no_call_accuracy_min": 1.0,
+  "word_problem_no_call_case_count_total": 135000,
+  "wrong_scope_call_total": 0
+}

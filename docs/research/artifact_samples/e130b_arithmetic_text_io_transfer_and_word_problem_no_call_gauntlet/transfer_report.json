@@ -1,0 +1,146 @@
+{
+  "rows": [
+    {
+      "operator_id": "e129_add_sub_trace_operator",
+      "qualified_transfer_activation": 30000,
+      "route_reason_counts": {
+        "backtick_payload": 5000,
+        "direct_e129_payload": 5000,
+        "embedded_calc_trace": 2500,
+        "embedded_trace_marker": 2500,
+        "no_visible_payload": 15000,
+        "route_this_span": 5000,
+        "visible_arithmetic_block": 5000,
+        "visible_arithmetic_bracket": 5000
+      },
+      "visible_transfer_accuracy": 1.0,
+      "visible_transfer_case_count": 30000
+    },
+    {
+      "operator_id": "e129_decimal_fraction_trace_operator",
+      "qualified_transfer_activation": 30000,
+      "route_reason_counts": {
+        "backtick_payload": 5000,
+        "direct_e129_payload": 5000,
+        "embedded_calc_trace": 2500,
+        "embedded_trace_marker": 2500,
+        "no_visible_payload": 15000,
+        "route_this_span": 5000,
+        "visible_arithmetic_block": 5000,
+        "visible_arithmetic_bracket": 5000
+      },
+      "visible_transfer_accuracy": 1.0,
+      "visible_transfer_case_count": 30000
+    },
+    {
+      "operator_id": "e129_division_by_zero_guard",
+      "qualified_transfer_activation": 30000,
+      "route_reason_counts": {
+        "backtick_payload": 5000,
+        "direct_e129_payload": 5000,
+        "embedded_trace_marker": 5000,
+        "no_visible_payload": 15000,
+        "route_this_span": 5000,
+        "visible_arithmetic_block": 5000,
+        "visible_arithmetic_bracket": 5000
+      },
+      "visible_transfer_accuracy": 1.0,
+      "visible_transfer_case_count": 30000
+    },
+    {
+      "operator_id": "e129_exact_division_trace_operator",
+      "qualified_transfer_activation": 30000,
+      "route_reason_counts": {
+        "backtick_payload": 5000,
+        "direct_e129_payload": 5000,
+        "embedded_calc_trace": 2500,
+        "embedded_trace_marker": 2500,
+        "no_visible_payload": 15000,
+        "route_this_span": 5000,
+        "visible_arithmetic_block": 5000,
+        "visible_arithmetic_bracket": 5000
+      },
+      "visible_transfer_accuracy": 1.0,
+      "visible_transfer_case_count": 30000
+    },
+    {
+      "operator_id": "e129_floor_division_trace_operator",
+      "qualified_transfer_activation": 30000,
+      "route_reason_counts": {
+        "backtick_payload": 5000,
+        "direct_e129_payload": 5000,
+        "embedded_calc_trace": 2500,
+        "embedded_trace_marker": 2500,
+        "no_visible_payload": 15000,
+        "route_this_span": 5000,
+        "visible_arithmetic_block": 5000,
+        "visible_arithmetic_bracket": 5000
+      },
+      "visible_transfer_accuracy": 1.0,
+      "visible_transfer_case_count": 30000
+    },
+    {
+      "operator_id": "e129_invalid_trace_rejection_guard",
+      "qualified_transfer_activation": 30000,
+      "route_reason_counts": {
+        "backtick_payload": 5000,
+        "direct_e129_payload": 5000,
+        "embedded_calc_trace": 5000,
+        "no_visible_payload": 15000,
+        "route_this_span": 5000,
+        "visible_arithmetic_block": 5000,
+        "visible_arithmetic_bracket": 5000
+      },
+      "visible_transfer_accuracy": 1.0,
+      "visible_transfer_case_count": 30000
+    },
+    {
+      "operator_id": "e129_multiplication_trace_operator",
+      "qualified_transfer_activation": 30000,
+      "route_reason_counts": {
+        "backtick_payload": 5000,
+        "direct_e129_payload": 5000,
+        "embedded_calc_trace": 2500,
+        "embedded_trace_marker": 2500,
+        "no_visible_payload": 15000,
+        "route_this_span": 5000,
+        "visible_arithmetic_block": 5000,
+        "visible_arithmetic_bracket": 5000
+      },
+      "visible_transfer_accuracy": 1.0,
+      "visible_transfer_case_count": 30000
+    },
+    {
+      "operator_id": "e129_parenthesized_mixed_precedence_operator",
+      "qualified_transfer_activation": 30000,
+      "route_reason_counts": {
+        "backtick_payload": 5000,
+        "direct_e129_payload": 5000,
+        "embedded_calc_trace": 2500,
+        "embedded_trace_marker": 2500,
+        "no_visible_payload": 15000,
+        "route_this_span": 5000,
+        "visible_arithmetic_block": 5000,
+        "visible_arithmetic_bracket": 5000
+      },
+      "visible_transfer_accuracy": 1.0,
+      "visible_transfer_case_count": 30000
+    },
+    {
+      "operator_id": "e129_signed_integer_trace_operator",
+      "qualified_transfer_activation": 30000,
+      "route_reason_counts": {
+        "backtick_payload": 5000,
+        "direct_e129_payload": 5000,
+        "embedded_calc_trace": 2500,
+        "embedded_trace_marker": 2500,
+        "no_visible_payload": 15000,
+        "route_this_span": 5000,
+        "visible_arithmetic_block": 5000,
+        "visible_arithmetic_bracket": 5000
+      },
+      "visible_transfer_accuracy": 1.0,
+      "visible_transfer_case_count": 30000
+    }
+  ]
+}
