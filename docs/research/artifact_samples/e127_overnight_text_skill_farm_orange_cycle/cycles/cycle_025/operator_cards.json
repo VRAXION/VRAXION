@@ -1,0 +1,34 @@
+{
+  "rows": [
+    {
+      "candidate_id": "hypothesis_test_result_lens",
+      "candidate_status": "Farmable",
+      "family": "Lens",
+      "gap_score": 115.330625,
+      "need": "connect a hypothesis or probe to the actual result without skipping the test boundary",
+      "scope": "text_hypothesis_test_result",
+      "support_count": 115,
+      "title": "Hypothesis / Test / Result Lens"
+    },
+    {
+      "candidate_id": "observation_inference_split_lens",
+      "candidate_status": "Farmable",
+      "family": "Lens",
+      "gap_score": 83.172225,
+      "need": "separate raw observation from inferred conclusion before commit",
+      "scope": "text_observation_inference_split",
+      "support_count": 83,
+      "title": "Observation / Inference Split Lens"
+    },
+    {
+      "candidate_id": "root_cause_evidence_lens",
+      "candidate_status": "Farmable",
+      "family": "Lens",
+      "gap_score": 74.1369,
+      "need": "require evidence linkage before accepting a root-cause claim",
+      "scope": "text_root_cause_evidence",
+      "support_count": 74,
+      "title": "Root Cause / Evidence Lens"
+    }
+  ]
+}

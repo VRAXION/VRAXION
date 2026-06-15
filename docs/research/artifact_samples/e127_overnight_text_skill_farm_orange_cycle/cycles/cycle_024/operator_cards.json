@@ -1,0 +1,164 @@
+{
+  "rows": [
+    {
+      "candidate_id": "evaluation_criteria_lens",
+      "candidate_status": "Farmable",
+      "family": "Lens",
+      "gap_score": 1215.869025,
+      "need": "ground evaluation criteria before judging success or failure",
+      "scope": "text_evaluation_criteria",
+      "support_count": 1181,
+      "title": "Evaluation Criteria Lens"
+    },
+    {
+      "candidate_id": "recommendation_rationale_lens",
+      "candidate_status": "Farmable",
+      "family": "Lens",
+      "gap_score": 576.0656,
+      "need": "bind recommendations to their rationale and avoid unsupported action proposals",
+      "scope": "text_recommendation_rationale",
+      "support_count": 568,
+      "title": "Recommendation / Rationale Lens"
+    },
+    {
+      "candidate_id": "context_condition_result_lens",
+      "candidate_status": "Farmable",
+      "family": "Lens",
+      "gap_score": 534.9696,
+      "need": "keep results attached to the context or condition in which they hold",
+      "scope": "text_context_condition_result",
+      "support_count": 528,
+      "title": "Context / Condition / Result Lens"
+    },
+    {
+      "candidate_id": "implied_question_lens",
+      "candidate_status": "Farmable",
+      "family": "Lens",
+      "gap_score": 493.9536,
+      "need": "detect implicit questions before rendering an answer or action",
+      "scope": "text_implied_question_grounding",
+      "support_count": 488,
+      "title": "Implied Question Lens"
+    },
+    {
+      "candidate_id": "prior_current_correction_lens",
+      "candidate_status": "Farmable",
+      "family": "Lens",
+      "gap_score": 404.0,
+      "need": "bind corrections to prior claims and update current-state interpretation",
+      "scope": "text_prior_current_correction",
+      "support_count": 400,
+      "title": "Prior / Current Correction Lens"
+    },
+    {
+      "candidate_id": "irrelevant_context_filter_lens",
+      "candidate_status": "Farmable",
+      "family": "Lens",
+      "gap_score": 385.6481,
+      "need": "mark irrelevant context so it does not pollute the active Flow state",
+      "scope": "text_irrelevant_context_filter",
+      "support_count": 382,
+      "title": "Irrelevant Context Filter Lens"
+    },
+    {
+      "candidate_id": "quality_control_failure_lens",
+      "candidate_status": "Farmable",
+      "family": "Lens",
+      "gap_score": 358.150625,
+      "need": "ground QC failures as blockers rather than ordinary notes",
+      "scope": "text_quality_control_failure",
+      "support_count": 355,
+      "title": "Quality Control Failure Lens"
+    },
+    {
+      "candidate_id": "constraint_priority_lens",
+      "candidate_status": "Farmable",
+      "family": "Lens",
+      "gap_score": 324.5921,
+      "need": "ground which constraints dominate when actions conflict",
+      "scope": "text_constraint_priority",
+      "support_count": 322,
+      "title": "Constraint Priority Lens"
+    },
+    {
+      "candidate_id": "evidence_gap_ask_guard",
+      "candidate_status": "Farmable",
+      "family": "Guard",
+      "gap_score": 281.96,
+      "need": "route unresolved evidence gaps toward ask/search/hold instead of confident answer",
+      "scope": "text_evidence_gap_ask",
+      "support_count": 280,
+      "title": "Evidence Gap Ask Guard"
+    },
+    {
+      "candidate_id": "default_override_rule_lens",
+      "candidate_status": "Farmable",
+      "family": "Lens",
+      "gap_score": 215.1449,
+      "need": "ground default rules separately from explicit overrides",
+      "scope": "text_default_override_rule",
+      "support_count": 214,
+      "title": "Default / Override Rule Lens"
+    },
+    {
+      "candidate_id": "problem_solution_pair_lens",
+      "candidate_status": "Farmable",
+      "family": "Lens",
+      "gap_score": 195.950625,
+      "need": "bind stated problems to proposed solutions without treating every nearby action as a fix",
+      "scope": "text_problem_solution_pair",
+      "support_count": 195,
+      "title": "Problem / Solution Pair Lens"
+    },
+    {
+      "candidate_id": "definition_scope_guard",
+      "candidate_status": "Farmable",
+      "family": "Guard",
+      "gap_score": 168.7056,
+      "need": "keep local definitions local instead of promoting them globally",
+      "scope": "text_definition_scope_boundary",
+      "support_count": 168,
+      "title": "Definition Scope Guard"
+    },
+    {
+      "candidate_id": "evidence_span_citation_lens",
+      "candidate_status": "Farmable",
+      "family": "Lens",
+      "gap_score": 157.616225,
+      "need": "bind a claim to its evidence span or citation before answer commit",
+      "scope": "text_evidence_span_citation",
+      "support_count": 157,
+      "title": "Evidence Span / Citation Lens"
+    },
+    {
+      "candidate_id": "contradictory_marker_lens",
+      "candidate_status": "Farmable",
+      "family": "Lens",
+      "gap_score": 153.585225,
+      "need": "detect explicit contradiction markers and route them toward defer or conflict resolution",
+      "scope": "text_contradictory_marker",
+      "support_count": 153,
+      "title": "Contradictory Marker Lens"
+    },
+    {
+      "candidate_id": "requirement_exception_pair_lens",
+      "candidate_status": "Farmable",
+      "family": "Lens",
+      "gap_score": 137.469225,
+      "need": "bind exceptions to the requirement they constrain",
+      "scope": "text_requirement_exception_pair",
+      "support_count": 137,
+      "title": "Requirement / Exception Pair Lens"
+    },
+    {
+      "candidate_id": "outcome_probability_distinction_lens",
+      "candidate_status": "Farmable",
+      "family": "Lens",
+      "gap_score": 121.366025,
+      "need": "separate probability estimates from observed outcomes",
+      "scope": "text_outcome_probability_distinction",
+      "support_count": 121,
+      "title": "Outcome / Probability Distinction Lens"
+    }
+  ]
+}

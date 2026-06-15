@@ -2,8 +2,8 @@
 
 ```text
 decision = e127_overnight_cycle_positive
-cycle_count = 22
-orange_legendary_candidate_total = 192
+cycle_count = 26
+orange_legendary_candidate_total = 227
 hard_negative_total = 0
 false_commit_total = 0
 wrong_scope_call_total = 0
@@ -21,7 +21,7 @@ candidate discovery
 -> repeat with already-promoted operators excluded
 ```
 
-The supervised overnight loop has completed 22 cycles so far. Several candidate
+The supervised overnight loop completed 26 cycles in this checkpoint. Several candidate
 spec packs were added as the currently visible candidate space was exhausted;
 each pack was validated by running the next cycle with active already-promoted
 operators excluded.
@@ -32,11 +32,11 @@ final training, Gemma-level generation, or open-domain reasoning.
 ## Aggregate Metrics
 
 ```text
-selected_candidate_total = 192
-orange_legendary_candidate_total = 192
-mutation_attempts_total = 933668
-accepted_mutations_total = 6075
-rollback_count_total = 927593
+selected_candidate_total = 227
+orange_legendary_candidate_total = 227
+mutation_attempts_total = 1103119
+accepted_mutations_total = 7158
+rollback_count_total = 1095961
 
 hard_negative_total = 0
 false_commit_total = 0
@@ -44,17 +44,17 @@ wrong_scope_call_total = 0
 unsupported_answer_total = 0
 ```
 
-## Latest Successful Cycle 021 Metrics
+## Latest Successful Cycle 025 Metrics
 
 ```text
-selected_candidate_count = 10
-orange_legendary_candidate_count = 10
-candidate_pool_count = 33
-farmable_candidate_count = 10
-qualified_activation_min = 301026
-mutation_attempts_total = 49338
-accepted_mutations_total = 307
-rollback_count_total = 49031
+selected_candidate_count = 3
+orange_legendary_candidate_count = 3
+candidate_pool_count = 32
+farmable_candidate_count = 3
+qualified_activation_min = 301217
+mutation_attempts_total = 14802
+accepted_mutations_total = 99
+rollback_count_total = 14703
 mean_selected_prune_ratio = 0.62
 
 reload_match_rate = 1.0
@@ -68,23 +68,18 @@ wrong_scope_call_total = 0
 unsupported_answer_total = 0
 ```
 
-## Latest Successful Cycle 021 Orange Operators
+## Latest Successful Cycle 025 Orange Operators
 
 ```text
-research_question_lens
-meeting_action_item_lens
-source_conflict_resolution_lens
-calculation_result_phrase_lens
-input_output_contract_lens
-cache_staleness_guard
-rhetorical_question_guard
-evidence_strength_marker_lens
-measurement_uncertainty_lens
-cause_mitigation_pair_lens
+hypothesis_test_result_lens
+observation_inference_split_lens
+root_cause_evidence_lens
 ```
 
-Cycle 022 then scanned 40,000 rows and stopped cleanly with no farmable
-candidate left in the current candidate set.
+Cycle 026 was an exhaustion boundary: it scanned 40,000 rows, saw 29 candidate
+patterns, found 0 farmable candidates, and stopped cleanly with no safety
+failures. Continuing the overnight loop now requires adding a new candidate
+spec pack and restarting from this checkpoint.
 
 ## Current Boundary
 
