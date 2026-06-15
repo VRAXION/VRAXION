@@ -7,8 +7,8 @@ _Last updated: 2026-06-15_
 ```text
 branch = main
 current_release = v6.1.7
-current_evidence_anchor = f32a6f4b
-current_evidence_subject = Finalize E127 cycle 40 checkpoint
+current_evidence_anchor = E128 assistant text-IO lightweight render training
+current_evidence_subject = No-download assistant corpus/action-policy/template smoke
 latest_released_runtime_slice = a908a838a1119540ed88bc91e10cfcb0bdae92a8
 latest_released_runtime_subject = Add training data curriculum readiness gate
 ```
@@ -22,8 +22,8 @@ latest_released_runtime_subject = Add training data curriculum readiness gate
 | `vraxion-runtime/` | Active Rust runtime and preflight/final-training binaries |
 | `docs/research/E79_TRAINING_DATA_CURRICULUM_READINESS_*.md` | Latest released training-data/curriculum readiness gate contract/result evidence |
 | `CODEX_HANDOVER.md` | First-read handover for fresh Codex sessions |
-| `docs/research/E80_*` through `docs/research/E127_*` | Current evidence layer |
-| `scripts/probes/run_e80_*` through `scripts/probes/run_e127_*` | Repro/check scripts for the current evidence layer |
+| `docs/research/E80_*` through `docs/research/E128_*` | Current evidence layer |
+| `scripts/probes/run_e80_*` through `scripts/probes/run_e128_*` | Repro/check scripts for the current evidence layer |
 | `docs/research/artifact_samples/` | Tracked sample artifacts used by evidence CI |
 | `scripts/tools/generate_operator_rank_dashboard.py` | Self-contained Operator rank dashboard generator |
 | `docs/` | Current public docs and GitHub Pages front door |
@@ -69,6 +69,13 @@ python -m py_compile scripts/probes/run_e127_overnight_text_skill_farm_orange_cy
 python scripts/tools/generate_operator_rank_dashboard.py --e127 docs/research/artifact_samples/e127_overnight_text_skill_farm_orange_cycle --out target/ci/operator_rank_dashboard/index.html
 ```
 
+E128 assistant text-IO lightweight render-training smoke:
+
+```powershell
+python -m py_compile scripts/probes/run_e128_assistant_text_io_lightweight_render_training.py
+python scripts/probes/run_e128_assistant_text_io_lightweight_render_training.py --out target/ci/e128_assistant_text_io_lightweight_render_training
+```
+
 Dashboard smoke:
 
 ```powershell
@@ -83,10 +90,11 @@ python scripts/tools/generate_operator_rank_dashboard.py --out target/ci/operato
 | 2 | [`docs/CURRENT_STATUS.md`](CURRENT_STATUS.md) | Current status and claim boundary |
 | 3 | [`VALIDATED_FINDINGS.md`](../VALIDATED_FINDINGS.md) | Current validated chain |
 | 4 | [`CODEX_HANDOVER.md`](../CODEX_HANDOVER.md) | Fresh-session handover and next steps |
-| 5 | [`docs/research/E127_OVERNIGHT_TEXT_SKILL_FARM_ORANGE_CYCLE_RESULT.md`](research/E127_OVERNIGHT_TEXT_SKILL_FARM_ORANGE_CYCLE_RESULT.md) | Current evidence head |
-| 6 | [`docs/research/OPERATOR_LIBRARY_CARDS.md`](research/OPERATOR_LIBRARY_CARDS.md) | Operator rank/card surface |
-| 7 | [`docs/research/E79_TRAINING_DATA_CURRICULUM_READINESS_RESULT.md`](research/E79_TRAINING_DATA_CURRICULUM_READINESS_RESULT.md) | Latest released training-data/curriculum readiness gate |
-| 8 | [Timeline Archive wiki](https://github.com/VRAXION/VRAXION/wiki/Timeline-Archive) | Chronology and cleanup record |
+| 5 | [`docs/research/E128_ASSISTANT_TEXT_IO_LIGHTWEIGHT_RENDER_TRAINING_RESULT.md`](research/E128_ASSISTANT_TEXT_IO_LIGHTWEIGHT_RENDER_TRAINING_RESULT.md) | Current text-IO bridge evidence |
+| 6 | [`docs/research/E127_OVERNIGHT_TEXT_SKILL_FARM_ORANGE_CYCLE_RESULT.md`](research/E127_OVERNIGHT_TEXT_SKILL_FARM_ORANGE_CYCLE_RESULT.md) | E127 operator-library checkpoint |
+| 7 | [`docs/research/OPERATOR_LIBRARY_CARDS.md`](research/OPERATOR_LIBRARY_CARDS.md) | Operator rank/card surface |
+| 8 | [`docs/research/E79_TRAINING_DATA_CURRICULUM_READINESS_RESULT.md`](research/E79_TRAINING_DATA_CURRICULUM_READINESS_RESULT.md) | Latest released training-data/curriculum readiness gate |
+| 9 | [Timeline Archive wiki](https://github.com/VRAXION/VRAXION/wiki/Timeline-Archive) | Chronology and cleanup record |
 
 ## Operating Rule
 

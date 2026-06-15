@@ -8,8 +8,8 @@ Last updated: 2026-06-15
 repo = VRAXION_anchorwiki
 branch = main
 latest_release_target = v6.1.7
-current_evidence_anchor = f32a6f4b Finalize E127 cycle 40 checkpoint
-current_status = E127 scoped Orange/Legendary text-operator farm, cycle 40
+current_evidence_anchor = E128 assistant text-IO lightweight render training on main
+current_status = E128 no-download assistant text-IO corpus/render smoke on top of E127
 ```
 
 This is the first file a fresh Codex should read after cloning the repo.
@@ -35,6 +35,22 @@ The latest text-to-text smoke is a deterministic operator + template renderer,
 not an LLM/freeform generation claim. It shows proto-assistant behavior over
 short prompts using the governed operator library.
 
+E128 extends that bridge with a no-download, local assistant-style corpus:
+
+```text
+prompt corpus = 320
+train / validation / heldout = 160 / 64 / 96
+source mix = E127 smoke seeds, E127 operator artifacts, repo docs,
+             adversarial boundary prompts, FineWeb-derived local noise
+train action accuracy = 1.000
+validation action accuracy = 1.000
+heldout action accuracy = 1.000
+operator trace validity = 1.000
+unsupported answers = 0
+wrong refusals = 0
+boundary-claim violations = 0
+```
+
 ## Claim Boundary
 
 Allowed:
@@ -42,7 +58,8 @@ Allowed:
 ```text
 VRAXION v6 has a governed operator-library checkpoint with 382 scoped
 Orange/Legendary text operators, continuous checkpointing discipline, a
-dashboard sample pack, and a deterministic text-to-text render smoke.
+dashboard sample pack, a deterministic text-to-text render smoke, and an E128
+lightweight assistant text-IO corpus/render smoke.
 ```
 
 System-level interpretation:
@@ -51,6 +68,8 @@ System-level interpretation:
 It is a governed Operator/Pocket runtime.
 It can reject/defer unsupported or conflicting evidence in scoped tasks.
 It can render guarded template-style responses in controlled smoke tests.
+It can build and pass a local 320-prompt assistant-style action-policy/template
+smoke without downloading a large external chat dataset.
 It is not an open-domain LLM/chatbot.
 ```
 
@@ -77,8 +96,10 @@ CHANGELOG.md
 
 docs/research/E127_OVERNIGHT_TEXT_SKILL_FARM_ORANGE_CYCLE_RESULT.md
 docs/research/E127_TEXT_TO_TEXT_RENDER_SMOKE_CURRENT_RESULT.md
+docs/research/E128_ASSISTANT_TEXT_IO_LIGHTWEIGHT_RENDER_TRAINING_RESULT.md
 docs/research/artifact_samples/e127_overnight_text_skill_farm_orange_cycle/
 docs/research/artifact_samples/e127_text_to_text_render_smoke_current/
+docs/research/artifact_samples/e128_assistant_text_io_lightweight_render_training/
 ```
 
 ## Legal / License
@@ -130,6 +151,8 @@ Run these after clone or before continuing:
 ```powershell
 git status --short --branch
 python -m py_compile scripts/probes/run_e127_overnight_text_skill_farm_orange_cycle.py scripts/tools/generate_operator_rank_dashboard.py
+python -m py_compile scripts/probes/run_e128_assistant_text_io_lightweight_render_training.py
+python scripts/probes/run_e128_assistant_text_io_lightweight_render_training.py --out target/ci/e128_assistant_text_io_lightweight_render_training
 python -m compileall -q scripts
 cargo test --workspace
 git diff --check
@@ -172,7 +195,8 @@ Recommended next steps:
 
 ```text
 1. Decide whether to continue E127 with a fresh candidate pack or pause farming.
-2. Run a broader deterministic text-to-text smoke over more prompts.
-3. Build the next bridge from operator/template rendering toward richer text IO.
+2. Run E129 assistant prompt generalization and longer-context smoke.
+3. Build the next bridge from deterministic action/template rendering toward
+   richer text IO while keeping claims scoped.
 4. Keep all new skills scoped, dashboard-visible, and rollback-safe.
 ```

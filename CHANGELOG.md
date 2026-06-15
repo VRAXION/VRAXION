@@ -1,6 +1,23 @@
 # Changelog
 
-This changelog is narrowed to the current v6 / E127 evidence anchor. Full historical beta, probe, Python SDK, legacy Rust, and research-output history is preserved in git history and archive tags.
+This changelog is narrowed to the current v6 / E127-E128 evidence anchor. Full historical beta, probe, Python SDK, legacy Rust, and research-output history is preserved in git history and archive tags.
+
+## 2026-06-15 - E128 Assistant Text-IO Lightweight Render Training
+
+- Added `scripts/probes/run_e128_assistant_text_io_lightweight_render_training.py`.
+- Added a no-download assistant-style corpus/action-policy/template smoke on top
+  of the E127 operator-library checkpoint.
+- Result: 320 local prompts split into 160 train, 64 validation, and 96 heldout
+  rows.
+- Source mix: 40 E127 smoke seed prompts, 88 E127 operator-derived prompts, 96
+  repo-doc grounded prompts, 64 adversarial boundary prompts, and 32
+  FineWeb-derived local noise prompts.
+- Confirmed: train/validation/heldout action accuracy 1.000, operator trace
+  validity 1.000, 0 unsupported answers, 0 wrong refusals, and 0 boundary-claim
+  violations.
+- Boundary: deterministic corpus plus action-policy/template rendering only; not
+  neural LLM training, learned general weights, open-domain chatbot behavior, or
+  freeform generation.
 
 ## 2026-06-15 - v6.1.7 / E127 Text Operator Library Checkpoint
 

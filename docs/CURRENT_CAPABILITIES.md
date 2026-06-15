@@ -42,6 +42,20 @@ wrong-scope calls = 0
 unsupported answers = 0
 ```
 
+Current E128 assistant text-IO bridge evidence:
+
+```text
+prompt corpus = 320
+train / validation / heldout = 160 / 64 / 96
+train action accuracy = 1.000
+validation action accuracy = 1.000
+heldout action accuracy = 1.000
+operator trace validity = 1.000
+unsupported answers = 0
+wrong refusals = 0
+boundary-claim violations = 0
+```
+
 These are scoped operators, not general-purpose neural skills. A larger count is
 not automatically better; value depends on safe activation, low cost, correct
 scope, reloadability, and no-harm evidence.
@@ -75,6 +89,11 @@ scope, reloadability, and no-harm evidence.
 
 - run deterministic operator selection plus guarded template rendering over
   short prompts;
+- build a local, auditable assistant-style prompt corpus from E127 artifacts,
+  repo docs, adversarial boundary prompts, and FineWeb-derived local samples;
+- select among scoped response actions such as answer, ask/defer, refuse with
+  boundary, summarize, diagnose boundary, and next action in controlled smoke
+  tests;
 - produce proto-assistant-style responses in controlled cases such as evidence
   conflict, missing support, answerability, and citation/trace-style output;
 - avoid claiming a stable answer when the scoped evidence chain is incomplete.
@@ -135,6 +154,7 @@ VRAXION currently does **not** claim:
 - Gemma/GPT-level generation;
 - natural-language world-model understanding;
 - freeform long-answer assistant quality;
+- neural LLM training completion;
 - GSM8K or hidden word-problem solving;
 - production API readiness;
 - deployed service readiness;

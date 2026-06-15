@@ -1,0 +1,8 @@
+{
+  "artifact_contract": "E128_ASSISTANT_TEXT_IO_LIGHTWEIGHT_RENDER_TRAINING",
+  "boundary": "deterministic corpus + action-policy/template renderer; not neural LLM/freeform generation",
+  "decision": "e128_assistant_text_io_lightweight_render_training_confirmed",
+  "next": "E129_ASSISTANT_PROMPT_GENERALIZATION_AND_LONGER_CONTEXT_SMOKE",
+  "pass_gate": true,
+  "seconds": 0.107
+}

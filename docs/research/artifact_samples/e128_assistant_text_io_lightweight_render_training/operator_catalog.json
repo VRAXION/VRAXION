@@ -1,0 +1,2678 @@
+{
+  "rows": [
+    {
+      "family": "Lens",
+      "id": "abbreviation_unit_symbol_lens",
+      "scope": "text_abbreviation_symbol_grounding",
+      "source": "e127_orange_operator",
+      "title": "Abbreviation / Symbol Lens"
+    },
+    {
+      "family": "Guard",
+      "id": "absence_evidence_guard",
+      "scope": "text_absence_evidence_distinction",
+      "source": "e127_orange_operator",
+      "title": "Absence Of Evidence Guard"
+    },
+    {
+      "family": "Guard",
+      "id": "absolute_claim_guard",
+      "scope": "text_absolute_claim_grounding",
+      "source": "e127_orange_operator",
+      "title": "Absolute Claim Guard"
+    },
+    {
+      "family": "Lens",
+      "id": "acronym_expansion_anchor_lens",
+      "scope": "text_acronym_expansion_anchor",
+      "source": "e127_orange_operator",
+      "title": "Acronym Expansion Anchor Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "acronym_expansion_lens",
+      "scope": "text_acronym_expansion_grounding",
+      "source": "e127_orange_operator",
+      "title": "Acronym Expansion Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "aggregation_groupby_lens",
+      "scope": "text_aggregation_groupby_grounding",
+      "source": "e127_orange_operator",
+      "title": "Aggregation / Group-By Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "alternative_choice_lens",
+      "scope": "text_alternative_choice_boundary",
+      "source": "e127_orange_operator",
+      "title": "Alternative Choice Lens"
+    },
+    {
+      "family": "Guard",
+      "id": "ambiguous_modal_guard",
+      "scope": "text_ambiguous_modal_scope",
+      "source": "e127_orange_operator",
+      "title": "Ambiguous Modal Guard"
+    },
+    {
+      "family": "Guard",
+      "id": "ambiguous_reference_defer_guard",
+      "scope": "text_ambiguous_reference_defer",
+      "source": "e127_orange_operator",
+      "title": "Ambiguous Reference Defer Guard"
+    },
+    {
+      "family": "Lens",
+      "id": "analogy_metaphor_lens",
+      "scope": "text_analogy_metaphor_boundary",
+      "source": "e127_orange_operator",
+      "title": "Analogy / Metaphor Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "api_parameter_binding_lens",
+      "scope": "text_api_parameter_binding",
+      "source": "e127_orange_operator",
+      "title": "API Parameter Binding Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "api_response_field_lens",
+      "scope": "text_api_response_field_binding",
+      "source": "e127_orange_operator",
+      "title": "API Response Field Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "appositive_alias_lens",
+      "scope": "text_appositive_alias_grounding",
+      "source": "e127_orange_operator",
+      "title": "Appositive Alias Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "approximate_quantity_lens",
+      "scope": "text_approximate_quantity_grounding",
+      "source": "e127_orange_operator",
+      "title": "Approximate Quantity Lens"
+    },
+    {
+      "family": "Guard",
+      "id": "assumption_marker_guard",
+      "scope": "text_assumption_marker_scope",
+      "source": "e127_orange_operator",
+      "title": "Assumption Marker Guard"
+    },
+    {
+      "family": "Lens",
+      "id": "availability_capability_lens",
+      "scope": "text_availability_capability",
+      "source": "e127_orange_operator",
+      "title": "Availability / Capability Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "baseline_comparison_lens",
+      "scope": "text_baseline_comparison_grounding",
+      "source": "e127_orange_operator",
+      "title": "Baseline Comparison Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "before_after_temporal_lens",
+      "scope": "text_before_after_temporal_relation",
+      "source": "e127_orange_operator",
+      "title": "Before / After Temporal Lens"
+    },
+    {
+      "family": "Guard",
+      "id": "benchmark_leakage_guard",
+      "scope": "text_benchmark_leakage_boundary",
+      "source": "e127_orange_operator",
+      "title": "Benchmark Leakage Guard"
+    },
+    {
+      "family": "Lens",
+      "id": "boolean_logic_expression_lens",
+      "scope": "text_boolean_logic_expression",
+      "source": "e127_orange_operator",
+      "title": "Boolean Logic Expression Lens"
+    },
+    {
+      "family": "Guard",
+      "id": "cache_staleness_guard",
+      "scope": "text_cache_staleness_scope",
+      "source": "e127_orange_operator",
+      "title": "Cache Staleness Guard"
+    },
+    {
+      "family": "Lens",
+      "id": "calculation_result_phrase_lens",
+      "scope": "text_calculation_result_phrase",
+      "source": "e127_orange_operator",
+      "title": "Calculation Result Phrase Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "category_member_relation_lens",
+      "scope": "text_category_member_relation",
+      "source": "e127_orange_operator",
+      "title": "Category / Member Relation Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "causal_chain_multihop_lens",
+      "scope": "text_causal_chain_multihop",
+      "source": "e127_orange_operator",
+      "title": "Causal Chain Multi-Hop Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "causal_connector_lens",
+      "scope": "text_causal_connector_grounding",
+      "source": "e127_orange_operator",
+      "title": "Causal Connector Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "causal_link_lens",
+      "scope": "text_causal_link_grounding",
+      "source": "e127_orange_operator",
+      "title": "Causal Link Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "cause_mitigation_pair_lens",
+      "scope": "text_cause_mitigation_pair",
+      "source": "e127_orange_operator",
+      "title": "Cause / Mitigation Pair Lens"
+    },
+    {
+      "family": "Guard",
+      "id": "cause_vs_correlation_guard",
+      "scope": "text_cause_correlation_distinction",
+      "source": "e127_orange_operator",
+      "title": "Cause vs Correlation Guard"
+    },
+    {
+      "family": "Lens",
+      "id": "changelog_entry_lens",
+      "scope": "text_changelog_entry_grounding",
+      "source": "e127_orange_operator",
+      "title": "Changelog Entry Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "chart_axis_legend_lens",
+      "scope": "text_chart_axis_legend_grounding",
+      "source": "e127_orange_operator",
+      "title": "Chart Axis / Legend Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "chemical_formula_lens",
+      "scope": "text_chemical_formula_boundary",
+      "source": "e127_orange_operator",
+      "title": "Chemical Formula Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "citation_footnote_marker_lens",
+      "scope": "text_citation_footnote_marker",
+      "source": "e127_orange_operator",
+      "title": "Citation / Footnote Marker Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "citation_marker_lens",
+      "scope": "text_citation_marker_grounding",
+      "source": "e127_orange_operator",
+      "title": "Citation Marker Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "citation_url_source_bridge_lens",
+      "scope": "text_citation_url_source_bridge",
+      "source": "e127_orange_operator",
+      "title": "Citation / URL Source Bridge Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "command_prompt_boundary_lens",
+      "scope": "text_command_prompt_boundary",
+      "source": "e127_orange_operator",
+      "title": "Command Prompt Boundary Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "commit_hash_reference_lens",
+      "scope": "text_commit_hash_reference",
+      "source": "e127_orange_operator",
+      "title": "Commit Hash Reference Lens"
+    },
+    {
+      "family": "Guard",
+      "id": "commitment_level_guard",
+      "scope": "text_commitment_level_grounding",
+      "source": "e127_orange_operator",
+      "title": "Commitment Level Guard"
+    },
+    {
+      "family": "Lens",
+      "id": "comparison_control_group_lens",
+      "scope": "text_comparison_control_group",
+      "source": "e127_orange_operator",
+      "title": "Comparison / Control Group Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "comparison_degree_lens",
+      "scope": "text_comparison_degree_grounding",
+      "source": "e127_orange_operator",
+      "title": "Comparison Degree Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "comparison_superlative_lens",
+      "scope": "text_comparison_superlative_grounding",
+      "source": "e127_orange_operator",
+      "title": "Comparison / Superlative Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "compatibility_requirement_lens",
+      "scope": "text_compatibility_requirement",
+      "source": "e127_orange_operator",
+      "title": "Compatibility Requirement Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "conclusion_recommendation_lens",
+      "scope": "text_conclusion_recommendation",
+      "source": "e127_orange_operator",
+      "title": "Conclusion / Recommendation Lens"
+    },
+    {
+      "family": "Guard",
+      "id": "conditional_if_then_guard",
+      "scope": "text_conditional_if_then_scope",
+      "source": "e127_orange_operator",
+      "title": "Conditional If/Then Guard"
+    },
+    {
+      "family": "Lens",
+      "id": "confidence_phrase_without_number_lens",
+      "scope": "text_confidence_phrase_without_number",
+      "source": "e127_orange_operator",
+      "title": "Confidence Phrase Without Number Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "config_key_value_lens",
+      "scope": "text_config_key_value_binding",
+      "source": "e127_orange_operator",
+      "title": "Config Key / Value Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "config_option_lens",
+      "scope": "text_config_option_binding",
+      "source": "e127_orange_operator",
+      "title": "Config Option Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "constraint_priority_lens",
+      "scope": "text_constraint_priority",
+      "source": "e127_orange_operator",
+      "title": "Constraint Priority Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "context_condition_result_lens",
+      "scope": "text_context_condition_result",
+      "source": "e127_orange_operator",
+      "title": "Context / Condition / Result Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "contradictory_marker_lens",
+      "scope": "text_contradictory_marker",
+      "source": "e127_orange_operator",
+      "title": "Contradictory Marker Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "contrast_concession_lens",
+      "scope": "text_contrast_concession_relation",
+      "source": "e127_orange_operator",
+      "title": "Contrast / Concession Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "contrast_same_entity_lens",
+      "scope": "text_contrast_same_entity",
+      "source": "e127_orange_operator",
+      "title": "Contrast Same Entity Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "coordinate_pair_lens",
+      "scope": "text_coordinate_pair_grounding",
+      "source": "e127_orange_operator",
+      "title": "Coordinate Pair Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "correction_retraction_lens",
+      "scope": "text_correction_retraction_grounding",
+      "source": "e127_orange_operator",
+      "title": "Correction / Retraction Lens"
+    },
+    {
+      "family": "Guard",
+      "id": "cross_reference_pronoun_guard",
+      "scope": "text_cross_reference_pronoun_scope",
+      "source": "e127_orange_operator",
+      "title": "Cross-Reference Pronoun Guard"
+    },
+    {
+      "family": "Lens",
+      "id": "database_query_clause_lens",
+      "scope": "text_database_query_clause_boundary",
+      "source": "e127_orange_operator",
+      "title": "Database Query Clause Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "dataset_provenance_lens",
+      "scope": "text_dataset_provenance_grounding",
+      "source": "e127_orange_operator",
+      "title": "Dataset Provenance Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "dataset_split_lens",
+      "scope": "text_dataset_split_grounding",
+      "source": "e127_orange_operator",
+      "title": "Dataset Split Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "default_override_rule_lens",
+      "scope": "text_default_override_rule",
+      "source": "e127_orange_operator",
+      "title": "Default / Override Rule Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "definition_alias_lens",
+      "scope": "text_definition_alias_grounding",
+      "source": "e127_orange_operator",
+      "title": "Definition / Alias Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "definition_phrase_lens",
+      "scope": "text_definition_phrase_grounding",
+      "source": "e127_orange_operator",
+      "title": "Definition Phrase Lens"
+    },
+    {
+      "family": "Guard",
+      "id": "definition_scope_guard",
+      "scope": "text_definition_scope_boundary",
+      "source": "e127_orange_operator",
+      "title": "Definition Scope Guard"
+    },
+    {
+      "family": "Lens",
+      "id": "dependency_chain_lens",
+      "scope": "text_dependency_chain_grounding",
+      "source": "e127_orange_operator",
+      "title": "Dependency Chain Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "dependency_package_lens",
+      "scope": "text_dependency_package_reference",
+      "source": "e127_orange_operator",
+      "title": "Dependency Package Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "dependency_precondition_lens",
+      "scope": "text_dependency_precondition_grounding",
+      "source": "e127_orange_operator",
+      "title": "Dependency / Precondition Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "deprecation_replacement_lens",
+      "scope": "text_deprecation_replacement_grounding",
+      "source": "e127_orange_operator",
+      "title": "Deprecation / Replacement Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "doi_isbn_reference_lens",
+      "scope": "text_doi_isbn_reference",
+      "source": "e127_orange_operator",
+      "title": "DOI / ISBN Reference Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "domain_name_lens",
+      "scope": "text_domain_name_reference",
+      "source": "e127_orange_operator",
+      "title": "Domain Name Lens"
+    },
+    {
+      "family": "Guard",
+      "id": "double_negative_guard",
+      "scope": "text_double_negative_scope",
+      "source": "e127_orange_operator",
+      "title": "Double Negative Guard"
+    },
+    {
+      "family": "Lens",
+      "id": "e128_active_evidence_request_lens",
+      "scope": "text_active_evidence_request",
+      "source": "e127_orange_operator",
+      "title": "Active Evidence Request Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "e128_answer_format_constraint_lens",
+      "scope": "text_answer_format_constraint",
+      "source": "e127_orange_operator",
+      "title": "Answer Format Constraint Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "e128_before_after_state_update_lens",
+      "scope": "text_before_after_state_update",
+      "source": "e127_orange_operator",
+      "title": "Before / After State Update Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "e128_candidate_promotion_reason_lens",
+      "scope": "text_candidate_promotion_reason",
+      "source": "e127_orange_operator",
+      "title": "Candidate Promotion Reason Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "e128_claim_source_date_lens",
+      "scope": "text_claim_source_date_binding",
+      "source": "e127_orange_operator",
+      "title": "Claim / Source / Date Lens"
+    },
+    {
+      "family": "Guard",
+      "id": "e128_correlation_causation_guard",
+      "scope": "text_correlation_causation_boundary",
+      "source": "e127_orange_operator",
+      "title": "Correlation / Causation Guard"
+    },
+    {
+      "family": "Guard",
+      "id": "e128_exact_vs_approximate_guard",
+      "scope": "text_exact_vs_approximate",
+      "source": "e127_orange_operator",
+      "title": "Exact vs Approximate Guard"
+    },
+    {
+      "family": "Guard",
+      "id": "e128_external_side_effect_guard",
+      "scope": "text_external_side_effect",
+      "source": "e127_orange_operator",
+      "title": "External Side-Effect Guard"
+    },
+    {
+      "family": "Lens",
+      "id": "e128_followup_dependency_lens",
+      "scope": "text_followup_dependency",
+      "source": "e127_orange_operator",
+      "title": "Follow-Up Dependency Lens"
+    },
+    {
+      "family": "Guard",
+      "id": "e128_future_prediction_guard",
+      "scope": "text_future_prediction_scope",
+      "source": "e127_orange_operator",
+      "title": "Future Prediction Guard"
+    },
+    {
+      "family": "Lens",
+      "id": "e128_known_unknown_split_lens",
+      "scope": "text_known_unknown_split",
+      "source": "e127_orange_operator",
+      "title": "Known / Unknown Split Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "e128_method_assumption_result_lens",
+      "scope": "text_method_assumption_result",
+      "source": "e127_orange_operator",
+      "title": "Method / Assumption / Result Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "e128_multi_condition_rule_lens",
+      "scope": "text_multi_condition_rule",
+      "source": "e127_orange_operator",
+      "title": "Multi-Condition Rule Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "e128_multi_turn_continuity_lens",
+      "scope": "text_multi_turn_continuity",
+      "source": "e127_orange_operator",
+      "title": "Multi-Turn Continuity Lens"
+    },
+    {
+      "family": "Guard",
+      "id": "e128_negated_causal_guard",
+      "scope": "text_negated_causal_scope",
+      "source": "e127_orange_operator",
+      "title": "Negated Causal Guard"
+    },
+    {
+      "family": "Guard",
+      "id": "e128_non_actionable_note_guard",
+      "scope": "text_non_actionable_note",
+      "source": "e127_orange_operator",
+      "title": "Non-Actionable Note Guard"
+    },
+    {
+      "family": "Lens",
+      "id": "e128_observation_reported_by_lens",
+      "scope": "text_observation_reported_by",
+      "source": "e127_orange_operator",
+      "title": "Observation / Reported-By Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "e128_official_unofficial_source_lens",
+      "scope": "text_official_unofficial_source",
+      "source": "e127_orange_operator",
+      "title": "Official / Unofficial Source Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "e128_partial_success_failure_lens",
+      "scope": "text_partial_success_failure",
+      "source": "e127_orange_operator",
+      "title": "Partial Success / Failure Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "e128_progress_ledger_status_lens",
+      "scope": "text_progress_ledger_status",
+      "source": "e127_orange_operator",
+      "title": "Progress Ledger Status Lens"
+    },
+    {
+      "family": "Guard",
+      "id": "e128_question_scope_guard",
+      "scope": "text_question_scope_boundary",
+      "source": "e127_orange_operator",
+      "title": "Question Scope Guard"
+    },
+    {
+      "family": "Guard",
+      "id": "e128_staleness_due_to_date_guard",
+      "scope": "text_staleness_due_to_date",
+      "source": "e127_orange_operator",
+      "title": "Staleness Due To Date Guard"
+    },
+    {
+      "family": "Lens",
+      "id": "e128_tool_output_status_lens",
+      "scope": "text_tool_output_status",
+      "source": "e127_orange_operator",
+      "title": "Tool Output / Status Lens"
+    },
+    {
+      "family": "Guard",
+      "id": "e128_unresolved_reference_guard",
+      "scope": "text_unresolved_reference",
+      "source": "e127_orange_operator",
+      "title": "Unresolved Reference Guard"
+    },
+    {
+      "family": "Lens",
+      "id": "e128_user_intent_background_split_lens",
+      "scope": "text_user_intent_background_split",
+      "source": "e127_orange_operator",
+      "title": "User Intent / Background Split Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "e129_absolute_relative_delta_lens",
+      "scope": "text_absolute_relative_delta",
+      "source": "e127_orange_operator",
+      "title": "Absolute / Relative Delta Lens"
+    },
+    {
+      "family": "Guard",
+      "id": "e129_action_reversibility_guard",
+      "scope": "text_action_reversibility",
+      "source": "e127_orange_operator",
+      "title": "Action Reversibility Guard"
+    },
+    {
+      "family": "Lens",
+      "id": "e129_aggregation_granularity_lens",
+      "scope": "text_aggregation_granularity",
+      "source": "e127_orange_operator",
+      "title": "Aggregation Granularity Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "e129_alias_identity_resolution_lens",
+      "scope": "text_alias_identity_resolution",
+      "source": "e127_orange_operator",
+      "title": "Alias / Identity Resolution Lens"
+    },
+    {
+      "family": "Guard",
+      "id": "e129_assumption_dependency_guard",
+      "scope": "text_assumption_dependency",
+      "source": "e127_orange_operator",
+      "title": "Assumption Dependency Guard"
+    },
+    {
+      "family": "Lens",
+      "id": "e129_batch_stream_boundary_lens",
+      "scope": "text_batch_stream_boundary",
+      "source": "e127_orange_operator",
+      "title": "Batch / Stream Boundary Lens"
+    },
+    {
+      "family": "Guard",
+      "id": "e129_benchmark_leakage_guard",
+      "scope": "text_benchmark_leakage",
+      "source": "e127_orange_operator",
+      "title": "Benchmark Leakage Guard"
+    },
+    {
+      "family": "Lens",
+      "id": "e129_budget_time_constraint_lens",
+      "scope": "text_budget_time_constraint",
+      "source": "e127_orange_operator",
+      "title": "Budget / Time Constraint Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "e129_command_error_status_lens",
+      "scope": "text_command_error_status",
+      "source": "e127_orange_operator",
+      "title": "Command Error / Status Lens"
+    },
+    {
+      "family": "Guard",
+      "id": "e129_conditional_permission_guard",
+      "scope": "text_conditional_permission",
+      "source": "e127_orange_operator",
+      "title": "Conditional Permission Guard"
+    },
+    {
+      "family": "Guard",
+      "id": "e129_data_license_usage_guard",
+      "scope": "text_data_license_usage",
+      "source": "e127_orange_operator",
+      "title": "Data License / Usage Guard"
+    },
+    {
+      "family": "Guard",
+      "id": "e129_deprecation_warning_guard",
+      "scope": "text_deprecation_warning",
+      "source": "e127_orange_operator",
+      "title": "Deprecation Warning Guard"
+    },
+    {
+      "family": "Lens",
+      "id": "e129_encoding_normalization_lens",
+      "scope": "text_encoding_normalization",
+      "source": "e127_orange_operator",
+      "title": "Encoding / Normalization Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "e129_evidence_quality_hierarchy_lens",
+      "scope": "text_evidence_quality_hierarchy",
+      "source": "e127_orange_operator",
+      "title": "Evidence Quality Hierarchy Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "e129_exception_to_general_rule_lens",
+      "scope": "text_exception_to_general_rule",
+      "source": "e127_orange_operator",
+      "title": "Exception To General Rule Lens"
+    },
+    {
+      "family": "Guard",
+      "id": "e129_hypothetical_scenario_guard",
+      "scope": "text_hypothetical_scenario",
+      "source": "e127_orange_operator",
+      "title": "Hypothetical Scenario Guard"
+    },
+    {
+      "family": "Guard",
+      "id": "e129_inequality_direction_guard",
+      "scope": "text_inequality_direction",
+      "source": "e127_orange_operator",
+      "title": "Inequality Direction Guard"
+    },
+    {
+      "family": "Lens",
+      "id": "e129_intervention_causality_lens",
+      "scope": "text_intervention_causality",
+      "source": "e127_orange_operator",
+      "title": "Intervention / Causality Lens"
+    },
+    {
+      "family": "Guard",
+      "id": "e129_list_item_negative_scope_guard",
+      "scope": "text_list_item_negative_scope",
+      "source": "e127_orange_operator",
+      "title": "List Item Negative Scope Guard"
+    },
+    {
+      "family": "Guard",
+      "id": "e129_metaphor_literal_boundary_guard",
+      "scope": "text_metaphor_literal_boundary",
+      "source": "e127_orange_operator",
+      "title": "Metaphor / Literal Boundary Guard"
+    },
+    {
+      "family": "Lens",
+      "id": "e129_metric_directionality_lens",
+      "scope": "text_metric_directionality",
+      "source": "e127_orange_operator",
+      "title": "Metric Directionality Lens"
+    },
+    {
+      "family": "Guard",
+      "id": "e129_missing_baseline_guard",
+      "scope": "text_missing_baseline",
+      "source": "e127_orange_operator",
+      "title": "Missing Baseline Guard"
+    },
+    {
+      "family": "Lens",
+      "id": "e129_objective_subjective_split_lens",
+      "scope": "text_objective_subjective_split",
+      "source": "e127_orange_operator",
+      "title": "Objective / Subjective Split Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "e129_official_doc_version_lens",
+      "scope": "text_official_doc_version",
+      "source": "e127_orange_operator",
+      "title": "Official Doc / Version Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "e129_outlier_exception_lens",
+      "scope": "text_outlier_exception",
+      "source": "e127_orange_operator",
+      "title": "Outlier / Exception Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "e129_path_location_binding_lens",
+      "scope": "text_path_location_binding",
+      "source": "e127_orange_operator",
+      "title": "Path / Location Binding Lens"
+    },
+    {
+      "family": "Guard",
+      "id": "e129_personal_data_redaction_guard",
+      "scope": "text_personal_data_redaction",
+      "source": "e127_orange_operator",
+      "title": "Personal Data / Redaction Guard"
+    },
+    {
+      "family": "Guard",
+      "id": "e129_private_public_boundary_guard",
+      "scope": "text_private_public_boundary",
+      "source": "e127_orange_operator",
+      "title": "Private / Public Boundary Guard"
+    },
+    {
+      "family": "Guard",
+      "id": "e129_promise_capability_guard",
+      "scope": "text_promise_capability",
+      "source": "e127_orange_operator",
+      "title": "Promise / Capability Guard"
+    },
+    {
+      "family": "Guard",
+      "id": "e129_pronoun_antecedent_guard",
+      "scope": "text_pronoun_antecedent_ambiguity",
+      "source": "e127_orange_operator",
+      "title": "Pronoun Antecedent Guard"
+    },
+    {
+      "family": "Lens",
+      "id": "e129_quote_question_answer_split_lens",
+      "scope": "text_quote_question_answer_split",
+      "source": "e127_orange_operator",
+      "title": "Quote / Question / Answer Split Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "e129_range_endpoint_inclusive_lens",
+      "scope": "text_range_endpoint_inclusive",
+      "source": "e127_orange_operator",
+      "title": "Range Endpoint / Inclusive Lens"
+    },
+    {
+      "family": "Guard",
+      "id": "e129_rank_order_tie_guard",
+      "scope": "text_rank_order_tie",
+      "source": "e127_orange_operator",
+      "title": "Rank Order / Tie Guard"
+    },
+    {
+      "family": "Lens",
+      "id": "e129_resource_limit_lens",
+      "scope": "text_resource_limit",
+      "source": "e127_orange_operator",
+      "title": "Resource Limit Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "e129_retry_resume_boundary_lens",
+      "scope": "text_retry_resume_boundary",
+      "source": "e127_orange_operator",
+      "title": "Retry / Resume Boundary Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "e129_scope_creep_request_lens",
+      "scope": "text_scope_creep_request",
+      "source": "e127_orange_operator",
+      "title": "Scope Creep Request Lens"
+    },
+    {
+      "family": "Guard",
+      "id": "e129_security_permission_boundary_guard",
+      "scope": "text_security_permission_boundary",
+      "source": "e127_orange_operator",
+      "title": "Security / Permission Boundary Guard"
+    },
+    {
+      "family": "Guard",
+      "id": "e129_self_reported_claim_guard",
+      "scope": "text_self_reported_claim",
+      "source": "e127_orange_operator",
+      "title": "Self-Reported Claim Guard"
+    },
+    {
+      "family": "Guard",
+      "id": "e129_significance_claim_guard",
+      "scope": "text_significance_claim",
+      "source": "e127_orange_operator",
+      "title": "Significance Claim Guard"
+    },
+    {
+      "family": "Guard",
+      "id": "e129_stale_cache_guard",
+      "scope": "text_stale_cache",
+      "source": "e127_orange_operator",
+      "title": "Stale Cache Guard"
+    },
+    {
+      "family": "Lens",
+      "id": "e129_step_numbering_sequence_lens",
+      "scope": "text_step_numbering_sequence",
+      "source": "e127_orange_operator",
+      "title": "Step Numbering / Sequence Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "e129_table_row_column_binding_lens",
+      "scope": "text_table_row_column_binding",
+      "source": "e127_orange_operator",
+      "title": "Table Row / Column Binding Lens"
+    },
+    {
+      "family": "Guard",
+      "id": "e129_temporal_order_causality_guard",
+      "scope": "text_temporal_order_causality",
+      "source": "e127_orange_operator",
+      "title": "Temporal Order / Causality Guard"
+    },
+    {
+      "family": "Lens",
+      "id": "e129_timeline_chain_lens",
+      "scope": "text_timeline_chain",
+      "source": "e127_orange_operator",
+      "title": "Timeline Chain Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "e129_tradeoff_preference_lens",
+      "scope": "text_tradeoff_preference",
+      "source": "e127_orange_operator",
+      "title": "Tradeoff / Preference Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "e129_train_test_split_lens",
+      "scope": "text_train_test_split",
+      "source": "e127_orange_operator",
+      "title": "Train / Test Split Lens"
+    },
+    {
+      "family": "Guard",
+      "id": "e129_unit_conversion_context_guard",
+      "scope": "text_unit_conversion_context",
+      "source": "e127_orange_operator",
+      "title": "Unit Conversion Context Guard"
+    },
+    {
+      "family": "Lens",
+      "id": "e129_user_preference_constraint_lens",
+      "scope": "text_user_preference_constraint",
+      "source": "e127_orange_operator",
+      "title": "User Preference / Constraint Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "e130_ablation_control_result_lens",
+      "scope": "text_ablation_control_result",
+      "source": "e127_orange_operator",
+      "title": "Ablation / Control Result Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "e130_action_owner_lens",
+      "scope": "text_action_owner",
+      "source": "e127_orange_operator",
+      "title": "Action / Owner Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "e130_active_set_filter_lens",
+      "scope": "text_active_set_filter",
+      "source": "e127_orange_operator",
+      "title": "Active Set Filter Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "e130_ask_answer_policy_lens",
+      "scope": "text_ask_answer_policy",
+      "source": "e127_orange_operator",
+      "title": "Ask / Answer Policy Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "e130_attachment_reference_lens",
+      "scope": "text_attachment_reference",
+      "source": "e127_orange_operator",
+      "title": "Attachment Reference Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "e130_capacity_limit_lens",
+      "scope": "text_capacity_limit",
+      "source": "e127_orange_operator",
+      "title": "Capacity Limit Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "e130_config_env_var_lens",
+      "scope": "text_config_env_var",
+      "source": "e127_orange_operator",
+      "title": "Config / Env Var Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "e130_deadline_timezone_lens",
+      "scope": "text_deadline_timezone",
+      "source": "e127_orange_operator",
+      "title": "Deadline / Timezone Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "e130_default_minimal_action_lens",
+      "scope": "text_default_minimal_action",
+      "source": "e127_orange_operator",
+      "title": "Default Minimal Action Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "e130_dependency_blocker_lens",
+      "scope": "text_dependency_blocker",
+      "source": "e127_orange_operator",
+      "title": "Dependency / Blocker Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "e130_done_evidence_lens",
+      "scope": "text_done_evidence",
+      "source": "e127_orange_operator",
+      "title": "Done / Evidence Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "e130_failure_recycle_lens",
+      "scope": "text_failure_recycle",
+      "source": "e127_orange_operator",
+      "title": "Failure / Recycle Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "e130_generated_observed_data_lens",
+      "scope": "text_generated_observed_data",
+      "source": "e127_orange_operator",
+      "title": "Generated / Observed Data Lens"
+    },
+    {
+      "family": "Guard",
+      "id": "e130_high_stakes_domain_guard",
+      "scope": "text_high_stakes_domain",
+      "source": "e127_orange_operator",
+      "title": "High-Stakes Domain Guard"
+    },
+    {
+      "family": "Lens",
+      "id": "e130_latest_instruction_override_lens",
+      "scope": "text_latest_instruction_override",
+      "source": "e127_orange_operator",
+      "title": "Latest Instruction Override Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "e130_line_reference_lens",
+      "scope": "text_line_reference",
+      "source": "e127_orange_operator",
+      "title": "Line Reference Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "e130_local_remote_state_lens",
+      "scope": "text_local_remote_state",
+      "source": "e127_orange_operator",
+      "title": "Local / Remote State Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "e130_measurement_error_lens",
+      "scope": "text_measurement_error",
+      "source": "e127_orange_operator",
+      "title": "Measurement Error Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "e130_must_should_distinction_lens",
+      "scope": "text_must_should_distinction",
+      "source": "e127_orange_operator",
+      "title": "Must / Should Distinction Lens"
+    },
+    {
+      "family": "Guard",
+      "id": "e130_network_dependency_guard",
+      "scope": "text_network_dependency",
+      "source": "e127_orange_operator",
+      "title": "Network Dependency Guard"
+    },
+    {
+      "family": "Lens",
+      "id": "e130_partial_artifact_progress_lens",
+      "scope": "text_partial_artifact_progress",
+      "source": "e127_orange_operator",
+      "title": "Partial Artifact / Progress Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "e130_place_entity_disambiguation_lens",
+      "scope": "text_place_entity_disambiguation",
+      "source": "e127_orange_operator",
+      "title": "Place / Entity Disambiguation Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "e130_plateau_trend_lens",
+      "scope": "text_plateau_trend",
+      "source": "e127_orange_operator",
+      "title": "Plateau / Trend Lens"
+    },
+    {
+      "family": "Guard",
+      "id": "e130_privacy_consent_guard",
+      "scope": "text_privacy_consent",
+      "source": "e127_orange_operator",
+      "title": "Privacy / Consent Guard"
+    },
+    {
+      "family": "Guard",
+      "id": "e130_prohibition_exception_guard",
+      "scope": "text_prohibition_exception",
+      "source": "e127_orange_operator",
+      "title": "Prohibition / Exception Guard"
+    },
+    {
+      "family": "Lens",
+      "id": "e130_rank_promotion_lens",
+      "scope": "text_rank_promotion",
+      "source": "e127_orange_operator",
+      "title": "Rank / Promotion Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "e130_registry_uid_alias_lens",
+      "scope": "text_registry_uid_alias",
+      "source": "e127_orange_operator",
+      "title": "Registry UID / Alias Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "e130_risk_severity_lens",
+      "scope": "text_risk_severity",
+      "source": "e127_orange_operator",
+      "title": "Risk / Severity Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "e130_search_space_cost_lens",
+      "scope": "text_search_space_cost",
+      "source": "e127_orange_operator",
+      "title": "Search Space / Cost Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "e130_stack_frame_lens",
+      "scope": "text_stack_frame",
+      "source": "e127_orange_operator",
+      "title": "Stack Frame Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "e130_stop_resume_control_lens",
+      "scope": "text_stop_resume_control",
+      "source": "e127_orange_operator",
+      "title": "Stop / Resume Control Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "e130_tool_recommendation_execution_lens",
+      "scope": "text_tool_recommendation_execution",
+      "source": "e127_orange_operator",
+      "title": "Tool Recommendation / Execution Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "e130_transcript_uncertainty_lens",
+      "scope": "text_transcript_uncertainty",
+      "source": "e127_orange_operator",
+      "title": "Transcript Uncertainty Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "e130_visual_observation_lens",
+      "scope": "text_visual_observation",
+      "source": "e127_orange_operator",
+      "title": "Visual Observation Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "e131_active_evidence_search_lens",
+      "scope": "text_active_evidence_search",
+      "source": "e127_orange_operator",
+      "title": "Active Evidence Search Lens"
+    },
+    {
+      "family": "Guard",
+      "id": "e131_ambiguous_reference_guard",
+      "scope": "text_ambiguous_reference",
+      "source": "e127_orange_operator",
+      "title": "Ambiguous Reference Guard"
+    },
+    {
+      "family": "Lens",
+      "id": "e131_analogy_mapping_lens",
+      "scope": "text_analogy_mapping",
+      "source": "e127_orange_operator",
+      "title": "Analogy / Mapping Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "e131_answer_abstain_boundary_lens",
+      "scope": "text_answer_abstain_boundary",
+      "source": "e127_orange_operator",
+      "title": "Answer / Abstain Boundary Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "e131_candidate_exhaustion_boundary_lens",
+      "scope": "text_candidate_exhaustion_boundary",
+      "source": "e127_orange_operator",
+      "title": "Candidate Exhaustion Boundary Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "e131_category_membership_lens",
+      "scope": "text_category_membership",
+      "source": "e127_orange_operator",
+      "title": "Category / Membership Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "e131_cause_effect_lens",
+      "scope": "text_cause_effect",
+      "source": "e127_orange_operator",
+      "title": "Cause / Effect Lens"
+    },
+    {
+      "family": "Guard",
+      "id": "e131_claim_evidence_gap_guard",
+      "scope": "text_claim_evidence_gap",
+      "source": "e127_orange_operator",
+      "title": "Claim / Evidence Gap Guard"
+    },
+    {
+      "family": "Lens",
+      "id": "e131_comparison_contrast_lens",
+      "scope": "text_comparison_contrast",
+      "source": "e127_orange_operator",
+      "title": "Comparison / Contrast Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "e131_conditional_if_then_lens",
+      "scope": "text_conditional_if_then",
+      "source": "e127_orange_operator",
+      "title": "Conditional If / Then Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "e131_conflict_resolution_policy_lens",
+      "scope": "text_conflict_resolution_policy",
+      "source": "e127_orange_operator",
+      "title": "Conflict Resolution Policy Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "e131_data_provenance_lens",
+      "scope": "text_data_provenance",
+      "source": "e127_orange_operator",
+      "title": "Data Provenance Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "e131_definition_term_lens",
+      "scope": "text_definition_term",
+      "source": "e127_orange_operator",
+      "title": "Definition / Term Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "e131_done_vs_started_lens",
+      "scope": "text_done_vs_started",
+      "source": "e127_orange_operator",
+      "title": "Done / Started Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "e131_entity_role_lens",
+      "scope": "text_entity_role",
+      "source": "e127_orange_operator",
+      "title": "Entity / Role Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "e131_evidence_absence_lens",
+      "scope": "text_evidence_absence",
+      "source": "e127_orange_operator",
+      "title": "Evidence Absence Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "e131_example_counterexample_lens",
+      "scope": "text_example_counterexample",
+      "source": "e127_orange_operator",
+      "title": "Example / Counterexample Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "e131_fallback_primary_route_lens",
+      "scope": "text_fallback_primary_route",
+      "source": "e127_orange_operator",
+      "title": "Fallback / Primary Route Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "e131_format_contract_lens",
+      "scope": "text_format_contract",
+      "source": "e127_orange_operator",
+      "title": "Format / Contract Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "e131_git_sync_status_lens",
+      "scope": "text_git_sync_status",
+      "source": "e127_orange_operator",
+      "title": "Git Sync Status Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "e131_goal_success_criteria_lens",
+      "scope": "text_goal_success_criteria",
+      "source": "e127_orange_operator",
+      "title": "Goal / Success Criteria Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "e131_hardware_resource_binding_lens",
+      "scope": "text_hardware_resource_binding",
+      "source": "e127_orange_operator",
+      "title": "Hardware / Resource Binding Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "e131_input_output_contract_lens",
+      "scope": "text_input_output_contract",
+      "source": "e127_orange_operator",
+      "title": "Input / Output Contract Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "e131_internal_external_boundary_lens",
+      "scope": "text_internal_external_boundary",
+      "source": "e127_orange_operator",
+      "title": "Internal / External Boundary Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "e131_multi_constraint_filter_lens",
+      "scope": "text_multi_constraint_filter",
+      "source": "e127_orange_operator",
+      "title": "Multi-Constraint Filter Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "e131_obligation_actor_lens",
+      "scope": "text_obligation_actor",
+      "source": "e127_orange_operator",
+      "title": "Obligation / Actor Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "e131_observed_metric_vs_target_lens",
+      "scope": "text_observed_metric_vs_target",
+      "source": "e127_orange_operator",
+      "title": "Observed Metric / Target Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "e131_part_whole_lens",
+      "scope": "text_part_whole",
+      "source": "e127_orange_operator",
+      "title": "Part / Whole Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "e131_patch_scope_lens",
+      "scope": "text_patch_scope",
+      "source": "e127_orange_operator",
+      "title": "Patch / Scope Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "e131_probability_confidence_lens",
+      "scope": "text_probability_confidence",
+      "source": "e127_orange_operator",
+      "title": "Probability / Confidence Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "e131_process_liveness_lens",
+      "scope": "text_process_liveness",
+      "source": "e127_orange_operator",
+      "title": "Process Liveness Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "e131_question_answer_pair_lens",
+      "scope": "text_question_answer_pair",
+      "source": "e127_orange_operator",
+      "title": "Question / Answer Pair Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "e131_quote_attribution_lens",
+      "scope": "text_quote_attribution",
+      "source": "e127_orange_operator",
+      "title": "Quote / Attribution Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "e131_reproducibility_seed_lens",
+      "scope": "text_reproducibility_seed",
+      "source": "e127_orange_operator",
+      "title": "Reproducibility / Seed Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "e131_root_cause_symptom_lens",
+      "scope": "text_root_cause_symptom",
+      "source": "e127_orange_operator",
+      "title": "Root Cause / Symptom Lens"
+    },
+    {
+      "family": "Guard",
+      "id": "e131_safety_policy_context_guard",
+      "scope": "text_safety_policy_context",
+      "source": "e127_orange_operator",
+      "title": "Safety / Policy Context Guard"
+    },
+    {
+      "family": "Lens",
+      "id": "e131_same_word_different_sense_lens",
+      "scope": "text_same_word_different_sense",
+      "source": "e127_orange_operator",
+      "title": "Same Word / Different Sense Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "e131_scope_exclusion_lens",
+      "scope": "text_scope_exclusion",
+      "source": "e127_orange_operator",
+      "title": "Scope / Exclusion Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "e131_sequence_precondition_lens",
+      "scope": "text_sequence_precondition",
+      "source": "e127_orange_operator",
+      "title": "Sequence / Precondition Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "e131_source_recency_lens",
+      "scope": "text_source_recency",
+      "source": "e127_orange_operator",
+      "title": "Source / Recency Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "e131_summary_detail_boundary_lens",
+      "scope": "text_summary_detail_boundary",
+      "source": "e127_orange_operator",
+      "title": "Summary / Detail Boundary Lens"
+    },
+    {
+      "family": "Guard",
+      "id": "e131_test_train_deployment_scope_guard",
+      "scope": "text_test_train_deployment_scope",
+      "source": "e127_orange_operator",
+      "title": "Test / Train / Deployment Scope Guard"
+    },
+    {
+      "family": "Lens",
+      "id": "e131_threshold_boundary_lens",
+      "scope": "text_threshold_boundary",
+      "source": "e127_orange_operator",
+      "title": "Threshold / Boundary Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "e131_time_window_validity_lens",
+      "scope": "text_time_window_validity",
+      "source": "e127_orange_operator",
+      "title": "Time Window / Validity Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "e131_unknown_unknown_request_lens",
+      "scope": "text_unknown_ask_more",
+      "source": "e127_orange_operator",
+      "title": "Unknown / Ask More Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "e131_user_intent_revision_lens",
+      "scope": "text_user_intent_revision",
+      "source": "e127_orange_operator",
+      "title": "User Intent Revision Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "e131_version_change_changelog_lens",
+      "scope": "text_version_change_changelog",
+      "source": "e127_orange_operator",
+      "title": "Version Change / Changelog Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "e131_version_compatibility_lens",
+      "scope": "text_version_compatibility",
+      "source": "e127_orange_operator",
+      "title": "Version Compatibility Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "email_header_lens",
+      "scope": "text_email_header_boundary",
+      "source": "e127_orange_operator",
+      "title": "Email Header Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "entity_attribute_binding_lens",
+      "scope": "text_entity_attribute_binding",
+      "source": "e127_orange_operator",
+      "title": "Entity / Attribute Binding Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "entity_attribute_relation_lens",
+      "scope": "text_entity_attribute_relation",
+      "source": "e127_orange_operator",
+      "title": "Entity / Attribute Relation Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "environment_variable_lens",
+      "scope": "text_environment_variable_reference",
+      "source": "e127_orange_operator",
+      "title": "Environment Variable Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "error_message_boundary_lens",
+      "scope": "text_error_message_boundary",
+      "source": "e127_orange_operator",
+      "title": "Error Message Boundary Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "estimate_confidence_lens",
+      "scope": "text_estimate_confidence_grounding",
+      "source": "e127_orange_operator",
+      "title": "Estimate / Confidence Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "evaluation_criteria_lens",
+      "scope": "text_evaluation_criteria",
+      "source": "e127_orange_operator",
+      "title": "Evaluation Criteria Lens"
+    },
+    {
+      "family": "Guard",
+      "id": "evidence_gap_ask_guard",
+      "scope": "text_evidence_gap_ask",
+      "source": "e127_orange_operator",
+      "title": "Evidence Gap Ask Guard"
+    },
+    {
+      "family": "Guard",
+      "id": "evidence_quality_source_tier_guard",
+      "scope": "text_evidence_quality_source_tier",
+      "source": "e127_orange_operator",
+      "title": "Evidence Quality / Source Tier Guard"
+    },
+    {
+      "family": "Lens",
+      "id": "evidence_span_citation_lens",
+      "scope": "text_evidence_span_citation",
+      "source": "e127_orange_operator",
+      "title": "Evidence Span / Citation Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "evidence_strength_marker_lens",
+      "scope": "text_evidence_strength_marker",
+      "source": "e127_orange_operator",
+      "title": "Evidence Strength Marker Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "example_marker_lens",
+      "scope": "text_example_marker_boundary",
+      "source": "e127_orange_operator",
+      "title": "Example Marker Lens"
+    },
+    {
+      "family": "Guard",
+      "id": "example_non_exhaustive_guard",
+      "scope": "text_example_non_exhaustive",
+      "source": "e127_orange_operator",
+      "title": "Example Non-Exhaustive Guard"
+    },
+    {
+      "family": "Lens",
+      "id": "excluded_included_items_lens",
+      "scope": "text_excluded_included_items",
+      "source": "e127_orange_operator",
+      "title": "Excluded / Included Items Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "failure_mode_phrase_lens",
+      "scope": "text_failure_mode_phrase",
+      "source": "e127_orange_operator",
+      "title": "Failure Mode Phrase Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "file_path_reference_lens",
+      "scope": "text_file_path_reference_boundary",
+      "source": "e127_orange_operator",
+      "title": "File Path Reference Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "file_permission_mode_lens",
+      "scope": "text_file_permission_mode",
+      "source": "e127_orange_operator",
+      "title": "File Permission Mode Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "finding_claim_lens",
+      "scope": "text_finding_claim_grounding",
+      "source": "e127_orange_operator",
+      "title": "Finding Claim Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "form_field_instruction_lens",
+      "scope": "text_form_field_instruction",
+      "source": "e127_orange_operator",
+      "title": "Form Field Instruction Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "frequency_adverb_lens",
+      "scope": "text_frequency_adverb_grounding",
+      "source": "e127_orange_operator",
+      "title": "Frequency Adverb Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "git_branch_tag_lens",
+      "scope": "text_git_branch_tag_reference",
+      "source": "e127_orange_operator",
+      "title": "Git Branch / Tag Lens"
+    },
+    {
+      "family": "T-Stab",
+      "id": "hedge_uncertainty_strength_t_stab",
+      "scope": "text_uncertainty_strength_stabilization",
+      "source": "e127_orange_operator",
+      "title": "Hedge / Uncertainty Strength a-Sync-er"
+    },
+    {
+      "family": "Guard",
+      "id": "historical_current_state_guard",
+      "scope": "text_historical_current_state",
+      "source": "e127_orange_operator",
+      "title": "Historical / Current State Guard"
+    },
+    {
+      "family": "Lens",
+      "id": "html_tag_span_lens",
+      "scope": "text_html_tag_span_boundary",
+      "source": "e127_orange_operator",
+      "title": "HTML Tag Span Lens"
+    },
+    {
+      "family": "Guard",
+      "id": "hypothesis_evidence_split_guard",
+      "scope": "text_hypothesis_evidence_split",
+      "source": "e127_orange_operator",
+      "title": "Hypothesis / Evidence Split Guard"
+    },
+    {
+      "family": "Lens",
+      "id": "hypothesis_test_result_lens",
+      "scope": "text_hypothesis_test_result",
+      "source": "e127_orange_operator",
+      "title": "Hypothesis / Test / Result Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "identity_equality_lens",
+      "scope": "text_identity_equality_grounding",
+      "source": "e127_orange_operator",
+      "title": "Identity / Equality Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "imperative_action_request_lens",
+      "scope": "text_imperative_action_request",
+      "source": "e127_orange_operator",
+      "title": "Imperative Action Request Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "implied_question_lens",
+      "scope": "text_implied_question_grounding",
+      "source": "e127_orange_operator",
+      "title": "Implied Question Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "input_output_contract_lens",
+      "scope": "text_input_output_contract",
+      "source": "e127_orange_operator",
+      "title": "Input / Output Contract Lens"
+    },
+    {
+      "family": "Guard",
+      "id": "instruction_order_constraint_guard",
+      "scope": "text_instruction_order_constraint",
+      "source": "e127_orange_operator",
+      "title": "Instruction Order Constraint Guard"
+    },
+    {
+      "family": "Lens",
+      "id": "ip_address_lens",
+      "scope": "text_ip_address_grounding",
+      "source": "e127_orange_operator",
+      "title": "IP Address Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "irrelevant_context_filter_lens",
+      "scope": "text_irrelevant_context_filter",
+      "source": "e127_orange_operator",
+      "title": "Irrelevant Context Filter Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "issue_ticket_reference_lens",
+      "scope": "text_issue_ticket_reference",
+      "source": "e127_orange_operator",
+      "title": "Issue / Ticket Reference Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "json_path_lens",
+      "scope": "text_json_path_reference",
+      "source": "e127_orange_operator",
+      "title": "JSON Path Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "json_yaml_block_lens",
+      "scope": "text_json_yaml_block_boundary",
+      "source": "e127_orange_operator",
+      "title": "JSON / YAML Block Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "language_locale_code_lens",
+      "scope": "text_locale_code_grounding",
+      "source": "e127_orange_operator",
+      "title": "Language / Locale Code Lens"
+    },
+    {
+      "family": "Guard",
+      "id": "legal_clause_exception_guard",
+      "scope": "text_legal_clause_exception_scope",
+      "source": "e127_orange_operator",
+      "title": "Legal Clause Exception Guard"
+    },
+    {
+      "family": "Lens",
+      "id": "legal_rights_obligation_lens",
+      "scope": "text_legal_rights_obligation",
+      "source": "e127_orange_operator",
+      "title": "Legal Rights / Obligation Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "license_condition_lens",
+      "scope": "text_license_condition_grounding",
+      "source": "e127_orange_operator",
+      "title": "License Condition Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "license_identifier_lens",
+      "scope": "text_license_identifier_grounding",
+      "source": "e127_orange_operator",
+      "title": "License Identifier Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "limitation_future_work_lens",
+      "scope": "text_limitation_future_work",
+      "source": "e127_orange_operator",
+      "title": "Limitation / Future Work Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "list_scope_boundary_lens",
+      "scope": "text_list_scope_boundary",
+      "source": "e127_orange_operator",
+      "title": "List Scope Boundary Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "location_address_span_lens",
+      "scope": "text_location_address_span",
+      "source": "e127_orange_operator",
+      "title": "Location / Address Span Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "log_level_lens",
+      "scope": "text_log_level_grounding",
+      "source": "e127_orange_operator",
+      "title": "Log Level Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "log_timestamp_line_lens",
+      "scope": "text_log_timestamp_line_grounding",
+      "source": "e127_orange_operator",
+      "title": "Log Timestamp Line Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "markdown_heading_structure_lens",
+      "scope": "text_markdown_heading_structure",
+      "source": "e127_orange_operator",
+      "title": "Markdown Heading Structure Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "math_word_operator_lens",
+      "scope": "text_math_word_operator_grounding",
+      "source": "e127_orange_operator",
+      "title": "Math Word Operator Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "measurement_uncertainty_lens",
+      "scope": "text_measurement_uncertainty",
+      "source": "e127_orange_operator",
+      "title": "Measurement Uncertainty Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "meeting_action_item_lens",
+      "scope": "text_meeting_action_item",
+      "source": "e127_orange_operator",
+      "title": "Meeting Action Item Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "method_result_split_lens",
+      "scope": "text_method_result_split",
+      "source": "e127_orange_operator",
+      "title": "Method / Result Split Lens"
+    },
+    {
+      "family": "Guard",
+      "id": "missing_field_placeholder_guard",
+      "scope": "text_missing_field_placeholder",
+      "source": "e127_orange_operator",
+      "title": "Missing Field Placeholder Guard"
+    },
+    {
+      "family": "Lens",
+      "id": "mitigation_action_lens",
+      "scope": "text_mitigation_action_grounding",
+      "source": "e127_orange_operator",
+      "title": "Mitigation Action Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "modal_obligation_permission_lens",
+      "scope": "text_modal_obligation_permission",
+      "source": "e127_orange_operator",
+      "title": "Modal Obligation / Permission Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "model_checkpoint_lens",
+      "scope": "text_model_checkpoint_reference",
+      "source": "e127_orange_operator",
+      "title": "Model Checkpoint Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "model_metric_result_lens",
+      "scope": "text_model_metric_result_grounding",
+      "source": "e127_orange_operator",
+      "title": "Model Metric Result Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "multi_actor_dialogue_turn_lens",
+      "scope": "text_dialogue_turn_speaker_boundary",
+      "source": "e127_orange_operator",
+      "title": "Multi-Actor Dialogue Turn Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "multi_item_separator_lens",
+      "scope": "text_multi_item_separator_grounding",
+      "source": "e127_orange_operator",
+      "title": "Multi-Item Separator Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "multi_source_claim_merge_lens",
+      "scope": "text_multi_source_claim_merge",
+      "source": "e127_orange_operator",
+      "title": "Multi-Source Claim Merge Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "named_event_outcome_lens",
+      "scope": "text_named_event_outcome",
+      "source": "e127_orange_operator",
+      "title": "Named Event / Outcome Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "natural_language_date_range_lens",
+      "scope": "text_natural_language_date_range",
+      "source": "e127_orange_operator",
+      "title": "Natural Language Date Range Lens"
+    },
+    {
+      "family": "Guard",
+      "id": "negated_requirement_guard",
+      "scope": "text_negated_requirement_scope",
+      "source": "e127_orange_operator",
+      "title": "Negated Requirement Guard"
+    },
+    {
+      "family": "Guard",
+      "id": "negation_scope_guard",
+      "scope": "text_negation_scope_grounding",
+      "source": "e127_orange_operator",
+      "title": "Negation Scope Guard"
+    },
+    {
+      "family": "Lens",
+      "id": "nested_quote_lens",
+      "scope": "text_nested_quote_boundary",
+      "source": "e127_orange_operator",
+      "title": "Nested Quote Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "normalization_mapping_lens",
+      "scope": "text_normalization_mapping",
+      "source": "e127_orange_operator",
+      "title": "Normalization Mapping Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "noun_apposition_definition_lens",
+      "scope": "text_noun_apposition_definition",
+      "source": "e127_orange_operator",
+      "title": "Noun Apposition Definition Lens"
+    },
+    {
+      "family": "Guard",
+      "id": "numeric_approximation_guard",
+      "scope": "text_numeric_approximation_grounding",
+      "source": "e127_orange_operator",
+      "title": "Numeric Approximation Guard"
+    },
+    {
+      "family": "Lens",
+      "id": "numeric_unit_subject_lens",
+      "scope": "text_numeric_unit_subject_binding",
+      "source": "e127_orange_operator",
+      "title": "Numeric Unit / Subject Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "object_property_relation_lens",
+      "scope": "text_object_property_relation",
+      "source": "e127_orange_operator",
+      "title": "Object / Property Relation Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "observation_inference_split_lens",
+      "scope": "text_observation_inference_split",
+      "source": "e127_orange_operator",
+      "title": "Observation / Inference Split Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "ordered_list_marker_lens",
+      "scope": "text_ordered_list_marker_structure",
+      "source": "e127_orange_operator",
+      "title": "Ordered List Marker Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "ordinal_ranking_lens",
+      "scope": "text_ordinal_ranking_grounding",
+      "source": "e127_orange_operator",
+      "title": "Ordinal / Ranking Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "outcome_probability_distinction_lens",
+      "scope": "text_outcome_probability_distinction",
+      "source": "e127_orange_operator",
+      "title": "Outcome / Probability Distinction Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "paraphrase_equivalence_lens",
+      "scope": "text_paraphrase_equivalence",
+      "source": "e127_orange_operator",
+      "title": "Paraphrase Equivalence Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "parenthetical_qualification_lens",
+      "scope": "text_parenthetical_qualification",
+      "source": "e127_orange_operator",
+      "title": "Parenthetical Qualification Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "percentage_change_lens",
+      "scope": "text_percentage_change_grounding",
+      "source": "e127_orange_operator",
+      "title": "Percentage Change Lens"
+    },
+    {
+      "family": "Guard",
+      "id": "permission_policy_boundary_guard",
+      "scope": "text_permission_policy_boundary",
+      "source": "e127_orange_operator",
+      "title": "Permission / Policy Boundary Guard"
+    },
+    {
+      "family": "Lens",
+      "id": "permission_role_access_lens",
+      "scope": "text_permission_role_access",
+      "source": "e127_orange_operator",
+      "title": "Permission Role Access Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "person_org_role_lens",
+      "scope": "text_person_org_role_binding",
+      "source": "e127_orange_operator",
+      "title": "Person / Organization Role Lens"
+    },
+    {
+      "family": "Guard",
+      "id": "planned_vs_completed_guard",
+      "scope": "text_planned_vs_completed_state",
+      "source": "e127_orange_operator",
+      "title": "Planned vs Completed Guard"
+    },
+    {
+      "family": "Lens",
+      "id": "price_currency_span_lens",
+      "scope": "text_price_currency_span",
+      "source": "e127_orange_operator",
+      "title": "Price / Currency Span Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "prior_current_correction_lens",
+      "scope": "text_prior_current_correction",
+      "source": "e127_orange_operator",
+      "title": "Prior / Current Correction Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "priority_severity_triage_lens",
+      "scope": "text_priority_severity_grounding",
+      "source": "e127_orange_operator",
+      "title": "Priority / Severity Triage Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "privacy_personal_data_lens",
+      "scope": "text_privacy_personal_data",
+      "source": "e127_orange_operator",
+      "title": "Privacy / Personal Data Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "probability_likelihood_lens",
+      "scope": "text_probability_likelihood_grounding",
+      "source": "e127_orange_operator",
+      "title": "Probability / Likelihood Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "probability_odds_lens",
+      "scope": "text_probability_odds_grounding",
+      "source": "e127_orange_operator",
+      "title": "Probability / Odds Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "problem_solution_pair_lens",
+      "scope": "text_problem_solution_pair",
+      "source": "e127_orange_operator",
+      "title": "Problem / Solution Pair Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "procedure_precondition_lens",
+      "scope": "text_procedure_precondition",
+      "source": "e127_orange_operator",
+      "title": "Procedure Precondition Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "procedure_step_sequence_lens",
+      "scope": "text_procedure_step_sequence",
+      "source": "e127_orange_operator",
+      "title": "Procedure Step Sequence Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "product_spec_attribute_lens",
+      "scope": "text_product_spec_attribute_binding",
+      "source": "e127_orange_operator",
+      "title": "Product Spec Attribute Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "pros_cons_tradeoff_lens",
+      "scope": "text_pros_cons_tradeoff",
+      "source": "e127_orange_operator",
+      "title": "Pros / Cons Tradeoff Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "qualifier_degree_lens",
+      "scope": "text_qualifier_degree_grounding",
+      "source": "e127_orange_operator",
+      "title": "Qualifier Degree Lens"
+    },
+    {
+      "family": "Guard",
+      "id": "qualifier_negation_stack_guard",
+      "scope": "text_qualifier_negation_stack",
+      "source": "e127_orange_operator",
+      "title": "Qualifier / Negation Stack Guard"
+    },
+    {
+      "family": "Lens",
+      "id": "quality_control_failure_lens",
+      "scope": "text_quality_control_failure",
+      "source": "e127_orange_operator",
+      "title": "Quality Control Failure Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "question_answer_pair_lens",
+      "scope": "text_question_answer_pair_boundary",
+      "source": "e127_orange_operator",
+      "title": "Question / Answer Pair Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "question_intent_classifier_lens",
+      "scope": "text_question_intent_detection",
+      "source": "e127_orange_operator",
+      "title": "Question Intent Classifier Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "quote_attribution_lens",
+      "scope": "text_quote_attribution_grounding",
+      "source": "e127_orange_operator",
+      "title": "Quote Attribution Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "quote_attribution_scope_lens",
+      "scope": "text_quote_attribution_scope",
+      "source": "e127_orange_operator",
+      "title": "Quote Attribution Scope Lens"
+    },
+    {
+      "family": "Guard",
+      "id": "quote_not_endorsement_guard",
+      "scope": "text_quote_not_endorsement",
+      "source": "e127_orange_operator",
+      "title": "Quote Not Endorsement Guard"
+    },
+    {
+      "family": "Guard",
+      "id": "range_bound_expression_guard",
+      "scope": "text_numeric_range_bound_grounding",
+      "source": "e127_orange_operator",
+      "title": "Range / Bound Expression Guard"
+    },
+    {
+      "family": "Lens",
+      "id": "range_interval_lens",
+      "scope": "text_range_interval_grounding",
+      "source": "e127_orange_operator",
+      "title": "Range / Interval Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "range_interval_phrase_lens",
+      "scope": "text_range_interval_phrase",
+      "source": "e127_orange_operator",
+      "title": "Range / Interval Phrase Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "ranking_order_lens",
+      "scope": "text_ranking_order_grounding",
+      "source": "e127_orange_operator",
+      "title": "Ranking / Order Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "ratio_fraction_lens",
+      "scope": "text_ratio_fraction_grounding",
+      "source": "e127_orange_operator",
+      "title": "Ratio / Fraction Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "recommendation_rationale_lens",
+      "scope": "text_recommendation_rationale",
+      "source": "e127_orange_operator",
+      "title": "Recommendation / Rationale Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "regex_pattern_lens",
+      "scope": "text_regex_pattern_boundary",
+      "source": "e127_orange_operator",
+      "title": "Regex Pattern Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "reported_speech_quote_lens",
+      "scope": "text_reported_speech_quote_boundary",
+      "source": "e127_orange_operator",
+      "title": "Reported Speech / Quote Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "reproducibility_seed_lens",
+      "scope": "text_reproducibility_seed_grounding",
+      "source": "e127_orange_operator",
+      "title": "Reproducibility Seed Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "requirement_exception_pair_lens",
+      "scope": "text_requirement_exception_pair",
+      "source": "e127_orange_operator",
+      "title": "Requirement / Exception Pair Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "research_question_lens",
+      "scope": "text_research_question_grounding",
+      "source": "e127_orange_operator",
+      "title": "Research Question Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "resource_budget_constraint_lens",
+      "scope": "text_resource_budget_constraint",
+      "source": "e127_orange_operator",
+      "title": "Resource / Budget Constraint Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "result_limitation_pair_lens",
+      "scope": "text_result_limitation_pair",
+      "source": "e127_orange_operator",
+      "title": "Result / Limitation Pair Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "revision_diff_marker_lens",
+      "scope": "text_revision_diff_marker",
+      "source": "e127_orange_operator",
+      "title": "Revision / Diff Marker Lens"
+    },
+    {
+      "family": "Guard",
+      "id": "rhetorical_question_guard",
+      "scope": "text_rhetorical_question_scope",
+      "source": "e127_orange_operator",
+      "title": "Rhetorical Question Guard"
+    },
+    {
+      "family": "Lens",
+      "id": "risk_warning_caution_lens",
+      "scope": "text_warning_risk_boundary",
+      "source": "e127_orange_operator",
+      "title": "Risk / Warning Caution Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "role_permission_assignment_lens",
+      "scope": "text_role_permission_assignment",
+      "source": "e127_orange_operator",
+      "title": "Role / Permission Assignment Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "root_cause_evidence_lens",
+      "scope": "text_root_cause_evidence",
+      "source": "e127_orange_operator",
+      "title": "Root Cause / Evidence Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "sample_size_study_lens",
+      "scope": "text_study_sample_size_grounding",
+      "source": "e127_orange_operator",
+      "title": "Study Sample Size Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "schedule_recurrence_lens",
+      "scope": "text_schedule_recurrence_grounding",
+      "source": "e127_orange_operator",
+      "title": "Schedule Recurrence Lens"
+    },
+    {
+      "family": "Guard",
+      "id": "scope_limitation_phrase_guard",
+      "scope": "text_scope_limitation_phrase",
+      "source": "e127_orange_operator",
+      "title": "Scope Limitation Phrase Guard"
+    },
+    {
+      "family": "Lens",
+      "id": "section_cross_reference_lens",
+      "scope": "text_section_cross_reference",
+      "source": "e127_orange_operator",
+      "title": "Section Cross-Reference Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "security_vulnerability_lens",
+      "scope": "text_security_vulnerability_grounding",
+      "source": "e127_orange_operator",
+      "title": "Security Vulnerability Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "semantic_negation_lens",
+      "scope": "text_semantic_negation_grounding",
+      "source": "e127_orange_operator",
+      "title": "Semantic Negation Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "semantic_role_frame_lens",
+      "scope": "text_actor_action_object_frame",
+      "source": "e127_orange_operator",
+      "title": "Semantic Role Frame Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "sensitive_identifier_lens",
+      "scope": "text_sensitive_identifier_boundary",
+      "source": "e127_orange_operator",
+      "title": "Sensitive Identifier Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "sequence_ordering_lens",
+      "scope": "text_sequence_ordering_grounding",
+      "source": "e127_orange_operator",
+      "title": "Sequence Ordering Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "shell_flag_argument_lens",
+      "scope": "text_shell_flag_argument_binding",
+      "source": "e127_orange_operator",
+      "title": "Shell Flag / Argument Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "source_conflict_resolution_lens",
+      "scope": "text_source_conflict_resolution",
+      "source": "e127_orange_operator",
+      "title": "Source Conflict Resolution Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "source_recency_lens",
+      "scope": "text_source_recency_grounding",
+      "source": "e127_orange_operator",
+      "title": "Source Recency Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "source_reliability_caveat_lens",
+      "scope": "text_source_reliability_caveat",
+      "source": "e127_orange_operator",
+      "title": "Source Reliability Caveat Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "source_speaker_boundary_lens",
+      "scope": "text_source_speaker_boundary",
+      "source": "e127_orange_operator",
+      "title": "Source / Speaker Boundary Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "spec_requirement_keyword_lens",
+      "scope": "text_spec_requirement_keyword",
+      "source": "e127_orange_operator",
+      "title": "Spec Requirement Keyword Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "spreadsheet_cell_reference_lens",
+      "scope": "text_spreadsheet_cell_reference",
+      "source": "e127_orange_operator",
+      "title": "Spreadsheet Cell Reference Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "state_transition_marker_lens",
+      "scope": "text_state_transition_marker",
+      "source": "e127_orange_operator",
+      "title": "State Transition Marker Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "status_transition_lens",
+      "scope": "text_status_transition_grounding",
+      "source": "e127_orange_operator",
+      "title": "Status Transition Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "summary_conclusion_lens",
+      "scope": "text_summary_conclusion_boundary",
+      "source": "e127_orange_operator",
+      "title": "Summary / Conclusion Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "support_counterexample_lens",
+      "scope": "text_support_counterexample_relation",
+      "source": "e127_orange_operator",
+      "title": "Support / Counterexample Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "survey_response_scale_lens",
+      "scope": "text_survey_response_scale",
+      "source": "e127_orange_operator",
+      "title": "Survey Response Scale Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "table_column_header_lens",
+      "scope": "text_table_column_header_grounding",
+      "source": "e127_orange_operator",
+      "title": "Table Column Header Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "table_list_structure_lens",
+      "scope": "text_table_list_layout_grounding",
+      "source": "e127_orange_operator",
+      "title": "Table / List Structure Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "table_row_value_lens",
+      "scope": "text_table_row_value_binding",
+      "source": "e127_orange_operator",
+      "title": "Table Row / Value Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "task_deadline_lens",
+      "scope": "text_task_deadline_grounding",
+      "source": "e127_orange_operator",
+      "title": "Task Deadline Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "task_owner_assignment_lens",
+      "scope": "text_task_owner_assignment",
+      "source": "e127_orange_operator",
+      "title": "Task Owner Assignment Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "taxonomy_classification_lens",
+      "scope": "text_taxonomy_classification_grounding",
+      "source": "e127_orange_operator",
+      "title": "Taxonomy Classification Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "temporal_duration_frequency_lens",
+      "scope": "text_duration_frequency_grounding",
+      "source": "e127_orange_operator",
+      "title": "Temporal Duration / Frequency Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "temporal_duration_lens",
+      "scope": "text_temporal_duration_grounding",
+      "source": "e127_orange_operator",
+      "title": "Temporal Duration Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "test_assertion_lens",
+      "scope": "text_test_assertion_grounding",
+      "source": "e127_orange_operator",
+      "title": "Test Assertion Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "threshold_boundary_lens",
+      "scope": "text_threshold_boundary_grounding",
+      "source": "e127_orange_operator",
+      "title": "Threshold Boundary Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "timeline_event_sequence_lens",
+      "scope": "text_timeline_event_sequence",
+      "source": "e127_orange_operator",
+      "title": "Timeline Event Sequence Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "timezone_offset_lens",
+      "scope": "text_timezone_offset_grounding",
+      "source": "e127_orange_operator",
+      "title": "Timezone / Offset Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "title_author_publication_lens",
+      "scope": "text_title_author_publication_reference",
+      "source": "e127_orange_operator",
+      "title": "Title / Author / Publication Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "topic_shift_boundary_lens",
+      "scope": "text_topic_shift_boundary",
+      "source": "e127_orange_operator",
+      "title": "Topic Shift Boundary Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "training_signal_label_lens",
+      "scope": "text_training_signal_label_grounding",
+      "source": "e127_orange_operator",
+      "title": "Training Signal / Label Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "uncertainty_resolution_lens",
+      "scope": "text_uncertainty_resolution",
+      "source": "e127_orange_operator",
+      "title": "Uncertainty Resolution Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "unit_conversion_phrase_lens",
+      "scope": "text_unit_conversion_phrase",
+      "source": "e127_orange_operator",
+      "title": "Unit Conversion Phrase Lens"
+    },
+    {
+      "family": "Guard",
+      "id": "unit_dimension_guard",
+      "scope": "text_unit_dimension_grounding",
+      "source": "e127_orange_operator",
+      "title": "Unit / Dimension Guard"
+    },
+    {
+      "family": "Guard",
+      "id": "unless_exception_guard",
+      "scope": "text_unless_exception_scope",
+      "source": "e127_orange_operator",
+      "title": "Unless / Exception Guard"
+    },
+    {
+      "family": "Lens",
+      "id": "url_query_parameter_lens",
+      "scope": "text_url_query_parameter_binding",
+      "source": "e127_orange_operator",
+      "title": "URL Query Parameter Lens"
+    },
+    {
+      "family": "Lens",
+      "id": "version_identifier_lens",
+      "scope": "text_version_identifier_grounding",
+      "source": "e127_orange_operator",
+      "title": "Version Identifier Lens"
+    }
+  ]
+}

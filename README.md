@@ -9,8 +9,8 @@ This repository is consolidated around the current winning mainline. Historical 
 ```text
 branch = main
 current_release = v6.1.7
-current_evidence_anchor = f32a6f4b
-current_evidence_subject = Finalize E127 cycle 40 checkpoint
+current_evidence_anchor = E128 assistant text-IO lightweight render training
+current_evidence_subject = No-download assistant corpus/action-policy/template smoke
 latest_released_runtime_slice = a908a838a1119540ed88bc91e10cfcb0bdae92a8
 latest_released_runtime_subject = Add training data curriculum readiness gate
 ```
@@ -34,6 +34,7 @@ The latest GitHub release is [`v6.1.7`](https://github.com/VRAXION/VRAXION/relea
 | E113 | `05415f5b` | FineWeb-Edu 100k light stress: baseline 2,624 hard negatives across 88 operators, selected recycled variants 0 hard negatives |
 | E119-E126 | tracked on `main` | FineWeb/text-understanding skill mining and Orange/Legendary probation |
 | E127 | `f32a6f4b` | Overnight cyclic Orange/Legendary text-operator farm: 40 cycles, 382 scoped operators, 0 hard negatives |
+| E128 | tracked on `main` | Lightweight assistant text-IO render training: 320 local prompts, train/validation/heldout action accuracy 1.000, 0 unsupported answers |
 
 Current E127 scoped operator state:
 
@@ -46,6 +47,17 @@ wrong scope calls = 0
 unsupported answers = 0
 ```
 
+Current E128 text-IO bridge state:
+
+```text
+prompt corpus = 320
+train / validation / heldout = 160 / 64 / 96
+action accuracy = 1.000 / 1.000 / 1.000
+operator trace validity = 1.000
+unsupported answers = 0
+boundary-claim violations = 0
+```
+
 ## What Is Current
 
 - Active Rust runtime: [`vraxion-runtime/`](vraxion-runtime/)
@@ -54,7 +66,8 @@ unsupported answers = 0
 - Getting started: [`docs/GETTING_STARTED.md`](docs/GETTING_STARTED.md)
 - Validated findings: [`VALIDATED_FINDINGS.md`](VALIDATED_FINDINGS.md)
 - Operator cards: [`docs/research/OPERATOR_LIBRARY_CARDS.md`](docs/research/OPERATOR_LIBRARY_CARDS.md)
-- Current result: [`docs/research/E127_OVERNIGHT_TEXT_SKILL_FARM_ORANGE_CYCLE_RESULT.md`](docs/research/E127_OVERNIGHT_TEXT_SKILL_FARM_ORANGE_CYCLE_RESULT.md)
+- Current result: [`docs/research/E128_ASSISTANT_TEXT_IO_LIGHTWEIGHT_RENDER_TRAINING_RESULT.md`](docs/research/E128_ASSISTANT_TEXT_IO_LIGHTWEIGHT_RENDER_TRAINING_RESULT.md)
+- E127 checkpoint: [`docs/research/E127_OVERNIGHT_TEXT_SKILL_FARM_ORANGE_CYCLE_RESULT.md`](docs/research/E127_OVERNIGHT_TEXT_SKILL_FARM_ORANGE_CYCLE_RESULT.md)
 - Handover for fresh Codex sessions: [`CODEX_HANDOVER.md`](CODEX_HANDOVER.md)
 - GitHub Pages front door: <https://vraxion.github.io/VRAXION/>
 - Wiki timeline: <https://github.com/VRAXION/VRAXION/wiki/Timeline-Archive>
@@ -63,9 +76,9 @@ unsupported answers = 0
 
 Allowed current claim:
 
-> VRAXION v6 has a Rust mainline for governed Pocket Library state, resumable curriculum execution, multi-lane final-training supervision, global Pocket Library merge/dedupe governance, a training-data/curriculum readiness gate, one canonical `final_train` campaign entrypoint, and governed Operator evidence through E127. E127 cycle 40 contains 382 scoped Orange/Legendary text operators with 0 tracked hard negatives, false commits, wrong-scope calls, or unsupported answers in the checkpointed evidence.
+> VRAXION v6 has a Rust mainline for governed Pocket Library state, resumable curriculum execution, multi-lane final-training supervision, global Pocket Library merge/dedupe governance, a training-data/curriculum readiness gate, one canonical `final_train` campaign entrypoint, governed Operator evidence through E127, and an E128 lightweight assistant text-IO render-training smoke. E127 cycle 40 contains 382 scoped Orange/Legendary text operators with 0 tracked hard negatives, false commits, wrong-scope calls, or unsupported answers in the checkpointed evidence. E128 confirms a 320-prompt deterministic corpus/action-policy/template-render bridge with 0 unsupported answers and 0 boundary-claim violations.
 
-The E127 finding is scoped operator-library evidence only. It includes a deterministic operator+template text-to-text smoke, but it does not claim PermaCore, TrueGolden, production API readiness, final training completion, open-domain assistant readiness, Gemma/GPT-like generation, GSM8K solving, consciousness, or sentience.
+The E127/E128 finding is scoped operator-library and deterministic render-training evidence only. It includes deterministic operator+template text-to-text smoke, but it does not claim PermaCore, TrueGolden, production API readiness, final training completion, open-domain assistant readiness, Gemma/GPT-like generation, GSM8K solving, consciousness, or sentience.
 
 For the current "what can it do as one system?" view, see
 [`docs/CURRENT_CAPABILITIES.md`](docs/CURRENT_CAPABILITIES.md).
