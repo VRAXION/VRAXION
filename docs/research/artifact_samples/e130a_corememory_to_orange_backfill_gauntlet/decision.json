@@ -1,0 +1,9 @@
+{
+  "artifact_contract": "E130A_COREMEMORY_TO_ORANGE_BACKFILL_GAUNTLET",
+  "boundary": "scoped Operator rank backfill only; not PermaCore or TrueGolden",
+  "decision": "e130a_corememory_to_orange_backfill_confirmed",
+  "failure_count": 0,
+  "failures": [],
+  "next": "E130B_ARITHMETIC_TEXT_IO_TRANSFER_AND_WORD_PROBLEM_NO_CALL_GAUNTLET",
+  "pass_gate": true
+}

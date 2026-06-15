@@ -30,12 +30,20 @@ output.
 
 ## Current library scale
 
+Current dashboard/rank state after E130A:
+
+```text
+Dashboard operator count = 530
+Orange/Legendary scoped operators = 527
+CoreMemoryCandidate operators = 0
+Deprecated operators = 3
+```
+
 Current E127 checkpointed evidence:
 
 ```text
-Dashboard operator count = 529
-Orange/Legendary scoped operators = 382
 E127 cycles = 40
+E127 Orange/Legendary scoped text operators = 382
 hard negatives = 0
 false commits = 0
 wrong-scope calls = 0
@@ -71,6 +79,24 @@ wrong-scope calls = 0
 unsupported answers = 0
 ```
 
+Current E130A rank-backfill evidence:
+
+```text
+backfilled operators = 136
+Orange/Legendary backfill promotions = 136
+qualified activation before total = 13877699
+qualified activation add total = 27158734
+qualified activation total = 41036433
+qualified activation min/operator = 300623
+mean selected prune ratio = 0.746176
+hard negatives = 0
+false commits = 0
+wrong-scope calls = 0
+unsupported answers = 0
+negative transfer = 0
+direct flow writes = 0
+```
+
 These are scoped operators, not general-purpose neural skills. A larger count is
 not automatically better; value depends on safe activation, low cost, correct
 scope, reloadability, and no-harm evidence.
@@ -85,6 +111,8 @@ scope, reloadability, and no-harm evidence.
 - block unsafe lifecycle states, digest mismatches, token swaps, and wrong-scope
   loads;
 - rank, promote, quarantine, deprecate, and stress-test scoped operators.
+- backfill prior scoped CoreMemoryCandidate operators through stricter
+  Orange/Legendary probation without renaming or bypassing no-harm gates.
 
 ### Evidence-first state handling
 

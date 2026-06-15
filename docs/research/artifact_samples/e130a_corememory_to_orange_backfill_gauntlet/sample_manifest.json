@@ -1,0 +1,6 @@
+{
+  "artifact_contract": "E130A_COREMEMORY_TO_ORANGE_BACKFILL_GAUNTLET",
+  "sample_only": true,
+  "sample_row_count": 512,
+  "source": "target/pilot_wave/e130a_corememory_to_orange_backfill_gauntlet"
+}

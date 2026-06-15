@@ -118,8 +118,10 @@ jobs:
           js_path = pathlib.Path("target/ci/operator_rank_dashboard/dashboard.js")
           js_path.write_text(match.group(1), encoding="utf-8")
           subprocess.run(["node", "--check", str(js_path)], check=True)
+          if "E130A CoreMemory to Orange backfill" not in html:
+              raise SystemExit("dashboard did not load E130A Orange backfill evidence")
           if "E129 arithmetic trace" not in html:
-              raise SystemExit("dashboard did not load E129 arithmetic trace evidence")
+              raise SystemExit("dashboard did not retain E129 arithmetic trace evidence")
           PY
 
       - name: Front-door stale current-claim guard
@@ -159,6 +161,10 @@ jobs:
               '"current_evidence_subject": "Add E112',
               "E80-E112 are tracked post-release evidence",
               "current E112 evidence anchor",
+              "current_evidence_anchor = E129_ARITHMETIC_TRACE_ORANGE_LEGENDARY_PROBATION",
+              '"current_evidence_anchor": "E129_ARITHMETIC_TRACE_ORANGE_LEGENDARY_PROBATION"',
+              "current_evidence_anchor = E129 arithmetic trace Orange/Legendary probation",
+              "Current evidence anchor: E129 arithmetic trace Orange/Legendary probation",
           ]
           failures = []
           for path in files:

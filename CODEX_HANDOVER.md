@@ -8,8 +8,8 @@ Last updated: 2026-06-15
 repo = VRAXION_anchorwiki
 branch = main
 latest_release_target = v6.1.7
-current_evidence_anchor = E129 arithmetic trace Orange/Legendary probation on main
-current_status = E129 exact arithmetic trace operators promoted to Orange/LegendaryCandidate
+current_evidence_anchor = E130A CoreMemoryCandidate-to-Orange backfill gauntlet on main
+current_status = E130A backfilled the E112 CoreMemoryCandidate pool to Orange/LegendaryCandidate
 ```
 
 This is the first file a fresh Codex should read after cloning the repo.
@@ -70,6 +70,31 @@ covered = add/sub, multiplication, exact division, floor division,
           invalid trace rejection, division-by-zero rejection
 ```
 
+E130A backfills the prior E112 CoreMemoryCandidate pool through an E121-style
+Orange/Legendary gate:
+
+```text
+candidate_count = 136
+Orange/Legendary backfilled operators = 136
+qualified_activation_before_total = 13,877,699
+qualified_activation_add_total = 27,158,734
+qualified_activation_total = 41,036,433
+qualified_activation_min = 300,623
+mean_selected_prune_ratio = 0.746176
+
+hard negatives = 0
+false commits = 0
+wrong scope calls = 0
+unsupported answers = 0
+negative transfer = 0
+direct flow writes = 0
+
+dashboard operator count = 530
+dashboard Orange/LegendaryCandidate = 527
+dashboard CoreMemoryCandidate = 0
+dashboard Deprecated = 3
+```
+
 ## Claim Boundary
 
 Allowed:
@@ -79,7 +104,9 @@ VRAXION v6 has a governed operator-library checkpoint with 382 scoped
 Orange/Legendary text operators, continuous checkpointing discipline, a
 dashboard sample pack, a deterministic text-to-text render smoke, and an E128
 lightweight assistant text-IO corpus/render smoke. E129 confirms scoped exact
-arithmetic trace Operators through Orange/Legendary probation.
+arithmetic trace Operators through Orange/Legendary probation. E130A confirms
+the prior CoreMemoryCandidate pool can be backfilled to Orange/Legendary under
+the stricter activation, no-harm, reload, challenger, and prune gate.
 ```
 
 System-level interpretation:
@@ -92,6 +119,8 @@ It can build and pass a local 320-prompt assistant-style action-policy/template
 smoke without downloading a large external chat dataset.
 It can compute or validate visible arithmetic expressions/traces in scoped
 cases including multiplication and division.
+It can promote prior scoped CoreMemoryCandidate operators to Orange/Legendary
+when the E121-style gate is satisfied.
 It is not an open-domain LLM/chatbot.
 ```
 
@@ -120,10 +149,12 @@ docs/research/E127_OVERNIGHT_TEXT_SKILL_FARM_ORANGE_CYCLE_RESULT.md
 docs/research/E127_TEXT_TO_TEXT_RENDER_SMOKE_CURRENT_RESULT.md
 docs/research/E128_ASSISTANT_TEXT_IO_LIGHTWEIGHT_RENDER_TRAINING_RESULT.md
 docs/research/E129_ARITHMETIC_TRACE_ORANGE_LEGENDARY_PROBATION_RESULT.md
+docs/research/E130A_COREMEMORY_TO_ORANGE_BACKFILL_GAUNTLET_RESULT.md
 docs/research/artifact_samples/e127_overnight_text_skill_farm_orange_cycle/
 docs/research/artifact_samples/e127_text_to_text_render_smoke_current/
 docs/research/artifact_samples/e128_assistant_text_io_lightweight_render_training/
 docs/research/artifact_samples/e129_arithmetic_trace_orange_legendary_probation/
+docs/research/artifact_samples/e130a_corememory_to_orange_backfill_gauntlet/
 ```
 
 ## Legal / License
@@ -156,16 +187,16 @@ docs/legal/PRIOR_ART_AND_PROVENANCE_CHECKLIST.md
 Generate the local operator dashboard:
 
 ```powershell
-python scripts/tools/generate_operator_rank_dashboard.py --e127 docs/research/artifact_samples/e127_overnight_text_skill_farm_orange_cycle --out target/pilot_wave/operator_rank_dashboard/index.html
+python scripts/tools/generate_operator_rank_dashboard.py --e127 docs/research/artifact_samples/e127_overnight_text_skill_farm_orange_cycle --e129 docs/research/artifact_samples/e129_arithmetic_trace_orange_legendary_probation --e130a docs/research/artifact_samples/e130a_corememory_to_orange_backfill_gauntlet --out target/pilot_wave/operator_rank_dashboard/index.html
 ```
 
-Expected E127 dashboard cards:
+Expected current dashboard cards:
 
 ```text
-E127 ORANGE = 382
-E127 CYCLES = 40
-E127 HARD NEGATIVES = 0
-E127 FALSE COMMITS = 0
+E130A BACKFILL = 136/136
+E130A HARD NEGATIVES = 0
+E130A DIRECT WRITES = 0
+ORANGE/LEGENDARY CANDIDATE = 527
 ```
 
 ## Quick Checks
@@ -178,6 +209,7 @@ python -m py_compile scripts/probes/run_e127_overnight_text_skill_farm_orange_cy
 python -m py_compile scripts/probes/run_e128_assistant_text_io_lightweight_render_training.py
 python scripts/probes/run_e128_assistant_text_io_lightweight_render_training.py --out target/ci/e128_assistant_text_io_lightweight_render_training
 python -m py_compile scripts/probes/run_e129_arithmetic_trace_orange_legendary_probation.py
+python -m py_compile scripts/probes/run_e130a_corememory_to_orange_backfill_gauntlet.py
 python -m compileall -q scripts
 cargo test --workspace
 git diff --check
@@ -220,7 +252,7 @@ Recommended next steps:
 
 ```text
 1. Decide whether to continue E127 with a fresh candidate pack or pause farming.
-2. Run E130 arithmetic text-IO transfer and word-problem no-call gauntlet.
+2. Run E130B arithmetic text-IO transfer and word-problem no-call gauntlet.
 3. Build the next bridge from deterministic action/template rendering and exact
    arithmetic trace operators toward richer text IO while keeping claims scoped.
 4. Keep all new skills scoped, dashboard-visible, and rollback-safe.

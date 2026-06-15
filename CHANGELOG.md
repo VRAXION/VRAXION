@@ -1,6 +1,25 @@
 # Changelog
 
-This changelog is narrowed to the current v6 / E127-E129 evidence anchor. Full historical beta, probe, Python SDK, legacy Rust, and research-output history is preserved in git history and archive tags.
+This changelog is narrowed to the current v6 / E127-E130A evidence anchor. Full historical beta, probe, Python SDK, legacy Rust, and research-output history is preserved in git history and archive tags.
+
+## 2026-06-15 - E130A CoreMemoryCandidate To Orange Backfill Gauntlet
+
+- Added `scripts/probes/run_e130a_corememory_to_orange_backfill_gauntlet.py`.
+- Backfilled the 136 E112 CoreMemoryCandidate Operators through an E121-style
+  Orange/Legendary probation gate.
+- Result: 136/136 reached OrangeLegendaryCandidate.
+- Activation evidence: 13,877,699 qualified activations before E130A,
+  27,158,734 added qualified activations, 41,036,433 total qualified
+  activations, and 300,623 minimum qualified activations per operator.
+- Safety/probation checks: family coverage minimum 20, campaign count minimum
+  8, mean selected prune ratio 0.746176, reload/negative-scope/challenger/prune
+  pass rates 1.000000.
+- Confirmed: 0 hard negatives, 0 false commits, 0 wrong-scope calls, 0
+  unsupported answers, 0 negative transfers, and 0 direct flow writes.
+- Dashboard result: 530 total operators, 527 Orange/LegendaryCandidate scoped
+  operators, 0 CoreMemoryCandidate operators, and 3 Deprecated operators.
+- Boundary: scoped Operator rank backfill only; not PermaCore, TrueGolden,
+  production assistant behavior, final training, or open-domain reasoning.
 
 ## 2026-06-15 - E129 Arithmetic Trace Orange/Legendary Probation
 

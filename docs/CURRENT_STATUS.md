@@ -7,7 +7,7 @@ _Last updated: 2026-06-15_
 ```text
 Current source of truth: main
 Current GitHub release: v6.1.7
-Current evidence anchor: E129 arithmetic trace Orange/Legendary probation (post-v6.1.7 main)
+Current evidence anchor: E130A CoreMemoryCandidate-to-Orange backfill gauntlet (post-v6.1.7 main)
 Latest released runtime slice: a908a838a1119540ed88bc91e10cfcb0bdae92a8 E79 training data/curriculum readiness gate
 Active branch surface: main only
 Historical branch heads: archive/branches/2026-06-13/*
@@ -31,6 +31,7 @@ E69-E79 released Rust runtime and training-data readiness gate
 -> E127 overnight cyclic Orange/Legendary text-operator farm
 -> E128 assistant text-IO lightweight render training
 -> E129 arithmetic trace Orange/Legendary probation
+-> E130A CoreMemoryCandidate-to-Orange backfill gauntlet
 ```
 
 ## Current Evidence
@@ -49,6 +50,8 @@ E69-E79 released Rust runtime and training-data readiness gate
 - E127 also includes a deterministic text-to-text render smoke over 8 prompts. It is operator selection plus guarded template rendering, not LLM/freeform generation.
 - E128 builds a no-download lightweight assistant-text corpus from local E127 artifacts, repo docs, adversarial boundary prompts, and FineWeb-derived local samples: 320 prompts split into 160 train, 64 validation, and 96 heldout rows; train/validation/heldout action accuracy 1.000, operator trace validity 1.000, unsupported answers 0, wrong refusals 0, and boundary-claim violations 0.
 - E129 promotes 9 scoped exact arithmetic trace operators to Orange/LegendaryCandidate under stress/prune pressure: 2,700,000 total qualified activations, 300,000 minimum per operator, 9,000 negative-scope no-call cases, 0 hard negatives, 0 false commits, 0 wrong-scope calls, and 0 unsupported answers.
+- E130A backfills the 136 E112 CoreMemoryCandidate operators through an E121-style Orange/Legendary gate: 136/136 reached OrangeLegendaryCandidate, 41,036,433 total qualified activations, 300,623 minimum per operator, mean selected prune ratio 0.746176, 0 hard negatives, 0 false commits, 0 wrong-scope calls, 0 unsupported answers, 0 negative transfers, and 0 direct flow writes.
+- E130A dashboard summary: 530 operators, 527 Orange/LegendaryCandidate scoped operators, 0 CoreMemoryCandidate operators, and 3 Deprecated operators.
 - Long-running work must emit continuous partial progress and checkpoint data.
 
 ## What Is Historical
@@ -59,7 +62,7 @@ The old bounded-service, open-vocab assistant, beta release, byte-pipeline, and 
 
 Allowed current claim:
 
-> VRAXION v6 has a Rust mainline for governed Pocket Library state, resumable curriculum execution, multi-lane final-training supervision, global Pocket Library merge/dedupe governance, a training-data/curriculum readiness gate, one canonical `final_train` campaign entrypoint, governed Operator evidence through E127, an E128 lightweight assistant text-IO render-training smoke, and E129 scoped exact arithmetic trace Operators promoted through Orange/Legendary probation. E127 cycle 40 contains 382 scoped Orange/Legendary text operators with 0 tracked hard negatives, false commits, wrong-scope calls, or unsupported answers in the checkpointed evidence. E128 confirms a 320-prompt deterministic corpus/action-policy/template-render bridge with 0 unsupported answers and 0 boundary-claim violations. E129 confirms 9 scoped arithmetic trace operators with 2.7M qualified activations, 0 hard negatives, and 0 wrong-scope calls.
+> VRAXION v6 has a Rust mainline for governed Pocket Library state, resumable curriculum execution, multi-lane final-training supervision, global Pocket Library merge/dedupe governance, a training-data/curriculum readiness gate, one canonical `final_train` campaign entrypoint, governed Operator evidence through E127, an E128 lightweight assistant text-IO render-training smoke, E129 scoped exact arithmetic trace Operators promoted through Orange/Legendary probation, and an E130A CoreMemoryCandidate-to-Orange backfill. E127 cycle 40 contains 382 scoped Orange/Legendary text operators with 0 tracked hard negatives, false commits, wrong-scope calls, or unsupported answers in the checkpointed evidence. E128 confirms a 320-prompt deterministic corpus/action-policy/template-render bridge with 0 unsupported answers and 0 boundary-claim violations. E129 confirms 9 scoped arithmetic trace operators with 2.7M qualified activations, 0 hard negatives, and 0 wrong-scope calls. E130A confirms 136 prior CoreMemoryCandidate operators reached Orange/LegendaryCandidate with 41,036,433 total qualified activations, 0 hard negatives, and 0 direct flow writes.
 
 Short form:
 
@@ -69,6 +72,7 @@ evidence-first proposal/Agency commit behavior = yes
 deterministic scoped text-to-text smoke = yes
 lightweight assistant text-IO corpus/render smoke = yes
 exact arithmetic expression/trace compute = yes
+CoreMemoryCandidate-to-Orange rank backfill = yes
 open-domain LLM/chatbot = no
 Gemma/GPT-like generation = no
 ```
@@ -91,5 +95,5 @@ Not claimed:
 
 1. Use `CODEX_HANDOVER.md` as the first read for fresh Codex sessions.
 2. Decide whether to continue E127 with a fresh candidate pack or pause farming.
-3. Run E130 arithmetic text-IO transfer and word-problem no-call gauntlet before claiming broader arithmetic text IO.
+3. Run E130B arithmetic text-IO transfer and word-problem no-call gauntlet before claiming broader arithmetic text IO.
 4. Keep evidence CI checking tracked sample artifacts so front-door docs cannot drift back to stale current-main claims.
