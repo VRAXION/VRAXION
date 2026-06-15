@@ -56,6 +56,21 @@ wrong refusals = 0
 boundary-claim violations = 0
 ```
 
+Current E129 arithmetic trace evidence:
+
+```text
+Orange/Legendary arithmetic operators = 9
+qualified activation total = 2700000
+qualified activation min/operator = 300000
+negative-scope no-call cases = 9000
+min in-scope accuracy = 1.000
+negative-scope pass rate = 1.000
+hard negatives = 0
+false commits = 0
+wrong-scope calls = 0
+unsupported answers = 0
+```
+
 These are scoped operators, not general-purpose neural skills. A larger count is
 not automatically better; value depends on safe activation, low cost, correct
 scope, reloadability, and no-harm evidence.
@@ -103,6 +118,15 @@ scope, reloadability, and no-harm evidence.
 - validate visible calculation markers such as `<<expression=result>>`;
 - normalize arithmetic notation and common operator variants;
 - validate arithmetic trace markers without claiming open-domain math reasoning.
+
+### Exact arithmetic trace operators
+
+- compute or validate scoped arithmetic expressions and traces;
+- cover plus/minus, multiplication, exact division, floor division, signed
+  integers, decimal/fraction rendering, mixed precedence, invalid-trace
+  rejection, and division-by-zero rejection;
+- no-call natural-language word problems that lack a visible arithmetic
+  expression or trace.
 
 ### Task/progress integrity
 
@@ -156,6 +180,7 @@ VRAXION currently does **not** claim:
 - freeform long-answer assistant quality;
 - neural LLM training completion;
 - GSM8K or hidden word-problem solving;
+- open-domain natural-language arithmetic reasoning;
 - production API readiness;
 - deployed service readiness;
 - final training completion;

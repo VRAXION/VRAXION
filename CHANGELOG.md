@@ -1,6 +1,24 @@
 # Changelog
 
-This changelog is narrowed to the current v6 / E127-E128 evidence anchor. Full historical beta, probe, Python SDK, legacy Rust, and research-output history is preserved in git history and archive tags.
+This changelog is narrowed to the current v6 / E127-E129 evidence anchor. Full historical beta, probe, Python SDK, legacy Rust, and research-output history is preserved in git history and archive tags.
+
+## 2026-06-15 - E129 Arithmetic Trace Orange/Legendary Probation
+
+- Added `scripts/probes/run_e129_arithmetic_trace_orange_legendary_probation.py`.
+- Added exact arithmetic trace training/probation evidence for scoped direct
+  arithmetic operators.
+- Result: 9/9 arithmetic operators reached Orange/LegendaryCandidate with
+  300,000 qualified activations each and 2,700,000 qualified activations total.
+- Covered operations: addition/subtraction, multiplication, exact division,
+  floor division, signed integers, decimal/fraction rendering, parenthesized
+  mixed precedence, invalid trace rejection, and division-by-zero rejection.
+- Negative-scope check: 9,000 natural-language word-problem/no-visible-trace
+  cases produced 0 wrong-scope calls.
+- Confirmed: 0 hard negatives, 0 false commits, 0 wrong-scope calls, and 0
+  unsupported answers.
+- Boundary: exact arithmetic expression/trace compute and validation only; not
+  natural-language word-problem solving, GSM8K solving, open-domain reasoning,
+  neural LLM training, PermaCore, or TrueGolden.
 
 ## 2026-06-15 - E128 Assistant Text-IO Lightweight Render Training
 

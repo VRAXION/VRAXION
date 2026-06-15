@@ -1,0 +1,58 @@
+{
+  "rows": [
+    {
+      "negative_scope_case_count": 1000,
+      "negative_scope_pass_rate": 1.0,
+      "operator_id": "e129_add_sub_trace_operator",
+      "wrong_scope_call": 0
+    },
+    {
+      "negative_scope_case_count": 1000,
+      "negative_scope_pass_rate": 1.0,
+      "operator_id": "e129_multiplication_trace_operator",
+      "wrong_scope_call": 0
+    },
+    {
+      "negative_scope_case_count": 1000,
+      "negative_scope_pass_rate": 1.0,
+      "operator_id": "e129_exact_division_trace_operator",
+      "wrong_scope_call": 0
+    },
+    {
+      "negative_scope_case_count": 1000,
+      "negative_scope_pass_rate": 1.0,
+      "operator_id": "e129_floor_division_trace_operator",
+      "wrong_scope_call": 0
+    },
+    {
+      "negative_scope_case_count": 1000,
+      "negative_scope_pass_rate": 1.0,
+      "operator_id": "e129_signed_integer_trace_operator",
+      "wrong_scope_call": 0
+    },
+    {
+      "negative_scope_case_count": 1000,
+      "negative_scope_pass_rate": 1.0,
+      "operator_id": "e129_decimal_fraction_trace_operator",
+      "wrong_scope_call": 0
+    },
+    {
+      "negative_scope_case_count": 1000,
+      "negative_scope_pass_rate": 1.0,
+      "operator_id": "e129_parenthesized_mixed_precedence_operator",
+      "wrong_scope_call": 0
+    },
+    {
+      "negative_scope_case_count": 1000,
+      "negative_scope_pass_rate": 1.0,
+      "operator_id": "e129_invalid_trace_rejection_guard",
+      "wrong_scope_call": 0
+    },
+    {
+      "negative_scope_case_count": 1000,
+      "negative_scope_pass_rate": 1.0,
+      "operator_id": "e129_division_by_zero_guard",
+      "wrong_scope_call": 0
+    }
+  ]
+}

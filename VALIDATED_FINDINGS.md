@@ -9,8 +9,8 @@ This is the active evidence summary for the current repo state. Historical findi
 ```text
 branch = main
 current_release = v6.1.7
-current_evidence_anchor = E128_ASSISTANT_TEXT_IO_LIGHTWEIGHT_RENDER_TRAINING
-current_evidence_subject = No-download assistant corpus/action-policy/template smoke
+current_evidence_anchor = E129_ARITHMETIC_TRACE_ORANGE_LEGENDARY_PROBATION
+current_evidence_subject = Exact arithmetic trace operators promoted under stress/prune
 latest_released_runtime_slice = a908a838a1119540ed88bc91e10cfcb0bdae92a8 E79 training data/curriculum readiness gate
 ```
 
@@ -27,15 +27,16 @@ latest_released_runtime_slice = a908a838a1119540ed88bc91e10cfcb0bdae92a8 E79 tra
 | E109-E118 | tracked on `main` | Rank ladder, probation, no-harm, and CoreCandidate gauntlets. | v6 evidence |
 | E119-E126 | tracked on `main` | FineWeb/text-understanding skill mining and Orange/Legendary probation. | v6 evidence |
 | E127 | `f32a6f4b` | Overnight cyclic Orange/Legendary text-operator farm: 40 cycles, 382 scoped operators, 0 hard negatives, 0 false commits, 0 wrong-scope calls, 0 unsupported answers. | v6 evidence |
-| E128 | tracked on `main` | Assistant text-IO lightweight render training: 320 local prompts, 160/64/96 train/validation/heldout split, action accuracy 1.000/1.000/1.000, operator trace validity 1.000, 0 unsupported answers, 0 wrong refusals, 0 boundary-claim violations. | Current evidence anchor |
+| E128 | tracked on `main` | Assistant text-IO lightweight render training: 320 local prompts, 160/64/96 train/validation/heldout split, action accuracy 1.000/1.000/1.000, operator trace validity 1.000, 0 unsupported answers, 0 wrong refusals, 0 boundary-claim violations. | v6 evidence |
+| E129 | tracked on `main` | Arithmetic trace Orange/Legendary probation: 9 scoped arithmetic operators, 2.7M qualified activations, 9,000 negative-scope no-call cases, 0 hard negatives, 0 false commits, 0 wrong-scope calls, 0 unsupported answers. | Current evidence anchor |
 
 ## Current Validated Claim
 
-> VRAXION v6 has a Rust mainline for governed Pocket Library state, resumable curriculum execution, multi-lane final-training supervision, global Pocket Library merge/dedupe governance, a training-data/curriculum readiness gate, one canonical `final_train` campaign entrypoint, governed Operator evidence through E127, and an E128 lightweight assistant text-IO render-training smoke. E127 cycle 40 contains 382 scoped Orange/Legendary text operators with 0 tracked hard negatives, false commits, wrong-scope calls, or unsupported answers in the checkpointed evidence. E128 confirms a 320-prompt deterministic corpus/action-policy/template-render bridge with 0 unsupported answers and 0 boundary-claim violations.
+> VRAXION v6 has a Rust mainline for governed Pocket Library state, resumable curriculum execution, multi-lane final-training supervision, global Pocket Library merge/dedupe governance, a training-data/curriculum readiness gate, one canonical `final_train` campaign entrypoint, governed Operator evidence through E127, an E128 lightweight assistant text-IO render-training smoke, and E129 scoped exact arithmetic trace Operators promoted through Orange/Legendary probation. E127 cycle 40 contains 382 scoped Orange/Legendary text operators with 0 tracked hard negatives, false commits, wrong-scope calls, or unsupported answers in the checkpointed evidence. E128 confirms a 320-prompt deterministic corpus/action-policy/template-render bridge with 0 unsupported answers and 0 boundary-claim violations. E129 confirms 9 scoped arithmetic trace operators with 2.7M qualified activations, 0 hard negatives, and 0 wrong-scope calls.
 
 ## Operational Finding
 
-Long-running work must write progress continuously and support resume. The Rust runtime layers prove checkpoint/progress/writeout behavior through the E72-E79 chain. The E80-E128 evidence layer is governed research/operator/text-IO evidence and must remain explicitly scoped until promoted into runtime-facing behavior.
+Long-running work must write progress continuously and support resume. The Rust runtime layers prove checkpoint/progress/writeout behavior through the E72-E79 chain. The E80-E129 evidence layer is governed research/operator/text-IO/arithmetic-trace evidence and must remain explicitly scoped until promoted into runtime-facing behavior.
 
 ## Hard Boundary
 

@@ -8,8 +8,8 @@ Last updated: 2026-06-15
 repo = VRAXION_anchorwiki
 branch = main
 latest_release_target = v6.1.7
-current_evidence_anchor = E128 assistant text-IO lightweight render training on main
-current_status = E128 no-download assistant text-IO corpus/render smoke on top of E127
+current_evidence_anchor = E129 arithmetic trace Orange/Legendary probation on main
+current_status = E129 exact arithmetic trace operators promoted to Orange/LegendaryCandidate
 ```
 
 This is the first file a fresh Codex should read after cloning the repo.
@@ -51,6 +51,25 @@ wrong refusals = 0
 boundary-claim violations = 0
 ```
 
+E129 adds exact arithmetic text-IO trace/operator evidence:
+
+```text
+operator_count = 9
+Orange/Legendary arithmetic operators = 9
+qualified_activation_min = 300000
+qualified_activation_total = 2700000
+negative_scope_case_count_total = 9000
+
+hard negatives = 0
+false commits = 0
+wrong scope calls = 0
+unsupported answers = 0
+
+covered = add/sub, multiplication, exact division, floor division,
+          signed integers, decimal/fraction rendering, mixed precedence,
+          invalid trace rejection, division-by-zero rejection
+```
+
 ## Claim Boundary
 
 Allowed:
@@ -59,7 +78,8 @@ Allowed:
 VRAXION v6 has a governed operator-library checkpoint with 382 scoped
 Orange/Legendary text operators, continuous checkpointing discipline, a
 dashboard sample pack, a deterministic text-to-text render smoke, and an E128
-lightweight assistant text-IO corpus/render smoke.
+lightweight assistant text-IO corpus/render smoke. E129 confirms scoped exact
+arithmetic trace Operators through Orange/Legendary probation.
 ```
 
 System-level interpretation:
@@ -70,6 +90,8 @@ It can reject/defer unsupported or conflicting evidence in scoped tasks.
 It can render guarded template-style responses in controlled smoke tests.
 It can build and pass a local 320-prompt assistant-style action-policy/template
 smoke without downloading a large external chat dataset.
+It can compute or validate visible arithmetic expressions/traces in scoped
+cases including multiplication and division.
 It is not an open-domain LLM/chatbot.
 ```
 
@@ -97,9 +119,11 @@ CHANGELOG.md
 docs/research/E127_OVERNIGHT_TEXT_SKILL_FARM_ORANGE_CYCLE_RESULT.md
 docs/research/E127_TEXT_TO_TEXT_RENDER_SMOKE_CURRENT_RESULT.md
 docs/research/E128_ASSISTANT_TEXT_IO_LIGHTWEIGHT_RENDER_TRAINING_RESULT.md
+docs/research/E129_ARITHMETIC_TRACE_ORANGE_LEGENDARY_PROBATION_RESULT.md
 docs/research/artifact_samples/e127_overnight_text_skill_farm_orange_cycle/
 docs/research/artifact_samples/e127_text_to_text_render_smoke_current/
 docs/research/artifact_samples/e128_assistant_text_io_lightweight_render_training/
+docs/research/artifact_samples/e129_arithmetic_trace_orange_legendary_probation/
 ```
 
 ## Legal / License
@@ -153,6 +177,7 @@ git status --short --branch
 python -m py_compile scripts/probes/run_e127_overnight_text_skill_farm_orange_cycle.py scripts/tools/generate_operator_rank_dashboard.py
 python -m py_compile scripts/probes/run_e128_assistant_text_io_lightweight_render_training.py
 python scripts/probes/run_e128_assistant_text_io_lightweight_render_training.py --out target/ci/e128_assistant_text_io_lightweight_render_training
+python -m py_compile scripts/probes/run_e129_arithmetic_trace_orange_legendary_probation.py
 python -m compileall -q scripts
 cargo test --workspace
 git diff --check
@@ -195,8 +220,8 @@ Recommended next steps:
 
 ```text
 1. Decide whether to continue E127 with a fresh candidate pack or pause farming.
-2. Run E129 assistant prompt generalization and longer-context smoke.
-3. Build the next bridge from deterministic action/template rendering toward
-   richer text IO while keeping claims scoped.
+2. Run E130 arithmetic text-IO transfer and word-problem no-call gauntlet.
+3. Build the next bridge from deterministic action/template rendering and exact
+   arithmetic trace operators toward richer text IO while keeping claims scoped.
 4. Keep all new skills scoped, dashboard-visible, and rollback-safe.
 ```
