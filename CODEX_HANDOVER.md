@@ -45,6 +45,15 @@ Orange/Legendary text operators, continuous checkpointing discipline, a
 dashboard sample pack, and a deterministic text-to-text render smoke.
 ```
 
+System-level interpretation:
+
+```text
+It is a governed Operator/Pocket runtime.
+It can reject/defer unsupported or conflicting evidence in scoped tasks.
+It can render guarded template-style responses in controlled smoke tests.
+It is not an open-domain LLM/chatbot.
+```
+
 Not allowed:
 
 ```text
@@ -61,6 +70,7 @@ unbounded reasoning claim
 ```text
 README.md
 docs/CURRENT_STATUS.md
+docs/CURRENT_CAPABILITIES.md
 docs/GETTING_STARTED.md
 docs/VERSION.json
 CHANGELOG.md

@@ -50,6 +50,7 @@ unsupported answers = 0
 
 - Active Rust runtime: [`vraxion-runtime/`](vraxion-runtime/)
 - Current status: [`docs/CURRENT_STATUS.md`](docs/CURRENT_STATUS.md)
+- Current capabilities: [`docs/CURRENT_CAPABILITIES.md`](docs/CURRENT_CAPABILITIES.md)
 - Getting started: [`docs/GETTING_STARTED.md`](docs/GETTING_STARTED.md)
 - Validated findings: [`VALIDATED_FINDINGS.md`](VALIDATED_FINDINGS.md)
 - Operator cards: [`docs/research/OPERATOR_LIBRARY_CARDS.md`](docs/research/OPERATOR_LIBRARY_CARDS.md)
@@ -65,6 +66,9 @@ Allowed current claim:
 > VRAXION v6 has a Rust mainline for governed Pocket Library state, resumable curriculum execution, multi-lane final-training supervision, global Pocket Library merge/dedupe governance, a training-data/curriculum readiness gate, one canonical `final_train` campaign entrypoint, and governed Operator evidence through E127. E127 cycle 40 contains 382 scoped Orange/Legendary text operators with 0 tracked hard negatives, false commits, wrong-scope calls, or unsupported answers in the checkpointed evidence.
 
 The E127 finding is scoped operator-library evidence only. It includes a deterministic operator+template text-to-text smoke, but it does not claim PermaCore, TrueGolden, production API readiness, final training completion, open-domain assistant readiness, Gemma/GPT-like generation, GSM8K solving, consciousness, or sentience.
+
+For the current "what can it do as one system?" view, see
+[`docs/CURRENT_CAPABILITIES.md`](docs/CURRENT_CAPABILITIES.md).
 
 ## Verification
 

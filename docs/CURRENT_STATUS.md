@@ -34,6 +34,7 @@ E69-E79 released Rust runtime and training-data readiness gate
 ## Current Evidence
 
 - `vraxion-runtime/` is the active released Rust runtime surface.
+- The current capability boundary is summarized in `docs/CURRENT_CAPABILITIES.md`.
 - The current GitHub release is `v6.1.7`; it anchors the E127 cycle-40 governed text-operator library checkpoint.
 - E109 established scoped rank policy: 14 Gold, 35 Silver, 87 Bronze, 0 DiamondCandidate, 0 RedFlag.
 - E110 applied Silver-to-Gold pressure: 35 candidates, 35 scoped Gold promotions, 0 hard negatives.
@@ -55,6 +56,16 @@ The old bounded-service, open-vocab assistant, beta release, byte-pipeline, and 
 Allowed current claim:
 
 > VRAXION v6 has a Rust mainline for governed Pocket Library state, resumable curriculum execution, multi-lane final-training supervision, global Pocket Library merge/dedupe governance, a training-data/curriculum readiness gate, one canonical `final_train` campaign entrypoint, and governed Operator evidence through E127. E127 cycle 40 contains 382 scoped Orange/Legendary text operators with 0 tracked hard negatives, false commits, wrong-scope calls, or unsupported answers in the checkpointed evidence.
+
+Short form:
+
+```text
+governed scoped Operator/Pocket runtime = yes
+evidence-first proposal/Agency commit behavior = yes
+deterministic scoped text-to-text smoke = yes
+open-domain LLM/chatbot = no
+Gemma/GPT-like generation = no
+```
 
 Not claimed:
 
