@@ -2,8 +2,8 @@
 
 ```text
 decision = e127_overnight_cycle_positive
-cycle_count = 27
-orange_legendary_candidate_total = 243
+cycle_count = 28
+orange_legendary_candidate_total = 252
 hard_negative_total = 0
 false_commit_total = 0
 wrong_scope_call_total = 0
@@ -21,7 +21,7 @@ candidate discovery
 -> repeat with already-promoted operators excluded
 ```
 
-The supervised overnight loop has completed 27 checkpointed cycles so far. Several candidate
+The supervised overnight loop has completed 28 checkpointed cycles so far. Several candidate
 spec packs were added as the currently visible candidate space was exhausted;
 each pack was validated by running the next cycle with active already-promoted
 operators excluded.
@@ -32,11 +32,11 @@ final training, Gemma-level generation, or open-domain reasoning.
 ## Aggregate Metrics
 
 ```text
-selected_candidate_total = 243
-orange_legendary_candidate_total = 243
-mutation_attempts_total = 1179405
-accepted_mutations_total = 7703
-rollback_count_total = 1171702
+selected_candidate_total = 252
+orange_legendary_candidate_total = 252
+mutation_attempts_total = 1220152
+accepted_mutations_total = 8010
+rollback_count_total = 1212142
 
 hard_negative_total = 0
 false_commit_total = 0
@@ -44,17 +44,17 @@ wrong_scope_call_total = 0
 unsupported_answer_total = 0
 ```
 
-## Latest Successful Cycle 027 Metrics
+## Latest Successful Cycle 028 Metrics
 
 ```text
-selected_candidate_count = 16
-orange_legendary_candidate_count = 16
-candidate_pool_count = 74
-farmable_candidate_count = 25
-qualified_activation_min = 300740
-mutation_attempts_total = 76286
-accepted_mutations_total = 545
-rollback_count_total = 75741
+selected_candidate_count = 9
+orange_legendary_candidate_count = 9
+candidate_pool_count = 58
+farmable_candidate_count = 9
+qualified_activation_min = 300791
+mutation_attempts_total = 40747
+accepted_mutations_total = 307
+rollback_count_total = 40440
 mean_selected_prune_ratio = 0.62
 
 reload_match_rate = 1.0
@@ -68,28 +68,21 @@ wrong_scope_call_total = 0
 unsupported_answer_total = 0
 ```
 
-## Latest Successful Cycle 027 Orange Operators
+## Latest Successful Cycle 028 Orange Operators
 
 ```text
-e128_progress_ledger_status_lens
-e128_answer_format_constraint_lens
-e128_multi_condition_rule_lens
-e128_external_side_effect_guard
-e128_correlation_causation_guard
-e128_official_unofficial_source_lens
-e128_user_intent_background_split_lens
-e128_multi_turn_continuity_lens
-e128_tool_output_status_lens
-e128_future_prediction_guard
-e128_followup_dependency_lens
-e128_before_after_state_update_lens
-e128_active_evidence_request_lens
-e128_claim_source_date_lens
-e128_non_actionable_note_guard
-e128_unresolved_reference_guard
+e128_observation_reported_by_lens
+e128_staleness_due_to_date_guard
+e128_negated_causal_guard
+e128_exact_vs_approximate_guard
+e128_method_assumption_result_lens
+e128_candidate_promotion_reason_lens
+e128_known_unknown_split_lens
+e128_question_scope_guard
+e128_partial_success_failure_lens
 ```
 
-Cycle 028 started after this checkpoint. Later cycle results should be treated
+Cycle 029 started after this checkpoint. Later cycle results should be treated
 as provisional until their cycle artifacts are checkpointed.
 
 ## Current Boundary
