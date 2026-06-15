@@ -8,14 +8,14 @@ This repository is consolidated around the current winning mainline. Historical 
 
 ```text
 branch = main
-current_release = v5.0.0-e79.0
-current_evidence_anchor = 05415f5b06a43440742715ea93a5e2ec97632f21
-current_evidence_subject = Add E113 FineWeb light stress recycle probe
+current_release = v6.1.7
+current_evidence_anchor = f32a6f4b
+current_evidence_subject = Finalize E127 cycle 40 checkpoint
 latest_released_runtime_slice = a908a838a1119540ed88bc91e10cfcb0bdae92a8
 latest_released_runtime_subject = Add training data curriculum readiness gate
 ```
 
-The latest GitHub release remains [`v5.0.0-e79.0`](https://github.com/VRAXION/VRAXION/releases/tag/v5.0.0-e79.0). The live `main` branch carries post-release E80-E113 evidence on top of that release line. Treat release status and current evidence anchors as related but separate.
+The latest GitHub release is [`v6.1.7`](https://github.com/VRAXION/VRAXION/releases/tag/v6.1.7). It anchors the E127 cycle-40 governed text-operator library checkpoint.
 
 ## Current Mainline
 
@@ -32,17 +32,18 @@ The latest GitHub release remains [`v5.0.0-e79.0`](https://github.com/VRAXION/VR
 | E111 | `d71e3657` | Bronze mutation/prune wave: 87/87 promoted to scoped Gold variants, 0 hard negatives |
 | E112 | `9de33241` | Gold-to-CoreMemoryCandidate prune-heavy probation wave: 136/136 qualified, 0 hard negatives |
 | E113 | `05415f5b` | FineWeb-Edu 100k light stress: baseline 2,624 hard negatives across 88 operators, selected recycled variants 0 hard negatives |
+| E119-E126 | tracked on `main` | FineWeb/text-understanding skill mining and Orange/Legendary probation |
+| E127 | `f32a6f4b` | Overnight cyclic Orange/Legendary text-operator farm: 40 cycles, 382 scoped operators, 0 hard negatives |
 
-Current rank state remains anchored by E112:
+Current E127 scoped operator state:
 
 ```text
-CoreMemoryCandidate = 136
-Gold = 0
-Silver = 0
-Bronze = 0
-DiamondCandidate = 0
-RedFlag = 0
-Deprecated = 3
+Orange/Legendary scoped operators = 382
+E127 cycles = 40
+hard negatives = 0
+false commits = 0
+wrong scope calls = 0
+unsupported answers = 0
 ```
 
 ## What Is Current
@@ -52,7 +53,8 @@ Deprecated = 3
 - Getting started: [`docs/GETTING_STARTED.md`](docs/GETTING_STARTED.md)
 - Validated findings: [`VALIDATED_FINDINGS.md`](VALIDATED_FINDINGS.md)
 - Operator cards: [`docs/research/OPERATOR_LIBRARY_CARDS.md`](docs/research/OPERATOR_LIBRARY_CARDS.md)
-- Current post-release result: [`docs/research/E113_FINEWEB_LIGHT_STRESS_HARD_MUTATION_RECYCLE_RESULT.md`](docs/research/E113_FINEWEB_LIGHT_STRESS_HARD_MUTATION_RECYCLE_RESULT.md)
+- Current result: [`docs/research/E127_OVERNIGHT_TEXT_SKILL_FARM_ORANGE_CYCLE_RESULT.md`](docs/research/E127_OVERNIGHT_TEXT_SKILL_FARM_ORANGE_CYCLE_RESULT.md)
+- Handover for fresh Codex sessions: [`CODEX_HANDOVER.md`](CODEX_HANDOVER.md)
 - GitHub Pages front door: <https://vraxion.github.io/VRAXION/>
 - Wiki timeline: <https://github.com/VRAXION/VRAXION/wiki/Timeline-Archive>
 
@@ -60,9 +62,9 @@ Deprecated = 3
 
 Allowed current claim:
 
-> VRAXION has a Rust mainline for governed Pocket Library state, resumable curriculum execution, multi-lane final-training supervision, global Pocket Library merge/dedupe governance, a training-data/curriculum readiness gate, one canonical `final_train` campaign entrypoint, and post-release Operator evidence through E113. E112 qualifies the scoped Gold pool into CoreMemoryCandidate probation, and E113 stress-tests that pool on a 100k FineWeb-Edu seed pack where selected recycled variants remove the tracked baseline hard negatives.
+> VRAXION v6 has a Rust mainline for governed Pocket Library state, resumable curriculum execution, multi-lane final-training supervision, global Pocket Library merge/dedupe governance, a training-data/curriculum readiness gate, one canonical `final_train` campaign entrypoint, and governed Operator evidence through E127. E127 cycle 40 contains 382 scoped Orange/Legendary text operators with 0 tracked hard negatives, false commits, wrong-scope calls, or unsupported answers in the checkpointed evidence.
 
-The E113 finding is light dataset-stress/recycle evidence only. It does not claim PermaCore, TrueGolden, production API readiness, final training completion, open-domain assistant readiness, GSM8K solving, consciousness, or sentience.
+The E127 finding is scoped operator-library evidence only. It includes a deterministic operator+template text-to-text smoke, but it does not claim PermaCore, TrueGolden, production API readiness, final training completion, open-domain assistant readiness, Gemma/GPT-like generation, GSM8K solving, consciousness, or sentience.
 
 ## Verification
 

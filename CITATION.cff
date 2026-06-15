@@ -1,8 +1,8 @@
 cff-version: 1.2.0
 message: "If you use this software, please cite it as below."
-title: "VRAXION INSTNCT Runtime and E85 Evidence"
-version: "v5.0.0-e79.0"
-date-released: "2026-06-14"
+title: "VRAXION INSTNCT Runtime and E127 Operator Evidence"
+version: "v6.1.7"
+date-released: "2026-06-15"
 type: software
 authors:
   - family-names: Kenessy
@@ -18,3 +18,5 @@ keywords:
   - final-train
   - calc-scribe
   - visible-trace-validation
+  - operator-library
+  - text-operator-farming

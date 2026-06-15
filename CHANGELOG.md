@@ -1,12 +1,27 @@
 # Changelog
 
-This changelog is narrowed to the current E113 evidence anchor. Full historical beta, probe, Python SDK, legacy Rust, and research-output history is preserved in git history and archive tags.
+This changelog is narrowed to the current v6 / E127 evidence anchor. Full historical beta, probe, Python SDK, legacy Rust, and research-output history is preserved in git history and archive tags.
+
+## 2026-06-15 - v6.1.7 / E127 Text Operator Library Checkpoint
+
+- Current GitHub release: `v6.1.7`.
+- Current evidence anchor: `f32a6f4b` (`Finalize E127 cycle 40 checkpoint`).
+- E127 completed 40 checkpointed overnight text-operator farming cycles.
+- Result: 382 scoped Orange/Legendary text operators, 1,849,625 mutation
+  attempts, 12,123 accepted mutations, 1,837,502 rollbacks, 0 hard negatives,
+  0 false commits, 0 wrong-scope calls, and 0 unsupported answers.
+- Added `CODEX_HANDOVER.md` as the first-read file for fresh Codex sessions.
+- Added deterministic text-to-text render smoke artifacts. Boundary: operator
+  selection plus guarded template rendering, not LLM/freeform generation.
+- Claim boundary: scoped governed operator-library evidence only; not PermaCore,
+  TrueGolden, production assistant readiness, Gemma/GPT-like generation,
+  consciousness, or sentience.
 
 ## 2026-06-14 - E113 FineWeb Light Stress Hard Mutation Recycle
 
 - Current evidence anchor: `05415f5b06a43440742715ea93a5e2ec97632f21`
   (`Add E113 FineWeb light stress recycle probe`).
-- Latest GitHub release remains `v5.0.0-e79.0`.
+- At that point, the latest GitHub release was `v5.0.0-e79.0`.
 - E113 stress-tests the E112 CoreMemoryCandidate pool on the local
   FineWeb-Edu 100k seed pack.
 - Baseline result: 2,624 hard negatives across 88 operators.
@@ -20,7 +35,7 @@ This changelog is narrowed to the current E113 evidence anchor. Full historical 
 
 - Evidence head at that point: `9de33241f637fed08451cbb054a2f70e07630ba4`
   (`Add E112 gold to core prune wave`).
-- Latest GitHub release remains `v5.0.0-e79.0`.
+- At that point, the latest GitHub release was `v5.0.0-e79.0`.
 - E112 evaluates the scoped Gold pool under prune-heavy CoreMemoryCandidate
   probation using `minimal_core_prune`, `balanced_core_prune`,
   `deep_core_prune`, and `sibling_challenger`.
@@ -36,7 +51,7 @@ This changelog is narrowed to the current E113 evidence anchor. Full historical 
 ## 2026-06-14 - E111 Bronze Mutation/Prune Scoped Gold Conversion
 
 - Evidence head at that point: `d71e365752a46b5c94d51cd16359144ed1567553` (`Add E111 bronze mutation prune wave`).
-- Latest GitHub release remains `v5.0.0-e79.0`.
+- At that point, the latest GitHub release was `v5.0.0-e79.0`.
 - E111 evaluates the remaining E109 Bronze pool under active variant pressure:
   `base_unmodified`, `scope_adapter_mutation`, `io_contract_prune`,
   `mutation_plus_prune`, and `sibling_challenger`.
@@ -83,7 +98,7 @@ This changelog is narrowed to the current E113 evidence anchor. Full historical 
 
 ## 2026-06-14 - E79 Training Data Curriculum Readiness Gate
 
-- Current GitHub release: `v5.0.0-e79.0`.
+- At that point, the current GitHub release was `v5.0.0-e79.0`.
 - Runtime slice: `a908a838a1119540ed88bc91e10cfcb0bdae92a8`
   (`Add training data curriculum readiness gate`).
 - E79 adds `vraxion-runtime/src/training_data.rs` and the
