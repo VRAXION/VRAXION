@@ -2,8 +2,8 @@
 
 ```text
 decision = e127_overnight_cycle_positive
-cycle_count = 38
-orange_legendary_candidate_total = 350
+cycle_count = 39
+orange_legendary_candidate_total = 366
 hard_negative_total = 0
 false_commit_total = 0
 wrong_scope_call_total = 0
@@ -21,7 +21,7 @@ candidate discovery
 -> repeat with already-promoted operators excluded
 ```
 
-The supervised overnight loop has completed 38 checkpointed cycles so far. Several candidate
+The supervised overnight loop has completed 39 checkpointed cycles so far. Several candidate
 spec packs were added as the currently visible candidate space was exhausted;
 each pack was validated by running the next cycle with active already-promoted
 operators excluded.
@@ -32,11 +32,11 @@ final training, Gemma-level generation, or open-domain reasoning.
 ## Aggregate Metrics
 
 ```text
-selected_candidate_total = 350
-orange_legendary_candidate_total = 350
-mutation_attempts_total = 1693159
-accepted_mutations_total = 11121
-rollback_count_total = 1682038
+selected_candidate_total = 366
+orange_legendary_candidate_total = 366
+mutation_attempts_total = 1769827
+accepted_mutations_total = 11615
+rollback_count_total = 1758212
 
 hard_negative_total = 0
 false_commit_total = 0
@@ -367,6 +367,56 @@ e131_category_membership_lens
 e131_done_vs_started_lens
 e131_probability_confidence_lens
 e131_process_liveness_lens
+```
+
+## Latest Successful Cycle 039 Metrics
+
+Cycle 039 continued the fresh `e131_` candidate spec pack and produced another
+full 16-candidate Orange/Legendary batch. This cycle emphasized text
+understanding boundaries around evidence, intent revision, Q/A pairing,
+definition binding, and abstain/ask decisions.
+
+```text
+selected_candidate_count = 16
+orange_legendary_candidate_count = 16
+candidate_pool_count = 114
+farmable_candidate_count = 35
+qualified_activation_min = 300784
+mutation_attempts_total = 76668
+accepted_mutations_total = 494
+rollback_count_total = 76174
+mean_selected_prune_ratio = 0.62
+
+reload_match_rate = 1.0
+negative_scope_pass_rate = 1.0
+prune_pass_rate = 1.0
+challenger_pass_rate = 1.0
+
+hard_negative_total = 0
+false_commit_total = 0
+wrong_scope_call_total = 0
+unsupported_answer_total = 0
+```
+
+## Latest Successful Cycle 039 Orange Operators
+
+```text
+e131_claim_evidence_gap_guard
+e131_user_intent_revision_lens
+e131_question_answer_pair_lens
+e131_definition_term_lens
+e131_root_cause_symptom_lens
+e131_safety_policy_context_guard
+e131_answer_abstain_boundary_lens
+e131_hardware_resource_binding_lens
+e131_summary_detail_boundary_lens
+e131_fallback_primary_route_lens
+e131_same_word_different_sense_lens
+e131_goal_success_criteria_lens
+e131_quote_attribution_lens
+e131_multi_constraint_filter_lens
+e131_unknown_unknown_request_lens
+e131_conflict_resolution_policy_lens
 ```
 
 ## Current Boundary
