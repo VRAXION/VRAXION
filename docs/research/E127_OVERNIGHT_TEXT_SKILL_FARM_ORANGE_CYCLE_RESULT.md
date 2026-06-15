@@ -2,8 +2,8 @@
 
 ```text
 decision = e127_overnight_cycle_positive
-cycle_count = 39
-orange_legendary_candidate_total = 366
+cycle_count = 40
+orange_legendary_candidate_total = 382
 hard_negative_total = 0
 false_commit_total = 0
 wrong_scope_call_total = 0
@@ -21,7 +21,7 @@ candidate discovery
 -> repeat with already-promoted operators excluded
 ```
 
-The supervised overnight loop has completed 39 checkpointed cycles so far. Several candidate
+The supervised overnight loop has completed 40 checkpointed cycles so far. Several candidate
 spec packs were added as the currently visible candidate space was exhausted;
 each pack was validated by running the next cycle with active already-promoted
 operators excluded.
@@ -32,11 +32,11 @@ final training, Gemma-level generation, or open-domain reasoning.
 ## Aggregate Metrics
 
 ```text
-selected_candidate_total = 366
-orange_legendary_candidate_total = 366
-mutation_attempts_total = 1769827
-accepted_mutations_total = 11615
-rollback_count_total = 1758212
+selected_candidate_total = 382
+orange_legendary_candidate_total = 382
+mutation_attempts_total = 1849625
+accepted_mutations_total = 12123
+rollback_count_total = 1837502
 
 hard_negative_total = 0
 false_commit_total = 0
@@ -417,6 +417,56 @@ e131_quote_attribution_lens
 e131_multi_constraint_filter_lens
 e131_unknown_unknown_request_lens
 e131_conflict_resolution_policy_lens
+```
+
+## Latest Successful Cycle 040 Metrics
+
+Cycle 040 continued the fresh `e131_` candidate spec pack and produced another
+full 16-candidate Orange/Legendary batch. This cycle emphasized format
+contracts, provenance, evidence absence, version compatibility, active evidence
+search, and clean candidate-exhaustion boundaries.
+
+```text
+selected_candidate_count = 16
+orange_legendary_candidate_count = 16
+candidate_pool_count = 98
+farmable_candidate_count = 19
+qualified_activation_min = 300705
+mutation_attempts_total = 79798
+accepted_mutations_total = 508
+rollback_count_total = 79290
+mean_selected_prune_ratio = 0.62
+
+reload_match_rate = 1.0
+negative_scope_pass_rate = 1.0
+prune_pass_rate = 1.0
+challenger_pass_rate = 1.0
+
+hard_negative_total = 0
+false_commit_total = 0
+wrong_scope_call_total = 0
+unsupported_answer_total = 0
+```
+
+## Latest Successful Cycle 040 Orange Operators
+
+```text
+e131_format_contract_lens
+e131_data_provenance_lens
+e131_evidence_absence_lens
+e131_entity_role_lens
+e131_source_recency_lens
+e131_reproducibility_seed_lens
+e131_version_change_changelog_lens
+e131_obligation_actor_lens
+e131_active_evidence_search_lens
+e131_scope_exclusion_lens
+e131_version_compatibility_lens
+e131_patch_scope_lens
+e131_observed_metric_vs_target_lens
+e131_input_output_contract_lens
+e131_test_train_deployment_scope_guard
+e131_candidate_exhaustion_boundary_lens
 ```
 
 ## Current Boundary
