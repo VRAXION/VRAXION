@@ -118,8 +118,8 @@ jobs:
           js_path = pathlib.Path("target/ci/operator_rank_dashboard/dashboard.js")
           js_path.write_text(match.group(1), encoding="utf-8")
           subprocess.run(["node", "--check", str(js_path)], check=True)
-          if "E112 Wave 3" not in html:
-              raise SystemExit("dashboard did not load E112 rank evidence")
+          if "E129 arithmetic trace" not in html:
+              raise SystemExit("dashboard did not load E129 arithmetic trace evidence")
           PY
 
       - name: Front-door stale current-claim guard
