@@ -289,6 +289,22 @@ unsafe direct-write control direct writes = 14400
 source hallucination control unsupported answers = 14400
 ```
 
+Current E136C assistant-text polished-render quick evidence:
+
+```text
+case count = 12
+pass count = 12
+mode accuracy = 1.000
+polished render pass rate = 1.000
+JSON outputs valid = 2 / 2
+average response words = 27.083
+route stack covered samples = 11
+greeting fallback samples = 1
+raw action leaks = 0
+forbidden claims = 0
+direct-write claims = 0
+```
+
 These are scoped operators, not general-purpose neural skills. A larger count is
 not automatically better; value depends on safe activation, low cost, correct
 scope, reloadability, and no-harm evidence.
@@ -340,6 +356,9 @@ scope, reloadability, and no-harm evidence.
 - compose those E136 assistant/text lenses and guards into bounded
   schema-gated route stacks while rejecting overbroad chatbot,
   source-hallucination, rejected-response-reuse, and direct-write controls;
+- render short polished deterministic assistant text for a 12-sample quick set
+  covering greeting, summary, code, source-defer, JSON, no-solve math, safety,
+  comparison, translation, no-overwrite, rejected-response, and outline cases;
 - avoid claiming a stable answer when the scoped evidence chain is incomplete.
 
 ### Visible calculation-trace validation

@@ -229,6 +229,10 @@ jobs:
               '"current_evidence_anchor": "E136A_ASSISTANT_TEXT_SKILL_FARM_MUTATION_PRUNE_ORANGE_CYCLE"',
               "current_evidence_anchor = E136A assistant-text skill farm mutation/prune Orange cycle",
               "Current evidence anchor: E136A assistant-text skill farm mutation/prune Orange cycle",
+              "current_evidence_anchor = E136B_ASSISTANT_TEXT_ROUTE_COMPOSITION_AND_BOUNDARY_CONFIRM",
+              '"current_evidence_anchor": "E136B_ASSISTANT_TEXT_ROUTE_COMPOSITION_AND_BOUNDARY_CONFIRM"',
+              "current_evidence_anchor = E136B assistant-text route composition and boundary confirm",
+              "Current evidence anchor: E136B assistant-text route composition and boundary confirm",
           ]
           failures = []
           for path in files:

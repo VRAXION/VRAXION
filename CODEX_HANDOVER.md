@@ -8,8 +8,8 @@ Last updated: 2026-06-16
 repo = VRAXION_anchorwiki
 branch = main
 latest_release_target = v6.1.7
-current_evidence_anchor = E136B assistant-text route composition and boundary confirm on main
-current_status = E136B confirmed 18/18 E136A assistant/text operators compose into bounded route stacks with 0 hard negatives and 0 direct Flow writes
+current_evidence_anchor = E136C assistant-text polished render quick test on main
+current_status = E136C confirmed 12/12 quick inference samples render short scoped assistant text with 0 raw action leaks and 0 direct-write claims
 ```
 
 This is the first file a fresh Codex should read after cloning the repo.
@@ -325,6 +325,25 @@ unsafe_direct_write_control_direct_flow_write_total = 14,400
 source_hallucination_control_unsupported_answer_total = 14,400
 ```
 
+E136C renders those route stacks into short polished deterministic text:
+
+```text
+case_count = 12
+pass_count = 12
+fail_count = 0
+mode_accuracy = 1.000
+polished_render_pass_rate = 1.000
+json_valid_count = 2 / 2
+json_keys_pass_count = 2 / 2
+average_response_words = 27.083
+route_stack_covered_count = 11
+greeting_fallback_count = 1
+
+raw_action_leak_total = 0
+forbidden_claim_total = 0
+direct_write_claim_total = 0
+```
+
 ## Claim Boundary
 
 Allowed:
@@ -354,6 +373,10 @@ seed pack and promoted through the Orange mutation/prune/no-harm gate. E136B
 confirms those assistant/text lenses and guards compose into bounded
 schema-gated route stacks while overbroad chatbot, source hallucination, and
 direct-write controls fail as intended.
+E136C confirms a first quick polished text render layer over those routes, with
+short deterministic outputs for greeting, summary, code, source-defer, JSON,
+no-solve math, safety, comparison, translation, no-overwrite, rejected-response,
+and outline cases.
 ```
 
 System-level interpretation:
@@ -377,6 +400,8 @@ It can farm scoped assistant/text request-shape and boundary operators from the
 local E136 assistant-text seed pack.
 It can compose those assistant/text operators into bounded route stacks in a
 controlled assistant/text route-composition proxy.
+It can render short polished deterministic assistant text for a 12-sample quick
+set without raw route/action label leakage.
 It can promote prior scoped CoreMemoryCandidate operators to Orange/Legendary
 when the E121-style gate is satisfied.
 It is not an open-domain LLM/chatbot.
@@ -416,6 +441,7 @@ docs/research/E134_EXTERNAL_MATH_TEXT_OOD_ROUTE_STRESS_AND_COUNTEREXAMPLE_GAUNTL
 docs/research/E135_MATH_TEXT_MULTI_ROUTE_ASSISTANT_DIALOGUE_STATE_GAUNTLET_RESULT.md
 docs/research/E136A_ASSISTANT_TEXT_SKILL_FARM_MUTATION_PRUNE_ORANGE_CYCLE_RESULT.md
 docs/research/E136B_ASSISTANT_TEXT_ROUTE_COMPOSITION_AND_BOUNDARY_CONFIRM_RESULT.md
+docs/research/E136C_ASSISTANT_TEXT_POLISHED_RENDER_QUICK_TEST_RESULT.md
 docs/research/artifact_samples/e127_overnight_text_skill_farm_orange_cycle/
 docs/research/artifact_samples/e127_text_to_text_render_smoke_current/
 docs/research/artifact_samples/e128_assistant_text_io_lightweight_render_training/
@@ -429,6 +455,7 @@ docs/research/artifact_samples/e134_external_math_text_ood_route_stress_and_coun
 docs/research/artifact_samples/e135_math_text_multi_route_assistant_dialogue_state_gauntlet/
 docs/research/artifact_samples/e136a_assistant_text_skill_farm_mutation_prune_orange_cycle/
 docs/research/artifact_samples/e136b_assistant_text_route_composition_and_boundary_confirm/
+docs/research/artifact_samples/e136c_assistant_text_polished_render_quick_test/
 ```
 
 ## Legal / License
@@ -501,6 +528,15 @@ E136B DIRECT WRITES = 0
 ORANGE/LEGENDARY CANDIDATE = 561
 ```
 
+Expected E136C render smoke:
+
+```text
+E136C RENDER = 12/12
+E136C JSON VALID = 2/2
+E136C RAW ACTION LEAKS = 0
+E136C DIRECT-WRITE CLAIMS = 0
+```
+
 ## Local E136 Seed Pack
 
 After E135, a local assistant/text seed pack was downloaded and normalized for
@@ -553,6 +589,8 @@ python -m py_compile scripts/probes/run_e136a_assistant_text_skill_farm_mutation
 python scripts/probes/run_e136a_assistant_text_skill_farm_mutation_prune_orange_cycle.py --dataset target/datasets/missing_e136a_smoke.jsonl --dataset-manifest target/datasets/missing_e136a_manifest.json --download-manifest target/datasets/missing_e136a_download.json --allow-builtin-dataset --dataset-row-limit 120 --min-assistant-support 1 --min-dataset-rows 1 --out target/ci/e136a_assistant_text_skill_farm_mutation_prune_orange_cycle --sample-out ""
 python -m py_compile scripts/probes/run_e136b_assistant_text_route_composition_and_boundary_confirm.py
 python scripts/probes/run_e136b_assistant_text_route_composition_and_boundary_confirm.py --dataset target/datasets/missing_e136b_smoke.jsonl --dataset-manifest target/datasets/missing_e136b_manifest.json --download-manifest target/datasets/missing_e136b_download.json --allow-builtin-dataset --dataset-row-limit 120 --min-dataset-rows 1 --route-cases-per-operator 40 --boundary-cases-per-operator 12 --control-cases-per-operator 8 --out target/ci/e136b_assistant_text_route_composition_and_boundary_confirm --sample-out ""
+python -m py_compile scripts/probes/run_e136c_assistant_text_polished_render_quick_test.py
+python scripts/probes/run_e136c_assistant_text_polished_render_quick_test.py --out target/ci/e136c_assistant_text_polished_render_quick_test --sample-out ""
 python -m compileall -q scripts
 cargo test --workspace
 git diff --check
@@ -594,9 +632,8 @@ Do not delete or commit them without an explicit cleanup decision.
 Recommended next steps:
 
 ```text
-1. Run E136C assistant-text multi-turn route state and latency compare before
-   claiming the E136B route stack transfers into a broader assistant loop or has
-   a real latency advantage.
+1. Run E136D assistant-text render training set and heldout confirmation before
+   claiming robust text generation beyond the 12-sample quick smoke.
 2. Run a later assistant/open-domain boundary probe before claiming broader
    assistant readiness.
 3. Decide whether to continue E127 with a fresh candidate pack or pause farming.

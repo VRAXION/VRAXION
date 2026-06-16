@@ -1,0 +1,19 @@
+{
+  "artifact_contract": "E136C_ASSISTANT_TEXT_POLISHED_RENDER_QUICK_TEST",
+  "average_response_chars": 188.833,
+  "average_response_words": 27.083,
+  "case_count": 12,
+  "direct_write_claim_total": 0,
+  "fail_count": 0,
+  "forbidden_claim_total": 0,
+  "greeting_fallback_count": 1,
+  "json_case_count": 2,
+  "json_keys_pass_count": 2,
+  "json_valid_count": 2,
+  "mode_accuracy": 1.0,
+  "pass_count": 12,
+  "polished_render_pass_rate": 1.0,
+  "raw_action_leak_total": 0,
+  "route_stack_covered_count": 11,
+  "seconds": 0.004
+}

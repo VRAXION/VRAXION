@@ -1,6 +1,22 @@
 # Changelog
 
-This changelog is narrowed to the current v6 / E127-E136B evidence anchor. Full historical beta, probe, Python SDK, legacy Rust, and research-output history is preserved in git history and archive tags.
+This changelog is narrowed to the current v6 / E127-E136C evidence anchor. Full historical beta, probe, Python SDK, legacy Rust, and research-output history is preserved in git history and archive tags.
+
+## 2026-06-16 - E136C Assistant Text Polished Render Quick Test
+
+- Added `scripts/probes/run_e136c_assistant_text_polished_render_quick_test.py`.
+- Tested whether E136B assistant/text route stacks can render short polished
+  deterministic text instead of raw route/action labels.
+- Result: 12/12 quick inference samples passed.
+- Covered greeting, summary, code draft without execution claim, source defer,
+  JSON output, no-solve math boundary, high-stakes defer, comparison,
+  translation, no-overwrite JSON, rejected-response refusal, and scoped outline
+  cases.
+- Render hygiene: 2/2 JSON outputs valid, 0 raw action leaks, 0 forbidden
+  claims, and 0 direct-write claims.
+- Boundary: deterministic polished render smoke only; not neural training,
+  open-domain LLM/freeform generation, production assistant readiness, Core,
+  PermaCore, or TrueGolden.
 
 ## 2026-06-16 - E136B Assistant Text Route Composition And Boundary Confirm
 

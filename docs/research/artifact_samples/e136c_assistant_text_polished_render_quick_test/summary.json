@@ -1,0 +1,23 @@
+{
+  "artifact_contract": "E136C_ASSISTANT_TEXT_POLISHED_RENDER_QUICK_TEST",
+  "average_response_chars": 188.833,
+  "average_response_words": 27.083,
+  "boundary": "quick deterministic text render smoke only; not open-domain LLM generation",
+  "case_count": 12,
+  "decision": "e136c_assistant_text_polished_render_quick_test_confirmed",
+  "direct_write_claim_total": 0,
+  "fail_count": 0,
+  "forbidden_claim_total": 0,
+  "greeting_fallback_count": 1,
+  "json_case_count": 2,
+  "json_keys_pass_count": 2,
+  "json_valid_count": 2,
+  "mode_accuracy": 1.0,
+  "next": "E136D_ASSISTANT_TEXT_RENDER_TRAINING_SET_AND_HELDOUT_CONFIRM",
+  "pass_count": 12,
+  "pass_gate": true,
+  "polished_render_pass_rate": 1.0,
+  "raw_action_leak_total": 0,
+  "route_stack_covered_count": 11,
+  "seconds": 0.004
+}

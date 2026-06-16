@@ -7,8 +7,8 @@ _Last updated: 2026-06-16_
 ```text
 branch = main
 current_release = v6.1.7
-current_evidence_anchor = E136B assistant-text route composition and boundary confirm
-current_evidence_subject = 18 E136A assistant/text operators compose into bounded route stacks under route, boundary, negative-scope, and control pressure
+current_evidence_anchor = E136C assistant-text polished render quick test
+current_evidence_subject = E136B route stacks render short scoped assistant text across 12/12 quick inference samples with no raw action leaks or direct-write claims
 latest_released_runtime_slice = a908a838a1119540ed88bc91e10cfcb0bdae92a8
 latest_released_runtime_subject = Add training data curriculum readiness gate
 ```
@@ -22,8 +22,8 @@ latest_released_runtime_subject = Add training data curriculum readiness gate
 | `vraxion-runtime/` | Active Rust runtime and preflight/final-training binaries |
 | `docs/research/E79_TRAINING_DATA_CURRICULUM_READINESS_*.md` | Latest released training-data/curriculum readiness gate contract/result evidence |
 | `CODEX_HANDOVER.md` | First-read handover for fresh Codex sessions |
-| `docs/research/E80_*` through `docs/research/E136B_*` | Current evidence layer |
-| `scripts/probes/run_e80_*` through `scripts/probes/run_e136b_*` | Repro/check scripts for the current evidence layer |
+| `docs/research/E80_*` through `docs/research/E136C_*` | Current evidence layer |
+| `scripts/probes/run_e80_*` through `scripts/probes/run_e136c_*` | Repro/check scripts for the current evidence layer |
 | `docs/research/artifact_samples/` | Tracked sample artifacts used by evidence CI |
 | `scripts/tools/generate_operator_rank_dashboard.py` | Self-contained Operator rank dashboard generator |
 | `docs/` | Current public docs and GitHub Pages front door |
@@ -146,6 +146,13 @@ python -m py_compile scripts/probes/run_e136b_assistant_text_route_composition_a
 python scripts/probes/run_e136b_assistant_text_route_composition_and_boundary_confirm.py --dataset target/datasets/missing_e136b_smoke.jsonl --dataset-manifest target/datasets/missing_e136b_manifest.json --download-manifest target/datasets/missing_e136b_download.json --allow-builtin-dataset --dataset-row-limit 120 --min-dataset-rows 1 --route-cases-per-operator 40 --boundary-cases-per-operator 12 --control-cases-per-operator 8 --out target/ci/e136b_assistant_text_route_composition_and_boundary_confirm --sample-out ""
 ```
 
+E136C assistant-text polished render quick test:
+
+```powershell
+python -m py_compile scripts/probes/run_e136c_assistant_text_polished_render_quick_test.py
+python scripts/probes/run_e136c_assistant_text_polished_render_quick_test.py --out target/ci/e136c_assistant_text_polished_render_quick_test --sample-out ""
+```
+
 Dashboard smoke:
 
 ```powershell
@@ -160,21 +167,22 @@ python scripts/tools/generate_operator_rank_dashboard.py --out target/ci/operato
 | 2 | [`docs/CURRENT_STATUS.md`](CURRENT_STATUS.md) | Current status and claim boundary |
 | 3 | [`VALIDATED_FINDINGS.md`](../VALIDATED_FINDINGS.md) | Current validated chain |
 | 4 | [`CODEX_HANDOVER.md`](../CODEX_HANDOVER.md) | Fresh-session handover and next steps |
-| 5 | [`docs/research/E136B_ASSISTANT_TEXT_ROUTE_COMPOSITION_AND_BOUNDARY_CONFIRM_RESULT.md`](research/E136B_ASSISTANT_TEXT_ROUTE_COMPOSITION_AND_BOUNDARY_CONFIRM_RESULT.md) | Current assistant-text route-composition/boundary evidence |
-| 6 | [`docs/research/E136A_ASSISTANT_TEXT_SKILL_FARM_MUTATION_PRUNE_ORANGE_CYCLE_RESULT.md`](research/E136A_ASSISTANT_TEXT_SKILL_FARM_MUTATION_PRUNE_ORANGE_CYCLE_RESULT.md) | Assistant-text skill-farm evidence |
-| 7 | [`docs/research/E135_MATH_TEXT_MULTI_ROUTE_ASSISTANT_DIALOGUE_STATE_GAUNTLET_RESULT.md`](research/E135_MATH_TEXT_MULTI_ROUTE_ASSISTANT_DIALOGUE_STATE_GAUNTLET_RESULT.md) | Controlled dialogue-state evidence |
-| 8 | [`docs/research/E134_EXTERNAL_MATH_TEXT_OOD_ROUTE_STRESS_AND_COUNTEREXAMPLE_GAUNTLET_RESULT.md`](research/E134_EXTERNAL_MATH_TEXT_OOD_ROUTE_STRESS_AND_COUNTEREXAMPLE_GAUNTLET_RESULT.md) | OOD route-stress/counterexample evidence |
-| 9 | [`docs/research/E133_MATH_TEXT_ROUTE_COMPOSITION_AND_NO_SOLVE_ASSISTANT_CONFIRM_RESULT.md`](research/E133_MATH_TEXT_ROUTE_COMPOSITION_AND_NO_SOLVE_ASSISTANT_CONFIRM_RESULT.md) | Math-text route-composition/no-solve evidence |
-| 10 | [`docs/research/E132_EXTERNAL_MATH_TEXT_SKILL_FARM_MUTATION_PRUNE_ORANGE_CYCLE_RESULT.md`](research/E132_EXTERNAL_MATH_TEXT_SKILL_FARM_MUTATION_PRUNE_ORANGE_CYCLE_RESULT.md) | External math-text skill-farm evidence |
-| 11 | [`docs/research/E131_VISIBLE_EQUATION_EXTRACTION_AND_ASSISTANT_ARITHMETIC_RENDER_GAUNTLET_RESULT.md`](research/E131_VISIBLE_EQUATION_EXTRACTION_AND_ASSISTANT_ARITHMETIC_RENDER_GAUNTLET_RESULT.md) | Visible equation assistant-render evidence |
-| 12 | [`docs/research/E130B_ARITHMETIC_TEXT_IO_TRANSFER_AND_WORD_PROBLEM_NO_CALL_GAUNTLET_RESULT.md`](research/E130B_ARITHMETIC_TEXT_IO_TRANSFER_AND_WORD_PROBLEM_NO_CALL_GAUNTLET_RESULT.md) | Arithmetic text-IO transfer evidence |
-| 13 | [`docs/research/E130A_COREMEMORY_TO_ORANGE_BACKFILL_GAUNTLET_RESULT.md`](research/E130A_COREMEMORY_TO_ORANGE_BACKFILL_GAUNTLET_RESULT.md) | Orange backfill evidence |
-| 14 | [`docs/research/E129_ARITHMETIC_TRACE_ORANGE_LEGENDARY_PROBATION_RESULT.md`](research/E129_ARITHMETIC_TRACE_ORANGE_LEGENDARY_PROBATION_RESULT.md) | Arithmetic trace evidence |
-| 15 | [`docs/research/E128_ASSISTANT_TEXT_IO_LIGHTWEIGHT_RENDER_TRAINING_RESULT.md`](research/E128_ASSISTANT_TEXT_IO_LIGHTWEIGHT_RENDER_TRAINING_RESULT.md) | Text-IO bridge evidence |
-| 16 | [`docs/research/E127_OVERNIGHT_TEXT_SKILL_FARM_ORANGE_CYCLE_RESULT.md`](research/E127_OVERNIGHT_TEXT_SKILL_FARM_ORANGE_CYCLE_RESULT.md) | E127 operator-library checkpoint |
-| 17 | [`docs/research/OPERATOR_LIBRARY_CARDS.md`](research/OPERATOR_LIBRARY_CARDS.md) | Operator rank/card surface |
-| 18 | [`docs/research/E79_TRAINING_DATA_CURRICULUM_READINESS_RESULT.md`](research/E79_TRAINING_DATA_CURRICULUM_READINESS_RESULT.md) | Latest released training-data/curriculum readiness gate |
-| 19 | [Timeline Archive wiki](https://github.com/VRAXION/VRAXION/wiki/Timeline-Archive) | Chronology and cleanup record |
+| 5 | [`docs/research/E136C_ASSISTANT_TEXT_POLISHED_RENDER_QUICK_TEST_RESULT.md`](research/E136C_ASSISTANT_TEXT_POLISHED_RENDER_QUICK_TEST_RESULT.md) | Current polished assistant-text render quick evidence |
+| 6 | [`docs/research/E136B_ASSISTANT_TEXT_ROUTE_COMPOSITION_AND_BOUNDARY_CONFIRM_RESULT.md`](research/E136B_ASSISTANT_TEXT_ROUTE_COMPOSITION_AND_BOUNDARY_CONFIRM_RESULT.md) | Assistant-text route-composition/boundary evidence |
+| 7 | [`docs/research/E136A_ASSISTANT_TEXT_SKILL_FARM_MUTATION_PRUNE_ORANGE_CYCLE_RESULT.md`](research/E136A_ASSISTANT_TEXT_SKILL_FARM_MUTATION_PRUNE_ORANGE_CYCLE_RESULT.md) | Assistant-text skill-farm evidence |
+| 8 | [`docs/research/E135_MATH_TEXT_MULTI_ROUTE_ASSISTANT_DIALOGUE_STATE_GAUNTLET_RESULT.md`](research/E135_MATH_TEXT_MULTI_ROUTE_ASSISTANT_DIALOGUE_STATE_GAUNTLET_RESULT.md) | Controlled dialogue-state evidence |
+| 9 | [`docs/research/E134_EXTERNAL_MATH_TEXT_OOD_ROUTE_STRESS_AND_COUNTEREXAMPLE_GAUNTLET_RESULT.md`](research/E134_EXTERNAL_MATH_TEXT_OOD_ROUTE_STRESS_AND_COUNTEREXAMPLE_GAUNTLET_RESULT.md) | OOD route-stress/counterexample evidence |
+| 10 | [`docs/research/E133_MATH_TEXT_ROUTE_COMPOSITION_AND_NO_SOLVE_ASSISTANT_CONFIRM_RESULT.md`](research/E133_MATH_TEXT_ROUTE_COMPOSITION_AND_NO_SOLVE_ASSISTANT_CONFIRM_RESULT.md) | Math-text route-composition/no-solve evidence |
+| 11 | [`docs/research/E132_EXTERNAL_MATH_TEXT_SKILL_FARM_MUTATION_PRUNE_ORANGE_CYCLE_RESULT.md`](research/E132_EXTERNAL_MATH_TEXT_SKILL_FARM_MUTATION_PRUNE_ORANGE_CYCLE_RESULT.md) | External math-text skill-farm evidence |
+| 12 | [`docs/research/E131_VISIBLE_EQUATION_EXTRACTION_AND_ASSISTANT_ARITHMETIC_RENDER_GAUNTLET_RESULT.md`](research/E131_VISIBLE_EQUATION_EXTRACTION_AND_ASSISTANT_ARITHMETIC_RENDER_GAUNTLET_RESULT.md) | Visible equation assistant-render evidence |
+| 13 | [`docs/research/E130B_ARITHMETIC_TEXT_IO_TRANSFER_AND_WORD_PROBLEM_NO_CALL_GAUNTLET_RESULT.md`](research/E130B_ARITHMETIC_TEXT_IO_TRANSFER_AND_WORD_PROBLEM_NO_CALL_GAUNTLET_RESULT.md) | Arithmetic text-IO transfer evidence |
+| 14 | [`docs/research/E130A_COREMEMORY_TO_ORANGE_BACKFILL_GAUNTLET_RESULT.md`](research/E130A_COREMEMORY_TO_ORANGE_BACKFILL_GAUNTLET_RESULT.md) | Orange backfill evidence |
+| 15 | [`docs/research/E129_ARITHMETIC_TRACE_ORANGE_LEGENDARY_PROBATION_RESULT.md`](research/E129_ARITHMETIC_TRACE_ORANGE_LEGENDARY_PROBATION_RESULT.md) | Arithmetic trace evidence |
+| 16 | [`docs/research/E128_ASSISTANT_TEXT_IO_LIGHTWEIGHT_RENDER_TRAINING_RESULT.md`](research/E128_ASSISTANT_TEXT_IO_LIGHTWEIGHT_RENDER_TRAINING_RESULT.md) | Text-IO bridge evidence |
+| 17 | [`docs/research/E127_OVERNIGHT_TEXT_SKILL_FARM_ORANGE_CYCLE_RESULT.md`](research/E127_OVERNIGHT_TEXT_SKILL_FARM_ORANGE_CYCLE_RESULT.md) | E127 operator-library checkpoint |
+| 18 | [`docs/research/OPERATOR_LIBRARY_CARDS.md`](research/OPERATOR_LIBRARY_CARDS.md) | Operator rank/card surface |
+| 19 | [`docs/research/E79_TRAINING_DATA_CURRICULUM_READINESS_RESULT.md`](research/E79_TRAINING_DATA_CURRICULUM_READINESS_RESULT.md) | Latest released training-data/curriculum readiness gate |
+| 20 | [Timeline Archive wiki](https://github.com/VRAXION/VRAXION/wiki/Timeline-Archive) | Chronology and cleanup record |
 
 ## Operating Rule
 
