@@ -1,0 +1,6 @@
+{
+  "artifact_contract": "E133_MATH_TEXT_ROUTE_COMPOSITION_AND_NO_SOLVE_ASSISTANT_CONFIRM",
+  "deterministic_replay_pass": true,
+  "operator_count": 16,
+  "replay_sha256": "1ca16a65404592f22ebb7c795d7cf9a4c23a5622d653be5faef287fcb5b548da"
+}

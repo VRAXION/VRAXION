@@ -8,8 +8,8 @@ Last updated: 2026-06-16
 repo = VRAXION_anchorwiki
 branch = main
 latest_release_target = v6.1.7
-current_evidence_anchor = E132 external math text skill farm mutation/prune Orange cycle on main
-current_status = E132 promoted 16 scoped math-text lenses/guards to Orange/LegendaryCandidate from a 215,051-row external math-text seed pack
+current_evidence_anchor = E133 math text route composition and no-solve assistant confirm on main
+current_status = E133 confirmed 16/16 E132 math-text lenses/guards compose into assistant route decisions over 176,000 route/no-solve cases
 ```
 
 This is the first file a fresh Codex should read after cloning the repo.
@@ -168,6 +168,35 @@ direct flow writes = 0
 overbroad_solver_control_wrong_scope_call_total = 16,703
 ```
 
+E133 composes those E132 math-text lenses/guards into assistant route decisions:
+
+```text
+operator_count = 16
+composition_pass_operator_count = 16
+route_case_count_total = 176,000
+visible_arithmetic_route_case_count_total = 10,000
+structural_guard_case_count_total = 118,000
+hidden_word_problem_no_solve_case_count_total = 48,000
+qualified_route_activation_total = 176,000
+qualified_route_activation_min = 11,000
+
+route_accuracy_min = 1.000
+visible_arithmetic_route_accuracy_min = 1.000
+structural_guard_accuracy_min = 1.000
+hidden_word_problem_no_solve_accuracy_min = 1.000
+
+hard negatives = 0
+false commits = 0
+wrong scope calls = 0
+unsupported answers = 0
+boundary claim violations = 0
+direct flow writes = 0
+
+overbroad_solver_control_wrong_scope_call_total = 24,000
+trust_control_false_commit_total = 4,125
+trust_control_direct_flow_write_total = 3,000
+```
+
 ## Claim Boundary
 
 Allowed:
@@ -185,7 +214,9 @@ hidden word problems remain no-call. E131 confirms assistant-style visible
 equation extraction and deterministic arithmetic rendering while hidden
 prose-only word problems remain no-call. E132 confirms scoped math-text
 lenses/guards can be farmed from external math text and promoted through the
-Orange mutation/prune/no-solve gate.
+Orange mutation/prune/no-solve gate. E133 confirms those math-text
+lenses/guards compose into assistant route decisions while hidden word problems
+remain no-call and unsafe trust controls fail.
 ```
 
 System-level interpretation:
@@ -234,6 +265,7 @@ docs/research/E130A_COREMEMORY_TO_ORANGE_BACKFILL_GAUNTLET_RESULT.md
 docs/research/E130B_ARITHMETIC_TEXT_IO_TRANSFER_AND_WORD_PROBLEM_NO_CALL_GAUNTLET_RESULT.md
 docs/research/E131_VISIBLE_EQUATION_EXTRACTION_AND_ASSISTANT_ARITHMETIC_RENDER_GAUNTLET_RESULT.md
 docs/research/E132_EXTERNAL_MATH_TEXT_SKILL_FARM_MUTATION_PRUNE_ORANGE_CYCLE_RESULT.md
+docs/research/E133_MATH_TEXT_ROUTE_COMPOSITION_AND_NO_SOLVE_ASSISTANT_CONFIRM_RESULT.md
 docs/research/artifact_samples/e127_overnight_text_skill_farm_orange_cycle/
 docs/research/artifact_samples/e127_text_to_text_render_smoke_current/
 docs/research/artifact_samples/e128_assistant_text_io_lightweight_render_training/
@@ -242,6 +274,7 @@ docs/research/artifact_samples/e130a_corememory_to_orange_backfill_gauntlet/
 docs/research/artifact_samples/e130b_arithmetic_text_io_transfer_and_word_problem_no_call_gauntlet/
 docs/research/artifact_samples/e131_visible_equation_extraction_and_assistant_arithmetic_render_gauntlet/
 docs/research/artifact_samples/e132_external_math_text_skill_farm_mutation_prune_orange_cycle/
+docs/research/artifact_samples/e133_math_text_route_composition_and_no_solve_assistant_confirm/
 ```
 
 ## Legal / License
@@ -274,7 +307,7 @@ docs/legal/PRIOR_ART_AND_PROVENANCE_CHECKLIST.md
 Generate the local operator dashboard:
 
 ```powershell
-python scripts/tools/generate_operator_rank_dashboard.py --e127 docs/research/artifact_samples/e127_overnight_text_skill_farm_orange_cycle --e129 docs/research/artifact_samples/e129_arithmetic_trace_orange_legendary_probation --e130a docs/research/artifact_samples/e130a_corememory_to_orange_backfill_gauntlet --e130b docs/research/artifact_samples/e130b_arithmetic_text_io_transfer_and_word_problem_no_call_gauntlet --e131 docs/research/artifact_samples/e131_visible_equation_extraction_and_assistant_arithmetic_render_gauntlet --e132 docs/research/artifact_samples/e132_external_math_text_skill_farm_mutation_prune_orange_cycle --out target/pilot_wave/operator_rank_dashboard/index.html
+python scripts/tools/generate_operator_rank_dashboard.py --e127 docs/research/artifact_samples/e127_overnight_text_skill_farm_orange_cycle --e129 docs/research/artifact_samples/e129_arithmetic_trace_orange_legendary_probation --e130a docs/research/artifact_samples/e130a_corememory_to_orange_backfill_gauntlet --e130b docs/research/artifact_samples/e130b_arithmetic_text_io_transfer_and_word_problem_no_call_gauntlet --e131 docs/research/artifact_samples/e131_visible_equation_extraction_and_assistant_arithmetic_render_gauntlet --e132 docs/research/artifact_samples/e132_external_math_text_skill_farm_mutation_prune_orange_cycle --e133 docs/research/artifact_samples/e133_math_text_route_composition_and_no_solve_assistant_confirm --out target/pilot_wave/operator_rank_dashboard/index.html
 ```
 
 Expected current dashboard cards:
@@ -289,6 +322,9 @@ E131 WORD NO-CALL = 100.000%
 E132 MATH-TEXT = 16/16
 E132 DATASET ROWS = 215,051
 E132 SUPPORT MIN = 5,953
+E133 ROUTE COMP = 16/16
+E133 ROUTE CASES = 176,000
+E133 HIDDEN NO-CALL = 100.000%
 ORANGE/LEGENDARY CANDIDATE = 543
 ```
 
@@ -306,6 +342,7 @@ python -m py_compile scripts/probes/run_e130a_corememory_to_orange_backfill_gaun
 python -m py_compile scripts/probes/run_e130b_arithmetic_text_io_transfer_and_word_problem_no_call_gauntlet.py
 python -m py_compile scripts/probes/run_e131_visible_equation_extraction_and_assistant_arithmetic_render_gauntlet.py
 python -m py_compile scripts/probes/run_e132_external_math_text_skill_farm_mutation_prune_orange_cycle.py
+python -m py_compile scripts/probes/run_e133_math_text_route_composition_and_no_solve_assistant_confirm.py
 python -m compileall -q scripts
 cargo test --workspace
 git diff --check
@@ -347,10 +384,10 @@ Do not delete or commit them without an explicit cleanup decision.
 Recommended next steps:
 
 ```text
-1. Run E133 math-text route composition/no-solve assistant confirmation.
+1. Run E134 external math-text OOD route stress and counterexample gauntlet.
 2. Decide whether to continue E127 with a fresh candidate pack or pause farming.
-3. Build the next bridge from deterministic action/template rendering, E132
-   math-text lenses/guards, and exact arithmetic trace/text-IO operators toward
-   richer assistant arithmetic while keeping claims scoped.
+3. Build the next bridge from deterministic action/template rendering, E132/E133
+   math-text lenses/guards/routes, and exact arithmetic trace/text-IO operators
+   toward richer assistant arithmetic while keeping claims scoped.
 4. Keep all new skills scoped, dashboard-visible, and rollback-safe.
 ```

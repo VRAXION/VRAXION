@@ -1,6 +1,26 @@
 # Changelog
 
-This changelog is narrowed to the current v6 / E127-E132 evidence anchor. Full historical beta, probe, Python SDK, legacy Rust, and research-output history is preserved in git history and archive tags.
+This changelog is narrowed to the current v6 / E127-E133 evidence anchor. Full historical beta, probe, Python SDK, legacy Rust, and research-output history is preserved in git history and archive tags.
+
+## 2026-06-16 - E133 Math Text Route Composition And No-Solve Assistant Confirm
+
+- Added `scripts/probes/run_e133_math_text_route_composition_and_no_solve_assistant_confirm.py`.
+- Composed the 16 E132 scoped math-text lenses/guards into assistant route
+  decisions on top of the E131/E129 visible arithmetic route.
+- Result: 16/16 E132 math-text operators passed the E133 route-composition gate.
+- Route evidence: 176,000 total route/no-solve cases, 10,000 visible
+  arithmetic route cases, 118,000 structural guard cases, and 48,000 hidden
+  word-problem no-solve cases.
+- Accuracy minima: route accuracy 1.000, visible arithmetic route accuracy
+  1.000, structural guard accuracy 1.000, and hidden word-problem no-solve
+  accuracy 1.000.
+- Confirmed: 0 hard negatives, 0 false commits, 0 wrong-scope calls, 0
+  unsupported answers, 0 boundary-claim violations, and 0 direct Flow writes.
+- Controls: the overbroad solver control produced 24,000 wrong-scope calls,
+  unsafe trust controls produced 4,125 false commits, and TIR trust controls
+  produced 3,000 direct-write failures.
+- Boundary: route composition only; not MATH/GSM8K solving, natural-language
+  word-problem solving, neural training, Core, PermaCore, or TrueGolden.
 
 ## 2026-06-16 - E132 External Math Text Skill Farm Mutation/Prune Orange Cycle
 

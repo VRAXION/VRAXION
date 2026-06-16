@@ -9,8 +9,8 @@ This repository is consolidated around the current winning mainline. Historical 
 ```text
 branch = main
 current_release = v6.1.7
-current_evidence_anchor = E132 external math text skill farm mutation/prune Orange cycle
-current_evidence_subject = 16 scoped math-text lenses/guards farmed from external math text with mutation/prune/no-solve gating
+current_evidence_anchor = E133 math text route composition and no-solve assistant confirm
+current_evidence_subject = 16 E132 math-text lenses/guards compose into assistant routes with visible arithmetic routing and hidden word-problem no-call
 latest_released_runtime_slice = a908a838a1119540ed88bc91e10cfcb0bdae92a8
 latest_released_runtime_subject = Add training data curriculum readiness gate
 ```
@@ -40,6 +40,7 @@ The latest GitHub release is [`v6.1.7`](https://github.com/VRAXION/VRAXION/relea
 | E130B | tracked on `main` | Arithmetic text-IO transfer: 9/9 E129 operators, 270k visible-transfer cases, 135k hidden word-problem no-call cases, 0 wrong-scope calls |
 | E131 | tracked on `main` | Visible equation extraction and assistant arithmetic render: 9/9 E129/E130B operators, 108k visible-equation cases, 54k hidden word-problem no-call cases, 0 hard negatives |
 | E132 | tracked on `main` | External math-text skill farm: 16/16 scoped math-text lenses/guards promoted to Orange/LegendaryCandidate from a 215,051-row external seed pack, 0 hard negatives |
+| E133 | tracked on `main` | Math-text route composition/no-solve assistant confirm: 16/16 E132 operators passed, 176k route cases, 10k visible arithmetic routes, 48k hidden word-problem no-call cases, 0 hard negatives |
 
 Current E127 scoped operator state:
 
@@ -135,6 +136,29 @@ direct flow writes = 0
 overbroad solver control wrong-scope calls = 16,703
 ```
 
+Current E133 math-text route-composition state:
+
+```text
+composition pass operators = 16 / 16
+route cases = 176,000
+visible arithmetic route cases = 10,000
+structural guard cases = 118,000
+hidden word-problem no-solve cases = 48,000
+route accuracy min = 1.000
+visible arithmetic route accuracy min = 1.000
+structural guard accuracy min = 1.000
+hidden word-problem no-solve accuracy min = 1.000
+hard negatives = 0
+false commits = 0
+wrong-scope calls = 0
+unsupported answers = 0
+boundary-claim violations = 0
+direct flow writes = 0
+overbroad solver control wrong-scope calls = 24,000
+trust-control false commits = 4,125
+trust-control direct writes = 3,000
+```
+
 Current E131 visible equation assistant-render state:
 
 ```text
@@ -163,7 +187,8 @@ overbroad control wrong-scope calls = 18,000
 - Getting started: [`docs/GETTING_STARTED.md`](docs/GETTING_STARTED.md)
 - Validated findings: [`VALIDATED_FINDINGS.md`](VALIDATED_FINDINGS.md)
 - Operator cards: [`docs/research/OPERATOR_LIBRARY_CARDS.md`](docs/research/OPERATOR_LIBRARY_CARDS.md)
-- Current result: [`docs/research/E132_EXTERNAL_MATH_TEXT_SKILL_FARM_MUTATION_PRUNE_ORANGE_CYCLE_RESULT.md`](docs/research/E132_EXTERNAL_MATH_TEXT_SKILL_FARM_MUTATION_PRUNE_ORANGE_CYCLE_RESULT.md)
+- Current result: [`docs/research/E133_MATH_TEXT_ROUTE_COMPOSITION_AND_NO_SOLVE_ASSISTANT_CONFIRM_RESULT.md`](docs/research/E133_MATH_TEXT_ROUTE_COMPOSITION_AND_NO_SOLVE_ASSISTANT_CONFIRM_RESULT.md)
+- E132 external math-text skill farm: [`docs/research/E132_EXTERNAL_MATH_TEXT_SKILL_FARM_MUTATION_PRUNE_ORANGE_CYCLE_RESULT.md`](docs/research/E132_EXTERNAL_MATH_TEXT_SKILL_FARM_MUTATION_PRUNE_ORANGE_CYCLE_RESULT.md)
 - E131 visible equation assistant render: [`docs/research/E131_VISIBLE_EQUATION_EXTRACTION_AND_ASSISTANT_ARITHMETIC_RENDER_GAUNTLET_RESULT.md`](docs/research/E131_VISIBLE_EQUATION_EXTRACTION_AND_ASSISTANT_ARITHMETIC_RENDER_GAUNTLET_RESULT.md)
 - E130B arithmetic text-IO transfer: [`docs/research/E130B_ARITHMETIC_TEXT_IO_TRANSFER_AND_WORD_PROBLEM_NO_CALL_GAUNTLET_RESULT.md`](docs/research/E130B_ARITHMETIC_TEXT_IO_TRANSFER_AND_WORD_PROBLEM_NO_CALL_GAUNTLET_RESULT.md)
 - E130A Orange backfill: [`docs/research/E130A_COREMEMORY_TO_ORANGE_BACKFILL_GAUNTLET_RESULT.md`](docs/research/E130A_COREMEMORY_TO_ORANGE_BACKFILL_GAUNTLET_RESULT.md)
@@ -178,9 +203,9 @@ overbroad control wrong-scope calls = 18,000
 
 Allowed current claim:
 
-> VRAXION v6 has a Rust mainline for governed Pocket Library state, resumable curriculum execution, multi-lane final-training supervision, global Pocket Library merge/dedupe governance, a training-data/curriculum readiness gate, one canonical `final_train` campaign entrypoint, governed Operator evidence through E127, an E128 lightweight assistant text-IO render-training smoke, E129 scoped exact arithmetic trace Operators promoted through Orange/Legendary probation, an E130A CoreMemoryCandidate-to-Orange backfill, an E130B arithmetic text-IO transfer/no-call gauntlet, an E131 visible-equation assistant-render gauntlet, and an E132 external math-text skill farm. E127 cycle 40 contains 382 scoped Orange/Legendary text operators with 0 tracked hard negatives, false commits, wrong-scope calls, or unsupported answers in the checkpointed evidence. E128 confirms a 320-prompt deterministic corpus/action-policy/template-render bridge with 0 unsupported answers and 0 boundary-claim violations. E129 confirms 9 scoped arithmetic trace operators with 2.7M qualified activations, 0 hard negatives, and 0 wrong-scope calls. E130A confirms 136 prior CoreMemoryCandidate operators reached Orange/LegendaryCandidate with 41.0M total qualified activations, 0 hard negatives, and 0 direct flow writes. E130B confirms those 9 arithmetic operators transfer to visible-expression text IO while hidden word problems remain no-call. E131 confirms those operators route from assistant-style visible equation surfaces seeded by a 130k-row external text pack while hidden prose-only word problems remain no-call. E132 confirms 16 scoped math-text lenses/guards promoted to Orange/LegendaryCandidate from a 215,051-row external math-text seed pack with 0 hard negatives, 0 wrong-scope calls, and 0 direct Flow writes.
+> VRAXION v6 has a Rust mainline for governed Pocket Library state, resumable curriculum execution, multi-lane final-training supervision, global Pocket Library merge/dedupe governance, a training-data/curriculum readiness gate, one canonical `final_train` campaign entrypoint, governed Operator evidence through E127, an E128 lightweight assistant text-IO render-training smoke, E129 scoped exact arithmetic trace Operators promoted through Orange/Legendary probation, an E130A CoreMemoryCandidate-to-Orange backfill, an E130B arithmetic text-IO transfer/no-call gauntlet, an E131 visible-equation assistant-render gauntlet, an E132 external math-text skill farm, and E133 math-text route composition/no-solve assistant confirmation. E127 cycle 40 contains 382 scoped Orange/Legendary text operators with 0 tracked hard negatives, false commits, wrong-scope calls, or unsupported answers in the checkpointed evidence. E128 confirms a 320-prompt deterministic corpus/action-policy/template-render bridge with 0 unsupported answers and 0 boundary-claim violations. E129 confirms 9 scoped arithmetic trace operators with 2.7M qualified activations, 0 hard negatives, and 0 wrong-scope calls. E130A confirms 136 prior CoreMemoryCandidate operators reached Orange/LegendaryCandidate with 41.0M total qualified activations, 0 hard negatives, and 0 direct flow writes. E130B confirms those 9 arithmetic operators transfer to visible-expression text IO while hidden word problems remain no-call. E131 confirms those operators route from assistant-style visible equation surfaces seeded by a 130k-row external text pack while hidden prose-only word problems remain no-call. E132 confirms 16 scoped math-text lenses/guards promoted to Orange/LegendaryCandidate from a 215,051-row external math-text seed pack with 0 hard negatives, 0 wrong-scope calls, and 0 direct Flow writes. E133 confirms those 16 math-text lenses/guards compose into assistant route decisions over 176,000 route/no-solve cases with 0 hard negatives, 0 wrong-scope calls, and 0 direct Flow writes.
 
-The E127/E128/E129/E130A/E130B/E131/E132 finding is scoped operator-library, deterministic render-training, exact arithmetic trace, rank-backfill, visible-expression arithmetic text-IO, visible-equation assistant-render, and math-text lens/guard evidence only. It includes deterministic operator+template text-to-text smoke and exact arithmetic expression/trace compute, but it does not claim PermaCore, TrueGolden, production API readiness, final training completion, open-domain assistant readiness, Gemma/GPT-like generation, GSM8K/MATH solving, natural-language word-problem solving, consciousness, or sentience.
+The E127/E128/E129/E130A/E130B/E131/E132/E133 finding is scoped operator-library, deterministic render-training, exact arithmetic trace, rank-backfill, visible-expression arithmetic text-IO, visible-equation assistant-render, math-text lens/guard, and route-composition/no-solve evidence only. It includes deterministic operator+template text-to-text smoke and exact arithmetic expression/trace compute, but it does not claim PermaCore, TrueGolden, production API readiness, final training completion, open-domain assistant readiness, Gemma/GPT-like generation, GSM8K/MATH solving, natural-language word-problem solving, consciousness, or sentience.
 
 For the current "what can it do as one system?" view, see
 [`docs/CURRENT_CAPABILITIES.md`](docs/CURRENT_CAPABILITIES.md).

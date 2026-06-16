@@ -118,8 +118,10 @@ jobs:
           js_path = pathlib.Path("target/ci/operator_rank_dashboard/dashboard.js")
           js_path.write_text(match.group(1), encoding="utf-8")
           subprocess.run(["node", "--check", str(js_path)], check=True)
-          if "E132 external math text skill farm" not in html:
-              raise SystemExit("dashboard did not load E132 external math-text skill evidence")
+          if "E133 math text route composition" not in html:
+              raise SystemExit("dashboard did not load E133 math-text route-composition evidence")
+          if "E132 math-text" not in html:
+              raise SystemExit("dashboard did not retain E132 external math-text skill evidence")
           if "E131 visible eq" not in html:
               raise SystemExit("dashboard did not retain E131 visible equation evidence")
           if "E130B transfer" not in html:
@@ -178,6 +180,10 @@ jobs:
               "current_evidence_anchor = E130B_ARITHMETIC_TEXT_IO_TRANSFER_AND_WORD_PROBLEM_NO_CALL_GAUNTLET",
               '"current_evidence_anchor": "E130B_ARITHMETIC_TEXT_IO_TRANSFER_AND_WORD_PROBLEM_NO_CALL_GAUNTLET"',
               "current_evidence_anchor = E130B arithmetic text-IO transfer and word-problem no-call gauntlet",
+              "current_evidence_anchor = E132_EXTERNAL_MATH_TEXT_SKILL_FARM_MUTATION_PRUNE_ORANGE_CYCLE",
+              '"current_evidence_anchor": "E132_EXTERNAL_MATH_TEXT_SKILL_FARM_MUTATION_PRUNE_ORANGE_CYCLE"',
+              "current_evidence_anchor = E132 external math text skill farm mutation/prune Orange cycle",
+              "Current evidence anchor: E132 external math text skill farm mutation/prune Orange cycle",
               "Current evidence anchor: E130B arithmetic text-IO transfer and word-problem no-call gauntlet",
               "current_evidence_anchor = E131_VISIBLE_EQUATION_EXTRACTION_AND_ASSISTANT_ARITHMETIC_RENDER_GAUNTLET",
               '"current_evidence_anchor": "E131_VISIBLE_EQUATION_EXTRACTION_AND_ASSISTANT_ARITHMETIC_RENDER_GAUNTLET"',

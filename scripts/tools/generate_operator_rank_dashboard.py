@@ -27,6 +27,7 @@ DEFAULT_E130A = Path("target/pilot_wave/e130a_corememory_to_orange_backfill_gaun
 DEFAULT_E130B = Path("target/pilot_wave/e130b_arithmetic_text_io_transfer_and_word_problem_no_call_gauntlet")
 DEFAULT_E131 = Path("target/pilot_wave/e131_visible_equation_extraction_and_assistant_arithmetic_render_gauntlet")
 DEFAULT_E132 = Path("target/pilot_wave/e132_external_math_text_skill_farm_mutation_prune_orange_cycle")
+DEFAULT_E133 = Path("target/pilot_wave/e133_math_text_route_composition_and_no_solve_assistant_confirm")
 SAMPLE_E109 = Path("docs/research/artifact_samples/e109_operator_rank_ladder_and_golden_watch_probation_mode")
 SAMPLE_E110 = Path("docs/research/artifact_samples/e110_promote_or_drop_operator_grind_wave1")
 SAMPLE_E111 = Path("docs/research/artifact_samples/e111_bronze_mutation_prune_promote_or_drop_wave")
@@ -37,6 +38,7 @@ SAMPLE_E130A = Path("docs/research/artifact_samples/e130a_corememory_to_orange_b
 SAMPLE_E130B = Path("docs/research/artifact_samples/e130b_arithmetic_text_io_transfer_and_word_problem_no_call_gauntlet")
 SAMPLE_E131 = Path("docs/research/artifact_samples/e131_visible_equation_extraction_and_assistant_arithmetic_render_gauntlet")
 SAMPLE_E132 = Path("docs/research/artifact_samples/e132_external_math_text_skill_farm_mutation_prune_orange_cycle")
+SAMPLE_E133 = Path("docs/research/artifact_samples/e133_math_text_route_composition_and_no_solve_assistant_confirm")
 DEFAULT_OUT = Path("target/pilot_wave/operator_rank_dashboard/index.html")
 
 
@@ -1126,6 +1128,72 @@ def merge_e132(rows: list[dict[str, Any]], e132: Path | None) -> tuple[list[dict
     }
 
 
+def merge_e133(rows: list[dict[str, Any]], e133: Path | None) -> tuple[list[dict[str, Any]], dict[str, Any] | None]:
+    if not e133 or not (e133 / "operator_route_results.json").exists():
+        return rows, None
+    results = read_json(e133 / "operator_route_results.json")["rows"]
+    merged = list(rows)
+    by_id = {row["operator_id"]: row for row in merged}
+    for update in results:
+        row = {
+            "operator_id": update["operator_id"],
+            "display_name": update.get("display_name", update["operator_id"]),
+            "scope": update.get("scope"),
+            "family": update.get("family"),
+            "group_id": "E133",
+            "rank": update.get("rank_after", "OrangeLegendaryCandidate"),
+            "watch_state": update.get("watch_state", "E133MathTextRouteCompositionConfirmed"),
+            "rank_before": update.get("rank_before"),
+            "rank_after": update.get("rank_after"),
+            "reload_shadow_pass": update.get("reload_shadow_pass"),
+            "negative_scope_pass": update.get("negative_scope_pass"),
+            "challenger_pass": update.get("challenger_pass"),
+            "prune_pass": update.get("prune_pass"),
+            "selected_route": update.get("selected_route"),
+            "e133_math_text_route_composition": update.get("e133_math_text_route_composition"),
+            "e133_composition_pass": update.get("composition_pass"),
+            "e133_route_case_count": update.get("route_case_count"),
+            "e133_route_accuracy": update.get("route_accuracy"),
+            "e133_visible_arithmetic_route_case_count": update.get("visible_arithmetic_route_case_count"),
+            "e133_visible_arithmetic_route_accuracy": update.get("visible_arithmetic_route_accuracy"),
+            "e133_structural_guard_case_count": update.get("structural_guard_case_count"),
+            "e133_structural_guard_accuracy": update.get("structural_guard_accuracy"),
+            "e133_hidden_word_problem_no_solve_case_count": update.get("hidden_word_problem_no_solve_case_count"),
+            "e133_hidden_word_problem_no_solve_accuracy": update.get("hidden_word_problem_no_solve_accuracy"),
+            "e133_qualified_route_activation": update.get("qualified_route_activation"),
+            "e133_hard_negative": update.get("hard_negative"),
+            "e133_wrong_scope_call": update.get("wrong_scope_call"),
+            "e133_false_commit": update.get("false_commit"),
+            "e133_unsupported_answer": update.get("unsupported_answer"),
+            "e133_boundary_claim_violation": update.get("boundary_claim_violation"),
+            "e133_direct_flow_write": update.get("direct_flow_write"),
+            "e133_overbroad_solver_control_wrong_scope_call": update.get("overbroad_solver_control_wrong_scope_call"),
+            "e133_trust_control_false_commit": update.get("trust_control_false_commit"),
+            "e133_trust_control_direct_flow_write": update.get("trust_control_direct_flow_write"),
+        }
+        existing = by_id.get(update["operator_id"])
+        if existing:
+            existing.update(row)
+        else:
+            row["qualified_activation"] = update.get("qualified_route_activation")
+            row["positive"] = update.get("qualified_route_activation")
+            row["hard_negative"] = update.get("hard_negative")
+            row["rule_of_three_upper_failure_bound"] = update.get("rule_of_three_upper_failure_bound")
+            merged.append(row)
+            by_id[row["operator_id"]] = row
+    summary = read_json(e133 / "summary.json") if (e133 / "summary.json").exists() else {}
+    aggregate = read_json(e133 / "aggregate_metrics.json") if (e133 / "aggregate_metrics.json").exists() else {}
+    decision = read_json(e133 / "decision.json") if (e133 / "decision.json").exists() else {}
+    dataset = read_json(e133 / "dataset_route_seed_report.json") if (e133 / "dataset_route_seed_report.json").exists() else {}
+    return merged, {
+        "summary": summary,
+        "aggregate": aggregate,
+        "decision": decision,
+        "dataset": dataset,
+        "operator_count": len(results),
+    }
+
+
 def build_payload(
     e109: Path,
     e110: Path | None = None,
@@ -1144,6 +1212,7 @@ def build_payload(
     e130b: Path | None = None,
     e131: Path | None = None,
     e132: Path | None = None,
+    e133: Path | None = None,
 ) -> dict[str, Any]:
     rank_results = read_json(e109 / "rank_results.json")
     rows, e110_payload = merge_e110(compact_rows(rank_results["rows"]), e110)
@@ -1162,6 +1231,7 @@ def build_payload(
     rows, e130b_payload = merge_e130b(rows, e130b)
     rows, e131_payload = merge_e131(rows, e131)
     rows, e132_payload = merge_e132(rows, e132)
+    rows, e133_payload = merge_e133(rows, e133)
     counts = rank_counts(rows)
     orange_300k_count = sum(
         1 for row in rows
@@ -1290,12 +1360,29 @@ def build_payload(
         "e132_overbroad_solver_control_wrong_scope_call_total": e132_payload["summary"].get("overbroad_solver_control_wrong_scope_call_total") if e132_payload else None,
         "e132_mutation_attempts_total": e132_payload["summary"].get("mutation_attempts_total") if e132_payload else None,
         "e132_mean_selected_prune_ratio": e132_payload["summary"].get("mean_selected_prune_ratio") if e132_payload else None,
+        "e133_operator_count": e133_payload["summary"].get("operator_count") if e133_payload else None,
+        "e133_composition_pass_operator_count": e133_payload["summary"].get("composition_pass_operator_count") if e133_payload else None,
+        "e133_route_case_count_total": e133_payload["summary"].get("route_case_count_total") if e133_payload else None,
+        "e133_visible_arithmetic_route_case_count_total": e133_payload["summary"].get("visible_arithmetic_route_case_count_total") if e133_payload else None,
+        "e133_structural_guard_case_count_total": e133_payload["summary"].get("structural_guard_case_count_total") if e133_payload else None,
+        "e133_hidden_word_problem_no_solve_case_count_total": e133_payload["summary"].get("hidden_word_problem_no_solve_case_count_total") if e133_payload else None,
+        "e133_route_accuracy_min": e133_payload["summary"].get("route_accuracy_min") if e133_payload else None,
+        "e133_visible_arithmetic_route_accuracy_min": e133_payload["summary"].get("visible_arithmetic_route_accuracy_min") if e133_payload else None,
+        "e133_structural_guard_accuracy_min": e133_payload["summary"].get("structural_guard_accuracy_min") if e133_payload else None,
+        "e133_hidden_word_problem_no_solve_accuracy_min": e133_payload["summary"].get("hidden_word_problem_no_solve_accuracy_min") if e133_payload else None,
+        "e133_hard_negative_total": e133_payload["summary"].get("hard_negative_total") if e133_payload else None,
+        "e133_wrong_scope_call_total": e133_payload["summary"].get("wrong_scope_call_total") if e133_payload else None,
+        "e133_false_commit_total": e133_payload["summary"].get("false_commit_total") if e133_payload else None,
+        "e133_direct_flow_write_total": e133_payload["summary"].get("direct_flow_write_total") if e133_payload else None,
+        "e133_overbroad_solver_control_wrong_scope_call_total": e133_payload["summary"].get("overbroad_solver_control_wrong_scope_call_total") if e133_payload else None,
+        "e133_trust_control_false_commit_total": e133_payload["summary"].get("trust_control_false_commit_total") if e133_payload else None,
+        "e133_trust_control_direct_flow_write_total": e133_payload["summary"].get("trust_control_direct_flow_write_total") if e133_payload else None,
     }
     summary = read_json(e109 / "summary.json")
     summary = {
         **summary,
         "rank_counts": counts,
-        "latest_wave": "E132 external math text skill farm mutation/prune Orange cycle" if e132_payload else "E131 visible equation extraction and assistant arithmetic render gauntlet" if e131_payload else "E130B arithmetic text-IO transfer and word-problem no-call gauntlet" if e130b_payload else "E130A CoreMemory to Orange backfill gauntlet" if e130a_payload else "E129 arithmetic trace Orange/Legendary probation" if e129_payload else "E127 overnight text skill farm Orange cycle" if e127_payload else "E122 orange-only baseline and negative-card recall" if e122_payload else "E121 E120 Gold to Orange/Legendary probation gauntlet" if e121_payload else "E120 FineWeb skill farm to Gold wave" if e120_payload else "E118 cross-source no-harm gauntlet" if e118_payload else "E117 alpha-Weave targeted pressure gauntlet" if e117_payload else "E116 alpha-Weave targeted pressure" if e116_payload else "E114 FineWeb projection" if e114_payload else "E112 Wave 3" if e112_payload else "E111 Wave 2" if e111_payload else "E110 Wave 1" if e110_payload else "E109",
+        "latest_wave": "E133 math text route composition and no-solve assistant confirm" if e133_payload else "E132 external math text skill farm mutation/prune Orange cycle" if e132_payload else "E131 visible equation extraction and assistant arithmetic render gauntlet" if e131_payload else "E130B arithmetic text-IO transfer and word-problem no-call gauntlet" if e130b_payload else "E130A CoreMemory to Orange backfill gauntlet" if e130a_payload else "E129 arithmetic trace Orange/Legendary probation" if e129_payload else "E127 overnight text skill farm Orange cycle" if e127_payload else "E122 orange-only baseline and negative-card recall" if e122_payload else "E121 E120 Gold to Orange/Legendary probation gauntlet" if e121_payload else "E120 FineWeb skill farm to Gold wave" if e120_payload else "E118 cross-source no-harm gauntlet" if e118_payload else "E117 alpha-Weave targeted pressure gauntlet" if e117_payload else "E116 alpha-Weave targeted pressure" if e116_payload else "E114 FineWeb projection" if e114_payload else "E112 Wave 3" if e112_payload else "E111 Wave 2" if e111_payload else "E110 Wave 1" if e110_payload else "E109",
     }
     return {
         "summary": summary,
@@ -1315,6 +1402,7 @@ def build_payload(
         "e130b": e130b_payload,
         "e131": e131_payload,
         "e132": e132_payload,
+        "e133": e133_payload,
         "aggregate": aggregate,
         "policy": read_json(e109 / "rank_policy_manifest.json"),
         "watch": read_json(e109 / "golden_watch_report.json"),
@@ -1675,7 +1763,11 @@ def render_html(payload: dict[str, Any]) -> str:
         ["E132 math-text", (agg.e132_orange_legendary_candidate_count ?? "n/a") + "/" + (agg.e132_operator_count ?? "n/a"), "orange"],
         ["E132 dataset rows", fmt(agg.e132_dataset_rows_loaded ?? 0), "green"],
         ["E132 support min", fmt(agg.e132_external_support_min ?? 0), "green"],
-        ["E132 hard negatives", agg.e132_hard_negative_total ?? "n/a", agg.e132_hard_negative_total ? "red" : "green"]
+        ["E132 hard negatives", agg.e132_hard_negative_total ?? "n/a", agg.e132_hard_negative_total ? "red" : "green"],
+        ["E133 route comp", (agg.e133_composition_pass_operator_count ?? "n/a") + "/" + (agg.e133_operator_count ?? "n/a"), "orange"],
+        ["E133 route cases", fmt(agg.e133_route_case_count_total ?? 0), "green"],
+        ["E133 hidden no-call", pct(agg.e133_hidden_word_problem_no_solve_accuracy_min ?? 0), "green"],
+        ["E133 hard negatives", agg.e133_hard_negative_total ?? "n/a", agg.e133_hard_negative_total ? "red" : "green"]
       ];
       document.getElementById("cards").innerHTML = cards.map(([label,value,cls]) =>
         `<div class="card"><div class="label">${{label}}</div><div class="value ${{cls}}">${{value}}</div></div>`
@@ -1796,8 +1888,11 @@ def render_html(payload: dict[str, Any]) -> str:
           <div>E132 math-text farm</div><div>${{row.e132_math_text_skill_operator ? "external math-text Orange cycle confirmed" : "not E132 math-text"}} · support ${{fmt(row.e132_external_support_count || 0)}} · sources ${{fmt(row.e132_external_source_count || 0)}} · source families ${{fmt(row.e132_external_family_count || 0)}} · negative-scope cases ${{fmt(row.e132_negative_scope_case_count || 0)}} · no-call ${{pct(row.e132_negative_scope_pass_rate || 0)}}</div>
           <div>E132 safety/control</div><div>hard negatives ${{fmt(row.e132_hard_negative || 0)}} · wrong scope ${{fmt(row.e132_wrong_scope_call || 0)}} · false commits ${{fmt(row.e132_false_commit || 0)}} · unsupported ${{fmt(row.e132_unsupported_answer || 0)}} · boundary claims ${{fmt(row.e132_boundary_claim_violation || 0)}} · direct writes ${{fmt(row.e132_direct_flow_write || 0)}} · overbroad solver wrong-scope ${{fmt(row.e132_overbroad_solver_control_wrong_scope_call || 0)}}</div>
           <div>E132 selected form</div><div>${{htmlEscape(row.e132_selected_variant_type || "")}}${{typeof row.e132_selected_prune_ratio === "number" ? " · prune " + (row.e132_selected_prune_ratio * 100).toFixed(1) + "%" : ""}} · pressure families ${{fmt(row.e132_pressure_family_count || 0)}}</div>
+          <div>E133 route composition</div><div>${{row.e133_math_text_route_composition ? "math-text route composition confirmed" : "not E133 route composition"}} · route ${{htmlEscape(row.selected_route || "")}} · cases ${{fmt(row.e133_route_case_count || 0)}} · accuracy ${{pct(row.e133_route_accuracy || 0)}} · visible arithmetic ${{fmt(row.e133_visible_arithmetic_route_case_count || 0)}} @ ${{pct(row.e133_visible_arithmetic_route_accuracy || 0)}}</div>
+          <div>E133 no-solve guards</div><div>structural guard ${{fmt(row.e133_structural_guard_case_count || 0)}} @ ${{pct(row.e133_structural_guard_accuracy || 0)}} · hidden word no-call ${{fmt(row.e133_hidden_word_problem_no_solve_case_count || 0)}} @ ${{pct(row.e133_hidden_word_problem_no_solve_accuracy || 0)}} · qualified route ${{fmt(row.e133_qualified_route_activation || 0)}}</div>
+          <div>E133 safety/control</div><div>hard negatives ${{fmt(row.e133_hard_negative || 0)}} · wrong scope ${{fmt(row.e133_wrong_scope_call || 0)}} · false commits ${{fmt(row.e133_false_commit || 0)}} · unsupported ${{fmt(row.e133_unsupported_answer || 0)}} · boundary claims ${{fmt(row.e133_boundary_claim_violation || 0)}} · direct writes ${{fmt(row.e133_direct_flow_write || 0)}} · overbroad wrong-scope ${{fmt(row.e133_overbroad_solver_control_wrong_scope_call || 0)}} · trust-control false commits ${{fmt(row.e133_trust_control_false_commit || 0)}} · trust-control direct writes ${{fmt(row.e133_trust_control_direct_flow_write || 0)}}</div>
         </div>
-        <div class="note">${{row.group_id === "E132" ? "Interpretation: this E132 operator is a scoped math-text lens/guard farmed from external math text. It prepares or guards notation/proof/TIR/word-problem surfaces; it is not a math benchmark solver, natural-language word-problem solver, Core, PermaCore, or TrueGolden." : row.group_id === "E131" ? "Interpretation: this E131 operator routes assistant-style visible equation surfaces into the scoped E129 arithmetic trace engine and still no-calls hidden prose-only word problems. This is not natural-language word-problem solving." : row.group_id === "E130B" ? "Interpretation: this E130B operator transferred E129 arithmetic trace behavior into visible-expression text IO and still no-calls hidden word problems. This is not natural-language word-problem solving." : row.group_id === "E130A" ? "Interpretation: this E130A operator was backfilled from CoreMemoryCandidate to scoped Orange/LegendaryCandidate with the E121-style 300k activation and no-harm gate. It is still not PermaCore or TrueGolden." : row.group_id === "E129" ? "Interpretation: this E129 operator reached scoped Orange/LegendaryCandidate status for exact arithmetic expression/trace behavior. It can compute or validate visible arithmetic traces, but it is not natural-language word-problem solving, PermaCore, or TrueGolden." : row.group_id === "E127" ? "Interpretation: this E127 operator reached scoped Orange/LegendaryCandidate status during the overnight text-skill farm. It is still not Core, PermaCore, or TrueGolden; that requires much larger no-harm grind and cross-source evidence." : row.e122_orange_only_baseline ? "Interpretation: this active Operator is part of the E122 scoped orange-only baseline. Negative cards attached here are mutation-planner priors, not normal callable skills. It is still not Core, PermaCore, or TrueGolden." : row.rank === "OrangeLegendaryCandidate" ? "Interpretation: this operator reached scoped Orange/LegendaryCandidate status. It is still not Core, PermaCore, or TrueGolden; that would need a later much larger no-harm grind." : row.group_id === "E120" ? "Interpretation: E120 created this as a scoped Gold Operator from FineWeb skill farming. It is not Core, PermaCore, or TrueGolden yet." : row.rank === "CoreMemoryCandidate" ? "Interpretation: this operator passed scoped CoreMemoryCandidate probation. It is still not PermaCore or TrueGolden without a later larger no-harm grind." : "Interpretation: rank is scoped. This operator is not Core memory unless a later Core probation grind passes the much higher qualified-activation and no-harm gates."}}</div>
+        <div class="note">${{row.group_id === "E133" ? "Interpretation: this E133 operator composes a scoped E132 math-text lens/guard with assistant route decisions. Visible arithmetic can route to the scoped arithmetic renderer; structural math text and hidden prose word problems stay guarded. This is not MATH/GSM8K solving, natural-language word-problem solving, Core, PermaCore, or TrueGolden." : row.group_id === "E132" ? "Interpretation: this E132 operator is a scoped math-text lens/guard farmed from external math text. It prepares or guards notation/proof/TIR/word-problem surfaces; it is not a math benchmark solver, natural-language word-problem solver, Core, PermaCore, or TrueGolden." : row.group_id === "E131" ? "Interpretation: this E131 operator routes assistant-style visible equation surfaces into the scoped E129 arithmetic trace engine and still no-calls hidden prose-only word problems. This is not natural-language word-problem solving." : row.group_id === "E130B" ? "Interpretation: this E130B operator transferred E129 arithmetic trace behavior into visible-expression text IO and still no-calls hidden word problems. This is not natural-language word-problem solving." : row.group_id === "E130A" ? "Interpretation: this E130A operator was backfilled from CoreMemoryCandidate to scoped Orange/LegendaryCandidate with the E121-style 300k activation and no-harm gate. It is still not PermaCore or TrueGolden." : row.group_id === "E129" ? "Interpretation: this E129 operator reached scoped Orange/LegendaryCandidate status for exact arithmetic expression/trace behavior. It can compute or validate visible arithmetic traces, but it is not natural-language word-problem solving, PermaCore, or TrueGolden." : row.group_id === "E127" ? "Interpretation: this E127 operator reached scoped Orange/LegendaryCandidate status during the overnight text-skill farm. It is still not Core, PermaCore, or TrueGolden; that requires much larger no-harm grind and cross-source evidence." : row.e122_orange_only_baseline ? "Interpretation: this active Operator is part of the E122 scoped orange-only baseline. Negative cards attached here are mutation-planner priors, not normal callable skills. It is still not Core, PermaCore, or TrueGolden." : row.rank === "OrangeLegendaryCandidate" ? "Interpretation: this operator reached scoped Orange/LegendaryCandidate status. It is still not Core, PermaCore, or TrueGolden; that would need a later much larger no-harm grind." : row.group_id === "E120" ? "Interpretation: E120 created this as a scoped Gold Operator from FineWeb skill farming. It is not Core, PermaCore, or TrueGolden yet." : row.rank === "CoreMemoryCandidate" ? "Interpretation: this operator passed scoped CoreMemoryCandidate probation. It is still not PermaCore or TrueGolden without a later larger no-harm grind." : "Interpretation: rank is scoped. This operator is not Core memory unless a later Core probation grind passes the much higher qualified-activation and no-harm gates."}}</div>
       `;
     }}
     function render() {{
@@ -1838,6 +1933,7 @@ def main() -> int:
     parser.add_argument("--e130b", default=str(DEFAULT_E130B))
     parser.add_argument("--e131", default=str(DEFAULT_E131))
     parser.add_argument("--e132", default=str(DEFAULT_E132))
+    parser.add_argument("--e133", default=str(DEFAULT_E133))
     parser.add_argument("--out", default=str(DEFAULT_OUT))
     args = parser.parse_args()
     e109 = existing_artifact_path(Path(args.e109), SAMPLE_E109, "rank_results.json")
@@ -1857,6 +1953,7 @@ def main() -> int:
     e130b_requested = Path(args.e130b)
     e131_requested = Path(args.e131)
     e132_requested = Path(args.e132)
+    e133_requested = Path(args.e133)
     e110 = e110_requested if (e110_requested / "wave_results.json").exists() else SAMPLE_E110 if (SAMPLE_E110 / "wave_results.json").exists() else None
     e111 = e111_requested if (e111_requested / "wave_results.json").exists() else SAMPLE_E111 if (SAMPLE_E111 / "wave_results.json").exists() else None
     e112 = e112_requested if (e112_requested / "wave_results.json").exists() else SAMPLE_E112 if (SAMPLE_E112 / "wave_results.json").exists() else None
@@ -1873,8 +1970,9 @@ def main() -> int:
     e130b = e130b_requested if (e130b_requested / "operator_transfer_results.json").exists() else SAMPLE_E130B if (SAMPLE_E130B / "operator_transfer_results.json").exists() else None
     e131 = e131_requested if (e131_requested / "operator_transfer_results.json").exists() else SAMPLE_E131 if (SAMPLE_E131 / "operator_transfer_results.json").exists() else None
     e132 = e132_requested if (e132_requested / "operator_orange_results.json").exists() else SAMPLE_E132 if (SAMPLE_E132 / "operator_orange_results.json").exists() else None
+    e133 = e133_requested if (e133_requested / "operator_route_results.json").exists() else SAMPLE_E133 if (SAMPLE_E133 / "operator_route_results.json").exists() else None
     out = Path(args.out)
-    payload = build_payload(e109, e110, e111, e112, e114, e116, e117, e118, e120, e121, e122, e127, e129, e130a, e130b, e131, e132)
+    payload = build_payload(e109, e110, e111, e112, e114, e116, e117, e118, e120, e121, e122, e127, e129, e130a, e130b, e131, e132, e133)
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(render_html(payload), encoding="utf-8")
     print(json.dumps({"out": str(out), "operator_count": len(payload["rows"])}, sort_keys=True))

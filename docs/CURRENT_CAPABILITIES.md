@@ -30,7 +30,7 @@ output.
 
 ## Current library scale
 
-Current dashboard/rank state after E132:
+Current dashboard/rank state after E133:
 
 ```text
 Dashboard operator count = 546
@@ -159,6 +159,29 @@ direct flow writes = 0
 overbroad solver control wrong-scope calls = 16703
 ```
 
+Current E133 math-text route composition evidence:
+
+```text
+composition pass operators = 16 / 16
+route cases = 176000
+visible arithmetic route cases = 10000
+structural guard cases = 118000
+hidden word-problem no-solve cases = 48000
+route accuracy min = 1.000
+visible arithmetic route accuracy min = 1.000
+structural guard accuracy min = 1.000
+hidden word-problem no-solve accuracy min = 1.000
+hard negatives = 0
+false commits = 0
+wrong-scope calls = 0
+unsupported answers = 0
+boundary-claim violations = 0
+direct flow writes = 0
+overbroad solver control wrong-scope calls = 24000
+trust-control false commits = 4125
+trust-control direct writes = 3000
+```
+
 These are scoped operators, not general-purpose neural skills. A larger count is
 not automatically better; value depends on safe activation, low cost, correct
 scope, reloadability, and no-harm evidence.
@@ -232,6 +255,9 @@ scope, reloadability, and no-harm evidence.
 - guard geometry/diagram, matrix/vector, equation-system, piecewise/function,
   fraction/probability, variable-definition, summation/sequence, unit/quantity,
   and answer-format surfaces;
+- compose those math-text lenses/guards into assistant route decisions, routing
+  explicit visible arithmetic to the scoped arithmetic renderer while keeping
+  proof/TIR/matrix/geometry/unit/answer-format surfaces guarded;
 - keep prose-only word problems on a no-solve/no-call path until a later route
   explicitly supplies visible evidence and scoped capability.
 
