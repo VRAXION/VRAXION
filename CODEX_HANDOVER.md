@@ -414,12 +414,40 @@ E135 STATE INTEGRITY = 100.000%
 ORANGE/LEGENDARY CANDIDATE = 543
 ```
 
+## Local E136 Seed Pack
+
+After E135, a local assistant/text seed pack was downloaded and normalized for
+the next LLM-ish assistant/operator farming direction:
+
+```text
+pack_id = e136_assistant_text_seed_pack
+raw_root = target/datasets/e136_assistant_text_seed_pack/raw
+normalized = target/datasets/e136_assistant_text_seed_pack/normalized/e136_assistant_text_skill_seed.jsonl
+download_report = docs/research/E136_ASSISTANT_TEXT_SEED_PACK_DOWNLOAD_REPORT.md
+
+raw_size = 2.726 GiB
+normalized_size = 2.430 GiB
+normalized_rows = 447,766
+
+source rows:
+HuggingFaceH4/ultrachat_200k = 220,000
+Open-Orca/SlimOrca = 120,000
+OpenAssistant/oasst2 = 37,766
+Anthropic/hh-rlhf = 60,000
+HuggingFaceH4/no_robots = 10,000
+```
+
+This is data readiness only. It is not a training pass, not an E136 evidence
+confirmation, and not a new current evidence anchor. Raw and normalized data
+live under `target/` and are intentionally not committed.
+
 ## Quick Checks
 
 Run these after clone or before continuing:
 
 ```powershell
 git status --short --branch
+python -m py_compile scripts/tools/prepare_e136_assistant_text_seed_pack.py
 python -m py_compile scripts/probes/run_e127_overnight_text_skill_farm_orange_cycle.py scripts/tools/generate_operator_rank_dashboard.py
 python -m py_compile scripts/probes/run_e128_assistant_text_io_lightweight_render_training.py
 python scripts/probes/run_e128_assistant_text_io_lightweight_render_training.py --out target/ci/e128_assistant_text_io_lightweight_render_training
@@ -472,11 +500,14 @@ Do not delete or commit them without an explicit cleanup decision.
 Recommended next steps:
 
 ```text
-1. Run E136 assistant math-text dialogue route transfer and latency compare.
-2. Decide whether to continue E127 with a fresh candidate pack or pause farming.
-3. Build the next bridge from deterministic action/template rendering,
+1. Use the local E136 assistant-text seed pack to run a scoped assistant/text
+   operator farm or transfer probe.
+2. Run E136 assistant math-text dialogue route transfer and latency compare if
+   the goal remains route-state latency/transfer rather than new text skills.
+3. Decide whether to continue E127 with a fresh candidate pack or pause farming.
+4. Build the next bridge from deterministic action/template rendering,
    E132/E133/E134/E135 math-text lenses/guards/routes/OOD/dialogue-state
    evidence, and exact arithmetic trace/text-IO operators toward richer
    assistant arithmetic while keeping claims scoped.
-4. Keep all new skills scoped, dashboard-visible, and rollback-safe.
+5. Keep all new skills scoped, dashboard-visible, and rollback-safe.
 ```
