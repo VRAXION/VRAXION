@@ -1,0 +1,19 @@
+{"dataset": "target/datasets/e132_external_math_text_seed_pack/normalized/e132_external_math_text_skill_seed.jsonl", "event": "start", "timestamp_ms": 1781570397097}
+{"dataset_available": true, "event": "dataset_scanned", "row_count_loaded": 215051, "timestamp_ms": 1781570425235}
+{"event": "operator_complete", "index": 1, "operator_id": "latex_inline_math_boundary_lens", "rank_after": "OrangeLegendaryCandidate", "support_count": 100574, "timestamp_ms": 1781570425235}
+{"event": "operator_complete", "index": 2, "operator_id": "latex_display_math_block_lens", "rank_after": "OrangeLegendaryCandidate", "support_count": 102106, "timestamp_ms": 1781570425236}
+{"event": "operator_complete", "index": 3, "operator_id": "boxed_answer_boundary_lens", "rank_after": "OrangeLegendaryCandidate", "support_count": 142231, "timestamp_ms": 1781570425236}
+{"event": "operator_complete", "index": 4, "operator_id": "tir_python_block_boundary_lens", "rank_after": "OrangeLegendaryCandidate", "support_count": 138705, "timestamp_ms": 1781570425257}
+{"event": "operator_complete", "index": 5, "operator_id": "proof_step_connector_lens", "rank_after": "OrangeLegendaryCandidate", "support_count": 73683, "timestamp_ms": 1781570425258}
+{"event": "operator_complete", "index": 6, "operator_id": "geometry_diagram_reference_guard", "rank_after": "OrangeLegendaryCandidate", "support_count": 20835, "timestamp_ms": 1781570425271}
+{"event": "operator_complete", "index": 7, "operator_id": "matrix_vector_block_lens", "rank_after": "OrangeLegendaryCandidate", "support_count": 5953, "timestamp_ms": 1781570425271}
+{"event": "operator_complete", "index": 8, "operator_id": "equation_system_alignment_lens", "rank_after": "OrangeLegendaryCandidate", "support_count": 112651, "timestamp_ms": 1781570425272}
+{"event": "operator_complete", "index": 9, "operator_id": "piecewise_case_function_lens", "rank_after": "OrangeLegendaryCandidate", "support_count": 129584, "timestamp_ms": 1781570425272}
+{"event": "operator_complete", "index": 10, "operator_id": "fraction_ratio_probability_lens", "rank_after": "OrangeLegendaryCandidate", "support_count": 170835, "timestamp_ms": 1781570425272}
+{"event": "operator_complete", "index": 11, "operator_id": "variable_definition_binding_lens", "rank_after": "OrangeLegendaryCandidate", "support_count": 130714, "timestamp_ms": 1781570425273}
+{"event": "operator_complete", "index": 12, "operator_id": "summation_sequence_series_lens", "rank_after": "OrangeLegendaryCandidate", "support_count": 103758, "timestamp_ms": 1781570425273}
+{"event": "operator_complete", "index": 13, "operator_id": "unit_quantity_binding_lens", "rank_after": "OrangeLegendaryCandidate", "support_count": 136532, "timestamp_ms": 1781570425273}
+{"event": "operator_complete", "index": 14, "operator_id": "word_problem_no_solve_guard_v2", "rank_after": "OrangeLegendaryCandidate", "support_count": 151143, "timestamp_ms": 1781570425274}
+{"event": "operator_complete", "index": 15, "operator_id": "assistant_tir_output_error_repair_guard", "rank_after": "OrangeLegendaryCandidate", "support_count": 97349, "timestamp_ms": 1781570425274}
+{"event": "operator_complete", "index": 16, "operator_id": "answer_format_instruction_lens", "rank_after": "OrangeLegendaryCandidate", "support_count": 142384, "timestamp_ms": 1781570425274}
+{"decision": "e132_external_math_text_skill_farm_mutation_prune_orange_cycle_confirmed", "event": "complete", "orange_count": 16, "timestamp_ms": 1781570425288}

@@ -9,8 +9,8 @@ This is the active evidence summary for the current repo state. Historical findi
 ```text
 branch = main
 current_release = v6.1.7
-current_evidence_anchor = E131_VISIBLE_EQUATION_EXTRACTION_AND_ASSISTANT_ARITHMETIC_RENDER_GAUNTLET
-current_evidence_subject = Arithmetic trace operators routed from assistant-style visible equation surfaces with hidden word-problem no-call
+current_evidence_anchor = E132_EXTERNAL_MATH_TEXT_SKILL_FARM_MUTATION_PRUNE_ORANGE_CYCLE
+current_evidence_subject = Scoped math-text lenses and guards farmed from external math text with mutation/prune/no-solve gating
 latest_released_runtime_slice = a908a838a1119540ed88bc91e10cfcb0bdae92a8 E79 training data/curriculum readiness gate
 ```
 
@@ -31,15 +31,16 @@ latest_released_runtime_slice = a908a838a1119540ed88bc91e10cfcb0bdae92a8 E79 tra
 | E129 | tracked on `main` | Arithmetic trace Orange/Legendary probation: 9 scoped arithmetic operators, 2.7M qualified activations, 9,000 negative-scope no-call cases, 0 hard negatives, 0 false commits, 0 wrong-scope calls, 0 unsupported answers. | v6 evidence |
 | E130A | tracked on `main` | CoreMemoryCandidate-to-Orange backfill: 136 prior CoreMemoryCandidate operators promoted, 41,036,433 total qualified activations, 300,623 minimum per operator, 0 hard negatives, 0 direct flow writes. | v6 evidence |
 | E130B | tracked on `main` | Arithmetic text-IO transfer/no-call: 9/9 E129 operators passed, 270,000 visible-transfer cases, 135,000 hidden word-problem no-call cases, 0 wrong-scope calls. | v6 evidence |
-| E131 | tracked on `main` | Visible equation assistant render: 9/9 E129/E130B operators passed, 108,000 visible-equation cases, 54,000 hidden word-problem no-call cases, 0 hard negatives. | Current evidence anchor |
+| E131 | tracked on `main` | Visible equation assistant render: 9/9 E129/E130B operators passed, 108,000 visible-equation cases, 54,000 hidden word-problem no-call cases, 0 hard negatives. | v6 evidence |
+| E132 | tracked on `main` | External math-text skill farm: 16/16 scoped math-text lenses/guards promoted to OrangeLegendaryCandidate, 215,051 external rows, 4,883,030 qualified activations, 78,859 negative-scope cases, 0 hard negatives. | Current evidence anchor |
 
 ## Current Validated Claim
 
-> VRAXION v6 has a Rust mainline for governed Pocket Library state, resumable curriculum execution, multi-lane final-training supervision, global Pocket Library merge/dedupe governance, a training-data/curriculum readiness gate, one canonical `final_train` campaign entrypoint, governed Operator evidence through E127, an E128 lightweight assistant text-IO render-training smoke, E129 scoped exact arithmetic trace Operators promoted through Orange/Legendary probation, an E130A CoreMemoryCandidate-to-Orange backfill, an E130B arithmetic text-IO transfer/no-call gauntlet, and an E131 visible-equation assistant-render gauntlet. E127 cycle 40 contains 382 scoped Orange/Legendary text operators with 0 tracked hard negatives, false commits, wrong-scope calls, or unsupported answers in the checkpointed evidence. E128 confirms a 320-prompt deterministic corpus/action-policy/template-render bridge with 0 unsupported answers and 0 boundary-claim violations. E129 confirms 9 scoped arithmetic trace operators with 2.7M qualified activations, 0 hard negatives, and 0 wrong-scope calls. E130A confirms 136 prior CoreMemoryCandidate operators reached Orange/LegendaryCandidate with 41,036,433 total qualified activations, 0 hard negatives, and 0 direct flow writes. E130B confirms those 9 arithmetic operators transfer to visible-expression text IO while hidden word problems remain no-call. E131 confirms those operators route from assistant-style visible equation surfaces while hidden prose-only word problems remain no-call.
+> VRAXION v6 has a Rust mainline for governed Pocket Library state, resumable curriculum execution, multi-lane final-training supervision, global Pocket Library merge/dedupe governance, a training-data/curriculum readiness gate, one canonical `final_train` campaign entrypoint, governed Operator evidence through E127, an E128 lightweight assistant text-IO render-training smoke, E129 scoped exact arithmetic trace Operators promoted through Orange/Legendary probation, an E130A CoreMemoryCandidate-to-Orange backfill, an E130B arithmetic text-IO transfer/no-call gauntlet, an E131 visible-equation assistant-render gauntlet, and an E132 external math-text skill farm. E127 cycle 40 contains 382 scoped Orange/Legendary text operators with 0 tracked hard negatives, false commits, wrong-scope calls, or unsupported answers in the checkpointed evidence. E128 confirms a 320-prompt deterministic corpus/action-policy/template-render bridge with 0 unsupported answers and 0 boundary-claim violations. E129 confirms 9 scoped arithmetic trace operators with 2.7M qualified activations, 0 hard negatives, and 0 wrong-scope calls. E130A confirms 136 prior CoreMemoryCandidate operators reached Orange/LegendaryCandidate with 41,036,433 total qualified activations, 0 hard negatives, and 0 direct flow writes. E130B confirms those 9 arithmetic operators transfer to visible-expression text IO while hidden word problems remain no-call. E131 confirms those operators route from assistant-style visible equation surfaces while hidden prose-only word problems remain no-call. E132 confirms 16 scoped math-text lenses/guards promoted to OrangeLegendaryCandidate from external math text with 0 hard negatives, 0 wrong-scope calls, and 0 direct Flow writes.
 
 ## Operational Finding
 
-Long-running work must write progress continuously and support resume. The Rust runtime layers prove checkpoint/progress/writeout behavior through the E72-E79 chain. The E80-E131 evidence layer is governed research/operator/text-IO/arithmetic-trace/rank-backfill/visible-expression/visible-equation assistant-render evidence and must remain explicitly scoped until promoted into runtime-facing behavior.
+Long-running work must write progress continuously and support resume. The Rust runtime layers prove checkpoint/progress/writeout behavior through the E72-E79 chain. The E80-E132 evidence layer is governed research/operator/text-IO/arithmetic-trace/rank-backfill/visible-expression/visible-equation assistant-render/math-text skill-farm evidence and must remain explicitly scoped until promoted into runtime-facing behavior.
 
 ## Hard Boundary
 
@@ -49,7 +50,7 @@ This file does not claim:
 - public production API readiness
 - GPT-like/open-domain assistant readiness
 - Gemma-level/freeform text generation
-- GSM8K solving
+- GSM8K/MATH solving
 - natural-language word-problem solving
 - final production dataset completion
 - trained model/weights readiness

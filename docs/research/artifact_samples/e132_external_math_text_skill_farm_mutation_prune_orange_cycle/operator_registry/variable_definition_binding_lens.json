@@ -1,0 +1,13 @@
+{
+  "artifact_contract": "E132_EXTERNAL_MATH_TEXT_SKILL_FARM_MUTATION_PRUNE_ORANGE_CYCLE",
+  "capability_signature": "variable_definition_binding_lens_e132_v001",
+  "content_digest": "707699b47f92c148edbca603deef2ac81b3ef9d099e1ab69cffa6fb5975fdd83",
+  "direct_flow_write_allowed": false,
+  "display_name": "Variable Definition Binding Lens",
+  "family": "Lens",
+  "lifecycle": "OrangeLegendaryCandidate",
+  "load_policy": "registry_and_manager_guard_required",
+  "operator_id": "variable_definition_binding_lens",
+  "scope": "math_text_variable_definition_binding",
+  "selected_variant_id": "variable_definition_binding_lens::orange_pruned_minimal_v1"
+}

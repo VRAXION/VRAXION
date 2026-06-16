@@ -30,11 +30,11 @@ output.
 
 ## Current library scale
 
-Current dashboard/rank state after E130A:
+Current dashboard/rank state after E132:
 
 ```text
-Dashboard operator count = 530
-Orange/Legendary scoped operators = 527
+Dashboard operator count = 546
+Orange/Legendary scoped operators = 543
 CoreMemoryCandidate operators = 0
 Deprecated operators = 3
 ```
@@ -134,6 +134,31 @@ E130B baseline visible misses = 96711
 overbroad control wrong-scope calls = 18000
 ```
 
+Current E132 external math-text skill-farm evidence:
+
+```text
+dataset rows loaded = 215051
+external sources = 5
+external families = 11
+math-text operators = 16
+Orange/Legendary math-text operators = 16
+external support min/operator = 5953
+qualified activation total = 4883030
+qualified activation min/operator = 302510
+negative-scope no-call cases = 78859
+mutation attempts = 146005
+accepted mutations = 650
+rollbacks = 145355
+mean selected prune ratio = 0.736875
+hard negatives = 0
+false commits = 0
+wrong-scope calls = 0
+unsupported answers = 0
+boundary-claim violations = 0
+direct flow writes = 0
+overbroad solver control wrong-scope calls = 16703
+```
+
 These are scoped operators, not general-purpose neural skills. A larger count is
 not automatically better; value depends on safe activation, low cost, correct
 scope, reloadability, and no-harm evidence.
@@ -197,6 +222,19 @@ scope, reloadability, and no-harm evidence.
 - no-call natural-language word problems that lack a visible arithmetic
   expression or trace.
 
+### Math-text lenses and guards
+
+- detect and scope LaTeX inline/display math surfaces;
+- preserve boxed/final-answer boundaries without trusting them as proof;
+- detect TIR/python/output/error blocks as structure, not direct Flow writes;
+- ground proof-step connectors such as therefore, hence, implies, substituting,
+  and equating;
+- guard geometry/diagram, matrix/vector, equation-system, piecewise/function,
+  fraction/probability, variable-definition, summation/sequence, unit/quantity,
+  and answer-format surfaces;
+- keep prose-only word problems on a no-solve/no-call path until a later route
+  explicitly supplies visible evidence and scoped capability.
+
 ### Task/progress integrity
 
 - track required task steps and required evidence;
@@ -237,6 +275,12 @@ progress-completion guards
 
 calc-trace validators
   check visible arithmetic trace markers
+
+math-text boundary lenses
+  detect LaTeX, proof, TIR, matrix, diagram, answer-format, and quantity spans
+
+no-solve guards
+  keep hidden/prose-only word problems out of direct arithmetic routes
 ```
 
 ## What it cannot claim yet

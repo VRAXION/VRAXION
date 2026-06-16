@@ -1,0 +1,13 @@
+{
+  "artifact_contract": "E132_EXTERNAL_MATH_TEXT_SKILL_FARM_MUTATION_PRUNE_ORANGE_CYCLE",
+  "capability_signature": "proof_step_connector_lens_e132_v001",
+  "content_digest": "03f89275ac66c3a49cfc6a90645fa1c5a224f5091a1af0ba2119a543b6cfced2",
+  "direct_flow_write_allowed": false,
+  "display_name": "Proof Step Connector Lens",
+  "family": "Lens",
+  "lifecycle": "OrangeLegendaryCandidate",
+  "load_policy": "registry_and_manager_guard_required",
+  "operator_id": "proof_step_connector_lens",
+  "scope": "math_text_proof_step_connector",
+  "selected_variant_id": "proof_step_connector_lens::orange_pruned_minimal_v1"
+}

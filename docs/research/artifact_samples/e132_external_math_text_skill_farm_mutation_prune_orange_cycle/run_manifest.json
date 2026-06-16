@@ -1,0 +1,13 @@
+{
+  "artifact_contract": "E132_EXTERNAL_MATH_TEXT_SKILL_FARM_MUTATION_PRUNE_ORANGE_CYCLE",
+  "backprop_used": false,
+  "boundary": "scoped math-text operator farming only; not math benchmark solving, not neural training, not Core/PermaCore/TrueGolden",
+  "dataset": "target/datasets/e132_external_math_text_seed_pack/normalized/e132_external_math_text_skill_seed.jsonl",
+  "dataset_available": true,
+  "dataset_manifest": "target/datasets/e132_external_math_text_seed_pack/normalized_manifest.json",
+  "download_manifest": "target/datasets/e132_external_math_text_seed_pack/download_manifest.json",
+  "gradient_descent_used": false,
+  "neural_training_used": false,
+  "operator_count": 16,
+  "optimizer_used": false
+}

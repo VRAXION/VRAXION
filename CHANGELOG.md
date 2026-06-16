@@ -1,6 +1,29 @@
 # Changelog
 
-This changelog is narrowed to the current v6 / E127-E131 evidence anchor. Full historical beta, probe, Python SDK, legacy Rust, and research-output history is preserved in git history and archive tags.
+This changelog is narrowed to the current v6 / E127-E132 evidence anchor. Full historical beta, probe, Python SDK, legacy Rust, and research-output history is preserved in git history and archive tags.
+
+## 2026-06-16 - E132 External Math Text Skill Farm Mutation/Prune Orange Cycle
+
+- Added `scripts/probes/run_e132_external_math_text_skill_farm_mutation_prune_orange_cycle.py`.
+- Downloaded and normalized an E132 external math-text seed pack under ignored
+  `target/`: MathInstruct, NuminaMath-TIR, OpenAssistant/oasst1, Dolly 15k,
+  and EleutherAI Hendrycks MATH.
+- Result: 215,051 rows loaded across 5 sources and 11 families.
+- Promoted 16/16 scoped math-text lenses/guards to OrangeLegendaryCandidate.
+- Minimum external support per operator: 5,953.
+- Activation evidence: 4,883,030 total qualified activations and 302,510
+  minimum qualified activations per operator.
+- Mutation/prune evidence: 146,005 mutation attempts, 650 accepted mutations,
+  145,355 rejected mutations/rollbacks, 998 prune attempts, 469 challenger
+  attempts, and mean selected prune ratio 0.736875.
+- Negative-scope guard: 78,859 negative-scope cases, pass-rate minimum 1.000.
+- Confirmed: 0 hard negatives, 0 false commits, 0 wrong-scope calls, 0
+  unsupported answers, 0 boundary-claim violations, and 0 direct Flow writes.
+- Challenger/control: the overbroad solver control produced 16,703 wrong-scope
+  calls and was rejected.
+- Boundary: scoped math-text lenses and guards only; not GSM8K/MATH solving,
+  hidden natural-language word-problem solving, neural training, Core,
+  PermaCore, or TrueGolden.
 
 ## 2026-06-16 - E131 Visible Equation Extraction And Assistant Arithmetic Render
 

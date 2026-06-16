@@ -1,0 +1,13 @@
+{
+  "artifact_contract": "E132_EXTERNAL_MATH_TEXT_SKILL_FARM_MUTATION_PRUNE_ORANGE_CYCLE",
+  "capability_signature": "unit_quantity_binding_lens_e132_v001",
+  "content_digest": "27f1051ab5760e61c44d91f1a19ad74183ff925f25444e37581a70df01a129a9",
+  "direct_flow_write_allowed": false,
+  "display_name": "Unit Quantity Binding Lens",
+  "family": "Lens",
+  "lifecycle": "OrangeLegendaryCandidate",
+  "load_policy": "registry_and_manager_guard_required",
+  "operator_id": "unit_quantity_binding_lens",
+  "scope": "math_text_unit_quantity_binding",
+  "selected_variant_id": "unit_quantity_binding_lens::orange_pruned_minimal_v1"
+}

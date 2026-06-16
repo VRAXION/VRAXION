@@ -1,0 +1,13 @@
+{
+  "artifact_contract": "E132_EXTERNAL_MATH_TEXT_SKILL_FARM_MUTATION_PRUNE_ORANGE_CYCLE",
+  "capability_signature": "assistant_tir_output_error_repair_guard_e132_v001",
+  "content_digest": "2cbd7a9ecce2bfe50ba70bc5bc11f5705c0abbb8bb17c78161f6ecf75e35373c",
+  "direct_flow_write_allowed": false,
+  "display_name": "Assistant TIR Output / Error Repair Guard",
+  "family": "Guard",
+  "lifecycle": "OrangeLegendaryCandidate",
+  "load_policy": "registry_and_manager_guard_required",
+  "operator_id": "assistant_tir_output_error_repair_guard",
+  "scope": "math_text_tir_output_error_repair",
+  "selected_variant_id": "assistant_tir_output_error_repair_guard::orange_pruned_minimal_v1"
+}

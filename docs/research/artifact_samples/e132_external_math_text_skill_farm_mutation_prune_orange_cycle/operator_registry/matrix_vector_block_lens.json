@@ -1,0 +1,13 @@
+{
+  "artifact_contract": "E132_EXTERNAL_MATH_TEXT_SKILL_FARM_MUTATION_PRUNE_ORANGE_CYCLE",
+  "capability_signature": "matrix_vector_block_lens_e132_v001",
+  "content_digest": "6dd254ceadda5679150c1a2300b01d2f1d5fa3a68726a3921ec11bf104e0156c",
+  "direct_flow_write_allowed": false,
+  "display_name": "Matrix / Vector Block Lens",
+  "family": "Lens",
+  "lifecycle": "OrangeLegendaryCandidate",
+  "load_policy": "registry_and_manager_guard_required",
+  "operator_id": "matrix_vector_block_lens",
+  "scope": "math_text_matrix_vector_block",
+  "selected_variant_id": "matrix_vector_block_lens::orange_pruned_minimal_v1"
+}

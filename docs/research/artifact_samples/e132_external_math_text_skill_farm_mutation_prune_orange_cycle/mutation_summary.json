@@ -1,0 +1,11 @@
+{
+  "accepted_mutations_total": 650,
+  "challenger_attempts_total": 469,
+  "mutation_attempts_total": 146005,
+  "prune_attempts_total": 998,
+  "rejected_mutations_total": 145355,
+  "rollback_count_total": 145355,
+  "selected_variant_type_counter": {
+    "orange_pruned_minimal": 16
+  }
+}

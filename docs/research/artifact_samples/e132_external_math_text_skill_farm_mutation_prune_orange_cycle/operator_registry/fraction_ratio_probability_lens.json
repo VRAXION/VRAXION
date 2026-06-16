@@ -1,0 +1,13 @@
+{
+  "artifact_contract": "E132_EXTERNAL_MATH_TEXT_SKILL_FARM_MUTATION_PRUNE_ORANGE_CYCLE",
+  "capability_signature": "fraction_ratio_probability_lens_e132_v001",
+  "content_digest": "cd2d29143c87012f8921181aa6dcc61f0fd5f9090ef898aa9d1d48887a6fb5df",
+  "direct_flow_write_allowed": false,
+  "display_name": "Fraction / Ratio / Probability Lens",
+  "family": "Lens",
+  "lifecycle": "OrangeLegendaryCandidate",
+  "load_policy": "registry_and_manager_guard_required",
+  "operator_id": "fraction_ratio_probability_lens",
+  "scope": "math_text_fraction_ratio_probability",
+  "selected_variant_id": "fraction_ratio_probability_lens::orange_pruned_minimal_v1"
+}

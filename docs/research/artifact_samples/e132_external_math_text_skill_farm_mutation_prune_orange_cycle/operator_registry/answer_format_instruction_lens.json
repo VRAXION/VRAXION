@@ -1,0 +1,13 @@
+{
+  "artifact_contract": "E132_EXTERNAL_MATH_TEXT_SKILL_FARM_MUTATION_PRUNE_ORANGE_CYCLE",
+  "capability_signature": "answer_format_instruction_lens_e132_v001",
+  "content_digest": "f5576bc309a29338cb5997d177a415f8de1f61854ff1630f39794d45417ab5c1",
+  "direct_flow_write_allowed": false,
+  "display_name": "Answer Format Instruction Lens",
+  "family": "Lens",
+  "lifecycle": "OrangeLegendaryCandidate",
+  "load_policy": "registry_and_manager_guard_required",
+  "operator_id": "answer_format_instruction_lens",
+  "scope": "math_text_answer_format_instruction",
+  "selected_variant_id": "answer_format_instruction_lens::orange_pruned_minimal_v1"
+}

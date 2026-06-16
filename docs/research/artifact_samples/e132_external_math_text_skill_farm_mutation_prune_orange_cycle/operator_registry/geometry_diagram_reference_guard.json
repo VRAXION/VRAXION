@@ -1,0 +1,13 @@
+{
+  "artifact_contract": "E132_EXTERNAL_MATH_TEXT_SKILL_FARM_MUTATION_PRUNE_ORANGE_CYCLE",
+  "capability_signature": "geometry_diagram_reference_guard_e132_v001",
+  "content_digest": "72caa9a2923e7351de743e047c819162615442070cb06ea28bf089cf420240fd",
+  "direct_flow_write_allowed": false,
+  "display_name": "Geometry Diagram Reference Guard",
+  "family": "Guard",
+  "lifecycle": "OrangeLegendaryCandidate",
+  "load_policy": "registry_and_manager_guard_required",
+  "operator_id": "geometry_diagram_reference_guard",
+  "scope": "math_text_geometry_diagram_reference",
+  "selected_variant_id": "geometry_diagram_reference_guard::orange_pruned_minimal_v1"
+}

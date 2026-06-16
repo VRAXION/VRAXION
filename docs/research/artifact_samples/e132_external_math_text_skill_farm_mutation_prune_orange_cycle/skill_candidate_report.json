@@ -1,0 +1,859 @@
+{
+  "rows": [
+    {
+      "candidate_id": "latex_inline_math_boundary_lens",
+      "display_name": "LaTeX Inline Math Boundary Lens",
+      "example_refs": [
+        "e131:7a7b95ae426fb29a3a780ea0d4910d99c43e24665b6a0882b496f874644b185b",
+        "e131:b66e05e951ac3e8e59eb469986133e574eaae5ec24475301416c394a6d1d02e3",
+        "e131:ba31cbfc594fcd1f1c600aec77909c69ed7bda3e014ef1f8d18d07290ce78240"
+      ],
+      "family": "Lens",
+      "family_counts": {
+        "assistant_dialogue": 428,
+        "hendrycks_math_algebra": 2931,
+        "hendrycks_math_counting_and_probability": 1245,
+        "hendrycks_math_geometry": 1349,
+        "hendrycks_math_intermediate_algebra": 2198,
+        "hendrycks_math_number_theory": 1409,
+        "hendrycks_math_prealgebra": 2076,
+        "hendrycks_math_precalculus": 1292,
+        "instruction_general": 203,
+        "math_instruction": 14987,
+        "numina_math_tir": 72456
+      },
+      "need": "Detects inline LaTeX math spans as bounded evidence, not ordinary prose.",
+      "scope": "math_text_latex_inline_boundary",
+      "source_counts": {
+        "AI-MO/NuminaMath-TIR": 72456,
+        "EleutherAI/hendrycks_math": 12500,
+        "OpenAssistant/oasst1": 428,
+        "TIGER-Lab/MathInstruct": 14987,
+        "databricks/databricks-dolly-15k": 203
+      },
+      "split_counts": {
+        "heldout": 1540,
+        "test": 5099,
+        "train": 92323,
+        "validation": 1612
+      },
+      "suggested_status": "FarmCandidate",
+      "support_count": 100574,
+      "tag_counts": {
+        "answer_boundary_surface": 94883,
+        "assistant_style": 428,
+        "candidate_equation_extraction": 14987,
+        "geometry_diagram_or_coordinate_surface": 15087,
+        "latex_math_surface": 100571,
+        "math_instruction_surface": 14987,
+        "matrix_vector_surface": 4360,
+        "proof_step_surface": 34596,
+        "response_rendering": 428,
+        "tir_program_or_output_surface": 76368,
+        "visible_math_surface": 15317,
+        "word_problem_boundary_candidate": 68433
+      }
+    },
+    {
+      "candidate_id": "latex_display_math_block_lens",
+      "display_name": "LaTeX Display Math Block Lens",
+      "example_refs": [
+        "e131:7a7b95ae426fb29a3a780ea0d4910d99c43e24665b6a0882b496f874644b185b",
+        "e131:d2c1e8a40a8643a330723fbc8dcc094d0a275ece6d4e2d5f9b50c35bb6855158",
+        "e131:b66e05e951ac3e8e59eb469986133e574eaae5ec24475301416c394a6d1d02e3"
+      ],
+      "family": "Lens",
+      "family_counts": {
+        "assistant_dialogue": 680,
+        "hendrycks_math_algebra": 2931,
+        "hendrycks_math_counting_and_probability": 1245,
+        "hendrycks_math_geometry": 1349,
+        "hendrycks_math_intermediate_algebra": 2198,
+        "hendrycks_math_number_theory": 1409,
+        "hendrycks_math_prealgebra": 2076,
+        "hendrycks_math_precalculus": 1292,
+        "instruction_general": 255,
+        "math_instruction": 16210,
+        "numina_math_tir": 72461
+      },
+      "need": "Detects display math, align, array, cases, and matrix blocks.",
+      "scope": "math_text_latex_display_block_boundary",
+      "source_counts": {
+        "AI-MO/NuminaMath-TIR": 72461,
+        "EleutherAI/hendrycks_math": 12500,
+        "OpenAssistant/oasst1": 680,
+        "TIGER-Lab/MathInstruct": 16210,
+        "databricks/databricks-dolly-15k": 255
+      },
+      "split_counts": {
+        "heldout": 1678,
+        "test": 5099,
+        "train": 93559,
+        "validation": 1770
+      },
+      "suggested_status": "FarmCandidate",
+      "support_count": 102106,
+      "tag_counts": {
+        "answer_boundary_surface": 95319,
+        "assistant_style": 680,
+        "candidate_equation_extraction": 16210,
+        "geometry_diagram_or_coordinate_surface": 15308,
+        "latex_math_surface": 100571,
+        "math_instruction_surface": 16210,
+        "matrix_vector_surface": 5895,
+        "proof_step_surface": 34869,
+        "response_rendering": 680,
+        "tir_program_or_output_surface": 76603,
+        "visible_math_surface": 16671,
+        "word_problem_boundary_candidate": 69456
+      }
+    },
+    {
+      "candidate_id": "boxed_answer_boundary_lens",
+      "display_name": "Boxed Answer Boundary Lens",
+      "example_refs": [
+        "e131:0a0d3e489ec635a03b13f697ebd7c4c4ffb50383086029c33f23709b58c8f4d1",
+        "e131:8011de7cc339a23bd9f18228c7cf8d230f56a87a1cf95e2c72a3eb2858323c74",
+        "e131:bf48e70038075b93effed2e24fe7b5369914a3b51ef4270c07d6fceb2f771e45"
+      ],
+      "family": "Lens",
+      "family_counts": {
+        "assistant_dialogue": 1073,
+        "hendrycks_math_algebra": 2930,
+        "hendrycks_math_counting_and_probability": 1245,
+        "hendrycks_math_geometry": 1349,
+        "hendrycks_math_intermediate_algebra": 2198,
+        "hendrycks_math_number_theory": 1409,
+        "hendrycks_math_prealgebra": 2076,
+        "hendrycks_math_precalculus": 1290,
+        "instruction_general": 256,
+        "math_instruction": 55865,
+        "numina_math_tir": 72540
+      },
+      "need": "Finds boxed/final-answer boundaries without treating them as proof of correctness.",
+      "scope": "math_text_boxed_answer_boundary",
+      "source_counts": {
+        "AI-MO/NuminaMath-TIR": 72540,
+        "EleutherAI/hendrycks_math": 12497,
+        "OpenAssistant/oasst1": 1073,
+        "TIGER-Lab/MathInstruct": 55865,
+        "databricks/databricks-dolly-15k": 256
+      },
+      "split_counts": {
+        "heldout": 5724,
+        "test": 5098,
+        "train": 125634,
+        "validation": 5775
+      },
+      "suggested_status": "FarmCandidate",
+      "support_count": 142231,
+      "tag_counts": {
+        "answer_boundary_surface": 142229,
+        "assistant_style": 1073,
+        "candidate_equation_extraction": 55865,
+        "geometry_diagram_or_coordinate_surface": 15796,
+        "latex_math_surface": 94881,
+        "math_instruction_surface": 55865,
+        "matrix_vector_surface": 4304,
+        "proof_step_surface": 39293,
+        "response_rendering": 1073,
+        "tir_program_or_output_surface": 83936,
+        "visible_math_surface": 55691,
+        "word_problem_boundary_candidate": 97403
+      }
+    },
+    {
+      "candidate_id": "tir_python_block_boundary_lens",
+      "display_name": "TIR Python Block Boundary Lens",
+      "example_refs": [
+        "e131:7f465ff3719eddf3a786df9e9198510cf49decc33f0f614cb7ed6de0d120f580",
+        "e131:4d0c2311e35063b4720350e7227e7326a06deb3a5af14a099aa8c7f3a16a1ee0",
+        "e131:873cabf8f5555f7785e011c440cc6dfd7424595e26d26c2d751d49f8bb8d8f49"
+      ],
+      "family": "Lens",
+      "family_counts": {
+        "assistant_dialogue": 9872,
+        "hendrycks_math_algebra": 1059,
+        "hendrycks_math_counting_and_probability": 607,
+        "hendrycks_math_geometry": 310,
+        "hendrycks_math_intermediate_algebra": 977,
+        "hendrycks_math_number_theory": 580,
+        "hendrycks_math_prealgebra": 577,
+        "hendrycks_math_precalculus": 417,
+        "instruction_general": 6247,
+        "math_instruction": 45519,
+        "numina_math_tir": 72540
+      },
+      "need": "Detects tool-integrated reasoning code and output blocks as structure.",
+      "scope": "math_text_tir_python_block_boundary",
+      "source_counts": {
+        "AI-MO/NuminaMath-TIR": 72540,
+        "EleutherAI/hendrycks_math": 4527,
+        "OpenAssistant/oasst1": 9872,
+        "TIGER-Lab/MathInstruct": 45519,
+        "databricks/databricks-dolly-15k": 6247
+      },
+      "split_counts": {
+        "heldout": 6293,
+        "test": 1858,
+        "train": 124291,
+        "validation": 6263
+      },
+      "suggested_status": "FarmCandidate",
+      "support_count": 138705,
+      "tag_counts": {
+        "answer_boundary_surface": 104171,
+        "assistant_style": 9872,
+        "candidate_equation_extraction": 45519,
+        "geometry_diagram_or_coordinate_surface": 14145,
+        "latex_math_surface": 87843,
+        "math_instruction_surface": 45519,
+        "math_text_surface": 10993,
+        "proof_step_surface": 37491,
+        "response_rendering": 9872,
+        "tir_program_or_output_surface": 97324,
+        "visible_math_surface": 51966,
+        "word_problem_boundary_candidate": 88528
+      }
+    },
+    {
+      "candidate_id": "proof_step_connector_lens",
+      "display_name": "Proof Step Connector Lens",
+      "example_refs": [
+        "e131:1798f78709ab670a1abc1011319d5291af1bfed08be7eab9b2975732b808588b",
+        "e131:7c9318cd5ed49064c0953f63ec4a8238135f772bfd3ad533eac1e5436b385eea",
+        "e131:9e9f86392cbf6f3cb7d89c77cefe2e8ce3ead103d320db7192d3c4eff07e29f0"
+      ],
+      "family": "Lens",
+      "family_counts": {
+        "assistant_dialogue": 979,
+        "hendrycks_math_algebra": 1750,
+        "hendrycks_math_counting_and_probability": 599,
+        "hendrycks_math_geometry": 1051,
+        "hendrycks_math_intermediate_algebra": 1595,
+        "hendrycks_math_number_theory": 893,
+        "hendrycks_math_prealgebra": 982,
+        "hendrycks_math_precalculus": 834,
+        "instruction_general": 698,
+        "math_instruction": 20675,
+        "numina_math_tir": 43627
+      },
+      "need": "Grounds therefore/hence/implies/substituting/equating proof-step connectors.",
+      "scope": "math_text_proof_step_connector",
+      "source_counts": {
+        "AI-MO/NuminaMath-TIR": 43627,
+        "EleutherAI/hendrycks_math": 7704,
+        "OpenAssistant/oasst1": 979,
+        "TIGER-Lab/MathInstruct": 20675,
+        "databricks/databricks-dolly-15k": 698
+      },
+      "split_counts": {
+        "heldout": 2274,
+        "test": 3099,
+        "train": 66047,
+        "validation": 2263
+      },
+      "suggested_status": "FarmCandidate",
+      "support_count": 73683,
+      "tag_counts": {
+        "answer_boundary_surface": 63741,
+        "assistant_style": 979,
+        "candidate_equation_extraction": 20675,
+        "geometry_diagram_or_coordinate_surface": 11892,
+        "latex_math_surface": 56734,
+        "math_instruction_surface": 20675,
+        "matrix_vector_surface": 3401,
+        "proof_step_surface": 46419,
+        "response_rendering": 979,
+        "tir_program_or_output_surface": 46588,
+        "visible_math_surface": 20999,
+        "word_problem_boundary_candidate": 49021
+      }
+    },
+    {
+      "candidate_id": "geometry_diagram_reference_guard",
+      "display_name": "Geometry Diagram Reference Guard",
+      "example_refs": [
+        "e131:fbd63c3868e6b32071081c8963b1959bb5797bc844ab8a14afb2d61b118d6653",
+        "e131:0a0d3e489ec635a03b13f697ebd7c4c4ffb50383086029c33f23709b58c8f4d1",
+        "e131:309e7b71367779b3e5190d2c55edebe6ed3bfd255f1c0d66dc2b39f26f0d9899"
+      ],
+      "family": "Guard",
+      "family_counts": {
+        "assistant_dialogue": 461,
+        "hendrycks_math_algebra": 336,
+        "hendrycks_math_counting_and_probability": 210,
+        "hendrycks_math_geometry": 1189,
+        "hendrycks_math_intermediate_algebra": 299,
+        "hendrycks_math_number_theory": 17,
+        "hendrycks_math_prealgebra": 507,
+        "hendrycks_math_precalculus": 688,
+        "instruction_general": 259,
+        "math_instruction": 5220,
+        "numina_math_tir": 11649
+      },
+      "need": "Detects geometry, coordinate, diagram, and Asymptote references that need bounded handling.",
+      "scope": "math_text_geometry_diagram_reference",
+      "source_counts": {
+        "AI-MO/NuminaMath-TIR": 11649,
+        "EleutherAI/hendrycks_math": 3246,
+        "OpenAssistant/oasst1": 461,
+        "TIGER-Lab/MathInstruct": 5220,
+        "databricks/databricks-dolly-15k": 259
+      },
+      "split_counts": {
+        "heldout": 648,
+        "test": 1238,
+        "train": 18366,
+        "validation": 583
+      },
+      "suggested_status": "FarmCandidate",
+      "support_count": 20835,
+      "tag_counts": {
+        "answer_boundary_surface": 17690,
+        "assistant_style": 461,
+        "candidate_equation_extraction": 5220,
+        "geometry_diagram_or_coordinate_surface": 18388,
+        "latex_math_surface": 16646,
+        "math_instruction_surface": 5220,
+        "matrix_vector_surface": 2343,
+        "proof_step_surface": 8555,
+        "response_rendering": 461,
+        "tir_program_or_output_surface": 12667,
+        "visible_math_surface": 5510,
+        "word_problem_boundary_candidate": 14546
+      }
+    },
+    {
+      "candidate_id": "matrix_vector_block_lens",
+      "display_name": "Matrix / Vector Block Lens",
+      "example_refs": [
+        "e131:d2c1e8a40a8643a330723fbc8dcc094d0a275ece6d4e2d5f9b50c35bb6855158",
+        "e131:42f73910aabb18400d29f8ee5fa3ea8935800f1f6187c4d27e4fba18b79e19ad",
+        "e131:34cbffa961f294842a9d61f9d1118de3e8d1844a38a0c34bd90537309019057a"
+      ],
+      "family": "Lens",
+      "family_counts": {
+        "assistant_dialogue": 273,
+        "hendrycks_math_algebra": 24,
+        "hendrycks_math_counting_and_probability": 4,
+        "hendrycks_math_geometry": 45,
+        "hendrycks_math_intermediate_algebra": 7,
+        "hendrycks_math_prealgebra": 3,
+        "hendrycks_math_precalculus": 523,
+        "instruction_general": 54,
+        "math_instruction": 1985,
+        "numina_math_tir": 3035
+      },
+      "need": "Detects matrix/vector/projection blocks and keeps vector syntax intact.",
+      "scope": "math_text_matrix_vector_block",
+      "source_counts": {
+        "AI-MO/NuminaMath-TIR": 3035,
+        "EleutherAI/hendrycks_math": 606,
+        "OpenAssistant/oasst1": 273,
+        "TIGER-Lab/MathInstruct": 1985,
+        "databricks/databricks-dolly-15k": 54
+      },
+      "split_counts": {
+        "heldout": 210,
+        "test": 231,
+        "train": 5261,
+        "validation": 251
+      },
+      "suggested_status": "FarmCandidate",
+      "support_count": 5953,
+      "tag_counts": {
+        "answer_boundary_surface": 4351,
+        "assistant_style": 273,
+        "candidate_equation_extraction": 1985,
+        "geometry_diagram_or_coordinate_surface": 2224,
+        "latex_math_surface": 4408,
+        "math_instruction_surface": 1985,
+        "matrix_vector_surface": 5895,
+        "proof_step_surface": 1931,
+        "response_rendering": 273,
+        "tir_program_or_output_surface": 3344,
+        "visible_math_surface": 2126,
+        "word_problem_boundary_candidate": 4063
+      }
+    },
+    {
+      "candidate_id": "equation_system_alignment_lens",
+      "display_name": "Equation System Alignment Lens",
+      "example_refs": [
+        "e131:7a7b95ae426fb29a3a780ea0d4910d99c43e24665b6a0882b496f874644b185b",
+        "e131:1798f78709ab670a1abc1011319d5291af1bfed08be7eab9b2975732b808588b",
+        "e131:9e9f86392cbf6f3cb7d89c77cefe2e8ce3ead103d320db7192d3c4eff07e29f0"
+      ],
+      "family": "Lens",
+      "family_counts": {
+        "assistant_dialogue": 1041,
+        "hendrycks_math_algebra": 2931,
+        "hendrycks_math_counting_and_probability": 1245,
+        "hendrycks_math_geometry": 1349,
+        "hendrycks_math_intermediate_algebra": 2198,
+        "hendrycks_math_number_theory": 1409,
+        "hendrycks_math_prealgebra": 2076,
+        "hendrycks_math_precalculus": 1292,
+        "instruction_general": 575,
+        "math_instruction": 26051,
+        "numina_math_tir": 72484
+      },
+      "need": "Detects aligned equations and equation-system structure.",
+      "scope": "math_text_equation_system_alignment",
+      "source_counts": {
+        "AI-MO/NuminaMath-TIR": 72484,
+        "EleutherAI/hendrycks_math": 12500,
+        "OpenAssistant/oasst1": 1041,
+        "TIGER-Lab/MathInstruct": 26051,
+        "databricks/databricks-dolly-15k": 575
+      },
+      "split_counts": {
+        "heldout": 2762,
+        "test": 5099,
+        "train": 101964,
+        "validation": 2826
+      },
+      "suggested_status": "FarmCandidate",
+      "support_count": 112651,
+      "tag_counts": {
+        "answer_boundary_surface": 100818,
+        "assistant_style": 1041,
+        "candidate_equation_extraction": 26051,
+        "geometry_diagram_or_coordinate_surface": 15906,
+        "latex_math_surface": 100571,
+        "math_instruction_surface": 26051,
+        "matrix_vector_surface": 4756,
+        "proof_step_surface": 46419,
+        "response_rendering": 1041,
+        "tir_program_or_output_surface": 78767,
+        "visible_math_surface": 26502,
+        "word_problem_boundary_candidate": 76156
+      }
+    },
+    {
+      "candidate_id": "piecewise_case_function_lens",
+      "display_name": "Piecewise / Case Function Lens",
+      "example_refs": [
+        "e131:4d0c2311e35063b4720350e7227e7326a06deb3a5af14a099aa8c7f3a16a1ee0",
+        "e131:b4276c162164aed4edb4c6ddf866b4906d3b848bfcf319c2d224e152212a4e15",
+        "e131:7a7b95ae426fb29a3a780ea0d4910d99c43e24665b6a0882b496f874644b185b"
+      ],
+      "family": "Lens",
+      "family_counts": {
+        "assistant_dialogue": 5330,
+        "hendrycks_math_algebra": 2931,
+        "hendrycks_math_counting_and_probability": 1245,
+        "hendrycks_math_geometry": 1349,
+        "hendrycks_math_intermediate_algebra": 2198,
+        "hendrycks_math_number_theory": 1409,
+        "hendrycks_math_prealgebra": 2076,
+        "hendrycks_math_precalculus": 1292,
+        "instruction_general": 1825,
+        "math_instruction": 37392,
+        "numina_math_tir": 72537
+      },
+      "need": "Detects piecewise/case/function definitions and binds conditions to branches.",
+      "scope": "math_text_piecewise_case_function",
+      "source_counts": {
+        "AI-MO/NuminaMath-TIR": 72537,
+        "EleutherAI/hendrycks_math": 12500,
+        "OpenAssistant/oasst1": 5330,
+        "TIGER-Lab/MathInstruct": 37392,
+        "databricks/databricks-dolly-15k": 1825
+      },
+      "split_counts": {
+        "heldout": 4458,
+        "test": 5099,
+        "train": 115564,
+        "validation": 4463
+      },
+      "suggested_status": "FarmCandidate",
+      "support_count": 129584,
+      "tag_counts": {
+        "answer_boundary_surface": 110637,
+        "assistant_style": 5330,
+        "candidate_equation_extraction": 37392,
+        "geometry_diagram_or_coordinate_surface": 16286,
+        "latex_math_surface": 100571,
+        "math_instruction_surface": 37392,
+        "matrix_vector_surface": 4887,
+        "proof_step_surface": 39119,
+        "response_rendering": 5330,
+        "tir_program_or_output_surface": 83011,
+        "visible_math_surface": 39909,
+        "word_problem_boundary_candidate": 86742
+      }
+    },
+    {
+      "candidate_id": "fraction_ratio_probability_lens",
+      "display_name": "Fraction / Ratio / Probability Lens",
+      "example_refs": [
+        "e131:7f465ff3719eddf3a786df9e9198510cf49decc33f0f614cb7ed6de0d120f580",
+        "e131:dd40f7765a915bba5289331b24de9caac27b714b889345055a031e9888e4d51a",
+        "e131:e1137730bf21f38f9d6b9f2d069acf89cb8109f939b4f78f094a664cb5f7303b"
+      ],
+      "family": "Lens",
+      "family_counts": {
+        "assistant_dialogue": 7102,
+        "hendrycks_math_algebra": 2931,
+        "hendrycks_math_counting_and_probability": 1245,
+        "hendrycks_math_geometry": 1349,
+        "hendrycks_math_intermediate_algebra": 2198,
+        "hendrycks_math_number_theory": 1409,
+        "hendrycks_math_prealgebra": 2076,
+        "hendrycks_math_precalculus": 1292,
+        "instruction_general": 5306,
+        "math_instruction": 73408,
+        "numina_math_tir": 72519
+      },
+      "need": "Grounds fractions, ratios, common-fraction instructions, and probability spans.",
+      "scope": "math_text_fraction_ratio_probability",
+      "source_counts": {
+        "AI-MO/NuminaMath-TIR": 72519,
+        "EleutherAI/hendrycks_math": 12500,
+        "OpenAssistant/oasst1": 7102,
+        "TIGER-Lab/MathInstruct": 73408,
+        "databricks/databricks-dolly-15k": 5306
+      },
+      "split_counts": {
+        "heldout": 8638,
+        "test": 5099,
+        "train": 148392,
+        "validation": 8706
+      },
+      "suggested_status": "FarmCandidate",
+      "support_count": 170835,
+      "tag_counts": {
+        "answer_boundary_surface": 137178,
+        "assistant_style": 7102,
+        "candidate_equation_extraction": 73408,
+        "geometry_diagram_or_coordinate_surface": 17980,
+        "latex_math_surface": 100571,
+        "math_instruction_surface": 73408,
+        "math_text_surface": 6070,
+        "proof_step_surface": 43814,
+        "response_rendering": 7102,
+        "tir_program_or_output_surface": 94991,
+        "visible_math_surface": 78568,
+        "word_problem_boundary_candidate": 122476
+      }
+    },
+    {
+      "candidate_id": "variable_definition_binding_lens",
+      "display_name": "Variable Definition Binding Lens",
+      "example_refs": [
+        "e131:4d0c2311e35063b4720350e7227e7326a06deb3a5af14a099aa8c7f3a16a1ee0",
+        "e131:dd40f7765a915bba5289331b24de9caac27b714b889345055a031e9888e4d51a",
+        "e131:3e5fb26b5d686ffeb411f45083d1dcc1896ab65fc0412cc8a5ea7e857800355b"
+      ],
+      "family": "Lens",
+      "family_counts": {
+        "assistant_dialogue": 3926,
+        "hendrycks_math_algebra": 2931,
+        "hendrycks_math_counting_and_probability": 1245,
+        "hendrycks_math_geometry": 1349,
+        "hendrycks_math_intermediate_algebra": 2198,
+        "hendrycks_math_number_theory": 1409,
+        "hendrycks_math_prealgebra": 2076,
+        "hendrycks_math_precalculus": 1292,
+        "instruction_general": 2478,
+        "math_instruction": 39276,
+        "numina_math_tir": 72534
+      },
+      "need": "Binds let/where/define variable introductions to nearby equations.",
+      "scope": "math_text_variable_definition_binding",
+      "source_counts": {
+        "AI-MO/NuminaMath-TIR": 72534,
+        "EleutherAI/hendrycks_math": 12500,
+        "OpenAssistant/oasst1": 3926,
+        "TIGER-Lab/MathInstruct": 39276,
+        "databricks/databricks-dolly-15k": 2478
+      },
+      "split_counts": {
+        "heldout": 4568,
+        "test": 5099,
+        "train": 116396,
+        "validation": 4651
+      },
+      "suggested_status": "FarmCandidate",
+      "support_count": 130714,
+      "tag_counts": {
+        "answer_boundary_surface": 107661,
+        "assistant_style": 3926,
+        "candidate_equation_extraction": 39276,
+        "geometry_diagram_or_coordinate_surface": 16865,
+        "latex_math_surface": 100571,
+        "math_instruction_surface": 39276,
+        "matrix_vector_surface": 5250,
+        "proof_step_surface": 46419,
+        "response_rendering": 3926,
+        "tir_program_or_output_surface": 83318,
+        "visible_math_surface": 41622,
+        "word_problem_boundary_candidate": 87416
+      }
+    },
+    {
+      "candidate_id": "summation_sequence_series_lens",
+      "display_name": "Summation / Sequence / Series Lens",
+      "example_refs": [
+        "e131:7a7b95ae426fb29a3a780ea0d4910d99c43e24665b6a0882b496f874644b185b",
+        "e131:2ccdda118dd2d3b80976d1e84e90e23dd5b7237b65700c2d1b8b016e3391c019",
+        "e131:7c9318cd5ed49064c0953f63ec4a8238135f772bfd3ad533eac1e5436b385eea"
+      ],
+      "family": "Lens",
+      "family_counts": {
+        "assistant_dialogue": 1170,
+        "hendrycks_math_algebra": 2931,
+        "hendrycks_math_counting_and_probability": 1245,
+        "hendrycks_math_geometry": 1349,
+        "hendrycks_math_intermediate_algebra": 2198,
+        "hendrycks_math_number_theory": 1409,
+        "hendrycks_math_prealgebra": 2076,
+        "hendrycks_math_precalculus": 1292,
+        "instruction_general": 885,
+        "math_instruction": 16730,
+        "numina_math_tir": 72473
+      },
+      "need": "Detects summation, sequence, series, binomial, and Pascal-like structures.",
+      "scope": "math_text_summation_sequence_series",
+      "source_counts": {
+        "AI-MO/NuminaMath-TIR": 72473,
+        "EleutherAI/hendrycks_math": 12500,
+        "OpenAssistant/oasst1": 1170,
+        "TIGER-Lab/MathInstruct": 16730,
+        "databricks/databricks-dolly-15k": 885
+      },
+      "split_counts": {
+        "heldout": 1889,
+        "test": 5099,
+        "train": 94816,
+        "validation": 1954
+      },
+      "suggested_status": "FarmCandidate",
+      "support_count": 103758,
+      "tag_counts": {
+        "answer_boundary_surface": 95863,
+        "assistant_style": 1170,
+        "candidate_equation_extraction": 16730,
+        "geometry_diagram_or_coordinate_surface": 15193,
+        "latex_math_surface": 100571,
+        "math_instruction_surface": 16730,
+        "matrix_vector_surface": 4426,
+        "proof_step_surface": 35086,
+        "response_rendering": 1170,
+        "tir_program_or_output_surface": 76620,
+        "visible_math_surface": 17697,
+        "word_problem_boundary_candidate": 70092
+      }
+    },
+    {
+      "candidate_id": "unit_quantity_binding_lens",
+      "display_name": "Unit Quantity Binding Lens",
+      "example_refs": [
+        "e131:dd40f7765a915bba5289331b24de9caac27b714b889345055a031e9888e4d51a",
+        "e131:e1137730bf21f38f9d6b9f2d069acf89cb8109f939b4f78f094a664cb5f7303b",
+        "e131:fbd63c3868e6b32071081c8963b1959bb5797bc844ab8a14afb2d61b118d6653"
+      ],
+      "family": "Lens",
+      "family_counts": {
+        "assistant_dialogue": 3719,
+        "hendrycks_math_algebra": 2367,
+        "hendrycks_math_counting_and_probability": 1211,
+        "hendrycks_math_geometry": 1262,
+        "hendrycks_math_intermediate_algebra": 1879,
+        "hendrycks_math_number_theory": 1276,
+        "hendrycks_math_prealgebra": 1796,
+        "hendrycks_math_precalculus": 1114,
+        "instruction_general": 4647,
+        "math_instruction": 67343,
+        "numina_math_tir": 49918
+      },
+      "need": "Binds quantities to units such as cm, kg, dollars, minutes, percent, and units.",
+      "scope": "math_text_unit_quantity_binding",
+      "source_counts": {
+        "AI-MO/NuminaMath-TIR": 49918,
+        "EleutherAI/hendrycks_math": 10905,
+        "OpenAssistant/oasst1": 3719,
+        "TIGER-Lab/MathInstruct": 67343,
+        "databricks/databricks-dolly-15k": 4647
+      },
+      "split_counts": {
+        "heldout": 7675,
+        "test": 4423,
+        "train": 116662,
+        "validation": 7772
+      },
+      "suggested_status": "FarmCandidate",
+      "support_count": 136532,
+      "tag_counts": {
+        "answer_boundary_surface": 108278,
+        "assistant_style": 3719,
+        "candidate_equation_extraction": 67343,
+        "general_instruction_style": 4647,
+        "geometry_diagram_or_coordinate_surface": 13829,
+        "latex_math_surface": 73682,
+        "math_instruction_surface": 67343,
+        "matrix_vector_surface": 4159,
+        "proof_step_surface": 32607,
+        "tir_program_or_output_surface": 70793,
+        "visible_math_surface": 70150,
+        "word_problem_boundary_candidate": 122476
+      }
+    },
+    {
+      "candidate_id": "word_problem_no_solve_guard_v2",
+      "display_name": "Word Problem No-Solve Guard V2",
+      "example_refs": [
+        "e131:dd40f7765a915bba5289331b24de9caac27b714b889345055a031e9888e4d51a",
+        "e131:e1137730bf21f38f9d6b9f2d069acf89cb8109f939b4f78f094a664cb5f7303b",
+        "e131:7b723fd89333b76822097d3a8c215f7fd20cee65ee3f3202c1f9536652625f7f"
+      ],
+      "family": "Guard",
+      "family_counts": {
+        "assistant_dialogue": 4804,
+        "hendrycks_math_algebra": 2414,
+        "hendrycks_math_counting_and_probability": 1219,
+        "hendrycks_math_geometry": 1254,
+        "hendrycks_math_intermediate_algebra": 1884,
+        "hendrycks_math_number_theory": 1296,
+        "hendrycks_math_prealgebra": 1805,
+        "hendrycks_math_precalculus": 1125,
+        "instruction_general": 4563,
+        "math_instruction": 64582,
+        "numina_math_tir": 66197
+      },
+      "need": "Separates prose-only word problems from visible-equation arithmetic routes.",
+      "scope": "math_text_hidden_word_problem_no_solve",
+      "source_counts": {
+        "AI-MO/NuminaMath-TIR": 66197,
+        "EleutherAI/hendrycks_math": 10997,
+        "OpenAssistant/oasst1": 4804,
+        "TIGER-Lab/MathInstruct": 64582,
+        "databricks/databricks-dolly-15k": 4563
+      },
+      "split_counts": {
+        "heldout": 7469,
+        "test": 4466,
+        "train": 131632,
+        "validation": 7576
+      },
+      "suggested_status": "FarmCandidate",
+      "support_count": 151143,
+      "tag_counts": {
+        "answer_boundary_surface": 120850,
+        "assistant_style": 4804,
+        "candidate_equation_extraction": 64582,
+        "geometry_diagram_or_coordinate_surface": 16575,
+        "latex_math_surface": 90279,
+        "math_instruction_surface": 64582,
+        "matrix_vector_surface": 5311,
+        "proof_step_surface": 39654,
+        "response_rendering": 4804,
+        "tir_program_or_output_surface": 85947,
+        "visible_math_surface": 67172,
+        "word_problem_boundary_candidate": 122476
+      }
+    },
+    {
+      "candidate_id": "assistant_tir_output_error_repair_guard",
+      "display_name": "Assistant TIR Output / Error Repair Guard",
+      "example_refs": [
+        "e131:b958066f22da90c972bc2b5282b9316150c2fa06ee4fc4d784d5baf94823aa09",
+        "e131:5e02cf33c6f405287a1935b665f26f54b403b5ea8e3cb912183d3a72ca7b2da1",
+        "e131:14d0131b352566128b39455602321fb081bed72043b413c2cef4177abe425020"
+      ],
+      "family": "Guard",
+      "family_counts": {
+        "assistant_dialogue": 1642,
+        "instruction_general": 3,
+        "math_instruction": 23164,
+        "numina_math_tir": 72540
+      },
+      "need": "Detects TIR output/error/cut-off blocks that need repair or no-call handling.",
+      "scope": "math_text_tir_output_error_repair",
+      "source_counts": {
+        "AI-MO/NuminaMath-TIR": 72540,
+        "OpenAssistant/oasst1": 1642,
+        "TIGER-Lab/MathInstruct": 23164,
+        "databricks/databricks-dolly-15k": 3
+      },
+      "split_counts": {
+        "heldout": 2565,
+        "test": 99,
+        "train": 92137,
+        "validation": 2548
+      },
+      "suggested_status": "FarmCandidate",
+      "support_count": 97349,
+      "tag_counts": {
+        "answer_boundary_surface": 83934,
+        "assistant_style": 1642,
+        "candidate_equation_extraction": 23164,
+        "geometry_diagram_or_coordinate_surface": 11369,
+        "latex_math_surface": 76367,
+        "math_instruction_surface": 23164,
+        "matrix_vector_surface": 3330,
+        "proof_step_surface": 29458,
+        "response_rendering": 1642,
+        "tir_program_or_output_surface": 97324,
+        "visible_math_surface": 24358,
+        "word_problem_boundary_candidate": 65160
+      }
+    },
+    {
+      "candidate_id": "answer_format_instruction_lens",
+      "display_name": "Answer Format Instruction Lens",
+      "example_refs": [
+        "e131:0a0d3e489ec635a03b13f697ebd7c4c4ffb50383086029c33f23709b58c8f4d1",
+        "e131:8011de7cc339a23bd9f18228c7cf8d230f56a87a1cf95e2c72a3eb2858323c74",
+        "e131:bf48e70038075b93effed2e24fe7b5369914a3b51ef4270c07d6fceb2f771e45"
+      ],
+      "family": "Lens",
+      "family_counts": {
+        "assistant_dialogue": 1073,
+        "hendrycks_math_algebra": 2930,
+        "hendrycks_math_counting_and_probability": 1245,
+        "hendrycks_math_geometry": 1349,
+        "hendrycks_math_intermediate_algebra": 2198,
+        "hendrycks_math_number_theory": 1409,
+        "hendrycks_math_prealgebra": 2076,
+        "hendrycks_math_precalculus": 1290,
+        "instruction_general": 256,
+        "math_instruction": 56018,
+        "numina_math_tir": 72540
+      },
+      "need": "Binds answer-format instructions such as common fraction, ordered pair, or comma list.",
+      "scope": "math_text_answer_format_instruction",
+      "source_counts": {
+        "AI-MO/NuminaMath-TIR": 72540,
+        "EleutherAI/hendrycks_math": 12497,
+        "OpenAssistant/oasst1": 1073,
+        "TIGER-Lab/MathInstruct": 56018,
+        "databricks/databricks-dolly-15k": 256
+      },
+      "split_counts": {
+        "heldout": 5737,
+        "test": 5098,
+        "train": 125756,
+        "validation": 5793
+      },
+      "suggested_status": "FarmCandidate",
+      "support_count": 142384,
+      "tag_counts": {
+        "answer_boundary_surface": 142229,
+        "assistant_style": 1073,
+        "candidate_equation_extraction": 56018,
+        "geometry_diagram_or_coordinate_surface": 15800,
+        "latex_math_surface": 94911,
+        "math_instruction_surface": 56018,
+        "matrix_vector_surface": 4305,
+        "proof_step_surface": 39394,
+        "response_rendering": 1073,
+        "tir_program_or_output_surface": 83964,
+        "visible_math_surface": 55843,
+        "word_problem_boundary_candidate": 97521
+      }
+    }
+  ]
+}

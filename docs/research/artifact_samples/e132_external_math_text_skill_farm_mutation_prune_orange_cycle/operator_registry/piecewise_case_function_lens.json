@@ -1,0 +1,13 @@
+{
+  "artifact_contract": "E132_EXTERNAL_MATH_TEXT_SKILL_FARM_MUTATION_PRUNE_ORANGE_CYCLE",
+  "capability_signature": "piecewise_case_function_lens_e132_v001",
+  "content_digest": "5c4ff6a449ee22b16c9059678097112882705889e7be0d41f390fb1778331138",
+  "direct_flow_write_allowed": false,
+  "display_name": "Piecewise / Case Function Lens",
+  "family": "Lens",
+  "lifecycle": "OrangeLegendaryCandidate",
+  "load_policy": "registry_and_manager_guard_required",
+  "operator_id": "piecewise_case_function_lens",
+  "scope": "math_text_piecewise_case_function",
+  "selected_variant_id": "piecewise_case_function_lens::orange_pruned_minimal_v1"
+}
