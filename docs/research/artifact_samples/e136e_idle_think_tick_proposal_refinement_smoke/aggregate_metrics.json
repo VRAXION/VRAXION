@@ -1,0 +1,18 @@
+{
+  "agency_check_count": 10,
+  "artifact_contract": "E136E_IDLE_THINK_TICK_PROPOSAL_REFINEMENT_SMOKE",
+  "average_quality_gain": 0.35,
+  "case_count": 8,
+  "direct_write_reject_count": 1,
+  "fail_count": 0,
+  "idle_tick_total": 10,
+  "improvement_count": 4,
+  "new_input_total": 0,
+  "non_degradation_count": 8,
+  "output_checksum_count": 8,
+  "output_roundtrip_count": 8,
+  "output_zero_fill_count": 8,
+  "pass_count": 8,
+  "proposal_count": 10,
+  "seconds": 0.019
+}

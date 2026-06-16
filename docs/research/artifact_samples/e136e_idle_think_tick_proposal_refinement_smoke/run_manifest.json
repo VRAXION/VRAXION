@@ -1,0 +1,6 @@
+{
+  "artifact_contract": "E136E_IDLE_THINK_TICK_PROPOSAL_REFINEMENT_SMOKE",
+  "boundary": "fixed observation + no-new-input idle proposal refinement smoke",
+  "case_count": 8,
+  "max_idle_ticks_per_case": 3
+}

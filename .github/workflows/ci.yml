@@ -237,6 +237,10 @@ jobs:
               '"current_evidence_anchor": "E136C_ASSISTANT_TEXT_POLISHED_RENDER_QUICK_TEST"',
               "current_evidence_anchor = E136C assistant-text polished render quick test",
               "Current evidence anchor: E136C assistant-text polished render quick test",
+              "current_evidence_anchor = E136D_OUTPUT_TEXT_FIELD_BINARY_MATRIX_SMOKE",
+              '"current_evidence_anchor": "E136D_OUTPUT_TEXT_FIELD_BINARY_MATRIX_SMOKE"',
+              "current_evidence_anchor = E136D OutputTextField binary matrix smoke",
+              "Current evidence anchor: E136D OutputTextField binary matrix smoke",
           ]
           failures = []
           for path in files:

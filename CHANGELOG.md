@@ -1,6 +1,21 @@
 # Changelog
 
-This changelog is narrowed to the current v6 / E127-E136D evidence anchor. Full historical beta, probe, Python SDK, legacy Rust, and research-output history is preserved in git history and archive tags.
+This changelog is narrowed to the current v6 / E127-E136E evidence anchor. Full historical beta, probe, Python SDK, legacy Rust, and research-output history is preserved in git history and archive tags.
+
+## 2026-06-16 - E136E Idle Think-Tick Proposal Refinement Smoke
+
+- Added `scripts/probes/run_e136e_idle_think_tick_proposal_refinement_smoke.py`.
+- Tested fixed-observation idle ticks: no new input arrives, `t` advances,
+  idle operators emit proposals, Agency checks them, and final text commits
+  through `OutputTextField`.
+- Result: 8/8 cases passed, 10 idle proposals, 10 Agency checks, 0 new input,
+  4 improvements, 8/8 non-degradation, 1 direct-write reject, and 8/8
+  OutputTextField roundtrip/checksum/zero-fill checks.
+- Key sample: the prior `25 years old in 2026 -> 250 years old` prompt improves
+  during idle tick to `2251`.
+- Boundary: deterministic proposal refinement only; not autonomous hidden
+  thought, background training, next-token prediction, consciousness, or
+  open-domain assistant behavior.
 
 ## 2026-06-16 - E136D OutputTextField Binary Matrix Smoke
 

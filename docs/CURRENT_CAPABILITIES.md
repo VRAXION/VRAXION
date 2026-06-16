@@ -319,6 +319,21 @@ zero-fill checks = 10 / 10
 tamper detection = 1 / 1
 ```
 
+Current E136E idle think-tick proposal refinement evidence:
+
+```text
+case count = 8
+pass count = 8
+idle tick total = 10
+proposal count = 10
+Agency checks = 10
+new input total = 0
+improvement count = 4
+non-degradation count = 8
+direct-write rejects = 1
+OutputTextField roundtrip/checksum/zero-fill = 8 / 8
+```
+
 These are scoped operators, not general-purpose neural skills. A larger count is
 not automatically better; value depends on safe activation, low cost, correct
 scope, reloadability, and no-harm evidence.
@@ -376,6 +391,8 @@ scope, reloadability, and no-harm evidence.
 - store committed output text in an `OutputTextField` represented as an N x 8
   binary matrix, with UTF-8 byte roundtrip, overflow/direct-write/NUL reject,
   zero-fill, and tamper-detection smoke coverage;
+- improve fixed observations across idle ticks only by emitting checked
+  proposals, with no new input and no direct OutputTextField writes;
 - avoid claiming a stable answer when the scoped evidence chain is incomplete.
 
 ### Visible calculation-trace validation

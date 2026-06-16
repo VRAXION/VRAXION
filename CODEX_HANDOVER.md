@@ -8,8 +8,8 @@ Last updated: 2026-06-16
 repo = VRAXION_anchorwiki
 branch = main
 latest_release_target = v6.1.7
-current_evidence_anchor = E136D OutputTextField binary matrix smoke on main
-current_status = E136D confirmed OutputTextField as N x 8 UTF-8 byte matrix with 10/10 cases, 7/7 roundtrips, 3/3 rejects, zero-fill, and tamper detection
+current_evidence_anchor = E136E idle think-tick proposal refinement smoke on main
+current_status = E136E confirmed fixed observations can improve across idle ticks through Agency-checked proposals with 0 new input and OutputTextField commits
 ```
 
 This is the first file a fresh Codex should read after cloning the repo.
@@ -363,6 +363,29 @@ nul_reject_count = 1
 tamper_detect_count = 1
 ```
 
+E136E tests empty/idle think ticks after an observation:
+
+```text
+case_count = 8
+pass_count = 8
+fail_count = 0
+idle_tick_total = 10
+proposal_count = 10
+agency_check_count = 10
+new_input_total = 0
+improvement_count = 4
+non_degradation_count = 8
+direct_write_reject_count = 1
+output_roundtrip_count = 8
+output_checksum_count = 8
+output_zero_fill_count = 8
+
+sample:
+"Hello, most 25 éves vagyok 2026 ban, mikor leszek 250 éves?"
+-> idle proposal after t+1:
+"2251-ben leszel 250 éves."
+```
+
 ## Claim Boundary
 
 Allowed:
@@ -399,6 +422,8 @@ and outline cases.
 E136D confirms the output side can hold committed text as a binary
 OutputTextField, where the matrix is N x 8 bit cells and each row is one UTF-8
 byte.
+E136E confirms fixed observations can improve across idle ticks only through
+explicit proposals checked by Agency; no new input is introduced.
 ```
 
 System-level interpretation:
@@ -426,6 +451,9 @@ It can render short polished deterministic assistant text for a 12-sample quick
 set without raw route/action label leakage.
 It can represent committed output text in an Agency-gated OutputTextField binary
 matrix with roundtrip, reject, zero-fill, and tamper-detection checks.
+It can improve some fixed observations during idle ticks through checked
+proposals, while preserving source-defer/refusal controls and rejecting direct
+OutputTextField writes.
 It can promote prior scoped CoreMemoryCandidate operators to Orange/Legendary
 when the E121-style gate is satisfied.
 It is not an open-domain LLM/chatbot.
@@ -467,6 +495,7 @@ docs/research/E136A_ASSISTANT_TEXT_SKILL_FARM_MUTATION_PRUNE_ORANGE_CYCLE_RESULT
 docs/research/E136B_ASSISTANT_TEXT_ROUTE_COMPOSITION_AND_BOUNDARY_CONFIRM_RESULT.md
 docs/research/E136C_ASSISTANT_TEXT_POLISHED_RENDER_QUICK_TEST_RESULT.md
 docs/research/E136D_OUTPUT_TEXT_FIELD_BINARY_MATRIX_SMOKE_RESULT.md
+docs/research/E136E_IDLE_THINK_TICK_PROPOSAL_REFINEMENT_SMOKE_RESULT.md
 docs/research/artifact_samples/e127_overnight_text_skill_farm_orange_cycle/
 docs/research/artifact_samples/e127_text_to_text_render_smoke_current/
 docs/research/artifact_samples/e128_assistant_text_io_lightweight_render_training/
@@ -482,6 +511,7 @@ docs/research/artifact_samples/e136a_assistant_text_skill_farm_mutation_prune_or
 docs/research/artifact_samples/e136b_assistant_text_route_composition_and_boundary_confirm/
 docs/research/artifact_samples/e136c_assistant_text_polished_render_quick_test/
 docs/research/artifact_samples/e136d_output_text_field_binary_matrix_smoke/
+docs/research/artifact_samples/e136e_idle_think_tick_proposal_refinement_smoke/
 ```
 
 ## Legal / License
@@ -573,6 +603,17 @@ E136D ZERO-FILL = 10/10
 E136D TAMPER DETECT = 1/1
 ```
 
+Expected E136E idle think-tick smoke:
+
+```text
+E136E CASES = 8/8
+E136E PROPOSALS CHECKED = 10
+E136E NEW INPUT = 0
+E136E IMPROVEMENTS = 4
+E136E NON-DEGRADATION = 8/8
+E136E OUTPUT ROUNDTRIP = 8/8
+```
+
 ## Local E136 Seed Pack
 
 After E135, a local assistant/text seed pack was downloaded and normalized for
@@ -630,6 +671,8 @@ python scripts/probes/run_e136c_assistant_text_polished_render_quick_test.py --o
 python -m py_compile scripts/probes/run_e136d_output_text_field_binary_matrix_smoke.py
 python scripts/probes/run_e136d_output_text_field_binary_matrix_smoke.py --out target/ci/e136d_output_text_field_binary_matrix_smoke --sample-out ""
 cargo test -p vraxion-runtime output_text_field
+python -m py_compile scripts/probes/run_e136e_idle_think_tick_proposal_refinement_smoke.py
+python scripts/probes/run_e136e_idle_think_tick_proposal_refinement_smoke.py --out target/ci/e136e_idle_think_tick_proposal_refinement_smoke --sample-out ""
 python -m compileall -q scripts
 cargo test --workspace
 git diff --check
@@ -671,8 +714,8 @@ Do not delete or commit them without an explicit cleanup decision.
 Recommended next steps:
 
 ```text
-1. Run E136E OutputTextField route-render integration before claiming E136C
-   rendered responses flow through the binary output field end to end.
+1. Run E136F idle think-tick heldout plus route-render integration before
+   claiming idle improvement is robust beyond the 8-case smoke.
 2. Run a later assistant/open-domain boundary probe before claiming broader
    assistant readiness.
 3. Decide whether to continue E127 with a fresh candidate pack or pause farming.

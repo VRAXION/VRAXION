@@ -1,0 +1,6 @@
+{
+  "artifact_contract": "E136E_IDLE_THINK_TICK_PROPOSAL_REFINEMENT_SMOKE",
+  "decision": "e136e_idle_think_tick_proposal_refinement_confirmed",
+  "next": "E136F_IDLE_THINK_TICK_HELDOUT_AND_ROUTE_RENDER_INTEGRATION_CONFIRM",
+  "pass_gate": true
+}
