@@ -192,6 +192,11 @@ def prepare_output_dir(out: Path) -> None:
             path.unlink()
 
 
+def has_word(text: str, *words: str) -> bool:
+    pattern = r"\b(?:" + "|".join(re.escape(word) for word in words) + r")\b"
+    return re.search(pattern, text) is not None
+
+
 def mode_from_prompt(prompt: str, stack: tuple[str, ...]) -> str:
     text = prompt.lower()
     if re.fullmatch(r"\s*(hi|hello|hey|szia|helo|hello!|hi!|szia!)\s*", text):
@@ -206,7 +211,7 @@ def mode_from_prompt(prompt: str, stack: tuple[str, ...]) -> str:
         return "safety_defer"
     if "translate" in text or "spanish" in text:
         return "translation"
-    if "compare" in text or "pros" in text or "cons" in text:
+    if has_word(text, "compare", "pros", "cons"):
         return "comparison"
     if "rejected response" in text or "private credentials" in text:
         return "refusal"
