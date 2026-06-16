@@ -126,7 +126,7 @@ jobs:
               raise SystemExit("dashboard did not render E136A support card")
           if "E136A direct writes" not in html:
               raise SystemExit("dashboard did not render E136A direct-write card")
-          if "E135 math text multi-route assistant dialogue-state" not in html:
+          if "E135 dialogue state" not in html:
               raise SystemExit("dashboard did not load E135 dialogue-state evidence")
           if "E135 dialogue" not in html:
               raise SystemExit("dashboard did not render E135 dialogue card")
