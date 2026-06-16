@@ -1,6 +1,25 @@
 # Changelog
 
-This changelog is narrowed to the current v6 / E127-E136E evidence anchor. Full historical beta, probe, Python SDK, legacy Rust, and research-output history is preserved in git history and archive tags.
+This changelog is narrowed to the current v6 / E127-E136F evidence anchor. Full historical beta, probe, Python SDK, legacy Rust, and research-output history is preserved in git history and archive tags.
+
+## 2026-06-16 - E136F Idle Think-Tick Heldout Series Confirm
+
+- Added `scripts/probes/run_e136f_idle_think_tick_heldout_series_confirm.py`.
+- Tested the idle/empty tick idea on a 70-case heldout series: fixed
+  observation, 0 new input, `t` advances, idle proposals are checked by
+  Agency, then final text commits through `OutputTextField`.
+- Result: 70/70 cases passed, 36/36 arithmetic heldout cases improved, 6/6
+  no-pocket controls preserved safe output, 90 proposals checked, 0 new input,
+  48 total improvements, 70/70 non-degradation, 4 direct-write rejects, 6
+  unsupported-claim rejects, and 70/70 OutputTextField roundtrip/checksum/
+  zero-fill checks.
+- Representative improvement: `I am 17 years old in 2024. When will I be 90?`
+  improves from fallback to `You will be 90 years old in 2097.`
+- No-pocket control: `I am 25 now, but no year is provided...` preserves a
+  safe no-route answer instead of inventing a calendar year.
+- Boundary: deterministic heldout proposal refinement only; not hidden thought,
+  next-token prediction, background training, consciousness, or open-domain
+  assistant behavior.
 
 ## 2026-06-16 - E136E Idle Think-Tick Proposal Refinement Smoke
 

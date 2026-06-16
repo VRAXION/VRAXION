@@ -241,6 +241,10 @@ jobs:
               '"current_evidence_anchor": "E136D_OUTPUT_TEXT_FIELD_BINARY_MATRIX_SMOKE"',
               "current_evidence_anchor = E136D OutputTextField binary matrix smoke",
               "Current evidence anchor: E136D OutputTextField binary matrix smoke",
+              "current_evidence_anchor = E136E_IDLE_THINK_TICK_PROPOSAL_REFINEMENT_SMOKE",
+              '"current_evidence_anchor": "E136E_IDLE_THINK_TICK_PROPOSAL_REFINEMENT_SMOKE"',
+              "current_evidence_anchor = E136E idle think-tick proposal refinement smoke",
+              "Current evidence anchor: E136E idle think-tick proposal refinement smoke",
           ]
           failures = []
           for path in files:

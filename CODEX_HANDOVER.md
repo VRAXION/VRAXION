@@ -8,8 +8,8 @@ Last updated: 2026-06-16
 repo = VRAXION_anchorwiki
 branch = main
 latest_release_target = v6.1.7
-current_evidence_anchor = E136E idle think-tick proposal refinement smoke on main
-current_status = E136E confirmed fixed observations can improve across idle ticks through Agency-checked proposals with 0 new input and OutputTextField commits
+current_evidence_anchor = E136F idle think-tick heldout series confirm on main
+current_status = E136F confirmed fixed observations improve across idle ticks on heldout arithmetic traces while no-pocket controls preserve safe output
 ```
 
 This is the first file a fresh Codex should read after cloning the repo.
@@ -386,6 +386,38 @@ sample:
 "2251-ben leszel 250 éves."
 ```
 
+E136F tests the same idle mechanism on a heldout series:
+
+```text
+case_count = 70
+pass_count = 70
+fail_count = 0
+arithmetic_case_count = 36
+arithmetic_improvement_count = 36
+no_pocket_case_count = 6
+no_pocket_preserve_count = 6
+idle_tick_total = 90
+proposal_count = 90
+agency_check_count = 90
+new_input_total = 0
+improvement_count = 48
+non_degradation_count = 70
+direct_write_reject_count = 4
+unsupported_claim_reject_count = 6
+output_roundtrip_count = 70
+output_checksum_count = 70
+output_zero_fill_count = 70
+
+sample:
+"I am 17 years old in 2024. When will I be 90 years old?"
+-> idle proposal after t+1:
+"You will be 90 years old in 2097."
+
+no-pocket sample:
+"I am 25 now, but no year is provided. What calendar year will I be 250?"
+-> preserved safe no-route answer; no unsupported year is invented.
+```
+
 ## Claim Boundary
 
 Allowed:
@@ -424,6 +456,9 @@ OutputTextField, where the matrix is N x 8 bit cells and each row is one UTF-8
 byte.
 E136E confirms fixed observations can improve across idle ticks only through
 explicit proposals checked by Agency; no new input is introduced.
+E136F confirms that same mechanism on a 70-case heldout series: arithmetic
+cases improve when a matching visible trace exists, while no-pocket controls
+preserve safe output and unsupported guesses are rejected.
 ```
 
 System-level interpretation:
@@ -454,6 +489,8 @@ matrix with roundtrip, reject, zero-fill, and tamper-detection checks.
 It can improve some fixed observations during idle ticks through checked
 proposals, while preserving source-defer/refusal controls and rejecting direct
 OutputTextField writes.
+It can reproduce that idle improvement behavior on a 70-case heldout series,
+with no-pocket controls preserving safe output instead of inventing answers.
 It can promote prior scoped CoreMemoryCandidate operators to Orange/Legendary
 when the E121-style gate is satisfied.
 It is not an open-domain LLM/chatbot.
@@ -496,6 +533,7 @@ docs/research/E136B_ASSISTANT_TEXT_ROUTE_COMPOSITION_AND_BOUNDARY_CONFIRM_RESULT
 docs/research/E136C_ASSISTANT_TEXT_POLISHED_RENDER_QUICK_TEST_RESULT.md
 docs/research/E136D_OUTPUT_TEXT_FIELD_BINARY_MATRIX_SMOKE_RESULT.md
 docs/research/E136E_IDLE_THINK_TICK_PROPOSAL_REFINEMENT_SMOKE_RESULT.md
+docs/research/E136F_IDLE_THINK_TICK_HELDOUT_SERIES_CONFIRM_RESULT.md
 docs/research/artifact_samples/e127_overnight_text_skill_farm_orange_cycle/
 docs/research/artifact_samples/e127_text_to_text_render_smoke_current/
 docs/research/artifact_samples/e128_assistant_text_io_lightweight_render_training/
@@ -512,6 +550,7 @@ docs/research/artifact_samples/e136b_assistant_text_route_composition_and_bounda
 docs/research/artifact_samples/e136c_assistant_text_polished_render_quick_test/
 docs/research/artifact_samples/e136d_output_text_field_binary_matrix_smoke/
 docs/research/artifact_samples/e136e_idle_think_tick_proposal_refinement_smoke/
+docs/research/artifact_samples/e136f_idle_think_tick_heldout_series_confirm/
 ```
 
 ## Legal / License
@@ -614,6 +653,19 @@ E136E NON-DEGRADATION = 8/8
 E136E OUTPUT ROUNDTRIP = 8/8
 ```
 
+Expected E136F idle think-tick heldout series:
+
+```text
+E136F CASES = 70/70
+E136F ARITHMETIC IMPROVEMENTS = 36/36
+E136F NO-POCKET PRESERVES = 6/6
+E136F PROPOSALS CHECKED = 90
+E136F NEW INPUT = 0
+E136F DIRECT-WRITE REJECTS = 4
+E136F UNSUPPORTED-CLAIM REJECTS = 6
+E136F OUTPUT ROUNDTRIP = 70/70
+```
+
 ## Local E136 Seed Pack
 
 After E135, a local assistant/text seed pack was downloaded and normalized for
@@ -673,6 +725,8 @@ python scripts/probes/run_e136d_output_text_field_binary_matrix_smoke.py --out t
 cargo test -p vraxion-runtime output_text_field
 python -m py_compile scripts/probes/run_e136e_idle_think_tick_proposal_refinement_smoke.py
 python scripts/probes/run_e136e_idle_think_tick_proposal_refinement_smoke.py --out target/ci/e136e_idle_think_tick_proposal_refinement_smoke --sample-out ""
+python -m py_compile scripts/probes/run_e136f_idle_think_tick_heldout_series_confirm.py
+python scripts/probes/run_e136f_idle_think_tick_heldout_series_confirm.py --out target/ci/e136f_idle_think_tick_heldout_series_confirm --sample-out ""
 python -m compileall -q scripts
 cargo test --workspace
 git diff --check
@@ -714,8 +768,8 @@ Do not delete or commit them without an explicit cleanup decision.
 Recommended next steps:
 
 ```text
-1. Run E136F idle think-tick heldout plus route-render integration before
-   claiming idle improvement is robust beyond the 8-case smoke.
+1. Run E136G chained-proposal and longer-horizon idle confirmation before
+   claiming multi-step idle refinement.
 2. Run a later assistant/open-domain boundary probe before claiming broader
    assistant readiness.
 3. Decide whether to continue E127 with a fresh candidate pack or pause farming.

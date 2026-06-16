@@ -334,6 +334,26 @@ direct-write rejects = 1
 OutputTextField roundtrip/checksum/zero-fill = 8 / 8
 ```
 
+Current E136F idle think-tick heldout series evidence:
+
+```text
+case count = 70
+pass count = 70
+arithmetic cases = 36
+arithmetic improvements = 36 / 36
+no-pocket cases = 6
+no-pocket preserves = 6 / 6
+idle tick total = 90
+proposal count = 90
+Agency checks = 90
+new input total = 0
+improvement count = 48
+non-degradation count = 70
+direct-write rejects = 4
+unsupported-claim rejects = 6
+OutputTextField roundtrip/checksum/zero-fill = 70 / 70
+```
+
 These are scoped operators, not general-purpose neural skills. A larger count is
 not automatically better; value depends on safe activation, low cost, correct
 scope, reloadability, and no-harm evidence.
@@ -358,6 +378,8 @@ scope, reloadability, and no-harm evidence.
 - defer when visible evidence is insufficient;
 - handle stale state, contradiction, missing dependency, and turn-continuity
   guard cases in controlled evidence tasks.
+- improve fixed observations during idle ticks when a matching scoped
+  pocket/trace exists, while preserving safe output when no such pocket exists.
 
 ### Proposal + Agency commit boundary
 

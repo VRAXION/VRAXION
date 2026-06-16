@@ -1,0 +1,23 @@
+{
+  "agency_check_count": 90,
+  "arithmetic_case_count": 36,
+  "arithmetic_improvement_count": 36,
+  "artifact_contract": "E136F_IDLE_THINK_TICK_HELDOUT_SERIES_CONFIRM",
+  "average_quality_gain": 0.474286,
+  "case_count": 70,
+  "direct_write_reject_count": 4,
+  "fail_count": 0,
+  "idle_tick_total": 90,
+  "improvement_count": 48,
+  "new_input_total": 0,
+  "no_pocket_case_count": 6,
+  "no_pocket_preserve_count": 6,
+  "non_degradation_count": 70,
+  "output_checksum_count": 70,
+  "output_roundtrip_count": 70,
+  "output_zero_fill_count": 70,
+  "pass_count": 70,
+  "proposal_count": 90,
+  "seconds": 0.085,
+  "unsupported_claim_reject_count": 6
+}
