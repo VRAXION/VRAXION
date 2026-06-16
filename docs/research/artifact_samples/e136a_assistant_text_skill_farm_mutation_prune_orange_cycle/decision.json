@@ -1,0 +1,9 @@
+{
+  "artifact_contract": "E136A_ASSISTANT_TEXT_SKILL_FARM_MUTATION_PRUNE_ORANGE_CYCLE",
+  "boundary": "scoped assistant/text operator farming only; not neural training, not open-domain assistant evidence, not Core/PermaCore/TrueGolden",
+  "decision": "e136a_assistant_text_skill_farm_mutation_prune_orange_cycle_confirmed",
+  "failure_count": 0,
+  "failures": [],
+  "next": "E136B_ASSISTANT_TEXT_ROUTE_COMPOSITION_AND_BOUNDARY_CONFIRM",
+  "pass_gate": true
+}

@@ -1,6 +1,30 @@
 # Changelog
 
-This changelog is narrowed to the current v6 / E127-E135 evidence anchor. Full historical beta, probe, Python SDK, legacy Rust, and research-output history is preserved in git history and archive tags.
+This changelog is narrowed to the current v6 / E127-E136A evidence anchor. Full historical beta, probe, Python SDK, legacy Rust, and research-output history is preserved in git history and archive tags.
+
+## 2026-06-16 - E136A Assistant Text Skill Farm Mutation/Prune Orange Cycle
+
+- Added `scripts/probes/run_e136a_assistant_text_skill_farm_mutation_prune_orange_cycle.py`.
+- Farmed scoped assistant/text lenses and guards from the local E136
+  assistant-text seed pack.
+- Result: 447,766 rows loaded across 5 external sources and 12 external
+  families.
+- Promoted 18/18 scoped assistant/text operators to
+  OrangeLegendaryCandidate.
+- Support evidence: 1,435,199 total external support and 4,746 minimum external
+  support per operator.
+- Activation evidence: 5,521,276 total qualified activations and 302,123
+  minimum qualified activations per operator.
+- Mutation/prune evidence: 179,840 mutation attempts, 827 accepted mutations,
+  179,013 rejected mutations/rollbacks, and mean selected prune ratio 0.758889.
+- Negative-scope guard: 119,868 negative-scope cases, pass-rate minimum 1.000.
+- Confirmed: 0 hard negatives, 0 false commits, 0 wrong-scope calls, 0
+  unsupported answers, 0 boundary-claim violations, and 0 direct Flow writes.
+- Challenger/control: the overbroad chatbot control produced 25,558 wrong-scope
+  calls and was rejected.
+- Boundary: scoped assistant/text lenses and guards only; not neural training,
+  open-domain assistant readiness, production assistant behavior, Core,
+  PermaCore, or TrueGolden.
 
 ## 2026-06-16 - E135 Math Text Multi-Route Assistant Dialogue-State Gauntlet
 

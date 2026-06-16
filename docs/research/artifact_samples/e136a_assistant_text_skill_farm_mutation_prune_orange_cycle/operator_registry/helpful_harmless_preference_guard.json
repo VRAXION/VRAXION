@@ -1,0 +1,13 @@
+{
+  "artifact_contract": "E136A_ASSISTANT_TEXT_SKILL_FARM_MUTATION_PRUNE_ORANGE_CYCLE",
+  "capability_signature": "helpful_harmless_preference_guard_e136a_v001",
+  "content_digest": "be4cd0c5c6f6403d66bd317d5b7a004bc952e9bf6f4fb51ef4cd1365a8fc0d25",
+  "direct_flow_write_allowed": false,
+  "display_name": "Helpful / Harmless Preference Guard",
+  "family": "Guard",
+  "lifecycle": "OrangeLegendaryCandidate",
+  "load_policy": "registry_and_manager_guard_required",
+  "operator_id": "helpful_harmless_preference_guard",
+  "scope": "assistant_text_helpful_harmless_preference_boundary",
+  "selected_variant_id": "helpful_harmless_preference_guard::assistant_pruned_minimal_v1"
+}

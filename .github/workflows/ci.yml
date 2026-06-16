@@ -118,6 +118,14 @@ jobs:
           js_path = pathlib.Path("target/ci/operator_rank_dashboard/dashboard.js")
           js_path.write_text(match.group(1), encoding="utf-8")
           subprocess.run(["node", "--check", str(js_path)], check=True)
+          if "E136A assistant text skill farm mutation/prune Orange cycle" not in html:
+              raise SystemExit("dashboard did not load E136A assistant-text skill-farm evidence")
+          if "E136A assistant text" not in html:
+              raise SystemExit("dashboard did not render E136A assistant text card")
+          if "E136A support min" not in html:
+              raise SystemExit("dashboard did not render E136A support card")
+          if "E136A direct writes" not in html:
+              raise SystemExit("dashboard did not render E136A direct-write card")
           if "E135 math text multi-route assistant dialogue-state" not in html:
               raise SystemExit("dashboard did not load E135 dialogue-state evidence")
           if "E135 dialogue" not in html:
@@ -207,6 +215,10 @@ jobs:
               '"current_evidence_anchor": "E134_EXTERNAL_MATH_TEXT_OOD_ROUTE_STRESS_AND_COUNTEREXAMPLE_GAUNTLET"',
               "current_evidence_anchor = E134 external math-text OOD route stress and counterexample gauntlet",
               "Current evidence anchor: E134 external math-text OOD route stress and counterexample gauntlet",
+              "current_evidence_anchor = E135_MATH_TEXT_MULTI_ROUTE_ASSISTANT_DIALOGUE_STATE_GAUNTLET",
+              '"current_evidence_anchor": "E135_MATH_TEXT_MULTI_ROUTE_ASSISTANT_DIALOGUE_STATE_GAUNTLET"',
+              "current_evidence_anchor = E135 math-text multi-route assistant dialogue-state gauntlet",
+              "Current evidence anchor: E135 math-text multi-route assistant dialogue-state gauntlet",
           ]
           failures = []
           for path in files:

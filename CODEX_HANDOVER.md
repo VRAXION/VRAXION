@@ -8,8 +8,8 @@ Last updated: 2026-06-16
 repo = VRAXION_anchorwiki
 branch = main
 latest_release_target = v6.1.7
-current_evidence_anchor = E135 math-text multi-route assistant dialogue-state gauntlet on main
-current_status = E135 confirmed 16/16 E134 route operators preserve current-turn route state across 136,000 dialogue cases and 367,400 turns
+current_evidence_anchor = E136A assistant-text skill farm mutation/prune Orange cycle on main
+current_status = E136A confirmed 18/18 scoped assistant/text operators promoted from the E136 seed pack through Orange/Legendary probation
 ```
 
 This is the first file a fresh Codex should read after cloning the repo.
@@ -262,6 +262,35 @@ stale route reuse = 0
 cross-thread contamination = 0
 ```
 
+E136A farms scoped assistant/text lenses and guards from the local E136 seed
+pack:
+
+```text
+dataset_rows_loaded = 447,766
+external_sources = 5
+external_families = 12
+operator_count = 18
+Orange/Legendary assistant/text operators = 18
+external_support_total = 1,435,199
+external_support_min = 4,746
+qualified_activation_total = 5,521,276
+qualified_activation_min = 302,123
+negative_scope_case_count_total = 119,868
+mutation_attempts_total = 179,840
+accepted_mutations_total = 827
+rollback_count_total = 179,013
+mean_selected_prune_ratio = 0.758889
+
+hard negatives = 0
+false commits = 0
+wrong scope calls = 0
+unsupported answers = 0
+boundary claim violations = 0
+direct flow writes = 0
+
+overbroad_chatbot_control_wrong_scope_call_total = 25,558
+```
+
 ## Claim Boundary
 
 Allowed:
@@ -285,7 +314,9 @@ remain no-call and unsafe trust controls fail. E134 confirms those routes
 survive OOD wrapper stress and counterexample lures while keeping the same
 no-solve and no-direct-write boundary. E135 confirms those routes preserve
 current-turn route state under controlled multi-turn assistant dialogue pressure
-without stale route reuse or cross-thread contamination.
+without stale route reuse or cross-thread contamination. E136A confirms scoped
+assistant/text lenses and guards can be farmed from the local assistant-text
+seed pack and promoted through the Orange mutation/prune/no-harm gate.
 ```
 
 System-level interpretation:
@@ -305,6 +336,8 @@ counterexample lures while keeping tracked hard negatives and direct writes at
 zero.
 It can preserve current-turn route state across controlled multi-turn
 math-text assistant dialogue surfaces.
+It can farm scoped assistant/text request-shape and boundary operators from the
+local E136 assistant-text seed pack.
 It can promote prior scoped CoreMemoryCandidate operators to Orange/Legendary
 when the E121-style gate is satisfied.
 It is not an open-domain LLM/chatbot.
@@ -342,6 +375,7 @@ docs/research/E132_EXTERNAL_MATH_TEXT_SKILL_FARM_MUTATION_PRUNE_ORANGE_CYCLE_RES
 docs/research/E133_MATH_TEXT_ROUTE_COMPOSITION_AND_NO_SOLVE_ASSISTANT_CONFIRM_RESULT.md
 docs/research/E134_EXTERNAL_MATH_TEXT_OOD_ROUTE_STRESS_AND_COUNTEREXAMPLE_GAUNTLET_RESULT.md
 docs/research/E135_MATH_TEXT_MULTI_ROUTE_ASSISTANT_DIALOGUE_STATE_GAUNTLET_RESULT.md
+docs/research/E136A_ASSISTANT_TEXT_SKILL_FARM_MUTATION_PRUNE_ORANGE_CYCLE_RESULT.md
 docs/research/artifact_samples/e127_overnight_text_skill_farm_orange_cycle/
 docs/research/artifact_samples/e127_text_to_text_render_smoke_current/
 docs/research/artifact_samples/e128_assistant_text_io_lightweight_render_training/
@@ -353,6 +387,7 @@ docs/research/artifact_samples/e132_external_math_text_skill_farm_mutation_prune
 docs/research/artifact_samples/e133_math_text_route_composition_and_no_solve_assistant_confirm/
 docs/research/artifact_samples/e134_external_math_text_ood_route_stress_and_counterexample_gauntlet/
 docs/research/artifact_samples/e135_math_text_multi_route_assistant_dialogue_state_gauntlet/
+docs/research/artifact_samples/e136a_assistant_text_skill_farm_mutation_prune_orange_cycle/
 ```
 
 ## Legal / License
@@ -385,7 +420,7 @@ docs/legal/PRIOR_ART_AND_PROVENANCE_CHECKLIST.md
 Generate the local operator dashboard:
 
 ```powershell
-python scripts/tools/generate_operator_rank_dashboard.py --e127 docs/research/artifact_samples/e127_overnight_text_skill_farm_orange_cycle --e129 docs/research/artifact_samples/e129_arithmetic_trace_orange_legendary_probation --e130a docs/research/artifact_samples/e130a_corememory_to_orange_backfill_gauntlet --e130b docs/research/artifact_samples/e130b_arithmetic_text_io_transfer_and_word_problem_no_call_gauntlet --e131 docs/research/artifact_samples/e131_visible_equation_extraction_and_assistant_arithmetic_render_gauntlet --e132 docs/research/artifact_samples/e132_external_math_text_skill_farm_mutation_prune_orange_cycle --e133 docs/research/artifact_samples/e133_math_text_route_composition_and_no_solve_assistant_confirm --e134 docs/research/artifact_samples/e134_external_math_text_ood_route_stress_and_counterexample_gauntlet --e135 docs/research/artifact_samples/e135_math_text_multi_route_assistant_dialogue_state_gauntlet --out target/pilot_wave/operator_rank_dashboard/index.html
+python scripts/tools/generate_operator_rank_dashboard.py --e127 docs/research/artifact_samples/e127_overnight_text_skill_farm_orange_cycle --e129 docs/research/artifact_samples/e129_arithmetic_trace_orange_legendary_probation --e130a docs/research/artifact_samples/e130a_corememory_to_orange_backfill_gauntlet --e130b docs/research/artifact_samples/e130b_arithmetic_text_io_transfer_and_word_problem_no_call_gauntlet --e131 docs/research/artifact_samples/e131_visible_equation_extraction_and_assistant_arithmetic_render_gauntlet --e132 docs/research/artifact_samples/e132_external_math_text_skill_farm_mutation_prune_orange_cycle --e133 docs/research/artifact_samples/e133_math_text_route_composition_and_no_solve_assistant_confirm --e134 docs/research/artifact_samples/e134_external_math_text_ood_route_stress_and_counterexample_gauntlet --e135 docs/research/artifact_samples/e135_math_text_multi_route_assistant_dialogue_state_gauntlet --e136a docs/research/artifact_samples/e136a_assistant_text_skill_farm_mutation_prune_orange_cycle --out target/pilot_wave/operator_rank_dashboard/index.html
 ```
 
 Expected current dashboard cards:
@@ -411,13 +446,18 @@ E135 DIALOGUE = 16/16
 E135 CASES = 136,000
 E135 TURNS = 367,400
 E135 STATE INTEGRITY = 100.000%
-ORANGE/LEGENDARY CANDIDATE = 543
+E136A ASSISTANT TEXT = 18/18
+E136A DATASET ROWS = 447,766
+E136A SUPPORT MIN = 4,746
+E136A HARD NEGATIVES = 0
+E136A DIRECT WRITES = 0
+ORANGE/LEGENDARY CANDIDATE = 561
 ```
 
 ## Local E136 Seed Pack
 
 After E135, a local assistant/text seed pack was downloaded and normalized for
-the next LLM-ish assistant/operator farming direction:
+the LLM-ish assistant/operator farming direction:
 
 ```text
 pack_id = e136_assistant_text_seed_pack
@@ -437,9 +477,11 @@ Anthropic/hh-rlhf = 60,000
 HuggingFaceH4/no_robots = 10,000
 ```
 
-This is data readiness only. It is not a training pass, not an E136 evidence
-confirmation, and not a new current evidence anchor. Raw and normalized data
-live under `target/` and are intentionally not committed.
+The seed pack itself is local data readiness and remains under ignored
+`target/`, but E136A has now consumed it for a scoped assistant/text
+operator-farm confirmation. Raw and normalized data are intentionally not
+committed; the committed proof surface is the E136A runner, docs, dashboard
+integration, and tracked sample artifact pack.
 
 ## Quick Checks
 
@@ -459,6 +501,8 @@ python -m py_compile scripts/probes/run_e132_external_math_text_skill_farm_mutat
 python -m py_compile scripts/probes/run_e133_math_text_route_composition_and_no_solve_assistant_confirm.py
 python -m py_compile scripts/probes/run_e134_external_math_text_ood_route_stress_and_counterexample_gauntlet.py
 python -m py_compile scripts/probes/run_e135_math_text_multi_route_assistant_dialogue_state_gauntlet.py
+python -m py_compile scripts/probes/run_e136a_assistant_text_skill_farm_mutation_prune_orange_cycle.py
+python scripts/probes/run_e136a_assistant_text_skill_farm_mutation_prune_orange_cycle.py --dataset target/datasets/missing_e136a_smoke.jsonl --dataset-manifest target/datasets/missing_e136a_manifest.json --download-manifest target/datasets/missing_e136a_download.json --allow-builtin-dataset --dataset-row-limit 120 --min-assistant-support 1 --min-dataset-rows 1 --out target/ci/e136a_assistant_text_skill_farm_mutation_prune_orange_cycle --sample-out ""
 python -m compileall -q scripts
 cargo test --workspace
 git diff --check
@@ -500,14 +544,15 @@ Do not delete or commit them without an explicit cleanup decision.
 Recommended next steps:
 
 ```text
-1. Use the local E136 assistant-text seed pack to run a scoped assistant/text
-   operator farm or transfer probe.
-2. Run E136 assistant math-text dialogue route transfer and latency compare if
-   the goal remains route-state latency/transfer rather than new text skills.
+1. Run E136B assistant-text route composition and boundary confirmation before
+   claiming the E136A assistant/text operators compose into broader assistant
+   behavior.
+2. Run a later assistant route transfer/latency compare if the goal returns to
+   route-state latency/transfer rather than new text skills.
 3. Decide whether to continue E127 with a fresh candidate pack or pause farming.
 4. Build the next bridge from deterministic action/template rendering,
-   E132/E133/E134/E135 math-text lenses/guards/routes/OOD/dialogue-state
-   evidence, and exact arithmetic trace/text-IO operators toward richer
-   assistant arithmetic while keeping claims scoped.
+   E132/E133/E134/E135 math-text lenses/guards/routes/OOD/dialogue-state,
+   E136A assistant/text lenses/guards, and exact arithmetic trace/text-IO
+   operators toward richer assistant arithmetic while keeping claims scoped.
 5. Keep all new skills scoped, dashboard-visible, and rollback-safe.
 ```

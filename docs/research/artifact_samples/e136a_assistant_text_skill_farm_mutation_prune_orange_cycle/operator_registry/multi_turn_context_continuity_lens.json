@@ -1,0 +1,13 @@
+{
+  "artifact_contract": "E136A_ASSISTANT_TEXT_SKILL_FARM_MUTATION_PRUNE_ORANGE_CYCLE",
+  "capability_signature": "multi_turn_context_continuity_lens_e136a_v001",
+  "content_digest": "fbf6174958ff30ff543e9268d269d4b359922b36ec590edd0f5c5fadafc33bf4",
+  "direct_flow_write_allowed": false,
+  "display_name": "Multi-Turn Context Continuity Lens",
+  "family": "Lens",
+  "lifecycle": "OrangeLegendaryCandidate",
+  "load_policy": "registry_and_manager_guard_required",
+  "operator_id": "multi_turn_context_continuity_lens",
+  "scope": "assistant_text_multi_turn_context_continuity",
+  "selected_variant_id": "multi_turn_context_continuity_lens::assistant_pruned_minimal_v1"
+}

@@ -1,0 +1,13 @@
+{
+  "artifact_contract": "E136A_ASSISTANT_TEXT_SKILL_FARM_MUTATION_PRUNE_ORANGE_CYCLE",
+  "capability_signature": "synthetic_dialogue_noise_guard_e136a_v001",
+  "content_digest": "082424159f7674b62ed24dbcbf87afb81bafccd840ba8bf4fbbca26c59e8040c",
+  "direct_flow_write_allowed": false,
+  "display_name": "Synthetic Dialogue Noise Guard",
+  "family": "Guard",
+  "lifecycle": "OrangeLegendaryCandidate",
+  "load_policy": "registry_and_manager_guard_required",
+  "operator_id": "synthetic_dialogue_noise_guard",
+  "scope": "assistant_text_synthetic_dialogue_noise",
+  "selected_variant_id": "synthetic_dialogue_noise_guard::assistant_pruned_minimal_v1"
+}

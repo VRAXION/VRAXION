@@ -1,0 +1,13 @@
+{
+  "artifact_contract": "E136A_ASSISTANT_TEXT_SKILL_FARM_MUTATION_PRUNE_ORANGE_CYCLE",
+  "capability_signature": "rejected_response_contrast_lens_e136a_v001",
+  "content_digest": "c6f55817d092154b6ea478d86ff4d78317ae1483c956c271475f990e6a793d17",
+  "direct_flow_write_allowed": false,
+  "display_name": "Rejected Response Contrast Lens",
+  "family": "Lens",
+  "lifecycle": "OrangeLegendaryCandidate",
+  "load_policy": "registry_and_manager_guard_required",
+  "operator_id": "rejected_response_contrast_lens",
+  "scope": "assistant_text_rejected_response_contrast",
+  "selected_variant_id": "rejected_response_contrast_lens::assistant_pruned_minimal_v1"
+}

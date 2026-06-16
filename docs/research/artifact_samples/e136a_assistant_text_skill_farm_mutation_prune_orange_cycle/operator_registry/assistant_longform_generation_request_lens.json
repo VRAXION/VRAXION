@@ -1,0 +1,13 @@
+{
+  "artifact_contract": "E136A_ASSISTANT_TEXT_SKILL_FARM_MUTATION_PRUNE_ORANGE_CYCLE",
+  "capability_signature": "assistant_longform_generation_request_lens_e136a_v001",
+  "content_digest": "e8fc28ae52fc79d6c7bdaeb43a95ce00b95f4d2f737701e9a022524c44e981fc",
+  "direct_flow_write_allowed": false,
+  "display_name": "Assistant Longform Generation Request Lens",
+  "family": "Lens",
+  "lifecycle": "OrangeLegendaryCandidate",
+  "load_policy": "registry_and_manager_guard_required",
+  "operator_id": "assistant_longform_generation_request_lens",
+  "scope": "assistant_text_longform_generation_request",
+  "selected_variant_id": "assistant_longform_generation_request_lens::assistant_pruned_minimal_v1"
+}

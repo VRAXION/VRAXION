@@ -1,0 +1,13 @@
+{
+  "artifact_contract": "E136A_ASSISTANT_TEXT_SKILL_FARM_MUTATION_PRUNE_ORANGE_CYCLE",
+  "capability_signature": "reasoning_instruction_lens_e136a_v001",
+  "content_digest": "dd12420faedbd3ecfe388e002cbaae50bff2546d7ce82ecc364ebe7468afb020",
+  "direct_flow_write_allowed": false,
+  "display_name": "Reasoning Instruction Lens",
+  "family": "Lens",
+  "lifecycle": "OrangeLegendaryCandidate",
+  "load_policy": "registry_and_manager_guard_required",
+  "operator_id": "reasoning_instruction_lens",
+  "scope": "assistant_text_reasoning_instruction_boundary",
+  "selected_variant_id": "reasoning_instruction_lens::assistant_pruned_minimal_v1"
+}

@@ -30,11 +30,11 @@ output.
 
 ## Current library scale
 
-Current dashboard/rank state after E135:
+Current dashboard/rank state after E136A:
 
 ```text
-Dashboard operator count = 546
-Orange/Legendary scoped operators = 543
+Dashboard operator count = 564
+Orange/Legendary scoped operators = 561
 CoreMemoryCandidate operators = 0
 Deprecated operators = 3
 ```
@@ -232,6 +232,32 @@ stale route reuse = 0
 cross-thread contamination = 0
 ```
 
+Current E136A assistant-text skill-farm evidence:
+
+```text
+dataset rows loaded = 447766
+external sources = 5
+external families = 12
+assistant/text operators = 18
+Orange/Legendary assistant/text operators = 18
+external support total = 1435199
+external support min/operator = 4746
+qualified activation total = 5521276
+qualified activation min/operator = 302123
+negative-scope cases = 119868
+mutation attempts = 179840
+accepted mutations = 827
+rollbacks = 179013
+mean selected prune ratio = 0.758889
+hard negatives = 0
+false commits = 0
+wrong-scope calls = 0
+unsupported answers = 0
+boundary-claim violations = 0
+direct flow writes = 0
+overbroad chatbot control wrong-scope calls = 25558
+```
+
 These are scoped operators, not general-purpose neural skills. A larger count is
 not automatically better; value depends on safe activation, low cost, correct
 scope, reloadability, and no-harm evidence.
@@ -274,6 +300,12 @@ scope, reloadability, and no-harm evidence.
   tests;
 - produce proto-assistant-style responses in controlled cases such as evidence
   conflict, missing support, answerability, and citation/trace-style output;
+- farm scoped assistant/text lenses and guards from the E136 assistant-text
+  seed pack for role/turn boundaries, task decomposition, summarization, code
+  boundaries, refusals, source absence, response formats, preference
+  boundaries, synthetic dialogue noise, reasoning instructions, safety-sensitive
+  domains, longform requests, comparison/evaluation prompts, and multilingual
+  task boundaries;
 - avoid claiming a stable answer when the scoped evidence chain is incomplete.
 
 ### Visible calculation-trace validation
@@ -369,6 +401,10 @@ counterexample guards
 
 dialogue-state route guards
   keep the active/current route from being overwritten by stale or cross-thread turns
+
+assistant-text lenses/guards
+  classify scoped assistant/text request shapes and boundaries without claiming
+  open-domain generation or production assistant behavior
 ```
 
 ## What it cannot claim yet

@@ -1,0 +1,12 @@
+{
+  "artifact_contract": "E136A_ASSISTANT_TEXT_SKILL_FARM_MUTATION_PRUNE_ORANGE_CYCLE",
+  "boundary": "scoped assistant/text operator farming only; not neural training, not open-domain assistant evidence, not Core/PermaCore/TrueGolden",
+  "created_at_ms": 1781577608999,
+  "dataset": "target/datasets/e136_assistant_text_seed_pack/normalized/e136_assistant_text_skill_seed.jsonl",
+  "dataset_manifest": "target/datasets/e136_assistant_text_seed_pack/normalized_manifest.json",
+  "dataset_row_limit": 460000,
+  "download_manifest": "target/datasets/e136_assistant_text_seed_pack/download_manifest.json",
+  "min_assistant_support": 4000,
+  "min_dataset_rows": 400000,
+  "min_orange": 18
+}

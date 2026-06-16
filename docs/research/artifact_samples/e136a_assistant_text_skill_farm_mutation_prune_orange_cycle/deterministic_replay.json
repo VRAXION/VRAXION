@@ -1,0 +1,6 @@
+{
+  "artifact_contract": "E136A_ASSISTANT_TEXT_SKILL_FARM_MUTATION_PRUNE_ORANGE_CYCLE",
+  "deterministic_replay_pass": true,
+  "operator_count": 18,
+  "replay_sha256": "741e5b51c6060d6988ca002ab9b7080b4eb482f7b3338631de96941766072a0d"
+}

@@ -1,0 +1,13 @@
+{
+  "artifact_contract": "E136A_ASSISTANT_TEXT_SKILL_FARM_MUTATION_PRUNE_ORANGE_CYCLE",
+  "capability_signature": "source_absence_defer_guard_e136a_v001",
+  "content_digest": "62c80d4ec16b4db43ced189caa42d163d2e6b8cf260e75ab4fd886fb357b460e",
+  "direct_flow_write_allowed": false,
+  "display_name": "Source Absence Defer Guard",
+  "family": "Guard",
+  "lifecycle": "OrangeLegendaryCandidate",
+  "load_policy": "registry_and_manager_guard_required",
+  "operator_id": "source_absence_defer_guard",
+  "scope": "assistant_text_source_absence_defer",
+  "selected_variant_id": "source_absence_defer_guard::assistant_pruned_minimal_v1"
+}
