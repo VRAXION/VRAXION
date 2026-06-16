@@ -1,6 +1,24 @@
 # Changelog
 
-This changelog is narrowed to the current v6 / E127-E136F evidence anchor. Full historical beta, probe, Python SDK, legacy Rust, and research-output history is preserved in git history and archive tags.
+This changelog is narrowed to the current v6 / E127-E136G evidence anchor. Full historical beta, probe, Python SDK, legacy Rust, and research-output history is preserved in git history and archive tags.
+
+## 2026-06-16 - E136G Adaptive Idle Tick Budget Confirm
+
+- Added `scripts/probes/run_e136g_adaptive_idle_tick_budget_confirm.py`.
+- Tested the explicit adaptive idle-tick policy: each idle proposal carries a
+  one-more-tick recommendation, progress marker, reason, and expected next-tick
+  gain, while Agency makes the final continuation decision.
+- Result: 24/24 cases passed, proposal continuation fields present in 33/33
+  proposals, adaptive execution used 33 ticks versus a 120-tick fixed baseline,
+  average adaptive ticks 1.375, 9 Agency-approved continuations, and 2 Agency
+  overrides of over-eager continuation requests.
+- Coverage: 8 immediate answers stopped at t+1, 3/3 chained cases completed,
+  3/3 direct-write cases rejected then repaired at t+2, 4/4 no-pocket controls
+  stopped at t+1, 4 unsupported guesses rejected, and 24/24 OutputTextField
+  roundtrip/checksum/zero-fill checks.
+- Boundary: deterministic adaptive scheduling of explicit proposals only; not
+  hidden thought, autonomous background reasoning, next-token prediction,
+  consciousness, or open-domain assistant behavior.
 
 ## 2026-06-16 - E136F Idle Think-Tick Heldout Series Confirm
 

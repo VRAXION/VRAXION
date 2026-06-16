@@ -354,6 +354,26 @@ unsupported-claim rejects = 6
 OutputTextField roundtrip/checksum/zero-fill = 70 / 70
 ```
 
+Current E136G adaptive idle tick budget evidence:
+
+```text
+case count = 24
+pass count = 24
+adaptive tick total = 33
+fixed baseline tick total = 120
+tick savings vs fixed = 87
+average adaptive ticks = 1.375000
+proposal continue fields = 33 / 33
+Agency continue yes = 9
+Agency continue overrides = 2
+immediate answer stop at t+1 = 8
+chained complete = 3 / 3
+direct-write repair at t+2 = 3 / 3
+no-pocket stop at t+1 = 4 / 4
+unsupported-claim rejects = 4
+OutputTextField roundtrip/checksum/zero-fill = 24 / 24
+```
+
 These are scoped operators, not general-purpose neural skills. A larger count is
 not automatically better; value depends on safe activation, low cost, correct
 scope, reloadability, and no-harm evidence.
@@ -380,6 +400,8 @@ scope, reloadability, and no-harm evidence.
   guard cases in controlled evidence tasks.
 - improve fixed observations during idle ticks when a matching scoped
   pocket/trace exists, while preserving safe output when no such pocket exists.
+- adapt the idle tick budget through explicit one-more-tick recommendations
+  that Agency can accept or override.
 
 ### Proposal + Agency commit boundary
 
@@ -415,6 +437,9 @@ scope, reloadability, and no-harm evidence.
   zero-fill, and tamper-detection smoke coverage;
 - improve fixed observations across idle ticks only by emitting checked
   proposals, with no new input and no direct OutputTextField writes;
+- stop immediate answers at t+1, continue chained refinements when progress is
+  visible, repair direct-write attempts at t+2, and stop no-pocket controls at
+  t+1 under an adaptive Agency-approved idle budget;
 - avoid claiming a stable answer when the scoped evidence chain is incomplete.
 
 ### Visible calculation-trace validation

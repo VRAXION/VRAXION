@@ -1,0 +1,6 @@
+{
+  "artifact_contract": "E136G_ADAPTIVE_IDLE_TICK_BUDGET_CONFIRM",
+  "boundary": "adaptive fixed-observation idle tick budget with explicit continuation proposal fields",
+  "case_count": 24,
+  "max_idle_ticks_per_case": 5
+}

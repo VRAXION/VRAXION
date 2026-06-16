@@ -8,8 +8,8 @@ Last updated: 2026-06-16
 repo = VRAXION_anchorwiki
 branch = main
 latest_release_target = v6.1.7
-current_evidence_anchor = E136F idle think-tick heldout series confirm on main
-current_status = E136F confirmed fixed observations improve across idle ticks on heldout arithmetic traces while no-pocket controls preserve safe output
+current_evidence_anchor = E136G adaptive idle tick budget confirm on main
+current_status = E136G confirmed proposals recommend one more idle tick while Agency decides continuation under a bounded adaptive tick budget
 ```
 
 This is the first file a fresh Codex should read after cloning the repo.
@@ -418,6 +418,39 @@ no-pocket sample:
 -> preserved safe no-route answer; no unsupported year is invented.
 ```
 
+E136G adds an adaptive idle tick budget:
+
+```text
+case_count = 24
+pass_count = 24
+fail_count = 0
+adaptive_tick_total = 33
+fixed_baseline_tick_total = 120
+tick_savings_vs_fixed = 87
+average_adaptive_ticks = 1.375000
+proposal_count = 33
+proposal_continue_field_count = 33
+agency_continue_yes_count = 9
+agency_continue_override_count = 2
+immediate_answer_stop_t1_count = 8
+chained_case_count = 3
+chained_complete_count = 3
+direct_write_case_count = 3
+direct_write_reject_count = 3
+direct_write_repair_t2_count = 3
+no_pocket_case_count = 4
+no_pocket_stop_t1_count = 4
+unsupported_claim_reject_count = 4
+new_input_total = 0
+output_roundtrip_count = 24
+output_checksum_count = 24
+output_zero_fill_count = 24
+
+sample:
+t+1 proposal says continue only if useful
+-> Agency approves safe progress, or overrides over-eager continuation
+```
+
 ## Claim Boundary
 
 Allowed:
@@ -459,6 +492,9 @@ explicit proposals checked by Agency; no new input is introduced.
 E136F confirms that same mechanism on a 70-case heldout series: arithmetic
 cases improve when a matching visible trace exists, while no-pocket controls
 preserve safe output and unsupported guesses are rejected.
+E136G confirms adaptive idle scheduling: each proposal carries a one-more-tick
+recommendation, expected next-tick gain, reason, and progress marker, while
+Agency decides whether to continue or stop.
 ```
 
 System-level interpretation:
@@ -491,6 +527,8 @@ proposals, while preserving source-defer/refusal controls and rejecting direct
 OutputTextField writes.
 It can reproduce that idle improvement behavior on a 70-case heldout series,
 with no-pocket controls preserving safe output instead of inventing answers.
+It can adapt idle tick count through explicit proposal continuation fields and
+Agency-approved continuation/override decisions.
 It can promote prior scoped CoreMemoryCandidate operators to Orange/Legendary
 when the E121-style gate is satisfied.
 It is not an open-domain LLM/chatbot.
@@ -534,6 +572,7 @@ docs/research/E136C_ASSISTANT_TEXT_POLISHED_RENDER_QUICK_TEST_RESULT.md
 docs/research/E136D_OUTPUT_TEXT_FIELD_BINARY_MATRIX_SMOKE_RESULT.md
 docs/research/E136E_IDLE_THINK_TICK_PROPOSAL_REFINEMENT_SMOKE_RESULT.md
 docs/research/E136F_IDLE_THINK_TICK_HELDOUT_SERIES_CONFIRM_RESULT.md
+docs/research/E136G_ADAPTIVE_IDLE_TICK_BUDGET_CONFIRM_RESULT.md
 docs/research/artifact_samples/e127_overnight_text_skill_farm_orange_cycle/
 docs/research/artifact_samples/e127_text_to_text_render_smoke_current/
 docs/research/artifact_samples/e128_assistant_text_io_lightweight_render_training/
@@ -551,6 +590,7 @@ docs/research/artifact_samples/e136c_assistant_text_polished_render_quick_test/
 docs/research/artifact_samples/e136d_output_text_field_binary_matrix_smoke/
 docs/research/artifact_samples/e136e_idle_think_tick_proposal_refinement_smoke/
 docs/research/artifact_samples/e136f_idle_think_tick_heldout_series_confirm/
+docs/research/artifact_samples/e136g_adaptive_idle_tick_budget_confirm/
 ```
 
 ## Legal / License
@@ -666,6 +706,22 @@ E136F UNSUPPORTED-CLAIM REJECTS = 6
 E136F OUTPUT ROUNDTRIP = 70/70
 ```
 
+Expected E136G adaptive idle tick budget:
+
+```text
+E136G CASES = 24/24
+E136G ADAPTIVE TICKS = 33
+E136G FIXED BASELINE TICKS = 120
+E136G PROPOSAL CONTINUE FIELDS = 33/33
+E136G AGENCY CONTINUE YES = 9
+E136G AGENCY OVERRIDES = 2
+E136G IMMEDIATE STOPS = 8
+E136G CHAINED COMPLETE = 3/3
+E136G DIRECT-WRITE REPAIRS = 3/3
+E136G NO-POCKET STOPS = 4/4
+E136G OUTPUT ROUNDTRIP = 24/24
+```
+
 ## Local E136 Seed Pack
 
 After E135, a local assistant/text seed pack was downloaded and normalized for
@@ -727,6 +783,8 @@ python -m py_compile scripts/probes/run_e136e_idle_think_tick_proposal_refinemen
 python scripts/probes/run_e136e_idle_think_tick_proposal_refinement_smoke.py --out target/ci/e136e_idle_think_tick_proposal_refinement_smoke --sample-out ""
 python -m py_compile scripts/probes/run_e136f_idle_think_tick_heldout_series_confirm.py
 python scripts/probes/run_e136f_idle_think_tick_heldout_series_confirm.py --out target/ci/e136f_idle_think_tick_heldout_series_confirm --sample-out ""
+python -m py_compile scripts/probes/run_e136g_adaptive_idle_tick_budget_confirm.py
+python scripts/probes/run_e136g_adaptive_idle_tick_budget_confirm.py --out target/ci/e136g_adaptive_idle_tick_budget_confirm --sample-out ""
 python -m compileall -q scripts
 cargo test --workspace
 git diff --check
@@ -768,8 +826,8 @@ Do not delete or commit them without an explicit cleanup decision.
 Recommended next steps:
 
 ```text
-1. Run E136G chained-proposal and longer-horizon idle confirmation before
-   claiming multi-step idle refinement.
+1. Run E136H chained assistant-render and adaptive idle route confirmation
+   before claiming broader multi-step assistant behavior.
 2. Run a later assistant/open-domain boundary probe before claiming broader
    assistant readiness.
 3. Decide whether to continue E127 with a fresh candidate pack or pause farming.

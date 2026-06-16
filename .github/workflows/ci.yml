@@ -245,6 +245,10 @@ jobs:
               '"current_evidence_anchor": "E136E_IDLE_THINK_TICK_PROPOSAL_REFINEMENT_SMOKE"',
               "current_evidence_anchor = E136E idle think-tick proposal refinement smoke",
               "Current evidence anchor: E136E idle think-tick proposal refinement smoke",
+              "current_evidence_anchor = E136F_IDLE_THINK_TICK_HELDOUT_SERIES_CONFIRM",
+              '"current_evidence_anchor": "E136F_IDLE_THINK_TICK_HELDOUT_SERIES_CONFIRM"',
+              "current_evidence_anchor = E136F idle think-tick heldout series confirm",
+              "Current evidence anchor: E136F idle think-tick heldout series confirm",
           ]
           failures = []
           for path in files:
