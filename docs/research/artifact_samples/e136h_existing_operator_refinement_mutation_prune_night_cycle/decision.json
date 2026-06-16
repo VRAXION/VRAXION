@@ -1,0 +1,6 @@
+{
+  "artifact_contract": "E136H_EXISTING_OPERATOR_REFINEMENT_MUTATION_PRUNE_NIGHT_CYCLE",
+  "decision": "e136h_existing_operator_refinement_mutation_prune_confirmed",
+  "next": "E136I_OPERATOR_SUPERSESSION_AND_OUTPUT_LEDGER_PLANNING",
+  "pass_gate": true
+}

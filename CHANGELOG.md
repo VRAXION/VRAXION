@@ -1,6 +1,21 @@
 # Changelog
 
-This changelog is narrowed to the current v6 / E127-E136G evidence anchor. Full historical beta, probe, Python SDK, legacy Rust, and research-output history is preserved in git history and archive tags.
+This changelog is narrowed to the current v6 / E127-E136H evidence anchor. Full historical beta, probe, Python SDK, legacy Rust, and research-output history is preserved in git history and archive tags.
+
+## 2026-06-16 - E136H Existing Operator Refinement Mutation/Prune Night Cycle
+
+- Added `scripts/probes/run_e136h_existing_operator_refinement_mutation_prune_night_cycle.py`.
+- Ran the existing-operator-first refinement path over the 16 E132 math-text
+  and 18 E136A assistant-text operators before new operator discovery.
+- Result: 40 cycles completed, 34 operators checked, 12,480,000 operator-row
+  replays, 3,373,788 current activations, 2,891,151 selected activations, and
+  482,637 pruned activations.
+- Variant split: 16 semantic-verified/pruned labels, 11 tightened triggers, 7
+  abstract-but-useful kernel shadows, and 0 hold-for-more-evidence operators.
+- Governance: 0 hard negatives, 0 wrong-scope calls, 0 unsupported answers, 0
+  direct Flow writes, and 0 checker failures.
+- Boundary: operator-governance refinement only; not new neural weights,
+  production runtime pruning, or open-domain assistant behavior.
 
 ## 2026-06-16 - E136G Adaptive Idle Tick Budget Confirm
 

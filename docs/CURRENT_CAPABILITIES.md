@@ -354,7 +354,26 @@ unsupported-claim rejects = 6
 OutputTextField roundtrip/checksum/zero-fill = 70 / 70
 ```
 
-Current E136G adaptive idle tick budget evidence:
+Current E136H existing operator refinement evidence:
+
+```text
+cycles completed = 40
+operator count = 34
+rows seen total = 12,480,000
+current activation total = 3,373,788
+selected activation total = 2,891,151
+pruned activation total = 482,637
+verified label count = 16
+tentative tighten count = 11
+abstract but useful count = 7
+hold for more evidence count = 0
+hard negatives = 0
+wrong-scope calls = 0
+unsupported answers = 0
+direct Flow writes = 0
+```
+
+Previous E136G adaptive idle tick budget evidence:
 
 ```text
 case count = 24

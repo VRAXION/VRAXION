@@ -8,8 +8,8 @@ Last updated: 2026-06-16
 repo = VRAXION_anchorwiki
 branch = main
 latest_release_target = v6.1.7
-current_evidence_anchor = E136G adaptive idle tick budget confirm on main
-current_status = E136G confirmed proposals recommend one more idle tick while Agency decides continuation under a bounded adaptive tick budget
+current_evidence_anchor = E136H existing operator refinement mutation/prune night cycle on main
+current_status = E136H confirmed existing E132/E136A operators can be replayed, refined, tightened, or preserved as abstract kernels before new operator search
 ```
 
 This is the first file a fresh Codex should read after cloning the repo.
@@ -451,6 +451,29 @@ t+1 proposal says continue only if useful
 -> Agency approves safe progress, or overrides over-eager continuation
 ```
 
+E136H adds an existing-operator refinement night cycle:
+
+```text
+cycles_completed = 40
+operator_count = 34
+rows_seen_total = 12,480,000
+current_activation_total = 3,373,788
+selected_activation_total = 2,891,151
+pruned_activation_total = 482,637
+verified_label_count = 16
+tentative_label_tighten_count = 11
+abstract_but_useful_count = 7
+hold_for_more_evidence_count = 0
+hard_negative_total = 0
+wrong_scope_call_total = 0
+unsupported_answer_total = 0
+direct_flow_write_total = 0
+
+meaning:
+Existing operators are refined first. Low human-label alignment is not an
+automatic drop if the kernel still carries useful signal.
+```
+
 ## Claim Boundary
 
 Allowed:
@@ -495,6 +518,10 @@ preserve safe output and unsupported guesses are rejected.
 E136G confirms adaptive idle scheduling: each proposal carries a one-more-tick
 recommendation, expected next-tick gain, reason, and progress marker, while
 Agency decides whether to continue or stop.
+E136H confirms existing-operator-first refinement over the 16 E132 math-text
+and 18 E136A assistant-text operators: 16 labels verified, 11 triggers
+tightened, 7 useful abstract kernels preserved, and no operator held for more
+evidence.
 ```
 
 System-level interpretation:
@@ -573,6 +600,7 @@ docs/research/E136D_OUTPUT_TEXT_FIELD_BINARY_MATRIX_SMOKE_RESULT.md
 docs/research/E136E_IDLE_THINK_TICK_PROPOSAL_REFINEMENT_SMOKE_RESULT.md
 docs/research/E136F_IDLE_THINK_TICK_HELDOUT_SERIES_CONFIRM_RESULT.md
 docs/research/E136G_ADAPTIVE_IDLE_TICK_BUDGET_CONFIRM_RESULT.md
+docs/research/E136H_EXISTING_OPERATOR_REFINEMENT_MUTATION_PRUNE_NIGHT_CYCLE_RESULT.md
 docs/research/artifact_samples/e127_overnight_text_skill_farm_orange_cycle/
 docs/research/artifact_samples/e127_text_to_text_render_smoke_current/
 docs/research/artifact_samples/e128_assistant_text_io_lightweight_render_training/
@@ -591,6 +619,7 @@ docs/research/artifact_samples/e136d_output_text_field_binary_matrix_smoke/
 docs/research/artifact_samples/e136e_idle_think_tick_proposal_refinement_smoke/
 docs/research/artifact_samples/e136f_idle_think_tick_heldout_series_confirm/
 docs/research/artifact_samples/e136g_adaptive_idle_tick_budget_confirm/
+docs/research/artifact_samples/e136h_existing_operator_refinement_mutation_prune_night_cycle/
 ```
 
 ## Legal / License
@@ -722,6 +751,22 @@ E136G NO-POCKET STOPS = 4/4
 E136G OUTPUT ROUNDTRIP = 24/24
 ```
 
+Expected E136H existing operator refinement:
+
+```text
+E136H CYCLES = 40/40
+E136H OPERATORS = 34
+E136H CURRENT ACTIVATIONS = 3,373,788
+E136H SELECTED ACTIVATIONS = 2,891,151
+E136H PRUNED ACTIVATIONS = 482,637
+E136H VERIFIED LABELS = 16
+E136H TIGHTENED TRIGGERS = 11
+E136H ABSTRACT KERNELS = 7
+E136H HOLD FOR MORE EVIDENCE = 0
+E136H HARD NEGATIVES = 0
+E136H DIRECT FLOW WRITES = 0
+```
+
 ## Local E136 Seed Pack
 
 After E135, a local assistant/text seed pack was downloaded and normalized for
@@ -826,8 +871,8 @@ Do not delete or commit them without an explicit cleanup decision.
 Recommended next steps:
 
 ```text
-1. Run E136H chained assistant-render and adaptive idle route confirmation
-   before claiming broader multi-step assistant behavior.
+1. Run E136I operator supersession and outdated-skill ledger planning before
+   destructive prune or broad new-operator farming.
 2. Run a later assistant/open-domain boundary probe before claiming broader
    assistant readiness.
 3. Decide whether to continue E127 with a fresh candidate pack or pause farming.
