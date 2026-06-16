@@ -118,10 +118,14 @@ jobs:
           js_path = pathlib.Path("target/ci/operator_rank_dashboard/dashboard.js")
           js_path.write_text(match.group(1), encoding="utf-8")
           subprocess.run(["node", "--check", str(js_path)], check=True)
-          if "E134 external math text OOD route stress" not in html:
-              raise SystemExit("dashboard did not load E134 OOD route-stress evidence")
+          if "E135 math text multi-route assistant dialogue-state" not in html:
+              raise SystemExit("dashboard did not load E135 dialogue-state evidence")
+          if "E135 dialogue" not in html:
+              raise SystemExit("dashboard did not render E135 dialogue card")
+          if "E135 state integrity" not in html:
+              raise SystemExit("dashboard did not render E135 state integrity card")
           if "E134 OOD pass" not in html:
-              raise SystemExit("dashboard did not render E134 OOD pass card")
+              raise SystemExit("dashboard did not load E134 OOD route-stress evidence")
           if "E134 counterexamples" not in html:
               raise SystemExit("dashboard did not render E134 counterexample card")
           if "E133 route comp" not in html:
@@ -199,6 +203,10 @@ jobs:
               '"current_evidence_anchor": "E133_MATH_TEXT_ROUTE_COMPOSITION_AND_NO_SOLVE_ASSISTANT_CONFIRM"',
               "current_evidence_anchor = E133 math text route composition and no-solve assistant confirm",
               "Current evidence anchor: E133 math text route composition and no-solve assistant confirm",
+              "current_evidence_anchor = E134_EXTERNAL_MATH_TEXT_OOD_ROUTE_STRESS_AND_COUNTEREXAMPLE_GAUNTLET",
+              '"current_evidence_anchor": "E134_EXTERNAL_MATH_TEXT_OOD_ROUTE_STRESS_AND_COUNTEREXAMPLE_GAUNTLET"',
+              "current_evidence_anchor = E134 external math-text OOD route stress and counterexample gauntlet",
+              "Current evidence anchor: E134 external math-text OOD route stress and counterexample gauntlet",
           ]
           failures = []
           for path in files:

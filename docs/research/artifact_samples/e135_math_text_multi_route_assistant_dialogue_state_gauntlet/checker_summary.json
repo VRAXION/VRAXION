@@ -1,0 +1,25 @@
+{
+  "artifact_contract": "E135_MATH_TEXT_MULTI_ROUTE_ASSISTANT_DIALOGUE_STATE_GAUNTLET",
+  "checked_files": [
+    "run_manifest.json",
+    "dataset_dialogue_seed_report.json",
+    "input_e134_report.json",
+    "input_e133_report.json",
+    "input_e132_report.json",
+    "operator_dialogue_results.json",
+    "dialogue_family_report.json",
+    "dialogue_control_report.json",
+    "dialogue_counterexample_report.json",
+    "row_level_samples.jsonl",
+    "progress.jsonl",
+    "partial_aggregate_snapshot.json",
+    "aggregate_metrics.json",
+    "deterministic_replay.json",
+    "decision.json",
+    "summary.json",
+    "report.md",
+    "checker_summary.json"
+  ],
+  "failure_count": 0,
+  "failures": []
+}

@@ -1,0 +1,9 @@
+{
+  "artifact_contract": "E135_MATH_TEXT_MULTI_ROUTE_ASSISTANT_DIALOGUE_STATE_GAUNTLET",
+  "boundary": "controlled multi-route dialogue-state proxy only; not open-domain dialogue, not benchmark solving, not natural-language word-problem solving",
+  "decision": "e135_math_text_multi_route_dialogue_state_confirmed",
+  "failure_count": 0,
+  "failures": [],
+  "next": "E136_ASSISTANT_MATH_TEXT_DIALOGUE_ROUTE_TRANSFER_AND_LATENCY_COMPARE",
+  "pass_gate": true
+}

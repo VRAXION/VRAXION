@@ -1,0 +1,6 @@
+{
+  "artifact_contract": "E135_MATH_TEXT_MULTI_ROUTE_ASSISTANT_DIALOGUE_STATE_GAUNTLET",
+  "deterministic_replay_pass": true,
+  "operator_count": 16,
+  "replay_sha256": "caf2f1c330f3dbc64fe4d13bb936e7bea8d2f4ce1a0ea23ecf7bae4c91612814"
+}

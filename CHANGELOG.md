@@ -1,6 +1,29 @@
 # Changelog
 
-This changelog is narrowed to the current v6 / E127-E134 evidence anchor. Full historical beta, probe, Python SDK, legacy Rust, and research-output history is preserved in git history and archive tags.
+This changelog is narrowed to the current v6 / E127-E135 evidence anchor. Full historical beta, probe, Python SDK, legacy Rust, and research-output history is preserved in git history and archive tags.
+
+## 2026-06-16 - E135 Math Text Multi-Route Assistant Dialogue-State Gauntlet
+
+- Added `scripts/probes/run_e135_math_text_multi_route_assistant_dialogue_state_gauntlet.py`.
+- Stressed the 16 E134 math-text route operators under controlled multi-turn
+  assistant dialogue state.
+- Result: 16/16 E134 route operators passed the E135 dialogue-state gate.
+- Dialogue evidence: 136,000 total dialogue cases and 367,400 total dialogue
+  turns.
+- Route-state evidence: 29,500 hidden word-problem dialogue no-solve cases,
+  10,500 visible reentry cases, 22,400 stale route rejection cases, 11,200
+  cross-thread rejection cases, and 76,500 counterexample dialogue cases.
+- Accuracy minima: dialogue state accuracy 1.000, current-turn route accuracy
+  1.000, route-state integrity 1.000, hidden word-problem dialogue no-solve
+  accuracy 1.000, and counterexample dialogue accuracy 1.000.
+- Confirmed: 0 hard negatives, 0 false commits, 0 wrong-scope calls, 0
+  unsupported answers, 0 boundary-claim violations, 0 direct Flow writes, 0
+  stale route reuse, and 0 cross-thread contamination.
+- Controls: latest-route reuse, stale-route reuse, cross-thread contamination,
+  counterexample trust, and single-turn reset controls all failed as intended.
+- Boundary: controlled multi-route dialogue-state only; not open-domain
+  dialogue, MATH/GSM8K solving, natural-language word-problem solving, neural
+  training, Core, PermaCore, or TrueGolden.
 
 ## 2026-06-16 - E134 External Math Text OOD Route Stress And Counterexample Gauntlet
 

@@ -30,7 +30,7 @@ output.
 
 ## Current library scale
 
-Current dashboard/rank state after E134:
+Current dashboard/rank state after E135:
 
 ```text
 Dashboard operator count = 546
@@ -208,6 +208,30 @@ trust-control false commits = 4200
 trust-control direct writes = 2400
 ```
 
+Current E135 math-text multi-route dialogue-state evidence:
+
+```text
+dialogue pass operators = 16 / 16
+dialogue cases = 136000
+dialogue turns = 367400
+hidden word-problem dialogue no-solve cases = 29500
+visible reentry dialogue cases = 10500
+stale route rejection cases = 22400
+cross-thread rejection cases = 11200
+counterexample dialogue cases = 76500
+dialogue state accuracy min = 1.000
+current-turn route accuracy min = 1.000
+route-state integrity min = 1.000
+hidden word-problem dialogue no-solve accuracy min = 1.000
+counterexample dialogue accuracy min = 1.000
+hard negatives = 0
+false commits = 0
+wrong-scope calls = 0
+direct flow writes = 0
+stale route reuse = 0
+cross-thread contamination = 0
+```
+
 These are scoped operators, not general-purpose neural skills. A larger count is
 not automatically better; value depends on safe activation, low cost, correct
 scope, reloadability, and no-harm evidence.
@@ -287,6 +311,9 @@ scope, reloadability, and no-harm evidence.
 - survive OOD wrapper stress and counterexample lures for those route decisions,
   including wrong boxed answers, spoofed TIR output, diagram/unit/proof lures,
   and conflicting final-answer surfaces;
+- preserve current-turn route state across controlled multi-turn assistant
+  dialogue surfaces with stale-route, cross-thread, hidden no-solve, visible
+  reentry, and counterexample turns;
 - keep prose-only word problems on a no-solve/no-call path until a later route
   explicitly supplies visible evidence and scoped capability.
 
@@ -339,6 +366,9 @@ no-solve guards
 
 counterexample guards
   reject spoofed final answers, boxed answers, and tool-output trust lures
+
+dialogue-state route guards
+  keep the active/current route from being overwritten by stale or cross-thread turns
 ```
 
 ## What it cannot claim yet

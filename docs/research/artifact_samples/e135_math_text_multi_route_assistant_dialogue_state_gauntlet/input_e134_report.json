@@ -1,0 +1,16 @@
+{
+  "artifact_contract": "E135_MATH_TEXT_MULTI_ROUTE_ASSISTANT_DIALOGUE_STATE_GAUNTLET",
+  "source_counterexample_accuracy_min": 1.0,
+  "source_counterexample_case_count_total": 48000,
+  "source_decision": "e134_external_math_text_ood_route_stress_counterexample_confirmed",
+  "source_direct_flow_write_total": 0,
+  "source_e134_root": "target/pilot_wave/e134_external_math_text_ood_route_stress_and_counterexample_gauntlet",
+  "source_hard_negative_total": 0,
+  "source_hidden_word_problem_ood_no_solve_accuracy_min": 1.0,
+  "source_ood_case_count_total": 208000,
+  "source_ood_pass_operator_count": 16,
+  "source_ood_route_accuracy_min": 1.0,
+  "source_operator_count": 16,
+  "source_pass": true,
+  "source_wrong_scope_call_total": 0
+}

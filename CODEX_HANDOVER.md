@@ -8,8 +8,8 @@ Last updated: 2026-06-16
 repo = VRAXION_anchorwiki
 branch = main
 latest_release_target = v6.1.7
-current_evidence_anchor = E134 external math-text OOD route stress and counterexample gauntlet on main
-current_status = E134 confirmed 16/16 E133 route operators survive 208,000 OOD route cases and 48,000 counterexamples with hidden word-problem no-call intact
+current_evidence_anchor = E135 math-text multi-route assistant dialogue-state gauntlet on main
+current_status = E135 confirmed 16/16 E134 route operators preserve current-turn route state across 136,000 dialogue cases and 367,400 turns
 ```
 
 This is the first file a fresh Codex should read after cloning the repo.
@@ -230,6 +230,38 @@ trust_control_false_commit_total = 4,200
 trust_control_direct_flow_write_total = 2,400
 ```
 
+E135 stresses those E134 route operators under controlled multi-turn assistant
+dialogue state:
+
+```text
+operator_count = 16
+dialogue_pass_operator_count = 16
+dialogue_case_count_total = 136,000
+dialogue_turn_count_total = 367,400
+hidden_word_problem_dialogue_no_solve_case_count_total = 29,500
+visible_reentry_dialogue_case_count_total = 10,500
+stale_route_rejection_case_count_total = 22,400
+cross_thread_rejection_case_count_total = 11,200
+counterexample_dialogue_case_count_total = 76,500
+qualified_dialogue_route_activation_total = 136,000
+qualified_dialogue_route_activation_min = 8,500
+
+dialogue_state_accuracy_min = 1.000
+current_turn_route_accuracy_min = 1.000
+route_state_integrity_min = 1.000
+hidden_word_problem_dialogue_no_solve_accuracy_min = 1.000
+counterexample_dialogue_accuracy_min = 1.000
+
+hard negatives = 0
+false commits = 0
+wrong scope calls = 0
+unsupported answers = 0
+boundary claim violations = 0
+direct flow writes = 0
+stale route reuse = 0
+cross-thread contamination = 0
+```
+
 ## Claim Boundary
 
 Allowed:
@@ -251,7 +283,9 @@ Orange mutation/prune/no-solve gate. E133 confirms those math-text
 lenses/guards compose into assistant route decisions while hidden word problems
 remain no-call and unsafe trust controls fail. E134 confirms those routes
 survive OOD wrapper stress and counterexample lures while keeping the same
-no-solve and no-direct-write boundary.
+no-solve and no-direct-write boundary. E135 confirms those routes preserve
+current-turn route state under controlled multi-turn assistant dialogue pressure
+without stale route reuse or cross-thread contamination.
 ```
 
 System-level interpretation:
@@ -269,6 +303,8 @@ wrappers while no-calling hidden prose-only word problems.
 It can stress those math-text assistant routes under OOD wrappers and
 counterexample lures while keeping tracked hard negatives and direct writes at
 zero.
+It can preserve current-turn route state across controlled multi-turn
+math-text assistant dialogue surfaces.
 It can promote prior scoped CoreMemoryCandidate operators to Orange/Legendary
 when the E121-style gate is satisfied.
 It is not an open-domain LLM/chatbot.
@@ -305,6 +341,7 @@ docs/research/E131_VISIBLE_EQUATION_EXTRACTION_AND_ASSISTANT_ARITHMETIC_RENDER_G
 docs/research/E132_EXTERNAL_MATH_TEXT_SKILL_FARM_MUTATION_PRUNE_ORANGE_CYCLE_RESULT.md
 docs/research/E133_MATH_TEXT_ROUTE_COMPOSITION_AND_NO_SOLVE_ASSISTANT_CONFIRM_RESULT.md
 docs/research/E134_EXTERNAL_MATH_TEXT_OOD_ROUTE_STRESS_AND_COUNTEREXAMPLE_GAUNTLET_RESULT.md
+docs/research/E135_MATH_TEXT_MULTI_ROUTE_ASSISTANT_DIALOGUE_STATE_GAUNTLET_RESULT.md
 docs/research/artifact_samples/e127_overnight_text_skill_farm_orange_cycle/
 docs/research/artifact_samples/e127_text_to_text_render_smoke_current/
 docs/research/artifact_samples/e128_assistant_text_io_lightweight_render_training/
@@ -315,6 +352,7 @@ docs/research/artifact_samples/e131_visible_equation_extraction_and_assistant_ar
 docs/research/artifact_samples/e132_external_math_text_skill_farm_mutation_prune_orange_cycle/
 docs/research/artifact_samples/e133_math_text_route_composition_and_no_solve_assistant_confirm/
 docs/research/artifact_samples/e134_external_math_text_ood_route_stress_and_counterexample_gauntlet/
+docs/research/artifact_samples/e135_math_text_multi_route_assistant_dialogue_state_gauntlet/
 ```
 
 ## Legal / License
@@ -347,7 +385,7 @@ docs/legal/PRIOR_ART_AND_PROVENANCE_CHECKLIST.md
 Generate the local operator dashboard:
 
 ```powershell
-python scripts/tools/generate_operator_rank_dashboard.py --e127 docs/research/artifact_samples/e127_overnight_text_skill_farm_orange_cycle --e129 docs/research/artifact_samples/e129_arithmetic_trace_orange_legendary_probation --e130a docs/research/artifact_samples/e130a_corememory_to_orange_backfill_gauntlet --e130b docs/research/artifact_samples/e130b_arithmetic_text_io_transfer_and_word_problem_no_call_gauntlet --e131 docs/research/artifact_samples/e131_visible_equation_extraction_and_assistant_arithmetic_render_gauntlet --e132 docs/research/artifact_samples/e132_external_math_text_skill_farm_mutation_prune_orange_cycle --e133 docs/research/artifact_samples/e133_math_text_route_composition_and_no_solve_assistant_confirm --e134 docs/research/artifact_samples/e134_external_math_text_ood_route_stress_and_counterexample_gauntlet --out target/pilot_wave/operator_rank_dashboard/index.html
+python scripts/tools/generate_operator_rank_dashboard.py --e127 docs/research/artifact_samples/e127_overnight_text_skill_farm_orange_cycle --e129 docs/research/artifact_samples/e129_arithmetic_trace_orange_legendary_probation --e130a docs/research/artifact_samples/e130a_corememory_to_orange_backfill_gauntlet --e130b docs/research/artifact_samples/e130b_arithmetic_text_io_transfer_and_word_problem_no_call_gauntlet --e131 docs/research/artifact_samples/e131_visible_equation_extraction_and_assistant_arithmetic_render_gauntlet --e132 docs/research/artifact_samples/e132_external_math_text_skill_farm_mutation_prune_orange_cycle --e133 docs/research/artifact_samples/e133_math_text_route_composition_and_no_solve_assistant_confirm --e134 docs/research/artifact_samples/e134_external_math_text_ood_route_stress_and_counterexample_gauntlet --e135 docs/research/artifact_samples/e135_math_text_multi_route_assistant_dialogue_state_gauntlet --out target/pilot_wave/operator_rank_dashboard/index.html
 ```
 
 Expected current dashboard cards:
@@ -369,6 +407,10 @@ E134 OOD PASS = 16/16
 E134 OOD CASES = 208,000
 E134 COUNTEREXAMPLES = 48,000
 E134 HIDDEN NO-CALL = 100.000%
+E135 DIALOGUE = 16/16
+E135 CASES = 136,000
+E135 TURNS = 367,400
+E135 STATE INTEGRITY = 100.000%
 ORANGE/LEGENDARY CANDIDATE = 543
 ```
 
@@ -388,6 +430,7 @@ python -m py_compile scripts/probes/run_e131_visible_equation_extraction_and_ass
 python -m py_compile scripts/probes/run_e132_external_math_text_skill_farm_mutation_prune_orange_cycle.py
 python -m py_compile scripts/probes/run_e133_math_text_route_composition_and_no_solve_assistant_confirm.py
 python -m py_compile scripts/probes/run_e134_external_math_text_ood_route_stress_and_counterexample_gauntlet.py
+python -m py_compile scripts/probes/run_e135_math_text_multi_route_assistant_dialogue_state_gauntlet.py
 python -m compileall -q scripts
 cargo test --workspace
 git diff --check
@@ -429,11 +472,11 @@ Do not delete or commit them without an explicit cleanup decision.
 Recommended next steps:
 
 ```text
-1. Run E135 math-text multi-route assistant dialogue-state gauntlet.
+1. Run E136 assistant math-text dialogue route transfer and latency compare.
 2. Decide whether to continue E127 with a fresh candidate pack or pause farming.
 3. Build the next bridge from deterministic action/template rendering,
-   E132/E133/E134 math-text lenses/guards/routes/OOD stress, and exact
-   arithmetic trace/text-IO operators toward richer assistant arithmetic while
-   keeping claims scoped.
+   E132/E133/E134/E135 math-text lenses/guards/routes/OOD/dialogue-state
+   evidence, and exact arithmetic trace/text-IO operators toward richer
+   assistant arithmetic while keeping claims scoped.
 4. Keep all new skills scoped, dashboard-visible, and rollback-safe.
 ```
