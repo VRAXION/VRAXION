@@ -1,0 +1,9 @@
+{
+  "artifact_contract": "E134_EXTERNAL_MATH_TEXT_OOD_ROUTE_STRESS_AND_COUNTEREXAMPLE_GAUNTLET",
+  "boundary": "OOD route stress and counterexample rejection only; not benchmark solving, not natural-language word-problem solving",
+  "decision": "e134_external_math_text_ood_route_stress_counterexample_confirmed",
+  "failure_count": 0,
+  "failures": [],
+  "next": "E135_MATH_TEXT_MULTI_ROUTE_ASSISTANT_DIALOGUE_STATE_GAUNTLET",
+  "pass_gate": true
+}

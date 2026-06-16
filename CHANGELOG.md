@@ -1,6 +1,28 @@
 # Changelog
 
-This changelog is narrowed to the current v6 / E127-E133 evidence anchor. Full historical beta, probe, Python SDK, legacy Rust, and research-output history is preserved in git history and archive tags.
+This changelog is narrowed to the current v6 / E127-E134 evidence anchor. Full historical beta, probe, Python SDK, legacy Rust, and research-output history is preserved in git history and archive tags.
+
+## 2026-06-16 - E134 External Math Text OOD Route Stress And Counterexample Gauntlet
+
+- Added `scripts/probes/run_e134_external_math_text_ood_route_stress_and_counterexample_gauntlet.py`.
+- Stressed the 16 E133 math-text route-composition operators under OOD
+  wrappers, noisy assistant-style math surfaces, and counterexample lures.
+- Result: 16/16 E133 route operators passed the E134 OOD route-stress gate.
+- OOD evidence: 208,000 total OOD route cases, 11,875 visible arithmetic OOD
+  cases, 153,125 structural guard OOD cases, 43,000 hidden word-problem OOD
+  no-solve cases, and 48,000 counterexample cases.
+- Accuracy minima: OOD route accuracy 1.000, visible arithmetic OOD accuracy
+  1.000, structural guard OOD accuracy 1.000, hidden word-problem OOD no-solve
+  accuracy 1.000, and counterexample accuracy 1.000.
+- Confirmed: 0 hard negatives, 0 false commits, 0 wrong-scope calls, 0
+  unsupported answers, 0 boundary-claim violations, and 0 direct Flow writes.
+- Controls: the E133 baseline missed 36,275 OOD cases, the overbroad solver
+  control produced 19,200 wrong-scope calls, unsafe trust controls produced
+  4,200 false commits, and TIR trust controls produced 2,400 direct-write
+  failures.
+- Boundary: OOD route stress and counterexample rejection only; not MATH/GSM8K
+  solving, natural-language word-problem solving, neural training, Core,
+  PermaCore, or TrueGolden.
 
 ## 2026-06-16 - E133 Math Text Route Composition And No-Solve Assistant Confirm
 

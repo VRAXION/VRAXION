@@ -30,7 +30,7 @@ output.
 
 ## Current library scale
 
-Current dashboard/rank state after E133:
+Current dashboard/rank state after E134:
 
 ```text
 Dashboard operator count = 546
@@ -182,6 +182,32 @@ trust-control false commits = 4125
 trust-control direct writes = 3000
 ```
 
+Current E134 external math-text OOD route stress evidence:
+
+```text
+OOD pass operators = 16 / 16
+OOD route cases = 208000
+visible arithmetic OOD cases = 11875
+structural guard OOD cases = 153125
+hidden word-problem OOD no-solve cases = 43000
+counterexample cases = 48000
+OOD route accuracy min = 1.000
+visible arithmetic OOD accuracy min = 1.000
+structural guard OOD accuracy min = 1.000
+hidden word-problem OOD no-solve accuracy min = 1.000
+counterexample accuracy min = 1.000
+hard negatives = 0
+false commits = 0
+wrong-scope calls = 0
+unsupported answers = 0
+boundary-claim violations = 0
+direct flow writes = 0
+E133 baseline OOD misses = 36275
+overbroad solver control wrong-scope calls = 19200
+trust-control false commits = 4200
+trust-control direct writes = 2400
+```
+
 These are scoped operators, not general-purpose neural skills. A larger count is
 not automatically better; value depends on safe activation, low cost, correct
 scope, reloadability, and no-harm evidence.
@@ -258,6 +284,9 @@ scope, reloadability, and no-harm evidence.
 - compose those math-text lenses/guards into assistant route decisions, routing
   explicit visible arithmetic to the scoped arithmetic renderer while keeping
   proof/TIR/matrix/geometry/unit/answer-format surfaces guarded;
+- survive OOD wrapper stress and counterexample lures for those route decisions,
+  including wrong boxed answers, spoofed TIR output, diagram/unit/proof lures,
+  and conflicting final-answer surfaces;
 - keep prose-only word problems on a no-solve/no-call path until a later route
   explicitly supplies visible evidence and scoped capability.
 
@@ -307,6 +336,9 @@ math-text boundary lenses
 
 no-solve guards
   keep hidden/prose-only word problems out of direct arithmetic routes
+
+counterexample guards
+  reject spoofed final answers, boxed answers, and tool-output trust lures
 ```
 
 ## What it cannot claim yet

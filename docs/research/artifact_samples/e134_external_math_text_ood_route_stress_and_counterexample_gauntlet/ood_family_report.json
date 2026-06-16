@@ -1,0 +1,1817 @@
+{
+  "rows": [
+    {
+      "accuracy": 1.0,
+      "case_count": 1200,
+      "correct_count": 1200,
+      "family": "answer_format_instruction_boundary:ood_counterfactual_answer_noise",
+      "operator_id": "answer_format_instruction_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1200,
+      "correct_count": 1200,
+      "family": "answer_format_instruction_boundary:ood_lure_solve_instruction",
+      "operator_id": "answer_format_instruction_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1200,
+      "correct_count": 1200,
+      "family": "answer_format_instruction_boundary:ood_markdown_quote_noise",
+      "operator_id": "answer_format_instruction_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1200,
+      "correct_count": 1200,
+      "family": "answer_format_instruction_boundary:ood_multisurface_context_noise",
+      "operator_id": "answer_format_instruction_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1200,
+      "correct_count": 1200,
+      "family": "answer_format_instruction_boundary:ood_whitespace_and_cutoff_noise",
+      "operator_id": "answer_format_instruction_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 2625,
+      "correct_count": 2625,
+      "family": "answer_format_value_lure_counterexample",
+      "operator_id": "answer_format_instruction_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 400,
+      "correct_count": 400,
+      "family": "ood_calc_payload_label",
+      "operator_id": "answer_format_instruction_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 400,
+      "correct_count": 400,
+      "family": "ood_e134_marker_wrapper",
+      "operator_id": "answer_format_instruction_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 400,
+      "correct_count": 400,
+      "family": "ood_hidden_story_direct_answer_lure",
+      "operator_id": "answer_format_instruction_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 400,
+      "correct_count": 400,
+      "family": "ood_hidden_story_multilingual_lure",
+      "operator_id": "answer_format_instruction_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 400,
+      "correct_count": 400,
+      "family": "ood_hidden_story_number_dense",
+      "operator_id": "answer_format_instruction_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 400,
+      "correct_count": 400,
+      "family": "ood_hidden_story_tool_lure",
+      "operator_id": "answer_format_instruction_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 400,
+      "correct_count": 400,
+      "family": "ood_hidden_story_with_fake_final",
+      "operator_id": "answer_format_instruction_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 400,
+      "correct_count": 400,
+      "family": "ood_html_math_tag",
+      "operator_id": "answer_format_instruction_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 400,
+      "correct_count": 400,
+      "family": "ood_latex_paren_wrapper",
+      "operator_id": "answer_format_instruction_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 400,
+      "correct_count": 400,
+      "family": "ood_unicode_operator_noise",
+      "operator_id": "answer_format_instruction_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 375,
+      "correct_count": 375,
+      "family": "visible_arithmetic_wrong_box_conflict_counterexample",
+      "operator_id": "answer_format_instruction_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 400,
+      "correct_count": 400,
+      "family": "ood_hidden_story_direct_answer_lure",
+      "operator_id": "assistant_tir_output_error_repair_guard"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 400,
+      "correct_count": 400,
+      "family": "ood_hidden_story_multilingual_lure",
+      "operator_id": "assistant_tir_output_error_repair_guard"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 400,
+      "correct_count": 400,
+      "family": "ood_hidden_story_number_dense",
+      "operator_id": "assistant_tir_output_error_repair_guard"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 400,
+      "correct_count": 400,
+      "family": "ood_hidden_story_tool_lure",
+      "operator_id": "assistant_tir_output_error_repair_guard"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 400,
+      "correct_count": 400,
+      "family": "ood_hidden_story_with_fake_final",
+      "operator_id": "assistant_tir_output_error_repair_guard"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1600,
+      "correct_count": 1600,
+      "family": "tir_error_repair_guard:ood_counterfactual_answer_noise",
+      "operator_id": "assistant_tir_output_error_repair_guard"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1600,
+      "correct_count": 1600,
+      "family": "tir_error_repair_guard:ood_lure_solve_instruction",
+      "operator_id": "assistant_tir_output_error_repair_guard"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1600,
+      "correct_count": 1600,
+      "family": "tir_error_repair_guard:ood_markdown_quote_noise",
+      "operator_id": "assistant_tir_output_error_repair_guard"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1600,
+      "correct_count": 1600,
+      "family": "tir_error_repair_guard:ood_multisurface_context_noise",
+      "operator_id": "assistant_tir_output_error_repair_guard"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1600,
+      "correct_count": 1600,
+      "family": "tir_error_repair_guard:ood_whitespace_and_cutoff_noise",
+      "operator_id": "assistant_tir_output_error_repair_guard"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 3000,
+      "correct_count": 3000,
+      "family": "tir_output_spoof_counterexample",
+      "operator_id": "assistant_tir_output_error_repair_guard"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1200,
+      "correct_count": 1200,
+      "family": "boxed_answer_no_trust:ood_counterfactual_answer_noise",
+      "operator_id": "boxed_answer_boundary_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1200,
+      "correct_count": 1200,
+      "family": "boxed_answer_no_trust:ood_lure_solve_instruction",
+      "operator_id": "boxed_answer_boundary_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1200,
+      "correct_count": 1200,
+      "family": "boxed_answer_no_trust:ood_markdown_quote_noise",
+      "operator_id": "boxed_answer_boundary_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1200,
+      "correct_count": 1200,
+      "family": "boxed_answer_no_trust:ood_multisurface_context_noise",
+      "operator_id": "boxed_answer_boundary_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1200,
+      "correct_count": 1200,
+      "family": "boxed_answer_no_trust:ood_whitespace_and_cutoff_noise",
+      "operator_id": "boxed_answer_boundary_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 400,
+      "correct_count": 400,
+      "family": "ood_calc_payload_label",
+      "operator_id": "boxed_answer_boundary_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 400,
+      "correct_count": 400,
+      "family": "ood_e134_marker_wrapper",
+      "operator_id": "boxed_answer_boundary_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 400,
+      "correct_count": 400,
+      "family": "ood_hidden_story_direct_answer_lure",
+      "operator_id": "boxed_answer_boundary_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 400,
+      "correct_count": 400,
+      "family": "ood_hidden_story_multilingual_lure",
+      "operator_id": "boxed_answer_boundary_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 400,
+      "correct_count": 400,
+      "family": "ood_hidden_story_number_dense",
+      "operator_id": "boxed_answer_boundary_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 400,
+      "correct_count": 400,
+      "family": "ood_hidden_story_tool_lure",
+      "operator_id": "boxed_answer_boundary_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 400,
+      "correct_count": 400,
+      "family": "ood_hidden_story_with_fake_final",
+      "operator_id": "boxed_answer_boundary_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 400,
+      "correct_count": 400,
+      "family": "ood_html_math_tag",
+      "operator_id": "boxed_answer_boundary_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 400,
+      "correct_count": 400,
+      "family": "ood_latex_paren_wrapper",
+      "operator_id": "boxed_answer_boundary_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 400,
+      "correct_count": 400,
+      "family": "ood_unicode_operator_noise",
+      "operator_id": "boxed_answer_boundary_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 375,
+      "correct_count": 375,
+      "family": "visible_arithmetic_wrong_box_conflict_counterexample",
+      "operator_id": "boxed_answer_boundary_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 2625,
+      "correct_count": 2625,
+      "family": "wrong_boxed_answer_counterexample",
+      "operator_id": "boxed_answer_boundary_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 375,
+      "correct_count": 375,
+      "family": "equation_system_alignment:answer_format_value_lure_counterexample",
+      "operator_id": "equation_system_alignment_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 375,
+      "correct_count": 375,
+      "family": "equation_system_alignment:diagram_missing_counterexample",
+      "operator_id": "equation_system_alignment_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 375,
+      "correct_count": 375,
+      "family": "equation_system_alignment:matrix_scalarization_lure_counterexample",
+      "operator_id": "equation_system_alignment_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1600,
+      "correct_count": 1600,
+      "family": "equation_system_alignment:ood_counterfactual_answer_noise",
+      "operator_id": "equation_system_alignment_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1600,
+      "correct_count": 1600,
+      "family": "equation_system_alignment:ood_lure_solve_instruction",
+      "operator_id": "equation_system_alignment_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1600,
+      "correct_count": 1600,
+      "family": "equation_system_alignment:ood_markdown_quote_noise",
+      "operator_id": "equation_system_alignment_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1600,
+      "correct_count": 1600,
+      "family": "equation_system_alignment:ood_multisurface_context_noise",
+      "operator_id": "equation_system_alignment_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1600,
+      "correct_count": 1600,
+      "family": "equation_system_alignment:ood_whitespace_and_cutoff_noise",
+      "operator_id": "equation_system_alignment_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 375,
+      "correct_count": 375,
+      "family": "equation_system_alignment:proof_connector_number_lure_counterexample",
+      "operator_id": "equation_system_alignment_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 375,
+      "correct_count": 375,
+      "family": "equation_system_alignment:tir_output_spoof_counterexample",
+      "operator_id": "equation_system_alignment_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 375,
+      "correct_count": 375,
+      "family": "equation_system_alignment:unit_conversion_lure_counterexample",
+      "operator_id": "equation_system_alignment_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 375,
+      "correct_count": 375,
+      "family": "equation_system_alignment:visible_arithmetic_wrong_box_conflict_counterexample",
+      "operator_id": "equation_system_alignment_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 375,
+      "correct_count": 375,
+      "family": "equation_system_alignment:wrong_boxed_answer_counterexample",
+      "operator_id": "equation_system_alignment_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 400,
+      "correct_count": 400,
+      "family": "ood_hidden_story_direct_answer_lure",
+      "operator_id": "equation_system_alignment_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 400,
+      "correct_count": 400,
+      "family": "ood_hidden_story_multilingual_lure",
+      "operator_id": "equation_system_alignment_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 400,
+      "correct_count": 400,
+      "family": "ood_hidden_story_number_dense",
+      "operator_id": "equation_system_alignment_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 400,
+      "correct_count": 400,
+      "family": "ood_hidden_story_tool_lure",
+      "operator_id": "equation_system_alignment_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 400,
+      "correct_count": 400,
+      "family": "ood_hidden_story_with_fake_final",
+      "operator_id": "equation_system_alignment_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 375,
+      "correct_count": 375,
+      "family": "fraction_ratio_boundary:answer_format_value_lure_counterexample",
+      "operator_id": "fraction_ratio_probability_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 375,
+      "correct_count": 375,
+      "family": "fraction_ratio_boundary:diagram_missing_counterexample",
+      "operator_id": "fraction_ratio_probability_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 375,
+      "correct_count": 375,
+      "family": "fraction_ratio_boundary:matrix_scalarization_lure_counterexample",
+      "operator_id": "fraction_ratio_probability_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1200,
+      "correct_count": 1200,
+      "family": "fraction_ratio_boundary:ood_counterfactual_answer_noise",
+      "operator_id": "fraction_ratio_probability_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1200,
+      "correct_count": 1200,
+      "family": "fraction_ratio_boundary:ood_lure_solve_instruction",
+      "operator_id": "fraction_ratio_probability_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1200,
+      "correct_count": 1200,
+      "family": "fraction_ratio_boundary:ood_markdown_quote_noise",
+      "operator_id": "fraction_ratio_probability_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1200,
+      "correct_count": 1200,
+      "family": "fraction_ratio_boundary:ood_multisurface_context_noise",
+      "operator_id": "fraction_ratio_probability_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1200,
+      "correct_count": 1200,
+      "family": "fraction_ratio_boundary:ood_whitespace_and_cutoff_noise",
+      "operator_id": "fraction_ratio_probability_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 375,
+      "correct_count": 375,
+      "family": "fraction_ratio_boundary:proof_connector_number_lure_counterexample",
+      "operator_id": "fraction_ratio_probability_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 375,
+      "correct_count": 375,
+      "family": "fraction_ratio_boundary:tir_output_spoof_counterexample",
+      "operator_id": "fraction_ratio_probability_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 375,
+      "correct_count": 375,
+      "family": "fraction_ratio_boundary:unit_conversion_lure_counterexample",
+      "operator_id": "fraction_ratio_probability_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 375,
+      "correct_count": 375,
+      "family": "fraction_ratio_boundary:wrong_boxed_answer_counterexample",
+      "operator_id": "fraction_ratio_probability_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 400,
+      "correct_count": 400,
+      "family": "ood_calc_payload_label",
+      "operator_id": "fraction_ratio_probability_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 400,
+      "correct_count": 400,
+      "family": "ood_e134_marker_wrapper",
+      "operator_id": "fraction_ratio_probability_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 400,
+      "correct_count": 400,
+      "family": "ood_hidden_story_direct_answer_lure",
+      "operator_id": "fraction_ratio_probability_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 400,
+      "correct_count": 400,
+      "family": "ood_hidden_story_multilingual_lure",
+      "operator_id": "fraction_ratio_probability_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 400,
+      "correct_count": 400,
+      "family": "ood_hidden_story_number_dense",
+      "operator_id": "fraction_ratio_probability_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 400,
+      "correct_count": 400,
+      "family": "ood_hidden_story_tool_lure",
+      "operator_id": "fraction_ratio_probability_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 400,
+      "correct_count": 400,
+      "family": "ood_hidden_story_with_fake_final",
+      "operator_id": "fraction_ratio_probability_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 400,
+      "correct_count": 400,
+      "family": "ood_html_math_tag",
+      "operator_id": "fraction_ratio_probability_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 400,
+      "correct_count": 400,
+      "family": "ood_latex_paren_wrapper",
+      "operator_id": "fraction_ratio_probability_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 400,
+      "correct_count": 400,
+      "family": "ood_unicode_operator_noise",
+      "operator_id": "fraction_ratio_probability_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 375,
+      "correct_count": 375,
+      "family": "visible_arithmetic_wrong_box_conflict_counterexample",
+      "operator_id": "fraction_ratio_probability_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 3000,
+      "correct_count": 3000,
+      "family": "diagram_missing_counterexample",
+      "operator_id": "geometry_diagram_reference_guard"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1600,
+      "correct_count": 1600,
+      "family": "geometry_diagram_defer:ood_counterfactual_answer_noise",
+      "operator_id": "geometry_diagram_reference_guard"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1600,
+      "correct_count": 1600,
+      "family": "geometry_diagram_defer:ood_lure_solve_instruction",
+      "operator_id": "geometry_diagram_reference_guard"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1600,
+      "correct_count": 1600,
+      "family": "geometry_diagram_defer:ood_markdown_quote_noise",
+      "operator_id": "geometry_diagram_reference_guard"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1600,
+      "correct_count": 1600,
+      "family": "geometry_diagram_defer:ood_multisurface_context_noise",
+      "operator_id": "geometry_diagram_reference_guard"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1600,
+      "correct_count": 1600,
+      "family": "geometry_diagram_defer:ood_whitespace_and_cutoff_noise",
+      "operator_id": "geometry_diagram_reference_guard"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 400,
+      "correct_count": 400,
+      "family": "ood_hidden_story_direct_answer_lure",
+      "operator_id": "geometry_diagram_reference_guard"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 400,
+      "correct_count": 400,
+      "family": "ood_hidden_story_multilingual_lure",
+      "operator_id": "geometry_diagram_reference_guard"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 400,
+      "correct_count": 400,
+      "family": "ood_hidden_story_number_dense",
+      "operator_id": "geometry_diagram_reference_guard"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 400,
+      "correct_count": 400,
+      "family": "ood_hidden_story_tool_lure",
+      "operator_id": "geometry_diagram_reference_guard"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 400,
+      "correct_count": 400,
+      "family": "ood_hidden_story_with_fake_final",
+      "operator_id": "geometry_diagram_reference_guard"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 375,
+      "correct_count": 375,
+      "family": "display_latex_boundary:answer_format_value_lure_counterexample",
+      "operator_id": "latex_display_math_block_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 375,
+      "correct_count": 375,
+      "family": "display_latex_boundary:diagram_missing_counterexample",
+      "operator_id": "latex_display_math_block_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 375,
+      "correct_count": 375,
+      "family": "display_latex_boundary:matrix_scalarization_lure_counterexample",
+      "operator_id": "latex_display_math_block_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1200,
+      "correct_count": 1200,
+      "family": "display_latex_boundary:ood_counterfactual_answer_noise",
+      "operator_id": "latex_display_math_block_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1200,
+      "correct_count": 1200,
+      "family": "display_latex_boundary:ood_lure_solve_instruction",
+      "operator_id": "latex_display_math_block_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1200,
+      "correct_count": 1200,
+      "family": "display_latex_boundary:ood_markdown_quote_noise",
+      "operator_id": "latex_display_math_block_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1200,
+      "correct_count": 1200,
+      "family": "display_latex_boundary:ood_multisurface_context_noise",
+      "operator_id": "latex_display_math_block_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1200,
+      "correct_count": 1200,
+      "family": "display_latex_boundary:ood_whitespace_and_cutoff_noise",
+      "operator_id": "latex_display_math_block_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 375,
+      "correct_count": 375,
+      "family": "display_latex_boundary:proof_connector_number_lure_counterexample",
+      "operator_id": "latex_display_math_block_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 375,
+      "correct_count": 375,
+      "family": "display_latex_boundary:tir_output_spoof_counterexample",
+      "operator_id": "latex_display_math_block_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 375,
+      "correct_count": 375,
+      "family": "display_latex_boundary:unit_conversion_lure_counterexample",
+      "operator_id": "latex_display_math_block_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 375,
+      "correct_count": 375,
+      "family": "display_latex_boundary:wrong_boxed_answer_counterexample",
+      "operator_id": "latex_display_math_block_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 400,
+      "correct_count": 400,
+      "family": "ood_calc_payload_label",
+      "operator_id": "latex_display_math_block_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 400,
+      "correct_count": 400,
+      "family": "ood_e134_marker_wrapper",
+      "operator_id": "latex_display_math_block_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 400,
+      "correct_count": 400,
+      "family": "ood_hidden_story_direct_answer_lure",
+      "operator_id": "latex_display_math_block_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 400,
+      "correct_count": 400,
+      "family": "ood_hidden_story_multilingual_lure",
+      "operator_id": "latex_display_math_block_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 400,
+      "correct_count": 400,
+      "family": "ood_hidden_story_number_dense",
+      "operator_id": "latex_display_math_block_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 400,
+      "correct_count": 400,
+      "family": "ood_hidden_story_tool_lure",
+      "operator_id": "latex_display_math_block_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 400,
+      "correct_count": 400,
+      "family": "ood_hidden_story_with_fake_final",
+      "operator_id": "latex_display_math_block_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 400,
+      "correct_count": 400,
+      "family": "ood_html_math_tag",
+      "operator_id": "latex_display_math_block_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 400,
+      "correct_count": 400,
+      "family": "ood_latex_paren_wrapper",
+      "operator_id": "latex_display_math_block_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 400,
+      "correct_count": 400,
+      "family": "ood_unicode_operator_noise",
+      "operator_id": "latex_display_math_block_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 375,
+      "correct_count": 375,
+      "family": "visible_arithmetic_wrong_box_conflict_counterexample",
+      "operator_id": "latex_display_math_block_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 375,
+      "correct_count": 375,
+      "family": "inline_latex_boundary:answer_format_value_lure_counterexample",
+      "operator_id": "latex_inline_math_boundary_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 375,
+      "correct_count": 375,
+      "family": "inline_latex_boundary:diagram_missing_counterexample",
+      "operator_id": "latex_inline_math_boundary_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 375,
+      "correct_count": 375,
+      "family": "inline_latex_boundary:matrix_scalarization_lure_counterexample",
+      "operator_id": "latex_inline_math_boundary_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1200,
+      "correct_count": 1200,
+      "family": "inline_latex_boundary:ood_counterfactual_answer_noise",
+      "operator_id": "latex_inline_math_boundary_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1200,
+      "correct_count": 1200,
+      "family": "inline_latex_boundary:ood_lure_solve_instruction",
+      "operator_id": "latex_inline_math_boundary_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1200,
+      "correct_count": 1200,
+      "family": "inline_latex_boundary:ood_markdown_quote_noise",
+      "operator_id": "latex_inline_math_boundary_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1200,
+      "correct_count": 1200,
+      "family": "inline_latex_boundary:ood_multisurface_context_noise",
+      "operator_id": "latex_inline_math_boundary_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1200,
+      "correct_count": 1200,
+      "family": "inline_latex_boundary:ood_whitespace_and_cutoff_noise",
+      "operator_id": "latex_inline_math_boundary_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 375,
+      "correct_count": 375,
+      "family": "inline_latex_boundary:proof_connector_number_lure_counterexample",
+      "operator_id": "latex_inline_math_boundary_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 375,
+      "correct_count": 375,
+      "family": "inline_latex_boundary:tir_output_spoof_counterexample",
+      "operator_id": "latex_inline_math_boundary_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 375,
+      "correct_count": 375,
+      "family": "inline_latex_boundary:unit_conversion_lure_counterexample",
+      "operator_id": "latex_inline_math_boundary_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 375,
+      "correct_count": 375,
+      "family": "inline_latex_boundary:wrong_boxed_answer_counterexample",
+      "operator_id": "latex_inline_math_boundary_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 400,
+      "correct_count": 400,
+      "family": "ood_calc_payload_label",
+      "operator_id": "latex_inline_math_boundary_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 400,
+      "correct_count": 400,
+      "family": "ood_e134_marker_wrapper",
+      "operator_id": "latex_inline_math_boundary_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 400,
+      "correct_count": 400,
+      "family": "ood_hidden_story_direct_answer_lure",
+      "operator_id": "latex_inline_math_boundary_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 400,
+      "correct_count": 400,
+      "family": "ood_hidden_story_multilingual_lure",
+      "operator_id": "latex_inline_math_boundary_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 400,
+      "correct_count": 400,
+      "family": "ood_hidden_story_number_dense",
+      "operator_id": "latex_inline_math_boundary_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 400,
+      "correct_count": 400,
+      "family": "ood_hidden_story_tool_lure",
+      "operator_id": "latex_inline_math_boundary_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 400,
+      "correct_count": 400,
+      "family": "ood_hidden_story_with_fake_final",
+      "operator_id": "latex_inline_math_boundary_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 400,
+      "correct_count": 400,
+      "family": "ood_html_math_tag",
+      "operator_id": "latex_inline_math_boundary_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 400,
+      "correct_count": 400,
+      "family": "ood_latex_paren_wrapper",
+      "operator_id": "latex_inline_math_boundary_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 400,
+      "correct_count": 400,
+      "family": "ood_unicode_operator_noise",
+      "operator_id": "latex_inline_math_boundary_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 375,
+      "correct_count": 375,
+      "family": "visible_arithmetic_wrong_box_conflict_counterexample",
+      "operator_id": "latex_inline_math_boundary_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 3000,
+      "correct_count": 3000,
+      "family": "matrix_scalarization_lure_counterexample",
+      "operator_id": "matrix_vector_block_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1600,
+      "correct_count": 1600,
+      "family": "matrix_vector_boundary:ood_counterfactual_answer_noise",
+      "operator_id": "matrix_vector_block_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1600,
+      "correct_count": 1600,
+      "family": "matrix_vector_boundary:ood_lure_solve_instruction",
+      "operator_id": "matrix_vector_block_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1600,
+      "correct_count": 1600,
+      "family": "matrix_vector_boundary:ood_markdown_quote_noise",
+      "operator_id": "matrix_vector_block_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1600,
+      "correct_count": 1600,
+      "family": "matrix_vector_boundary:ood_multisurface_context_noise",
+      "operator_id": "matrix_vector_block_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1600,
+      "correct_count": 1600,
+      "family": "matrix_vector_boundary:ood_whitespace_and_cutoff_noise",
+      "operator_id": "matrix_vector_block_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 400,
+      "correct_count": 400,
+      "family": "ood_hidden_story_direct_answer_lure",
+      "operator_id": "matrix_vector_block_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 400,
+      "correct_count": 400,
+      "family": "ood_hidden_story_multilingual_lure",
+      "operator_id": "matrix_vector_block_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 400,
+      "correct_count": 400,
+      "family": "ood_hidden_story_number_dense",
+      "operator_id": "matrix_vector_block_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 400,
+      "correct_count": 400,
+      "family": "ood_hidden_story_tool_lure",
+      "operator_id": "matrix_vector_block_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 400,
+      "correct_count": 400,
+      "family": "ood_hidden_story_with_fake_final",
+      "operator_id": "matrix_vector_block_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 400,
+      "correct_count": 400,
+      "family": "ood_hidden_story_direct_answer_lure",
+      "operator_id": "piecewise_case_function_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 400,
+      "correct_count": 400,
+      "family": "ood_hidden_story_multilingual_lure",
+      "operator_id": "piecewise_case_function_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 400,
+      "correct_count": 400,
+      "family": "ood_hidden_story_number_dense",
+      "operator_id": "piecewise_case_function_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 400,
+      "correct_count": 400,
+      "family": "ood_hidden_story_tool_lure",
+      "operator_id": "piecewise_case_function_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 400,
+      "correct_count": 400,
+      "family": "ood_hidden_story_with_fake_final",
+      "operator_id": "piecewise_case_function_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 375,
+      "correct_count": 375,
+      "family": "piecewise_case_boundary:answer_format_value_lure_counterexample",
+      "operator_id": "piecewise_case_function_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 375,
+      "correct_count": 375,
+      "family": "piecewise_case_boundary:diagram_missing_counterexample",
+      "operator_id": "piecewise_case_function_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 375,
+      "correct_count": 375,
+      "family": "piecewise_case_boundary:matrix_scalarization_lure_counterexample",
+      "operator_id": "piecewise_case_function_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1600,
+      "correct_count": 1600,
+      "family": "piecewise_case_boundary:ood_counterfactual_answer_noise",
+      "operator_id": "piecewise_case_function_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1600,
+      "correct_count": 1600,
+      "family": "piecewise_case_boundary:ood_lure_solve_instruction",
+      "operator_id": "piecewise_case_function_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1600,
+      "correct_count": 1600,
+      "family": "piecewise_case_boundary:ood_markdown_quote_noise",
+      "operator_id": "piecewise_case_function_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1600,
+      "correct_count": 1600,
+      "family": "piecewise_case_boundary:ood_multisurface_context_noise",
+      "operator_id": "piecewise_case_function_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1600,
+      "correct_count": 1600,
+      "family": "piecewise_case_boundary:ood_whitespace_and_cutoff_noise",
+      "operator_id": "piecewise_case_function_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 375,
+      "correct_count": 375,
+      "family": "piecewise_case_boundary:proof_connector_number_lure_counterexample",
+      "operator_id": "piecewise_case_function_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 375,
+      "correct_count": 375,
+      "family": "piecewise_case_boundary:tir_output_spoof_counterexample",
+      "operator_id": "piecewise_case_function_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 375,
+      "correct_count": 375,
+      "family": "piecewise_case_boundary:unit_conversion_lure_counterexample",
+      "operator_id": "piecewise_case_function_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 375,
+      "correct_count": 375,
+      "family": "piecewise_case_boundary:visible_arithmetic_wrong_box_conflict_counterexample",
+      "operator_id": "piecewise_case_function_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 375,
+      "correct_count": 375,
+      "family": "piecewise_case_boundary:wrong_boxed_answer_counterexample",
+      "operator_id": "piecewise_case_function_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 400,
+      "correct_count": 400,
+      "family": "ood_hidden_story_direct_answer_lure",
+      "operator_id": "proof_step_connector_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 400,
+      "correct_count": 400,
+      "family": "ood_hidden_story_multilingual_lure",
+      "operator_id": "proof_step_connector_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 400,
+      "correct_count": 400,
+      "family": "ood_hidden_story_number_dense",
+      "operator_id": "proof_step_connector_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 400,
+      "correct_count": 400,
+      "family": "ood_hidden_story_tool_lure",
+      "operator_id": "proof_step_connector_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 400,
+      "correct_count": 400,
+      "family": "ood_hidden_story_with_fake_final",
+      "operator_id": "proof_step_connector_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 3000,
+      "correct_count": 3000,
+      "family": "proof_connector_number_lure_counterexample",
+      "operator_id": "proof_step_connector_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1600,
+      "correct_count": 1600,
+      "family": "proof_step_connector:ood_counterfactual_answer_noise",
+      "operator_id": "proof_step_connector_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1600,
+      "correct_count": 1600,
+      "family": "proof_step_connector:ood_lure_solve_instruction",
+      "operator_id": "proof_step_connector_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1600,
+      "correct_count": 1600,
+      "family": "proof_step_connector:ood_markdown_quote_noise",
+      "operator_id": "proof_step_connector_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1600,
+      "correct_count": 1600,
+      "family": "proof_step_connector:ood_multisurface_context_noise",
+      "operator_id": "proof_step_connector_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1600,
+      "correct_count": 1600,
+      "family": "proof_step_connector:ood_whitespace_and_cutoff_noise",
+      "operator_id": "proof_step_connector_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 400,
+      "correct_count": 400,
+      "family": "ood_hidden_story_direct_answer_lure",
+      "operator_id": "summation_sequence_series_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 400,
+      "correct_count": 400,
+      "family": "ood_hidden_story_multilingual_lure",
+      "operator_id": "summation_sequence_series_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 400,
+      "correct_count": 400,
+      "family": "ood_hidden_story_number_dense",
+      "operator_id": "summation_sequence_series_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 400,
+      "correct_count": 400,
+      "family": "ood_hidden_story_tool_lure",
+      "operator_id": "summation_sequence_series_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 400,
+      "correct_count": 400,
+      "family": "ood_hidden_story_with_fake_final",
+      "operator_id": "summation_sequence_series_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 375,
+      "correct_count": 375,
+      "family": "summation_sequence_boundary:answer_format_value_lure_counterexample",
+      "operator_id": "summation_sequence_series_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 375,
+      "correct_count": 375,
+      "family": "summation_sequence_boundary:diagram_missing_counterexample",
+      "operator_id": "summation_sequence_series_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 375,
+      "correct_count": 375,
+      "family": "summation_sequence_boundary:matrix_scalarization_lure_counterexample",
+      "operator_id": "summation_sequence_series_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1600,
+      "correct_count": 1600,
+      "family": "summation_sequence_boundary:ood_counterfactual_answer_noise",
+      "operator_id": "summation_sequence_series_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1600,
+      "correct_count": 1600,
+      "family": "summation_sequence_boundary:ood_lure_solve_instruction",
+      "operator_id": "summation_sequence_series_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1600,
+      "correct_count": 1600,
+      "family": "summation_sequence_boundary:ood_markdown_quote_noise",
+      "operator_id": "summation_sequence_series_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1600,
+      "correct_count": 1600,
+      "family": "summation_sequence_boundary:ood_multisurface_context_noise",
+      "operator_id": "summation_sequence_series_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1600,
+      "correct_count": 1600,
+      "family": "summation_sequence_boundary:ood_whitespace_and_cutoff_noise",
+      "operator_id": "summation_sequence_series_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 375,
+      "correct_count": 375,
+      "family": "summation_sequence_boundary:proof_connector_number_lure_counterexample",
+      "operator_id": "summation_sequence_series_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 375,
+      "correct_count": 375,
+      "family": "summation_sequence_boundary:tir_output_spoof_counterexample",
+      "operator_id": "summation_sequence_series_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 375,
+      "correct_count": 375,
+      "family": "summation_sequence_boundary:unit_conversion_lure_counterexample",
+      "operator_id": "summation_sequence_series_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 375,
+      "correct_count": 375,
+      "family": "summation_sequence_boundary:visible_arithmetic_wrong_box_conflict_counterexample",
+      "operator_id": "summation_sequence_series_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 375,
+      "correct_count": 375,
+      "family": "summation_sequence_boundary:wrong_boxed_answer_counterexample",
+      "operator_id": "summation_sequence_series_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 400,
+      "correct_count": 400,
+      "family": "ood_hidden_story_direct_answer_lure",
+      "operator_id": "tir_python_block_boundary_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 400,
+      "correct_count": 400,
+      "family": "ood_hidden_story_multilingual_lure",
+      "operator_id": "tir_python_block_boundary_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 400,
+      "correct_count": 400,
+      "family": "ood_hidden_story_number_dense",
+      "operator_id": "tir_python_block_boundary_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 400,
+      "correct_count": 400,
+      "family": "ood_hidden_story_tool_lure",
+      "operator_id": "tir_python_block_boundary_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 400,
+      "correct_count": 400,
+      "family": "ood_hidden_story_with_fake_final",
+      "operator_id": "tir_python_block_boundary_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 3000,
+      "correct_count": 3000,
+      "family": "tir_output_spoof_counterexample",
+      "operator_id": "tir_python_block_boundary_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1600,
+      "correct_count": 1600,
+      "family": "tir_python_structure:ood_counterfactual_answer_noise",
+      "operator_id": "tir_python_block_boundary_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1600,
+      "correct_count": 1600,
+      "family": "tir_python_structure:ood_lure_solve_instruction",
+      "operator_id": "tir_python_block_boundary_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1600,
+      "correct_count": 1600,
+      "family": "tir_python_structure:ood_markdown_quote_noise",
+      "operator_id": "tir_python_block_boundary_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1600,
+      "correct_count": 1600,
+      "family": "tir_python_structure:ood_multisurface_context_noise",
+      "operator_id": "tir_python_block_boundary_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1600,
+      "correct_count": 1600,
+      "family": "tir_python_structure:ood_whitespace_and_cutoff_noise",
+      "operator_id": "tir_python_block_boundary_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 400,
+      "correct_count": 400,
+      "family": "ood_hidden_story_direct_answer_lure",
+      "operator_id": "unit_quantity_binding_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 400,
+      "correct_count": 400,
+      "family": "ood_hidden_story_multilingual_lure",
+      "operator_id": "unit_quantity_binding_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 400,
+      "correct_count": 400,
+      "family": "ood_hidden_story_number_dense",
+      "operator_id": "unit_quantity_binding_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 400,
+      "correct_count": 400,
+      "family": "ood_hidden_story_tool_lure",
+      "operator_id": "unit_quantity_binding_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 400,
+      "correct_count": 400,
+      "family": "ood_hidden_story_with_fake_final",
+      "operator_id": "unit_quantity_binding_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 3000,
+      "correct_count": 3000,
+      "family": "unit_conversion_lure_counterexample",
+      "operator_id": "unit_quantity_binding_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1600,
+      "correct_count": 1600,
+      "family": "unit_quantity_guard:ood_counterfactual_answer_noise",
+      "operator_id": "unit_quantity_binding_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1600,
+      "correct_count": 1600,
+      "family": "unit_quantity_guard:ood_lure_solve_instruction",
+      "operator_id": "unit_quantity_binding_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1600,
+      "correct_count": 1600,
+      "family": "unit_quantity_guard:ood_markdown_quote_noise",
+      "operator_id": "unit_quantity_binding_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1600,
+      "correct_count": 1600,
+      "family": "unit_quantity_guard:ood_multisurface_context_noise",
+      "operator_id": "unit_quantity_binding_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1600,
+      "correct_count": 1600,
+      "family": "unit_quantity_guard:ood_whitespace_and_cutoff_noise",
+      "operator_id": "unit_quantity_binding_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 400,
+      "correct_count": 400,
+      "family": "ood_hidden_story_direct_answer_lure",
+      "operator_id": "variable_definition_binding_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 400,
+      "correct_count": 400,
+      "family": "ood_hidden_story_multilingual_lure",
+      "operator_id": "variable_definition_binding_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 400,
+      "correct_count": 400,
+      "family": "ood_hidden_story_number_dense",
+      "operator_id": "variable_definition_binding_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 400,
+      "correct_count": 400,
+      "family": "ood_hidden_story_tool_lure",
+      "operator_id": "variable_definition_binding_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 400,
+      "correct_count": 400,
+      "family": "ood_hidden_story_with_fake_final",
+      "operator_id": "variable_definition_binding_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 375,
+      "correct_count": 375,
+      "family": "variable_definition_binding:answer_format_value_lure_counterexample",
+      "operator_id": "variable_definition_binding_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 375,
+      "correct_count": 375,
+      "family": "variable_definition_binding:diagram_missing_counterexample",
+      "operator_id": "variable_definition_binding_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 375,
+      "correct_count": 375,
+      "family": "variable_definition_binding:matrix_scalarization_lure_counterexample",
+      "operator_id": "variable_definition_binding_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1600,
+      "correct_count": 1600,
+      "family": "variable_definition_binding:ood_counterfactual_answer_noise",
+      "operator_id": "variable_definition_binding_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1600,
+      "correct_count": 1600,
+      "family": "variable_definition_binding:ood_lure_solve_instruction",
+      "operator_id": "variable_definition_binding_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1600,
+      "correct_count": 1600,
+      "family": "variable_definition_binding:ood_markdown_quote_noise",
+      "operator_id": "variable_definition_binding_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1600,
+      "correct_count": 1600,
+      "family": "variable_definition_binding:ood_multisurface_context_noise",
+      "operator_id": "variable_definition_binding_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1600,
+      "correct_count": 1600,
+      "family": "variable_definition_binding:ood_whitespace_and_cutoff_noise",
+      "operator_id": "variable_definition_binding_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 375,
+      "correct_count": 375,
+      "family": "variable_definition_binding:proof_connector_number_lure_counterexample",
+      "operator_id": "variable_definition_binding_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 375,
+      "correct_count": 375,
+      "family": "variable_definition_binding:tir_output_spoof_counterexample",
+      "operator_id": "variable_definition_binding_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 375,
+      "correct_count": 375,
+      "family": "variable_definition_binding:unit_conversion_lure_counterexample",
+      "operator_id": "variable_definition_binding_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 375,
+      "correct_count": 375,
+      "family": "variable_definition_binding:visible_arithmetic_wrong_box_conflict_counterexample",
+      "operator_id": "variable_definition_binding_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 375,
+      "correct_count": 375,
+      "family": "variable_definition_binding:wrong_boxed_answer_counterexample",
+      "operator_id": "variable_definition_binding_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 400,
+      "correct_count": 400,
+      "family": "ood_hidden_story_direct_answer_lure",
+      "operator_id": "word_problem_no_solve_guard_v2"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 400,
+      "correct_count": 400,
+      "family": "ood_hidden_story_multilingual_lure",
+      "operator_id": "word_problem_no_solve_guard_v2"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 400,
+      "correct_count": 400,
+      "family": "ood_hidden_story_number_dense",
+      "operator_id": "word_problem_no_solve_guard_v2"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 400,
+      "correct_count": 400,
+      "family": "ood_hidden_story_tool_lure",
+      "operator_id": "word_problem_no_solve_guard_v2"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 400,
+      "correct_count": 400,
+      "family": "ood_hidden_story_with_fake_final",
+      "operator_id": "word_problem_no_solve_guard_v2"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 375,
+      "correct_count": 375,
+      "family": "primary_hidden_word_problem_no_solve:answer_format_value_lure_counterexample",
+      "operator_id": "word_problem_no_solve_guard_v2"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 375,
+      "correct_count": 375,
+      "family": "primary_hidden_word_problem_no_solve:diagram_missing_counterexample",
+      "operator_id": "word_problem_no_solve_guard_v2"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 375,
+      "correct_count": 375,
+      "family": "primary_hidden_word_problem_no_solve:matrix_scalarization_lure_counterexample",
+      "operator_id": "word_problem_no_solve_guard_v2"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1600,
+      "correct_count": 1600,
+      "family": "primary_hidden_word_problem_no_solve:ood_counterfactual_answer_noise",
+      "operator_id": "word_problem_no_solve_guard_v2"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1600,
+      "correct_count": 1600,
+      "family": "primary_hidden_word_problem_no_solve:ood_lure_solve_instruction",
+      "operator_id": "word_problem_no_solve_guard_v2"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1600,
+      "correct_count": 1600,
+      "family": "primary_hidden_word_problem_no_solve:ood_markdown_quote_noise",
+      "operator_id": "word_problem_no_solve_guard_v2"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1600,
+      "correct_count": 1600,
+      "family": "primary_hidden_word_problem_no_solve:ood_multisurface_context_noise",
+      "operator_id": "word_problem_no_solve_guard_v2"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1600,
+      "correct_count": 1600,
+      "family": "primary_hidden_word_problem_no_solve:ood_whitespace_and_cutoff_noise",
+      "operator_id": "word_problem_no_solve_guard_v2"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 375,
+      "correct_count": 375,
+      "family": "primary_hidden_word_problem_no_solve:proof_connector_number_lure_counterexample",
+      "operator_id": "word_problem_no_solve_guard_v2"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 375,
+      "correct_count": 375,
+      "family": "primary_hidden_word_problem_no_solve:tir_output_spoof_counterexample",
+      "operator_id": "word_problem_no_solve_guard_v2"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 375,
+      "correct_count": 375,
+      "family": "primary_hidden_word_problem_no_solve:unit_conversion_lure_counterexample",
+      "operator_id": "word_problem_no_solve_guard_v2"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 375,
+      "correct_count": 375,
+      "family": "primary_hidden_word_problem_no_solve:visible_arithmetic_wrong_box_conflict_counterexample",
+      "operator_id": "word_problem_no_solve_guard_v2"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 375,
+      "correct_count": 375,
+      "family": "primary_hidden_word_problem_no_solve:wrong_boxed_answer_counterexample",
+      "operator_id": "word_problem_no_solve_guard_v2"
+    }
+  ]
+}

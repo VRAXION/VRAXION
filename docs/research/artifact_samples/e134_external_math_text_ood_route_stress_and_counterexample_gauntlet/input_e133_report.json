@@ -1,0 +1,14 @@
+{
+  "artifact_contract": "E134_EXTERNAL_MATH_TEXT_OOD_ROUTE_STRESS_AND_COUNTEREXAMPLE_GAUNTLET",
+  "source_composition_pass_operator_count": 16,
+  "source_decision": "e133_math_text_route_composition_no_solve_assistant_confirmed",
+  "source_direct_flow_write_total": 0,
+  "source_e133_root": "target/pilot_wave/e133_math_text_route_composition_and_no_solve_assistant_confirm",
+  "source_hard_negative_total": 0,
+  "source_hidden_word_problem_no_solve_accuracy_min": 1.0,
+  "source_operator_count": 16,
+  "source_pass": true,
+  "source_route_accuracy_min": 1.0,
+  "source_route_case_count_total": 176000,
+  "source_wrong_scope_call_total": 0
+}

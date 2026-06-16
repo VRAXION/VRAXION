@@ -118,7 +118,13 @@ jobs:
           js_path = pathlib.Path("target/ci/operator_rank_dashboard/dashboard.js")
           js_path.write_text(match.group(1), encoding="utf-8")
           subprocess.run(["node", "--check", str(js_path)], check=True)
-          if "E133 math text route composition" not in html:
+          if "E134 external math text OOD route stress" not in html:
+              raise SystemExit("dashboard did not load E134 OOD route-stress evidence")
+          if "E134 OOD pass" not in html:
+              raise SystemExit("dashboard did not render E134 OOD pass card")
+          if "E134 counterexamples" not in html:
+              raise SystemExit("dashboard did not render E134 counterexample card")
+          if "E133 route comp" not in html:
               raise SystemExit("dashboard did not load E133 math-text route-composition evidence")
           if "E132 math-text" not in html:
               raise SystemExit("dashboard did not retain E132 external math-text skill evidence")
@@ -189,6 +195,10 @@ jobs:
               '"current_evidence_anchor": "E131_VISIBLE_EQUATION_EXTRACTION_AND_ASSISTANT_ARITHMETIC_RENDER_GAUNTLET"',
               "current_evidence_anchor = E131 visible equation extraction and assistant arithmetic render gauntlet",
               "Current evidence anchor: E131 visible equation extraction and assistant arithmetic render gauntlet",
+              "current_evidence_anchor = E133_MATH_TEXT_ROUTE_COMPOSITION_AND_NO_SOLVE_ASSISTANT_CONFIRM",
+              '"current_evidence_anchor": "E133_MATH_TEXT_ROUTE_COMPOSITION_AND_NO_SOLVE_ASSISTANT_CONFIRM"',
+              "current_evidence_anchor = E133 math text route composition and no-solve assistant confirm",
+              "Current evidence anchor: E133 math text route composition and no-solve assistant confirm",
           ]
           failures = []
           for path in files:

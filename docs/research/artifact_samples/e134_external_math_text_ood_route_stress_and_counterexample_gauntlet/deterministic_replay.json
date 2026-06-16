@@ -1,0 +1,6 @@
+{
+  "artifact_contract": "E134_EXTERNAL_MATH_TEXT_OOD_ROUTE_STRESS_AND_COUNTEREXAMPLE_GAUNTLET",
+  "deterministic_replay_pass": true,
+  "operator_count": 16,
+  "replay_sha256": "3f73579d841092f11ef7bd1cc782892f1fdce7db2b47380189544a4704cb62bc"
+}

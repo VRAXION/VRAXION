@@ -1,0 +1,12 @@
+{
+  "artifact_contract": "E134_EXTERNAL_MATH_TEXT_OOD_ROUTE_STRESS_AND_COUNTEREXAMPLE_GAUNTLET",
+  "source_dataset_rows_loaded": 215051,
+  "source_decision": "e132_external_math_text_skill_farm_mutation_prune_orange_cycle_confirmed",
+  "source_direct_flow_write_total": 0,
+  "source_e132_root": "target/pilot_wave/e132_external_math_text_skill_farm_mutation_prune_orange_cycle",
+  "source_hard_negative_total": 0,
+  "source_operator_count": 16,
+  "source_orange_legendary_candidate_count": 16,
+  "source_pass": true,
+  "source_wrong_scope_call_total": 0
+}

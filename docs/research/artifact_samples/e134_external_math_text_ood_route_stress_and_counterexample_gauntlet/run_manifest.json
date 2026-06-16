@@ -1,0 +1,13 @@
+{
+  "artifact_contract": "E134_EXTERNAL_MATH_TEXT_OOD_ROUTE_STRESS_AND_COUNTEREXAMPLE_GAUNTLET",
+  "boundary": "OOD route stress and counterexample rejection only; not benchmark solving, not natural-language word-problem solving",
+  "control_cases_per_operator": 1200,
+  "counterexample_cases_per_operator": 3000,
+  "created_at_ms": 1781574051426,
+  "dataset": "target/datasets/e132_external_math_text_seed_pack/normalized/e132_external_math_text_skill_seed.jsonl",
+  "dataset_row_limit": 215051,
+  "hidden_cases_per_operator": 2000,
+  "ood_cases_per_operator": 8000,
+  "source_e132_root": "target/pilot_wave/e132_external_math_text_skill_farm_mutation_prune_orange_cycle",
+  "source_e133_root": "target/pilot_wave/e133_math_text_route_composition_and_no_solve_assistant_confirm"
+}

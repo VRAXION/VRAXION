@@ -7,7 +7,7 @@ _Last updated: 2026-06-16_
 ```text
 Current source of truth: main
 Current GitHub release: v6.1.7
-Current evidence anchor: E133 math text route composition and no-solve assistant confirm (post-v6.1.7 main)
+Current evidence anchor: E134 external math-text OOD route stress and counterexample gauntlet (post-v6.1.7 main)
 Latest released runtime slice: a908a838a1119540ed88bc91e10cfcb0bdae92a8 E79 training data/curriculum readiness gate
 Active branch surface: main only
 Historical branch heads: archive/branches/2026-06-13/*
@@ -36,6 +36,7 @@ E69-E79 released Rust runtime and training-data readiness gate
 -> E131 visible equation extraction and assistant arithmetic render gauntlet
 -> E132 external math text skill farm mutation/prune Orange cycle
 -> E133 math text route composition and no-solve assistant confirm
+-> E134 external math text OOD route stress and counterexample gauntlet
 ```
 
 ## Current Evidence
@@ -60,6 +61,7 @@ E69-E79 released Rust runtime and training-data readiness gate
 - E131 routes those 9 E129/E130B arithmetic operators from assistant-style visible equation surfaces seeded by the 130,000-row external E131 text pack: 9/9 passed, 108,000 visible-equation cases, 54,000 hidden word-problem no-call cases, visible equation extraction accuracy minimum 1.000, word-problem no-call accuracy minimum 1.000, 0 hard negatives, 0 false commits, 0 wrong-scope calls, 0 unsupported answers, 0 boundary-claim violations, and 0 direct flow writes.
 - E132 farms 16 scoped math-text lenses/guards from a 215,051-row external math-text seed pack: 16/16 reached OrangeLegendaryCandidate, 5,953 minimum external support per operator, 4,883,030 total qualified activations, 302,510 minimum qualified activations per operator, 78,859 negative-scope cases, 146,005 mutation attempts, 650 accepted mutations, 145,355 rollbacks, mean selected prune ratio 0.736875, 0 hard negatives, 0 false commits, 0 wrong-scope calls, 0 unsupported answers, 0 boundary-claim violations, and 0 direct flow writes.
 - E133 composes those 16 E132 math-text lenses/guards into assistant route decisions: 16/16 composition pass, 176,000 route cases, 10,000 visible arithmetic route cases, 118,000 structural guard cases, 48,000 hidden word-problem no-solve cases, all route accuracy minima 1.000, 0 hard negatives, 0 false commits, 0 wrong-scope calls, 0 unsupported answers, 0 boundary-claim violations, and 0 direct flow writes.
+- E134 stresses those 16 E133 route operators under OOD wrappers and counterexample lures: 16/16 OOD pass, 208,000 OOD route cases, 11,875 visible arithmetic OOD cases, 153,125 structural guard OOD cases, 43,000 hidden word-problem OOD no-solve cases, 48,000 counterexample cases, all OOD/counterexample accuracy minima 1.000, 36,275 E133-baseline OOD misses covered, 0 hard negatives, 0 false commits, 0 wrong-scope calls, 0 unsupported answers, 0 boundary-claim violations, and 0 direct flow writes.
 - Long-running work must emit continuous partial progress and checkpoint data.
 
 ## What Is Historical
@@ -70,7 +72,7 @@ The old bounded-service, open-vocab assistant, beta release, byte-pipeline, and 
 
 Allowed current claim:
 
-> VRAXION v6 has a Rust mainline for governed Pocket Library state, resumable curriculum execution, multi-lane final-training supervision, global Pocket Library merge/dedupe governance, a training-data/curriculum readiness gate, one canonical `final_train` campaign entrypoint, governed Operator evidence through E127, an E128 lightweight assistant text-IO render-training smoke, E129 scoped exact arithmetic trace Operators promoted through Orange/Legendary probation, an E130A CoreMemoryCandidate-to-Orange backfill, an E130B arithmetic text-IO transfer/no-call gauntlet, an E131 visible-equation assistant-render gauntlet, an E132 external math-text skill farm, and E133 math-text route composition/no-solve assistant confirmation. E127 cycle 40 contains 382 scoped Orange/Legendary text operators with 0 tracked hard negatives, false commits, wrong-scope calls, or unsupported answers in the checkpointed evidence. E128 confirms a 320-prompt deterministic corpus/action-policy/template-render bridge with 0 unsupported answers and 0 boundary-claim violations. E129 confirms 9 scoped arithmetic trace operators with 2.7M qualified activations, 0 hard negatives, and 0 wrong-scope calls. E130A confirms 136 prior CoreMemoryCandidate operators reached Orange/LegendaryCandidate with 41,036,433 total qualified activations, 0 hard negatives, and 0 direct flow writes. E130B confirms those 9 arithmetic operators transfer to visible-expression text IO while hidden word problems remain no-call. E131 confirms those operators route from assistant-style visible equation surfaces while hidden prose-only word problems remain no-call. E132 confirms 16 scoped math-text lenses/guards promoted to Orange/LegendaryCandidate from external math text with 0 hard negatives, 0 wrong-scope calls, and 0 direct Flow writes. E133 confirms those 16 math-text lenses/guards compose into assistant route decisions over 176,000 route/no-solve cases with 0 hard negatives, 0 wrong-scope calls, and 0 direct Flow writes.
+> VRAXION v6 has a Rust mainline for governed Pocket Library state, resumable curriculum execution, multi-lane final-training supervision, global Pocket Library merge/dedupe governance, a training-data/curriculum readiness gate, one canonical `final_train` campaign entrypoint, governed Operator evidence through E127, an E128 lightweight assistant text-IO render-training smoke, E129 scoped exact arithmetic trace Operators promoted through Orange/Legendary probation, an E130A CoreMemoryCandidate-to-Orange backfill, an E130B arithmetic text-IO transfer/no-call gauntlet, an E131 visible-equation assistant-render gauntlet, an E132 external math-text skill farm, E133 math-text route composition/no-solve assistant confirmation, and E134 external math-text OOD route stress/counterexample confirmation. E127 cycle 40 contains 382 scoped Orange/Legendary text operators with 0 tracked hard negatives, false commits, wrong-scope calls, or unsupported answers in the checkpointed evidence. E128 confirms a 320-prompt deterministic corpus/action-policy/template-render bridge with 0 unsupported answers and 0 boundary-claim violations. E129 confirms 9 scoped arithmetic trace operators with 2.7M qualified activations, 0 hard negatives, and 0 wrong-scope calls. E130A confirms 136 prior CoreMemoryCandidate operators reached Orange/LegendaryCandidate with 41,036,433 total qualified activations, 0 hard negatives, and 0 direct flow writes. E130B confirms those 9 arithmetic operators transfer to visible-expression text IO while hidden word problems remain no-call. E131 confirms those operators route from assistant-style visible equation surfaces while hidden prose-only word problems remain no-call. E132 confirms 16 scoped math-text lenses/guards promoted to Orange/LegendaryCandidate from external math text with 0 hard negatives, 0 wrong-scope calls, and 0 direct Flow writes. E133 confirms those 16 math-text lenses/guards compose into assistant route decisions over 176,000 route/no-solve cases with 0 hard negatives, 0 wrong-scope calls, and 0 direct Flow writes. E134 confirms those 16 route operators survive 208,000 OOD route cases and 48,000 counterexample cases with 0 hard negatives, 0 wrong-scope calls, and 0 direct Flow writes, while covering 36,275 E133-baseline OOD misses.
 
 Short form:
 
@@ -84,6 +86,7 @@ visible-expression arithmetic text IO = yes
 visible-equation assistant arithmetic render = yes
 math-text lens/guard skill farming = yes
 math-text assistant route composition = yes
+math-text OOD route stress/counterexample rejection = yes
 CoreMemoryCandidate-to-Orange rank backfill = yes
 open-domain LLM/chatbot = no
 Gemma/GPT-like generation = no
@@ -106,6 +109,6 @@ Not claimed:
 ## Next Work
 
 1. Use `CODEX_HANDOVER.md` as the first read for fresh Codex sessions.
-2. Run E134 external math-text OOD route stress and counterexample gauntlet before claiming the E133 route composition holds under broader OOD pressure.
+2. Run E135 math-text multi-route assistant dialogue-state gauntlet before claiming the E134 route robustness survives multi-turn assistant state pressure.
 3. Decide whether to continue E127 with a fresh candidate pack or keep the current focus on math-text assistant surfaces.
 4. Keep evidence CI checking tracked sample artifacts so front-door docs cannot drift back to stale current-main claims.
