@@ -30,7 +30,7 @@ output.
 
 ## Current library scale
 
-Current dashboard/rank state after E136A:
+Current dashboard/rank state after E136B:
 
 ```text
 Dashboard operator count = 564
@@ -258,6 +258,37 @@ direct flow writes = 0
 overbroad chatbot control wrong-scope calls = 25558
 ```
 
+Current E136B assistant-text route-composition evidence:
+
+```text
+source E136A operators = 18
+route pass operators = 18 / 18
+dataset rows loaded = 447766
+route seed rows = 4096
+route cases = 144000
+multi-route composition cases = 53000
+boundary cases = 72000
+negative-scope cases = 18000
+qualified route activation total = 144000
+qualified route activation min/operator = 8000
+route families = 10
+route accuracy min = 1.000
+route stack accuracy min = 1.000
+primary route accuracy min = 1.000
+boundary accuracy min = 1.000
+multi-route composition accuracy min = 1.000
+negative-scope accuracy min = 1.000
+hard negatives = 0
+false commits = 0
+wrong-scope calls = 0
+unsupported answers = 0
+boundary-claim violations = 0
+direct flow writes = 0
+overbroad chatbot control wrong-scope calls = 14400
+unsafe direct-write control direct writes = 14400
+source hallucination control unsupported answers = 14400
+```
+
 These are scoped operators, not general-purpose neural skills. A larger count is
 not automatically better; value depends on safe activation, low cost, correct
 scope, reloadability, and no-harm evidence.
@@ -306,6 +337,9 @@ scope, reloadability, and no-harm evidence.
   boundaries, synthetic dialogue noise, reasoning instructions, safety-sensitive
   domains, longform requests, comparison/evaluation prompts, and multilingual
   task boundaries;
+- compose those E136 assistant/text lenses and guards into bounded
+  schema-gated route stacks while rejecting overbroad chatbot,
+  source-hallucination, rejected-response-reuse, and direct-write controls;
 - avoid claiming a stable answer when the scoped evidence chain is incomplete.
 
 ### Visible calculation-trace validation
@@ -405,6 +439,9 @@ dialogue-state route guards
 assistant-text lenses/guards
   classify scoped assistant/text request shapes and boundaries without claiming
   open-domain generation or production assistant behavior
+
+assistant-text route composition
+  compose scoped assistant/text lenses and guards into bounded route stacks
 ```
 
 ## What it cannot claim yet

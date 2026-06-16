@@ -8,8 +8,8 @@ Last updated: 2026-06-16
 repo = VRAXION_anchorwiki
 branch = main
 latest_release_target = v6.1.7
-current_evidence_anchor = E136A assistant-text skill farm mutation/prune Orange cycle on main
-current_status = E136A confirmed 18/18 scoped assistant/text operators promoted from the E136 seed pack through Orange/Legendary probation
+current_evidence_anchor = E136B assistant-text route composition and boundary confirm on main
+current_status = E136B confirmed 18/18 E136A assistant/text operators compose into bounded route stacks with 0 hard negatives and 0 direct Flow writes
 ```
 
 This is the first file a fresh Codex should read after cloning the repo.
@@ -291,6 +291,40 @@ direct flow writes = 0
 overbroad_chatbot_control_wrong_scope_call_total = 25,558
 ```
 
+E136B composes those assistant/text lenses and guards into bounded route stacks:
+
+```text
+source_e136a_operator_count = 18
+route_pass_operator_count = 18 / 18
+dataset_rows_loaded = 447,766
+route_seed_row_count = 4,096
+route_case_count_total = 144,000
+multi_route_composition_case_count_total = 53,000
+boundary_case_count_total = 72,000
+negative_scope_case_count_total = 18,000
+qualified_route_activation_total = 144,000
+qualified_route_activation_min = 8,000
+route_family_count = 10
+
+route_accuracy_min = 1.000
+route_stack_accuracy_min = 1.000
+primary_route_accuracy_min = 1.000
+boundary_accuracy_min = 1.000
+multi_route_composition_accuracy_min = 1.000
+negative_scope_accuracy_min = 1.000
+
+hard negatives = 0
+false commits = 0
+wrong scope calls = 0
+unsupported answers = 0
+boundary claim violations = 0
+direct flow writes = 0
+
+overbroad_chatbot_control_wrong_scope_call_total = 14,400
+unsafe_direct_write_control_direct_flow_write_total = 14,400
+source_hallucination_control_unsupported_answer_total = 14,400
+```
+
 ## Claim Boundary
 
 Allowed:
@@ -316,7 +350,10 @@ no-solve and no-direct-write boundary. E135 confirms those routes preserve
 current-turn route state under controlled multi-turn assistant dialogue pressure
 without stale route reuse or cross-thread contamination. E136A confirms scoped
 assistant/text lenses and guards can be farmed from the local assistant-text
-seed pack and promoted through the Orange mutation/prune/no-harm gate.
+seed pack and promoted through the Orange mutation/prune/no-harm gate. E136B
+confirms those assistant/text lenses and guards compose into bounded
+schema-gated route stacks while overbroad chatbot, source hallucination, and
+direct-write controls fail as intended.
 ```
 
 System-level interpretation:
@@ -338,6 +375,8 @@ It can preserve current-turn route state across controlled multi-turn
 math-text assistant dialogue surfaces.
 It can farm scoped assistant/text request-shape and boundary operators from the
 local E136 assistant-text seed pack.
+It can compose those assistant/text operators into bounded route stacks in a
+controlled assistant/text route-composition proxy.
 It can promote prior scoped CoreMemoryCandidate operators to Orange/Legendary
 when the E121-style gate is satisfied.
 It is not an open-domain LLM/chatbot.
@@ -376,6 +415,7 @@ docs/research/E133_MATH_TEXT_ROUTE_COMPOSITION_AND_NO_SOLVE_ASSISTANT_CONFIRM_RE
 docs/research/E134_EXTERNAL_MATH_TEXT_OOD_ROUTE_STRESS_AND_COUNTEREXAMPLE_GAUNTLET_RESULT.md
 docs/research/E135_MATH_TEXT_MULTI_ROUTE_ASSISTANT_DIALOGUE_STATE_GAUNTLET_RESULT.md
 docs/research/E136A_ASSISTANT_TEXT_SKILL_FARM_MUTATION_PRUNE_ORANGE_CYCLE_RESULT.md
+docs/research/E136B_ASSISTANT_TEXT_ROUTE_COMPOSITION_AND_BOUNDARY_CONFIRM_RESULT.md
 docs/research/artifact_samples/e127_overnight_text_skill_farm_orange_cycle/
 docs/research/artifact_samples/e127_text_to_text_render_smoke_current/
 docs/research/artifact_samples/e128_assistant_text_io_lightweight_render_training/
@@ -388,6 +428,7 @@ docs/research/artifact_samples/e133_math_text_route_composition_and_no_solve_ass
 docs/research/artifact_samples/e134_external_math_text_ood_route_stress_and_counterexample_gauntlet/
 docs/research/artifact_samples/e135_math_text_multi_route_assistant_dialogue_state_gauntlet/
 docs/research/artifact_samples/e136a_assistant_text_skill_farm_mutation_prune_orange_cycle/
+docs/research/artifact_samples/e136b_assistant_text_route_composition_and_boundary_confirm/
 ```
 
 ## Legal / License
@@ -420,7 +461,7 @@ docs/legal/PRIOR_ART_AND_PROVENANCE_CHECKLIST.md
 Generate the local operator dashboard:
 
 ```powershell
-python scripts/tools/generate_operator_rank_dashboard.py --e127 docs/research/artifact_samples/e127_overnight_text_skill_farm_orange_cycle --e129 docs/research/artifact_samples/e129_arithmetic_trace_orange_legendary_probation --e130a docs/research/artifact_samples/e130a_corememory_to_orange_backfill_gauntlet --e130b docs/research/artifact_samples/e130b_arithmetic_text_io_transfer_and_word_problem_no_call_gauntlet --e131 docs/research/artifact_samples/e131_visible_equation_extraction_and_assistant_arithmetic_render_gauntlet --e132 docs/research/artifact_samples/e132_external_math_text_skill_farm_mutation_prune_orange_cycle --e133 docs/research/artifact_samples/e133_math_text_route_composition_and_no_solve_assistant_confirm --e134 docs/research/artifact_samples/e134_external_math_text_ood_route_stress_and_counterexample_gauntlet --e135 docs/research/artifact_samples/e135_math_text_multi_route_assistant_dialogue_state_gauntlet --e136a docs/research/artifact_samples/e136a_assistant_text_skill_farm_mutation_prune_orange_cycle --out target/pilot_wave/operator_rank_dashboard/index.html
+python scripts/tools/generate_operator_rank_dashboard.py --e127 docs/research/artifact_samples/e127_overnight_text_skill_farm_orange_cycle --e129 docs/research/artifact_samples/e129_arithmetic_trace_orange_legendary_probation --e130a docs/research/artifact_samples/e130a_corememory_to_orange_backfill_gauntlet --e130b docs/research/artifact_samples/e130b_arithmetic_text_io_transfer_and_word_problem_no_call_gauntlet --e131 docs/research/artifact_samples/e131_visible_equation_extraction_and_assistant_arithmetic_render_gauntlet --e132 docs/research/artifact_samples/e132_external_math_text_skill_farm_mutation_prune_orange_cycle --e133 docs/research/artifact_samples/e133_math_text_route_composition_and_no_solve_assistant_confirm --e134 docs/research/artifact_samples/e134_external_math_text_ood_route_stress_and_counterexample_gauntlet --e135 docs/research/artifact_samples/e135_math_text_multi_route_assistant_dialogue_state_gauntlet --e136a docs/research/artifact_samples/e136a_assistant_text_skill_farm_mutation_prune_orange_cycle --e136b docs/research/artifact_samples/e136b_assistant_text_route_composition_and_boundary_confirm --out target/pilot_wave/operator_rank_dashboard/index.html
 ```
 
 Expected current dashboard cards:
@@ -451,6 +492,12 @@ E136A DATASET ROWS = 447,766
 E136A SUPPORT MIN = 4,746
 E136A HARD NEGATIVES = 0
 E136A DIRECT WRITES = 0
+E136B ROUTE COMP = 18/18
+E136B ROUTE CASES = 144,000
+E136B STACK = 100.000%
+E136B BOUNDARY = 100.000%
+E136B HARD NEGATIVES = 0
+E136B DIRECT WRITES = 0
 ORANGE/LEGENDARY CANDIDATE = 561
 ```
 
@@ -479,9 +526,10 @@ HuggingFaceH4/no_robots = 10,000
 
 The seed pack itself is local data readiness and remains under ignored
 `target/`, but E136A has now consumed it for a scoped assistant/text
-operator-farm confirmation. Raw and normalized data are intentionally not
-committed; the committed proof surface is the E136A runner, docs, dashboard
-integration, and tracked sample artifact pack.
+operator-farm confirmation and E136B has consumed the E136A operators for a
+controlled route-composition/boundary confirmation. Raw and normalized data are
+intentionally not committed; the committed proof surface is the E136A/E136B
+runners, docs, dashboard integration, and tracked sample artifact packs.
 
 ## Quick Checks
 
@@ -503,6 +551,8 @@ python -m py_compile scripts/probes/run_e134_external_math_text_ood_route_stress
 python -m py_compile scripts/probes/run_e135_math_text_multi_route_assistant_dialogue_state_gauntlet.py
 python -m py_compile scripts/probes/run_e136a_assistant_text_skill_farm_mutation_prune_orange_cycle.py
 python scripts/probes/run_e136a_assistant_text_skill_farm_mutation_prune_orange_cycle.py --dataset target/datasets/missing_e136a_smoke.jsonl --dataset-manifest target/datasets/missing_e136a_manifest.json --download-manifest target/datasets/missing_e136a_download.json --allow-builtin-dataset --dataset-row-limit 120 --min-assistant-support 1 --min-dataset-rows 1 --out target/ci/e136a_assistant_text_skill_farm_mutation_prune_orange_cycle --sample-out ""
+python -m py_compile scripts/probes/run_e136b_assistant_text_route_composition_and_boundary_confirm.py
+python scripts/probes/run_e136b_assistant_text_route_composition_and_boundary_confirm.py --dataset target/datasets/missing_e136b_smoke.jsonl --dataset-manifest target/datasets/missing_e136b_manifest.json --download-manifest target/datasets/missing_e136b_download.json --allow-builtin-dataset --dataset-row-limit 120 --min-dataset-rows 1 --route-cases-per-operator 40 --boundary-cases-per-operator 12 --control-cases-per-operator 8 --out target/ci/e136b_assistant_text_route_composition_and_boundary_confirm --sample-out ""
 python -m compileall -q scripts
 cargo test --workspace
 git diff --check
@@ -544,11 +594,11 @@ Do not delete or commit them without an explicit cleanup decision.
 Recommended next steps:
 
 ```text
-1. Run E136B assistant-text route composition and boundary confirmation before
-   claiming the E136A assistant/text operators compose into broader assistant
-   behavior.
-2. Run a later assistant route transfer/latency compare if the goal returns to
-   route-state latency/transfer rather than new text skills.
+1. Run E136C assistant-text multi-turn route state and latency compare before
+   claiming the E136B route stack transfers into a broader assistant loop or has
+   a real latency advantage.
+2. Run a later assistant/open-domain boundary probe before claiming broader
+   assistant readiness.
 3. Decide whether to continue E127 with a fresh candidate pack or pause farming.
 4. Build the next bridge from deterministic action/template rendering,
    E132/E133/E134/E135 math-text lenses/guards/routes/OOD/dialogue-state,

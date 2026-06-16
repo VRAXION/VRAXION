@@ -1,0 +1,53 @@
+{
+  "artifact_contract": "E136B_ASSISTANT_TEXT_ROUTE_COMPOSITION_AND_BOUNDARY_CONFIRM",
+  "dataset_available": true,
+  "dataset_path": "target/datasets/e136_assistant_text_seed_pack/normalized/e136_assistant_text_skill_seed.jsonl",
+  "dataset_sha256_first_rows": "81b7f8d27f0169d3da0e3e89c7a1d2e20cd4a871bef9302d60530bc4964ea8d5",
+  "download_manifest_sources": 5,
+  "family_counts": {
+    "hh-rlhf_harmless_base_test": 2309,
+    "hh-rlhf_harmless_base_train": 42522,
+    "hh-rlhf_helpful_base_train": 15169,
+    "no_robots_data_test_sft_00000_of_00001": 500,
+    "no_robots_data_train_sft_00000_of_00001": 9500,
+    "oasst2_data_train_00000_of_00001_88ba0162028a73fc": 35871,
+    "oasst2_data_validation_00000_of_00001_1deeef95c3248fe0": 1895,
+    "slimorca_oo_labeled_correct_gpt4_sharegpt": 120000,
+    "ultrachat_200k_data_test_sft_00000_of_00001_f7dfac4afe5b93f4": 12135,
+    "ultrachat_200k_data_train_sft_00000_of_00003_a3ecf92756993583": 69289,
+    "ultrachat_200k_data_train_sft_00001_of_00003_0a1804bcb6ae68c6": 69288,
+    "ultrachat_200k_data_train_sft_00002_of_00003_ee46ed25cfae92c6": 69288
+  },
+  "manifest_row_count": 447766,
+  "manifest_sha256": "7517fc747466228279137f8ab5f312475ded0216e4c9822ab97811952b95e5dc",
+  "manifest_sha256_first_256_rows": "b200908430fabb01e46a1f13b10f5d64493ee289e623d16e84939274e49dca21",
+  "row_count_loaded": 447766,
+  "row_limit": 460000,
+  "seed_row_count": 4096,
+  "source_counts": {
+    "Anthropic/hh-rlhf": 60000,
+    "HuggingFaceH4/no_robots": 10000,
+    "HuggingFaceH4/ultrachat_200k": 220000,
+    "Open-Orca/SlimOrca": 120000,
+    "OpenAssistant/oasst2": 37766
+  },
+  "split_counts": {
+    "train": 430927,
+    "validation": 16839
+  },
+  "tag_counts": {
+    "assistant_style": 447766,
+    "code_instruction": 83423,
+    "helpful_harmless": 60000,
+    "human_assistant_dialogue": 37766,
+    "human_written_instruction": 10000,
+    "instruction_following": 447766,
+    "math_text_surface": 84188,
+    "multi_turn_dialogue": 372963,
+    "preference_boundary": 60000,
+    "reasoning_instruction": 120000,
+    "refusal_or_boundary": 73625,
+    "summarization": 42910,
+    "synthetic_multi_turn": 220000
+  }
+}

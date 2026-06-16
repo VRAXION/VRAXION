@@ -1,0 +1,22 @@
+{
+  "artifact_contract": "E136B_ASSISTANT_TEXT_ROUTE_COMPOSITION_AND_BOUNDARY_CONFIRM",
+  "checked_files": [
+    "run_manifest.json",
+    "input_e136a_report.json",
+    "dataset_route_seed_report.json",
+    "operator_route_results.json",
+    "route_family_report.json",
+    "route_control_report.json",
+    "route_case_samples.jsonl",
+    "progress.jsonl",
+    "partial_aggregate_snapshot.json",
+    "aggregate_metrics.json",
+    "deterministic_replay.json",
+    "decision.json",
+    "summary.json",
+    "report.md",
+    "checker_summary.json"
+  ],
+  "failure_count": 0,
+  "failures": []
+}

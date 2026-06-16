@@ -1,0 +1,1265 @@
+{
+  "artifact_contract": "E136B_ASSISTANT_TEXT_ROUTE_COMPOSITION_AND_BOUNDARY_CONFIRM",
+  "rows": [
+    {
+      "accuracy": 1.0,
+      "case_count": 1000,
+      "correct_count": 1000,
+      "family": "boundary_repair_route",
+      "operator_id": "assistant_role_turn_boundary_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1000,
+      "correct_count": 1000,
+      "family": "current_turn_priority_route",
+      "operator_id": "assistant_role_turn_boundary_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 500,
+      "correct_count": 500,
+      "family": "direct_flow_write_boundary",
+      "operator_id": "assistant_role_turn_boundary_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1000,
+      "correct_count": 1000,
+      "family": "focused_route",
+      "operator_id": "assistant_role_turn_boundary_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1000,
+      "correct_count": 1000,
+      "family": "heldout_source_style_route",
+      "operator_id": "assistant_role_turn_boundary_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1000,
+      "correct_count": 1000,
+      "family": "multi_route_with_auxiliary_boundary",
+      "operator_id": "assistant_role_turn_boundary_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1000,
+      "correct_count": 1000,
+      "family": "negative_scope_nonassistant_no_call",
+      "operator_id": "assistant_role_turn_boundary_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 500,
+      "correct_count": 500,
+      "family": "overbroad_chatbot_boundary",
+      "operator_id": "assistant_role_turn_boundary_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 500,
+      "correct_count": 500,
+      "family": "rejected_response_reuse_boundary",
+      "operator_id": "assistant_role_turn_boundary_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 500,
+      "correct_count": 500,
+      "family": "source_hallucination_boundary",
+      "operator_id": "assistant_role_turn_boundary_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1000,
+      "correct_count": 1000,
+      "family": "boundary_repair_route",
+      "operator_id": "multi_turn_context_continuity_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1000,
+      "correct_count": 1000,
+      "family": "current_turn_priority_route",
+      "operator_id": "multi_turn_context_continuity_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 500,
+      "correct_count": 500,
+      "family": "direct_flow_write_boundary",
+      "operator_id": "multi_turn_context_continuity_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1000,
+      "correct_count": 1000,
+      "family": "focused_route",
+      "operator_id": "multi_turn_context_continuity_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1000,
+      "correct_count": 1000,
+      "family": "heldout_source_style_route",
+      "operator_id": "multi_turn_context_continuity_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1000,
+      "correct_count": 1000,
+      "family": "multi_route_with_auxiliary_boundary",
+      "operator_id": "multi_turn_context_continuity_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1000,
+      "correct_count": 1000,
+      "family": "negative_scope_nonassistant_no_call",
+      "operator_id": "multi_turn_context_continuity_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 500,
+      "correct_count": 500,
+      "family": "overbroad_chatbot_boundary",
+      "operator_id": "multi_turn_context_continuity_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 500,
+      "correct_count": 500,
+      "family": "rejected_response_reuse_boundary",
+      "operator_id": "multi_turn_context_continuity_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 500,
+      "correct_count": 500,
+      "family": "source_hallucination_boundary",
+      "operator_id": "multi_turn_context_continuity_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1000,
+      "correct_count": 1000,
+      "family": "boundary_repair_route",
+      "operator_id": "instruction_task_decomposition_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1000,
+      "correct_count": 1000,
+      "family": "current_turn_priority_route",
+      "operator_id": "instruction_task_decomposition_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 500,
+      "correct_count": 500,
+      "family": "direct_flow_write_boundary",
+      "operator_id": "instruction_task_decomposition_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1000,
+      "correct_count": 1000,
+      "family": "focused_route",
+      "operator_id": "instruction_task_decomposition_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1000,
+      "correct_count": 1000,
+      "family": "heldout_source_style_route",
+      "operator_id": "instruction_task_decomposition_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1000,
+      "correct_count": 1000,
+      "family": "multi_route_with_auxiliary_boundary",
+      "operator_id": "instruction_task_decomposition_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1000,
+      "correct_count": 1000,
+      "family": "negative_scope_nonassistant_no_call",
+      "operator_id": "instruction_task_decomposition_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 500,
+      "correct_count": 500,
+      "family": "overbroad_chatbot_boundary",
+      "operator_id": "instruction_task_decomposition_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 500,
+      "correct_count": 500,
+      "family": "rejected_response_reuse_boundary",
+      "operator_id": "instruction_task_decomposition_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 500,
+      "correct_count": 500,
+      "family": "source_hallucination_boundary",
+      "operator_id": "instruction_task_decomposition_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1000,
+      "correct_count": 1000,
+      "family": "boundary_repair_route",
+      "operator_id": "summarization_request_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1000,
+      "correct_count": 1000,
+      "family": "current_turn_priority_route",
+      "operator_id": "summarization_request_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 500,
+      "correct_count": 500,
+      "family": "direct_flow_write_boundary",
+      "operator_id": "summarization_request_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1000,
+      "correct_count": 1000,
+      "family": "focused_route",
+      "operator_id": "summarization_request_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1000,
+      "correct_count": 1000,
+      "family": "heldout_source_style_route",
+      "operator_id": "summarization_request_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1000,
+      "correct_count": 1000,
+      "family": "multi_route_with_auxiliary_boundary",
+      "operator_id": "summarization_request_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1000,
+      "correct_count": 1000,
+      "family": "negative_scope_nonassistant_no_call",
+      "operator_id": "summarization_request_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 500,
+      "correct_count": 500,
+      "family": "overbroad_chatbot_boundary",
+      "operator_id": "summarization_request_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 500,
+      "correct_count": 500,
+      "family": "rejected_response_reuse_boundary",
+      "operator_id": "summarization_request_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 500,
+      "correct_count": 500,
+      "family": "source_hallucination_boundary",
+      "operator_id": "summarization_request_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1000,
+      "correct_count": 1000,
+      "family": "boundary_repair_route",
+      "operator_id": "code_instruction_boundary_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1000,
+      "correct_count": 1000,
+      "family": "current_turn_priority_route",
+      "operator_id": "code_instruction_boundary_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 500,
+      "correct_count": 500,
+      "family": "direct_flow_write_boundary",
+      "operator_id": "code_instruction_boundary_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1000,
+      "correct_count": 1000,
+      "family": "focused_route",
+      "operator_id": "code_instruction_boundary_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1000,
+      "correct_count": 1000,
+      "family": "heldout_source_style_route",
+      "operator_id": "code_instruction_boundary_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1000,
+      "correct_count": 1000,
+      "family": "multi_route_with_auxiliary_boundary",
+      "operator_id": "code_instruction_boundary_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1000,
+      "correct_count": 1000,
+      "family": "negative_scope_nonassistant_no_call",
+      "operator_id": "code_instruction_boundary_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 500,
+      "correct_count": 500,
+      "family": "overbroad_chatbot_boundary",
+      "operator_id": "code_instruction_boundary_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 500,
+      "correct_count": 500,
+      "family": "rejected_response_reuse_boundary",
+      "operator_id": "code_instruction_boundary_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 500,
+      "correct_count": 500,
+      "family": "source_hallucination_boundary",
+      "operator_id": "code_instruction_boundary_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1000,
+      "correct_count": 1000,
+      "family": "boundary_repair_route",
+      "operator_id": "refusal_boundary_guard"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1000,
+      "correct_count": 1000,
+      "family": "current_turn_priority_route",
+      "operator_id": "refusal_boundary_guard"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 500,
+      "correct_count": 500,
+      "family": "direct_flow_write_boundary",
+      "operator_id": "refusal_boundary_guard"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1000,
+      "correct_count": 1000,
+      "family": "focused_route",
+      "operator_id": "refusal_boundary_guard"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1000,
+      "correct_count": 1000,
+      "family": "heldout_source_style_route",
+      "operator_id": "refusal_boundary_guard"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1000,
+      "correct_count": 1000,
+      "family": "multi_route_with_auxiliary_boundary",
+      "operator_id": "refusal_boundary_guard"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1000,
+      "correct_count": 1000,
+      "family": "negative_scope_nonassistant_no_call",
+      "operator_id": "refusal_boundary_guard"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 500,
+      "correct_count": 500,
+      "family": "overbroad_chatbot_boundary",
+      "operator_id": "refusal_boundary_guard"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 500,
+      "correct_count": 500,
+      "family": "rejected_response_reuse_boundary",
+      "operator_id": "refusal_boundary_guard"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 500,
+      "correct_count": 500,
+      "family": "source_hallucination_boundary",
+      "operator_id": "refusal_boundary_guard"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1000,
+      "correct_count": 1000,
+      "family": "boundary_repair_route",
+      "operator_id": "helpful_harmless_preference_guard"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1000,
+      "correct_count": 1000,
+      "family": "current_turn_priority_route",
+      "operator_id": "helpful_harmless_preference_guard"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 500,
+      "correct_count": 500,
+      "family": "direct_flow_write_boundary",
+      "operator_id": "helpful_harmless_preference_guard"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1000,
+      "correct_count": 1000,
+      "family": "focused_route",
+      "operator_id": "helpful_harmless_preference_guard"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1000,
+      "correct_count": 1000,
+      "family": "heldout_source_style_route",
+      "operator_id": "helpful_harmless_preference_guard"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1000,
+      "correct_count": 1000,
+      "family": "multi_route_with_auxiliary_boundary",
+      "operator_id": "helpful_harmless_preference_guard"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1000,
+      "correct_count": 1000,
+      "family": "negative_scope_nonassistant_no_call",
+      "operator_id": "helpful_harmless_preference_guard"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 500,
+      "correct_count": 500,
+      "family": "overbroad_chatbot_boundary",
+      "operator_id": "helpful_harmless_preference_guard"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 500,
+      "correct_count": 500,
+      "family": "rejected_response_reuse_boundary",
+      "operator_id": "helpful_harmless_preference_guard"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 500,
+      "correct_count": 500,
+      "family": "source_hallucination_boundary",
+      "operator_id": "helpful_harmless_preference_guard"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1000,
+      "correct_count": 1000,
+      "family": "boundary_repair_route",
+      "operator_id": "rejected_response_contrast_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1000,
+      "correct_count": 1000,
+      "family": "current_turn_priority_route",
+      "operator_id": "rejected_response_contrast_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 500,
+      "correct_count": 500,
+      "family": "direct_flow_write_boundary",
+      "operator_id": "rejected_response_contrast_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1000,
+      "correct_count": 1000,
+      "family": "focused_route",
+      "operator_id": "rejected_response_contrast_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1000,
+      "correct_count": 1000,
+      "family": "heldout_source_style_route",
+      "operator_id": "rejected_response_contrast_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1000,
+      "correct_count": 1000,
+      "family": "multi_route_with_auxiliary_boundary",
+      "operator_id": "rejected_response_contrast_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1000,
+      "correct_count": 1000,
+      "family": "negative_scope_nonassistant_no_call",
+      "operator_id": "rejected_response_contrast_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 500,
+      "correct_count": 500,
+      "family": "overbroad_chatbot_boundary",
+      "operator_id": "rejected_response_contrast_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 500,
+      "correct_count": 500,
+      "family": "rejected_response_reuse_boundary",
+      "operator_id": "rejected_response_contrast_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 500,
+      "correct_count": 500,
+      "family": "source_hallucination_boundary",
+      "operator_id": "rejected_response_contrast_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1000,
+      "correct_count": 1000,
+      "family": "boundary_repair_route",
+      "operator_id": "source_absence_defer_guard"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1000,
+      "correct_count": 1000,
+      "family": "current_turn_priority_route",
+      "operator_id": "source_absence_defer_guard"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 500,
+      "correct_count": 500,
+      "family": "direct_flow_write_boundary",
+      "operator_id": "source_absence_defer_guard"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1000,
+      "correct_count": 1000,
+      "family": "focused_route",
+      "operator_id": "source_absence_defer_guard"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1000,
+      "correct_count": 1000,
+      "family": "heldout_source_style_route",
+      "operator_id": "source_absence_defer_guard"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1000,
+      "correct_count": 1000,
+      "family": "multi_route_with_auxiliary_boundary",
+      "operator_id": "source_absence_defer_guard"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1000,
+      "correct_count": 1000,
+      "family": "negative_scope_nonassistant_no_call",
+      "operator_id": "source_absence_defer_guard"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 500,
+      "correct_count": 500,
+      "family": "overbroad_chatbot_boundary",
+      "operator_id": "source_absence_defer_guard"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 500,
+      "correct_count": 500,
+      "family": "rejected_response_reuse_boundary",
+      "operator_id": "source_absence_defer_guard"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 500,
+      "correct_count": 500,
+      "family": "source_hallucination_boundary",
+      "operator_id": "source_absence_defer_guard"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1000,
+      "correct_count": 1000,
+      "family": "boundary_repair_route",
+      "operator_id": "response_format_constraint_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1000,
+      "correct_count": 1000,
+      "family": "current_turn_priority_route",
+      "operator_id": "response_format_constraint_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 500,
+      "correct_count": 500,
+      "family": "direct_flow_write_boundary",
+      "operator_id": "response_format_constraint_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1000,
+      "correct_count": 1000,
+      "family": "focused_route",
+      "operator_id": "response_format_constraint_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1000,
+      "correct_count": 1000,
+      "family": "heldout_source_style_route",
+      "operator_id": "response_format_constraint_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1000,
+      "correct_count": 1000,
+      "family": "multi_route_with_auxiliary_boundary",
+      "operator_id": "response_format_constraint_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1000,
+      "correct_count": 1000,
+      "family": "negative_scope_nonassistant_no_call",
+      "operator_id": "response_format_constraint_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 500,
+      "correct_count": 500,
+      "family": "overbroad_chatbot_boundary",
+      "operator_id": "response_format_constraint_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 500,
+      "correct_count": 500,
+      "family": "rejected_response_reuse_boundary",
+      "operator_id": "response_format_constraint_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 500,
+      "correct_count": 500,
+      "family": "source_hallucination_boundary",
+      "operator_id": "response_format_constraint_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1000,
+      "correct_count": 1000,
+      "family": "boundary_repair_route",
+      "operator_id": "human_written_instruction_style_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1000,
+      "correct_count": 1000,
+      "family": "current_turn_priority_route",
+      "operator_id": "human_written_instruction_style_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 500,
+      "correct_count": 500,
+      "family": "direct_flow_write_boundary",
+      "operator_id": "human_written_instruction_style_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1000,
+      "correct_count": 1000,
+      "family": "focused_route",
+      "operator_id": "human_written_instruction_style_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1000,
+      "correct_count": 1000,
+      "family": "heldout_source_style_route",
+      "operator_id": "human_written_instruction_style_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1000,
+      "correct_count": 1000,
+      "family": "multi_route_with_auxiliary_boundary",
+      "operator_id": "human_written_instruction_style_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1000,
+      "correct_count": 1000,
+      "family": "negative_scope_nonassistant_no_call",
+      "operator_id": "human_written_instruction_style_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 500,
+      "correct_count": 500,
+      "family": "overbroad_chatbot_boundary",
+      "operator_id": "human_written_instruction_style_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 500,
+      "correct_count": 500,
+      "family": "rejected_response_reuse_boundary",
+      "operator_id": "human_written_instruction_style_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 500,
+      "correct_count": 500,
+      "family": "source_hallucination_boundary",
+      "operator_id": "human_written_instruction_style_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1000,
+      "correct_count": 1000,
+      "family": "boundary_repair_route",
+      "operator_id": "synthetic_dialogue_noise_guard"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1000,
+      "correct_count": 1000,
+      "family": "current_turn_priority_route",
+      "operator_id": "synthetic_dialogue_noise_guard"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 500,
+      "correct_count": 500,
+      "family": "direct_flow_write_boundary",
+      "operator_id": "synthetic_dialogue_noise_guard"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1000,
+      "correct_count": 1000,
+      "family": "focused_route",
+      "operator_id": "synthetic_dialogue_noise_guard"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1000,
+      "correct_count": 1000,
+      "family": "heldout_source_style_route",
+      "operator_id": "synthetic_dialogue_noise_guard"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1000,
+      "correct_count": 1000,
+      "family": "multi_route_with_auxiliary_boundary",
+      "operator_id": "synthetic_dialogue_noise_guard"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1000,
+      "correct_count": 1000,
+      "family": "negative_scope_nonassistant_no_call",
+      "operator_id": "synthetic_dialogue_noise_guard"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 500,
+      "correct_count": 500,
+      "family": "overbroad_chatbot_boundary",
+      "operator_id": "synthetic_dialogue_noise_guard"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 500,
+      "correct_count": 500,
+      "family": "rejected_response_reuse_boundary",
+      "operator_id": "synthetic_dialogue_noise_guard"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 500,
+      "correct_count": 500,
+      "family": "source_hallucination_boundary",
+      "operator_id": "synthetic_dialogue_noise_guard"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1000,
+      "correct_count": 1000,
+      "family": "boundary_repair_route",
+      "operator_id": "reasoning_instruction_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1000,
+      "correct_count": 1000,
+      "family": "current_turn_priority_route",
+      "operator_id": "reasoning_instruction_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 500,
+      "correct_count": 500,
+      "family": "direct_flow_write_boundary",
+      "operator_id": "reasoning_instruction_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1000,
+      "correct_count": 1000,
+      "family": "focused_route",
+      "operator_id": "reasoning_instruction_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1000,
+      "correct_count": 1000,
+      "family": "heldout_source_style_route",
+      "operator_id": "reasoning_instruction_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1000,
+      "correct_count": 1000,
+      "family": "multi_route_with_auxiliary_boundary",
+      "operator_id": "reasoning_instruction_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1000,
+      "correct_count": 1000,
+      "family": "negative_scope_nonassistant_no_call",
+      "operator_id": "reasoning_instruction_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 500,
+      "correct_count": 500,
+      "family": "overbroad_chatbot_boundary",
+      "operator_id": "reasoning_instruction_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 500,
+      "correct_count": 500,
+      "family": "rejected_response_reuse_boundary",
+      "operator_id": "reasoning_instruction_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 500,
+      "correct_count": 500,
+      "family": "source_hallucination_boundary",
+      "operator_id": "reasoning_instruction_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1000,
+      "correct_count": 1000,
+      "family": "boundary_repair_route",
+      "operator_id": "assistant_math_text_no_solve_guard"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1000,
+      "correct_count": 1000,
+      "family": "current_turn_priority_route",
+      "operator_id": "assistant_math_text_no_solve_guard"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 500,
+      "correct_count": 500,
+      "family": "direct_flow_write_boundary",
+      "operator_id": "assistant_math_text_no_solve_guard"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1000,
+      "correct_count": 1000,
+      "family": "focused_route",
+      "operator_id": "assistant_math_text_no_solve_guard"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1000,
+      "correct_count": 1000,
+      "family": "heldout_source_style_route",
+      "operator_id": "assistant_math_text_no_solve_guard"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1000,
+      "correct_count": 1000,
+      "family": "multi_route_with_auxiliary_boundary",
+      "operator_id": "assistant_math_text_no_solve_guard"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1000,
+      "correct_count": 1000,
+      "family": "negative_scope_nonassistant_no_call",
+      "operator_id": "assistant_math_text_no_solve_guard"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 500,
+      "correct_count": 500,
+      "family": "overbroad_chatbot_boundary",
+      "operator_id": "assistant_math_text_no_solve_guard"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 500,
+      "correct_count": 500,
+      "family": "rejected_response_reuse_boundary",
+      "operator_id": "assistant_math_text_no_solve_guard"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 500,
+      "correct_count": 500,
+      "family": "source_hallucination_boundary",
+      "operator_id": "assistant_math_text_no_solve_guard"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1000,
+      "correct_count": 1000,
+      "family": "boundary_repair_route",
+      "operator_id": "assistant_safety_sensitive_domain_guard"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1000,
+      "correct_count": 1000,
+      "family": "current_turn_priority_route",
+      "operator_id": "assistant_safety_sensitive_domain_guard"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 500,
+      "correct_count": 500,
+      "family": "direct_flow_write_boundary",
+      "operator_id": "assistant_safety_sensitive_domain_guard"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1000,
+      "correct_count": 1000,
+      "family": "focused_route",
+      "operator_id": "assistant_safety_sensitive_domain_guard"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1000,
+      "correct_count": 1000,
+      "family": "heldout_source_style_route",
+      "operator_id": "assistant_safety_sensitive_domain_guard"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1000,
+      "correct_count": 1000,
+      "family": "multi_route_with_auxiliary_boundary",
+      "operator_id": "assistant_safety_sensitive_domain_guard"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1000,
+      "correct_count": 1000,
+      "family": "negative_scope_nonassistant_no_call",
+      "operator_id": "assistant_safety_sensitive_domain_guard"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 500,
+      "correct_count": 500,
+      "family": "overbroad_chatbot_boundary",
+      "operator_id": "assistant_safety_sensitive_domain_guard"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 500,
+      "correct_count": 500,
+      "family": "rejected_response_reuse_boundary",
+      "operator_id": "assistant_safety_sensitive_domain_guard"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 500,
+      "correct_count": 500,
+      "family": "source_hallucination_boundary",
+      "operator_id": "assistant_safety_sensitive_domain_guard"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1000,
+      "correct_count": 1000,
+      "family": "boundary_repair_route",
+      "operator_id": "assistant_longform_generation_request_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1000,
+      "correct_count": 1000,
+      "family": "current_turn_priority_route",
+      "operator_id": "assistant_longform_generation_request_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 500,
+      "correct_count": 500,
+      "family": "direct_flow_write_boundary",
+      "operator_id": "assistant_longform_generation_request_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1000,
+      "correct_count": 1000,
+      "family": "focused_route",
+      "operator_id": "assistant_longform_generation_request_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1000,
+      "correct_count": 1000,
+      "family": "heldout_source_style_route",
+      "operator_id": "assistant_longform_generation_request_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1000,
+      "correct_count": 1000,
+      "family": "multi_route_with_auxiliary_boundary",
+      "operator_id": "assistant_longform_generation_request_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1000,
+      "correct_count": 1000,
+      "family": "negative_scope_nonassistant_no_call",
+      "operator_id": "assistant_longform_generation_request_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 500,
+      "correct_count": 500,
+      "family": "overbroad_chatbot_boundary",
+      "operator_id": "assistant_longform_generation_request_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 500,
+      "correct_count": 500,
+      "family": "rejected_response_reuse_boundary",
+      "operator_id": "assistant_longform_generation_request_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 500,
+      "correct_count": 500,
+      "family": "source_hallucination_boundary",
+      "operator_id": "assistant_longform_generation_request_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1000,
+      "correct_count": 1000,
+      "family": "boundary_repair_route",
+      "operator_id": "assistant_comparison_evaluation_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1000,
+      "correct_count": 1000,
+      "family": "current_turn_priority_route",
+      "operator_id": "assistant_comparison_evaluation_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 500,
+      "correct_count": 500,
+      "family": "direct_flow_write_boundary",
+      "operator_id": "assistant_comparison_evaluation_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1000,
+      "correct_count": 1000,
+      "family": "focused_route",
+      "operator_id": "assistant_comparison_evaluation_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1000,
+      "correct_count": 1000,
+      "family": "heldout_source_style_route",
+      "operator_id": "assistant_comparison_evaluation_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1000,
+      "correct_count": 1000,
+      "family": "multi_route_with_auxiliary_boundary",
+      "operator_id": "assistant_comparison_evaluation_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1000,
+      "correct_count": 1000,
+      "family": "negative_scope_nonassistant_no_call",
+      "operator_id": "assistant_comparison_evaluation_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 500,
+      "correct_count": 500,
+      "family": "overbroad_chatbot_boundary",
+      "operator_id": "assistant_comparison_evaluation_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 500,
+      "correct_count": 500,
+      "family": "rejected_response_reuse_boundary",
+      "operator_id": "assistant_comparison_evaluation_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 500,
+      "correct_count": 500,
+      "family": "source_hallucination_boundary",
+      "operator_id": "assistant_comparison_evaluation_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1000,
+      "correct_count": 1000,
+      "family": "boundary_repair_route",
+      "operator_id": "assistant_translation_multilingual_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1000,
+      "correct_count": 1000,
+      "family": "current_turn_priority_route",
+      "operator_id": "assistant_translation_multilingual_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 500,
+      "correct_count": 500,
+      "family": "direct_flow_write_boundary",
+      "operator_id": "assistant_translation_multilingual_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1000,
+      "correct_count": 1000,
+      "family": "focused_route",
+      "operator_id": "assistant_translation_multilingual_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1000,
+      "correct_count": 1000,
+      "family": "heldout_source_style_route",
+      "operator_id": "assistant_translation_multilingual_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1000,
+      "correct_count": 1000,
+      "family": "multi_route_with_auxiliary_boundary",
+      "operator_id": "assistant_translation_multilingual_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 1000,
+      "correct_count": 1000,
+      "family": "negative_scope_nonassistant_no_call",
+      "operator_id": "assistant_translation_multilingual_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 500,
+      "correct_count": 500,
+      "family": "overbroad_chatbot_boundary",
+      "operator_id": "assistant_translation_multilingual_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 500,
+      "correct_count": 500,
+      "family": "rejected_response_reuse_boundary",
+      "operator_id": "assistant_translation_multilingual_lens"
+    },
+    {
+      "accuracy": 1.0,
+      "case_count": 500,
+      "correct_count": 500,
+      "family": "source_hallucination_boundary",
+      "operator_id": "assistant_translation_multilingual_lens"
+    }
+  ]
+}

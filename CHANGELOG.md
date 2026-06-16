@@ -1,6 +1,28 @@
 # Changelog
 
-This changelog is narrowed to the current v6 / E127-E136A evidence anchor. Full historical beta, probe, Python SDK, legacy Rust, and research-output history is preserved in git history and archive tags.
+This changelog is narrowed to the current v6 / E127-E136B evidence anchor. Full historical beta, probe, Python SDK, legacy Rust, and research-output history is preserved in git history and archive tags.
+
+## 2026-06-16 - E136B Assistant Text Route Composition And Boundary Confirm
+
+- Added `scripts/probes/run_e136b_assistant_text_route_composition_and_boundary_confirm.py`.
+- Composed the 18 E136A scoped assistant/text lenses and guards into bounded
+  assistant/text route stacks.
+- Result: 18/18 route pass operators with 144,000 route cases, 53,000
+  multi-route composition cases, 72,000 boundary cases, and 18,000
+  negative-scope cases.
+- Activation evidence: 144,000 total qualified route activations and 8,000
+  minimum qualified route activations per operator.
+- Accuracy minima: route accuracy 1.000, route stack accuracy 1.000, primary
+  route accuracy 1.000, boundary accuracy 1.000, multi-route composition
+  accuracy 1.000, boundary-case accuracy 1.000, and negative-scope accuracy
+  1.000.
+- Confirmed: 0 hard negatives, 0 false commits, 0 wrong-scope calls, 0
+  unsupported answers, 0 boundary-claim violations, and 0 direct Flow writes.
+- Controls: overbroad chatbot, unsafe direct-write, source hallucination,
+  rejected-response-reuse, and single-operator-drop controls failed as intended.
+- Boundary: controlled assistant/text route composition only; not neural
+  training, open-domain assistant readiness, production assistant behavior,
+  Core, PermaCore, or TrueGolden.
 
 ## 2026-06-16 - E136A Assistant Text Skill Farm Mutation/Prune Orange Cycle
 
