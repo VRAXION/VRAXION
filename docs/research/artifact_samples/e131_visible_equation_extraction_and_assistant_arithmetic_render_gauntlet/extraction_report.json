@@ -1,0 +1,244 @@
+{
+  "rows": [
+    {
+      "e130b_baseline_visible_miss": 12000,
+      "family_accuracy": {
+        "assistant_audit_sentence": 1.0,
+        "equation_line_with_equals": 1.0,
+        "inline_assistant_question": 1.0,
+        "math_code_fence": 1.0,
+        "plain_expression_backtick": 1.0,
+        "trace_label": 1.0,
+        "visible_equation_bracket": 1.0,
+        "visible_equation_label": 1.0
+      },
+      "operator_id": "e129_add_sub_trace_operator",
+      "route_reason_counts": {
+        "e130b_embedded_compute_expression": 4,
+        "equation_label": 3000,
+        "equation_line_with_equals": 1500,
+        "inline_assistant_question": 1500,
+        "math_code_fence": 1500,
+        "no_visible_equation": 5996,
+        "plain_expression_backtick": 1500,
+        "trace_equals_label": 1500,
+        "visible_equation_bracket": 1500
+      },
+      "visible_equation_case_count": 12000,
+      "visible_equation_extraction_accuracy": 1.0
+    },
+    {
+      "e130b_baseline_visible_miss": 12000,
+      "family_accuracy": {
+        "assistant_audit_sentence": 1.0,
+        "equation_line_with_equals": 1.0,
+        "inline_assistant_question": 1.0,
+        "math_code_fence": 1.0,
+        "plain_expression_backtick": 1.0,
+        "trace_label": 1.0,
+        "visible_equation_bracket": 1.0,
+        "visible_equation_label": 1.0
+      },
+      "operator_id": "e129_decimal_fraction_trace_operator",
+      "route_reason_counts": {
+        "e130b_embedded_compute_expression": 4,
+        "equation_label": 3000,
+        "equation_line_with_equals": 1500,
+        "inline_assistant_question": 1500,
+        "math_code_fence": 1500,
+        "no_visible_equation": 5996,
+        "plain_expression_backtick": 1500,
+        "trace_equals_label": 1500,
+        "visible_equation_bracket": 1500
+      },
+      "visible_equation_case_count": 12000,
+      "visible_equation_extraction_accuracy": 1.0
+    },
+    {
+      "e130b_baseline_visible_miss": 12000,
+      "family_accuracy": {
+        "assistant_audit_sentence": 1.0,
+        "equation_line_with_equals": 1.0,
+        "inline_assistant_question": 1.0,
+        "math_code_fence": 1.0,
+        "plain_expression_backtick": 1.0,
+        "trace_label": 1.0,
+        "visible_equation_bracket": 1.0,
+        "visible_equation_label": 1.0
+      },
+      "operator_id": "e129_division_by_zero_guard",
+      "route_reason_counts": {
+        "equation_label": 3000,
+        "equation_line_with_equals": 1500,
+        "inline_assistant_question": 1500,
+        "math_code_fence": 1500,
+        "no_visible_equation": 6000,
+        "plain_expression_backtick": 1500,
+        "trace_equals_label": 1500,
+        "visible_equation_bracket": 1500
+      },
+      "visible_equation_case_count": 12000,
+      "visible_equation_extraction_accuracy": 1.0
+    },
+    {
+      "e130b_baseline_visible_miss": 12000,
+      "family_accuracy": {
+        "assistant_audit_sentence": 1.0,
+        "equation_line_with_equals": 1.0,
+        "inline_assistant_question": 1.0,
+        "math_code_fence": 1.0,
+        "plain_expression_backtick": 1.0,
+        "trace_label": 1.0,
+        "visible_equation_bracket": 1.0,
+        "visible_equation_label": 1.0
+      },
+      "operator_id": "e129_exact_division_trace_operator",
+      "route_reason_counts": {
+        "equation_label": 3000,
+        "equation_line_with_equals": 1500,
+        "inline_assistant_question": 1500,
+        "math_code_fence": 1500,
+        "no_visible_equation": 6000,
+        "plain_expression_backtick": 1500,
+        "trace_equals_label": 1500,
+        "visible_equation_bracket": 1500
+      },
+      "visible_equation_case_count": 12000,
+      "visible_equation_extraction_accuracy": 1.0
+    },
+    {
+      "e130b_baseline_visible_miss": 12000,
+      "family_accuracy": {
+        "assistant_audit_sentence": 1.0,
+        "equation_line_with_equals": 1.0,
+        "inline_assistant_question": 1.0,
+        "math_code_fence": 1.0,
+        "plain_expression_backtick": 1.0,
+        "trace_label": 1.0,
+        "visible_equation_bracket": 1.0,
+        "visible_equation_label": 1.0
+      },
+      "operator_id": "e129_floor_division_trace_operator",
+      "route_reason_counts": {
+        "e130b_embedded_compute_expression": 4,
+        "equation_label": 3000,
+        "equation_line_with_equals": 1500,
+        "inline_assistant_question": 1500,
+        "math_code_fence": 1500,
+        "no_visible_equation": 5996,
+        "plain_expression_backtick": 1500,
+        "trace_equals_label": 1500,
+        "visible_equation_bracket": 1500
+      },
+      "visible_equation_case_count": 12000,
+      "visible_equation_extraction_accuracy": 1.0
+    },
+    {
+      "e130b_baseline_visible_miss": 711,
+      "family_accuracy": {
+        "assistant_audit_sentence": 1.0,
+        "equation_line_with_equals": 1.0,
+        "inline_assistant_question": 1.0,
+        "math_code_fence": 1.0,
+        "plain_expression_backtick": 1.0,
+        "trace_label": 1.0,
+        "visible_equation_bracket": 1.0,
+        "visible_equation_label": 1.0
+      },
+      "operator_id": "e129_invalid_trace_rejection_guard",
+      "route_reason_counts": {
+        "e130b_embedded_calc_trace": 3000,
+        "e130b_embedded_compute_expression": 1,
+        "e130b_embedded_trace_marker": 1500,
+        "math_code_fence": 1500,
+        "no_visible_equation": 5999,
+        "plain_expression_backtick": 1500,
+        "visible_equation_bracket": 1500,
+        "visible_payload_label": 3000
+      },
+      "visible_equation_case_count": 12000,
+      "visible_equation_extraction_accuracy": 1.0
+    },
+    {
+      "e130b_baseline_visible_miss": 12000,
+      "family_accuracy": {
+        "assistant_audit_sentence": 1.0,
+        "equation_line_with_equals": 1.0,
+        "inline_assistant_question": 1.0,
+        "math_code_fence": 1.0,
+        "plain_expression_backtick": 1.0,
+        "trace_label": 1.0,
+        "visible_equation_bracket": 1.0,
+        "visible_equation_label": 1.0
+      },
+      "operator_id": "e129_multiplication_trace_operator",
+      "route_reason_counts": {
+        "e130b_embedded_compute_expression": 1,
+        "equation_label": 3000,
+        "equation_line_with_equals": 1500,
+        "inline_assistant_question": 1500,
+        "math_code_fence": 1500,
+        "no_visible_equation": 5999,
+        "plain_expression_backtick": 1500,
+        "trace_equals_label": 1500,
+        "visible_equation_bracket": 1500
+      },
+      "visible_equation_case_count": 12000,
+      "visible_equation_extraction_accuracy": 1.0
+    },
+    {
+      "e130b_baseline_visible_miss": 12000,
+      "family_accuracy": {
+        "assistant_audit_sentence": 1.0,
+        "equation_line_with_equals": 1.0,
+        "inline_assistant_question": 1.0,
+        "math_code_fence": 1.0,
+        "plain_expression_backtick": 1.0,
+        "trace_label": 1.0,
+        "visible_equation_bracket": 1.0,
+        "visible_equation_label": 1.0
+      },
+      "operator_id": "e129_parenthesized_mixed_precedence_operator",
+      "route_reason_counts": {
+        "e130b_embedded_compute_expression": 1,
+        "equation_label": 3000,
+        "equation_line_with_equals": 1500,
+        "inline_assistant_question": 1500,
+        "math_code_fence": 1500,
+        "no_visible_equation": 5999,
+        "plain_expression_backtick": 1500,
+        "trace_equals_label": 1500,
+        "visible_equation_bracket": 1500
+      },
+      "visible_equation_case_count": 12000,
+      "visible_equation_extraction_accuracy": 1.0
+    },
+    {
+      "e130b_baseline_visible_miss": 12000,
+      "family_accuracy": {
+        "assistant_audit_sentence": 1.0,
+        "equation_line_with_equals": 1.0,
+        "inline_assistant_question": 1.0,
+        "math_code_fence": 1.0,
+        "plain_expression_backtick": 1.0,
+        "trace_label": 1.0,
+        "visible_equation_bracket": 1.0,
+        "visible_equation_label": 1.0
+      },
+      "operator_id": "e129_signed_integer_trace_operator",
+      "route_reason_counts": {
+        "e130b_embedded_compute_expression": 5,
+        "equation_label": 3000,
+        "equation_line_with_equals": 1500,
+        "inline_assistant_question": 1500,
+        "math_code_fence": 1500,
+        "no_visible_equation": 5995,
+        "plain_expression_backtick": 1500,
+        "trace_equals_label": 1500,
+        "visible_equation_bracket": 1500
+      },
+      "visible_equation_case_count": 12000,
+      "visible_equation_extraction_accuracy": 1.0
+    }
+  ]
+}

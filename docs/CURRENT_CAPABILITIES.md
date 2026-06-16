@@ -1,6 +1,6 @@
 # VRAXION Current Capabilities
 
-_Last updated: 2026-06-15_
+_Last updated: 2026-06-16_
 
 This document describes what the current VRAXION mainline can and cannot claim
 as a single system.
@@ -114,6 +114,26 @@ direct flow writes = 0
 overbroad control wrong-scope calls = 18000
 ```
 
+Current E131 visible equation assistant-render evidence:
+
+```text
+dataset rows loaded = 130000
+transfer pass operators = 9 / 9
+visible equation cases = 108000
+word-problem no-call cases = 54000
+visible equation extraction accuracy min = 1.000
+word-problem no-call accuracy min = 1.000
+qualified visible activation total = 108000
+hard negatives = 0
+false commits = 0
+wrong-scope calls = 0
+unsupported answers = 0
+boundary-claim violations = 0
+direct flow writes = 0
+E130B baseline visible misses = 96711
+overbroad control wrong-scope calls = 18000
+```
+
 These are scoped operators, not general-purpose neural skills. A larger count is
 not automatically better; value depends on safe activation, low cost, correct
 scope, reloadability, and no-harm evidence.
@@ -172,6 +192,8 @@ scope, reloadability, and no-harm evidence.
   rejection, and division-by-zero rejection;
 - transfer those visible arithmetic expression/trace skills into longer
   text-IO wrappers when the arithmetic payload is explicit;
+- route assistant-style visible equation surfaces into deterministic scoped
+  arithmetic renders when the arithmetic expression or trace is visible;
 - no-call natural-language word problems that lack a visible arithmetic
   expression or trace.
 

@@ -1,0 +1,19 @@
+{
+  "artifact_contract": "E131_VISIBLE_EQUATION_EXTRACTION_AND_ASSISTANT_ARITHMETIC_RENDER_GAUNTLET",
+  "checked_files": [
+    "summary.json",
+    "decision.json",
+    "aggregate_metrics.json",
+    "dataset_report.json",
+    "input_e130b_report.json",
+    "extraction_report.json",
+    "assistant_render_report.json",
+    "word_problem_no_call_report.json",
+    "operator_transfer_results.json",
+    "variant_report.json",
+    "deterministic_replay.json",
+    "row_level_samples.jsonl"
+  ],
+  "failure_count": 0,
+  "failures": []
+}

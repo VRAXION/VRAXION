@@ -1,13 +1,13 @@
 # VRAXION Current Status
 
-_Last updated: 2026-06-15_
+_Last updated: 2026-06-16_
 
 ## Official Status
 
 ```text
 Current source of truth: main
 Current GitHub release: v6.1.7
-Current evidence anchor: E130B arithmetic text-IO transfer and word-problem no-call gauntlet (post-v6.1.7 main)
+Current evidence anchor: E131 visible equation extraction and assistant arithmetic render gauntlet (post-v6.1.7 main)
 Latest released runtime slice: a908a838a1119540ed88bc91e10cfcb0bdae92a8 E79 training data/curriculum readiness gate
 Active branch surface: main only
 Historical branch heads: archive/branches/2026-06-13/*
@@ -33,6 +33,7 @@ E69-E79 released Rust runtime and training-data readiness gate
 -> E129 arithmetic trace Orange/Legendary probation
 -> E130A CoreMemoryCandidate-to-Orange backfill gauntlet
 -> E130B arithmetic text-IO transfer and word-problem no-call gauntlet
+-> E131 visible equation extraction and assistant arithmetic render gauntlet
 ```
 
 ## Current Evidence
@@ -54,6 +55,7 @@ E69-E79 released Rust runtime and training-data readiness gate
 - E130A backfills the 136 E112 CoreMemoryCandidate operators through an E121-style Orange/Legendary gate: 136/136 reached OrangeLegendaryCandidate, 41,036,433 total qualified activations, 300,623 minimum per operator, mean selected prune ratio 0.746176, 0 hard negatives, 0 false commits, 0 wrong-scope calls, 0 unsupported answers, 0 negative transfers, and 0 direct flow writes.
 - E130A dashboard summary: 530 operators, 527 Orange/LegendaryCandidate scoped operators, 0 CoreMemoryCandidate operators, and 3 Deprecated operators.
 - E130B transfers the 9 E129 arithmetic trace operators into visible-expression text IO: 9/9 passed, 270,000 visible-transfer cases, 135,000 hidden word-problem no-call cases, visible transfer accuracy minimum 1.000, word-problem no-call accuracy minimum 1.000, 0 hard negatives, 0 false commits, 0 wrong-scope calls, 0 unsupported answers, and 0 direct flow writes.
+- E131 routes those 9 E129/E130B arithmetic operators from assistant-style visible equation surfaces seeded by the 130,000-row external E131 text pack: 9/9 passed, 108,000 visible-equation cases, 54,000 hidden word-problem no-call cases, visible equation extraction accuracy minimum 1.000, word-problem no-call accuracy minimum 1.000, 0 hard negatives, 0 false commits, 0 wrong-scope calls, 0 unsupported answers, 0 boundary-claim violations, and 0 direct flow writes.
 - Long-running work must emit continuous partial progress and checkpoint data.
 
 ## What Is Historical
@@ -64,7 +66,7 @@ The old bounded-service, open-vocab assistant, beta release, byte-pipeline, and 
 
 Allowed current claim:
 
-> VRAXION v6 has a Rust mainline for governed Pocket Library state, resumable curriculum execution, multi-lane final-training supervision, global Pocket Library merge/dedupe governance, a training-data/curriculum readiness gate, one canonical `final_train` campaign entrypoint, governed Operator evidence through E127, an E128 lightweight assistant text-IO render-training smoke, E129 scoped exact arithmetic trace Operators promoted through Orange/Legendary probation, an E130A CoreMemoryCandidate-to-Orange backfill, and an E130B arithmetic text-IO transfer/no-call gauntlet. E127 cycle 40 contains 382 scoped Orange/Legendary text operators with 0 tracked hard negatives, false commits, wrong-scope calls, or unsupported answers in the checkpointed evidence. E128 confirms a 320-prompt deterministic corpus/action-policy/template-render bridge with 0 unsupported answers and 0 boundary-claim violations. E129 confirms 9 scoped arithmetic trace operators with 2.7M qualified activations, 0 hard negatives, and 0 wrong-scope calls. E130A confirms 136 prior CoreMemoryCandidate operators reached Orange/LegendaryCandidate with 41,036,433 total qualified activations, 0 hard negatives, and 0 direct flow writes. E130B confirms those 9 arithmetic operators transfer to visible-expression text IO while hidden word problems remain no-call.
+> VRAXION v6 has a Rust mainline for governed Pocket Library state, resumable curriculum execution, multi-lane final-training supervision, global Pocket Library merge/dedupe governance, a training-data/curriculum readiness gate, one canonical `final_train` campaign entrypoint, governed Operator evidence through E127, an E128 lightweight assistant text-IO render-training smoke, E129 scoped exact arithmetic trace Operators promoted through Orange/Legendary probation, an E130A CoreMemoryCandidate-to-Orange backfill, an E130B arithmetic text-IO transfer/no-call gauntlet, and an E131 visible-equation assistant-render gauntlet. E127 cycle 40 contains 382 scoped Orange/Legendary text operators with 0 tracked hard negatives, false commits, wrong-scope calls, or unsupported answers in the checkpointed evidence. E128 confirms a 320-prompt deterministic corpus/action-policy/template-render bridge with 0 unsupported answers and 0 boundary-claim violations. E129 confirms 9 scoped arithmetic trace operators with 2.7M qualified activations, 0 hard negatives, and 0 wrong-scope calls. E130A confirms 136 prior CoreMemoryCandidate operators reached Orange/LegendaryCandidate with 41,036,433 total qualified activations, 0 hard negatives, and 0 direct flow writes. E130B confirms those 9 arithmetic operators transfer to visible-expression text IO while hidden word problems remain no-call. E131 confirms those operators route from assistant-style visible equation surfaces while hidden prose-only word problems remain no-call.
 
 Short form:
 
@@ -75,6 +77,7 @@ deterministic scoped text-to-text smoke = yes
 lightweight assistant text-IO corpus/render smoke = yes
 exact arithmetic expression/trace compute = yes
 visible-expression arithmetic text IO = yes
+visible-equation assistant arithmetic render = yes
 CoreMemoryCandidate-to-Orange rank backfill = yes
 open-domain LLM/chatbot = no
 Gemma/GPT-like generation = no
@@ -97,6 +100,6 @@ Not claimed:
 ## Next Work
 
 1. Use `CODEX_HANDOVER.md` as the first read for fresh Codex sessions.
-2. Decide whether to continue E127 with a fresh candidate pack or pause farming.
-3. Run E131 visible-equation extraction and assistant arithmetic render gauntlet before claiming broader arithmetic assistant behavior.
+2. Run E132 external math text skill farm mutation/prune Orange cycle before claiming broader math-text skill generalization.
+3. Decide whether to continue E127 with a fresh candidate pack or keep the current focus on arithmetic/text assistant surfaces.
 4. Keep evidence CI checking tracked sample artifacts so front-door docs cannot drift back to stale current-main claims.

@@ -1,0 +1,9 @@
+{
+  "artifact_contract": "E131_VISIBLE_EQUATION_EXTRACTION_AND_ASSISTANT_ARITHMETIC_RENDER_GAUNTLET",
+  "boundary": "visible equation extraction and deterministic assistant arithmetic render only; not natural-language word-problem solving",
+  "decision": "e131_visible_equation_extraction_assistant_arithmetic_render_confirmed",
+  "failure_count": 0,
+  "failures": [],
+  "next": "E132_EXTERNAL_MATH_TEXT_SKILL_FARM_MUTATION_PRUNE_ORANGE_CYCLE",
+  "pass_gate": true
+}

@@ -1,6 +1,29 @@
 # Changelog
 
-This changelog is narrowed to the current v6 / E127-E130B evidence anchor. Full historical beta, probe, Python SDK, legacy Rust, and research-output history is preserved in git history and archive tags.
+This changelog is narrowed to the current v6 / E127-E131 evidence anchor. Full historical beta, probe, Python SDK, legacy Rust, and research-output history is preserved in git history and archive tags.
+
+## 2026-06-16 - E131 Visible Equation Extraction And Assistant Arithmetic Render
+
+- Added `scripts/probes/run_e131_visible_equation_extraction_and_assistant_arithmetic_render_gauntlet.py`.
+- Routed the 9 E129/E130B scoped arithmetic trace Operators from
+  assistant-style visible equation surfaces seeded by the external E131 text
+  pack.
+- Result: 9/9 arithmetic Operators passed the E131 visible-equation assistant
+  render gate.
+- Dataset seed: 130,000 normalized rows loaded from MathInstruct, Dolly 15k,
+  and OpenAssistant/oasst1.
+- Positive transfer: 108,000 visible-equation cases, visible equation
+  extraction accuracy minimum 1.000, and 108,000 qualified visible activations.
+- Negative-scope guard: 54,000 hidden prose-only word-problem cases produced
+  word-problem no-call accuracy minimum 1.000.
+- Confirmed: 0 hard negatives, 0 false commits, 0 wrong-scope calls, 0
+  unsupported answers, 0 boundary-claim violations, and 0 direct flow writes.
+- Challenger/control: the E130B baseline missed 96,711 new visible-equation
+  surfaces, and the overbroad word-problem solver control produced 18,000
+  wrong-scope calls.
+- Boundary: visible equation extraction and deterministic assistant arithmetic
+  rendering only; not hidden natural-language word-problem solving, GSM8K
+  solving, open-domain reasoning, or neural LLM training.
 
 ## 2026-06-15 - E130B Arithmetic Text-IO Transfer And Word-Problem No-Call
 

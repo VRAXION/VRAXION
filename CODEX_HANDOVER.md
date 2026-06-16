@@ -1,6 +1,6 @@
 # VRAXION Codex Handover
 
-Last updated: 2026-06-15
+Last updated: 2026-06-16
 
 ## Start Here
 
@@ -8,8 +8,8 @@ Last updated: 2026-06-15
 repo = VRAXION_anchorwiki
 branch = main
 latest_release_target = v6.1.7
-current_evidence_anchor = E130B arithmetic text-IO transfer and word-problem no-call gauntlet on main
-current_status = E130B transferred E129 arithmetic trace operators to visible-expression text IO while hidden word problems remain no-call
+current_evidence_anchor = E131 visible equation extraction and assistant arithmetic render gauntlet on main
+current_status = E131 routed E129/E130B arithmetic operators from assistant-style visible equation surfaces while hidden prose-only word problems remain no-call
 ```
 
 This is the first file a fresh Codex should read after cloning the repo.
@@ -117,6 +117,31 @@ direct flow writes = 0
 overbroad_control_wrong_scope_call_total = 18,000
 ```
 
+E131 routes those arithmetic operators from assistant-style visible equation
+surfaces seeded by the external E131 text pack:
+
+```text
+dataset_rows_loaded = 130,000
+operator_count = 9
+transfer_pass_operator_count = 9
+visible_equation_case_count_total = 108,000
+word_problem_no_call_case_count_total = 54,000
+qualified_visible_activation_total = 108,000
+
+visible_equation_extraction_accuracy_min = 1.000
+word_problem_no_call_accuracy_min = 1.000
+
+hard negatives = 0
+false commits = 0
+wrong scope calls = 0
+unsupported answers = 0
+boundary claim violations = 0
+direct flow writes = 0
+
+E130B baseline visible misses = 96,711
+overbroad_control_wrong_scope_call_total = 18,000
+```
+
 ## Claim Boundary
 
 Allowed:
@@ -130,7 +155,9 @@ arithmetic trace Operators through Orange/Legendary probation. E130A confirms
 the prior CoreMemoryCandidate pool can be backfilled to Orange/Legendary under
 the stricter activation, no-harm, reload, challenger, and prune gate. E130B
 confirms those arithmetic operators transfer to visible-expression text IO while
-hidden word problems remain no-call.
+hidden word problems remain no-call. E131 confirms assistant-style visible
+equation extraction and deterministic arithmetic rendering while hidden
+prose-only word problems remain no-call.
 ```
 
 System-level interpretation:
@@ -177,12 +204,14 @@ docs/research/E128_ASSISTANT_TEXT_IO_LIGHTWEIGHT_RENDER_TRAINING_RESULT.md
 docs/research/E129_ARITHMETIC_TRACE_ORANGE_LEGENDARY_PROBATION_RESULT.md
 docs/research/E130A_COREMEMORY_TO_ORANGE_BACKFILL_GAUNTLET_RESULT.md
 docs/research/E130B_ARITHMETIC_TEXT_IO_TRANSFER_AND_WORD_PROBLEM_NO_CALL_GAUNTLET_RESULT.md
+docs/research/E131_VISIBLE_EQUATION_EXTRACTION_AND_ASSISTANT_ARITHMETIC_RENDER_GAUNTLET_RESULT.md
 docs/research/artifact_samples/e127_overnight_text_skill_farm_orange_cycle/
 docs/research/artifact_samples/e127_text_to_text_render_smoke_current/
 docs/research/artifact_samples/e128_assistant_text_io_lightweight_render_training/
 docs/research/artifact_samples/e129_arithmetic_trace_orange_legendary_probation/
 docs/research/artifact_samples/e130a_corememory_to_orange_backfill_gauntlet/
 docs/research/artifact_samples/e130b_arithmetic_text_io_transfer_and_word_problem_no_call_gauntlet/
+docs/research/artifact_samples/e131_visible_equation_extraction_and_assistant_arithmetic_render_gauntlet/
 ```
 
 ## Legal / License
@@ -215,7 +244,7 @@ docs/legal/PRIOR_ART_AND_PROVENANCE_CHECKLIST.md
 Generate the local operator dashboard:
 
 ```powershell
-python scripts/tools/generate_operator_rank_dashboard.py --e127 docs/research/artifact_samples/e127_overnight_text_skill_farm_orange_cycle --e129 docs/research/artifact_samples/e129_arithmetic_trace_orange_legendary_probation --e130a docs/research/artifact_samples/e130a_corememory_to_orange_backfill_gauntlet --e130b docs/research/artifact_samples/e130b_arithmetic_text_io_transfer_and_word_problem_no_call_gauntlet --out target/pilot_wave/operator_rank_dashboard/index.html
+python scripts/tools/generate_operator_rank_dashboard.py --e127 docs/research/artifact_samples/e127_overnight_text_skill_farm_orange_cycle --e129 docs/research/artifact_samples/e129_arithmetic_trace_orange_legendary_probation --e130a docs/research/artifact_samples/e130a_corememory_to_orange_backfill_gauntlet --e130b docs/research/artifact_samples/e130b_arithmetic_text_io_transfer_and_word_problem_no_call_gauntlet --e131 docs/research/artifact_samples/e131_visible_equation_extraction_and_assistant_arithmetic_render_gauntlet --out target/pilot_wave/operator_rank_dashboard/index.html
 ```
 
 Expected current dashboard cards:
@@ -224,6 +253,9 @@ Expected current dashboard cards:
 E130B TRANSFER = 9/9
 E130B VISIBLE IO = 100.000%
 E130B WORD NO-CALL = 100.000%
+E131 VISIBLE EQ = 9/9
+E131 EXTRACTION = 100.000%
+E131 WORD NO-CALL = 100.000%
 ORANGE/LEGENDARY CANDIDATE = 527
 ```
 
@@ -239,6 +271,7 @@ python scripts/probes/run_e128_assistant_text_io_lightweight_render_training.py 
 python -m py_compile scripts/probes/run_e129_arithmetic_trace_orange_legendary_probation.py
 python -m py_compile scripts/probes/run_e130a_corememory_to_orange_backfill_gauntlet.py
 python -m py_compile scripts/probes/run_e130b_arithmetic_text_io_transfer_and_word_problem_no_call_gauntlet.py
+python -m py_compile scripts/probes/run_e131_visible_equation_extraction_and_assistant_arithmetic_render_gauntlet.py
 python -m compileall -q scripts
 cargo test --workspace
 git diff --check
@@ -281,7 +314,7 @@ Recommended next steps:
 
 ```text
 1. Decide whether to continue E127 with a fresh candidate pack or pause farming.
-2. Run E131 visible-equation extraction and assistant arithmetic render gauntlet.
+2. Run E132 external math text skill farm mutation/prune Orange cycle.
 3. Build the next bridge from deterministic action/template rendering and exact
    arithmetic trace/text-IO operators toward richer assistant arithmetic while
    keeping claims scoped.

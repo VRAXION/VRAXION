@@ -1,0 +1,22 @@
+{
+  "artifact_contract": "E131_VISIBLE_EQUATION_EXTRACTION_AND_ASSISTANT_ARITHMETIC_RENDER_GAUNTLET",
+  "boundary_claim_violation_total": 0,
+  "direct_flow_write_total": 0,
+  "e130b_baseline_visible_miss_total": 96711,
+  "false_commit_total": 0,
+  "hard_negative_total": 0,
+  "operator_count": 9,
+  "overbroad_control_false_commit_total": 18000,
+  "overbroad_control_wrong_scope_call_total": 18000,
+  "qualified_visible_activation_min": 12000,
+  "qualified_visible_activation_total": 108000,
+  "seconds": 51.475,
+  "transfer_pass_operator_count": 9,
+  "unsupported_answer_total": 0,
+  "variant_count": 27,
+  "visible_equation_case_count_total": 108000,
+  "visible_equation_extraction_accuracy_min": 1.0,
+  "word_problem_no_call_accuracy_min": 1.0,
+  "word_problem_no_call_case_count_total": 54000,
+  "wrong_scope_call_total": 0
+}

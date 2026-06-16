@@ -1,0 +1,6 @@
+{
+  "artifact_contract": "E131_VISIBLE_EQUATION_EXTRACTION_AND_ASSISTANT_ARITHMETIC_RENDER_GAUNTLET",
+  "deterministic_replay_pass": true,
+  "operator_count": 9,
+  "replay_sha256": "4936a16e6fbe33abd611fb4f03d0d15fc181cdffcfddabd5d49451b60887debb"
+}
