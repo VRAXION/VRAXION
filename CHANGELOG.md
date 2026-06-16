@@ -1,6 +1,15 @@
 # Changelog
 
-This changelog is narrowed to the current v6 / E127-E136C evidence anchor. Full historical beta, probe, Python SDK, legacy Rust, and research-output history is preserved in git history and archive tags.
+This changelog is narrowed to the current v6 / E127-E136D evidence anchor. Full historical beta, probe, Python SDK, legacy Rust, and research-output history is preserved in git history and archive tags.
+
+## 2026-06-16 - E136D OutputTextField Binary Matrix Smoke
+
+- Added a runtime `OutputTextField` representation in `vraxion-runtime/src/text_field.rs`.
+- Locked the output-side text field name: `OutputTextField`; `TextRender` is a process/operator, not the field.
+- Represented committed output text as an `N x 8` bit matrix where each row is one UTF-8 byte.
+- Added `scripts/probes/run_e136d_output_text_field_binary_matrix_smoke.py`.
+- Result: 10/10 cases passed, 7/7 committed text roundtrips, 3/3 guarded rejects, 10/10 zero-fill checks, and 1/1 tamper detection.
+- Boundary: output-field representation and Agency-gated commit semantics only; not text generation, next-token prediction, open-domain assistant behavior, Core, PermaCore, or TrueGolden.
 
 ## 2026-06-16 - E136C Assistant Text Polished Render Quick Test
 

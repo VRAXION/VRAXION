@@ -32,6 +32,10 @@ Proposal
 Proposal Field
   Temporary one-cycle thought/proposal surface.
 
+OutputTextField
+  Agency-committed output-side text matrix. Shape is N x 8 bit cells, where
+  each row is one UTF-8 byte.
+
 Agency Field
   Central commit/action decision layer.
 
@@ -95,6 +99,7 @@ flowchart LR
     Operator["Operator\nT-Stab / α-Syncer / Scribe / Guard / Lens / Adapter"]
     Proposal["Proposal Field\ntemporary one-cycle proposals"]
     Agency["Agency Field\ncommit / reject / defer / ask / call / answer"]
+    OutputText["OutputTextField\nN x 8 committed UTF-8 bytes"]
     Trace["Trace Ledger\nevidence / route / cycle history"]
     Commit["Commit Layer\nstable Flow/Ground update"]
     Output["Output / external action"]
@@ -115,7 +120,8 @@ flowchart LR
     Commit --> Ground
     Agency -- REJECT / DEFER --> Trace
     Agency -- ASK / CALL --> Router
-    Agency -- ANSWER / ACT --> Output
+    Agency -- ANSWER --> OutputText --> Output
+    Agency -- ACT --> Output
 ```
 
 Display names may use `α-Syncer`. Code, filenames, JSON keys, and artifact IDs
@@ -174,8 +180,8 @@ Operator Manager gates.
 Agency commits or rejects.
 ```
 
-No Operator may directly write stable Flow/Ground state. Operators emit
-Proposals; Agency owns commit.
+No Operator may directly write stable Flow/Ground state or committed
+OutputTextField state. Operators emit Proposals; Agency owns commit.
 
 ## Current Naming Map
 

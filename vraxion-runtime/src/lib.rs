@@ -75,7 +75,9 @@ pub use pocket::{
     PocketLifecycle, PocketRegistryEntry, PocketToken,
 };
 pub use proposal::{ingress_to_proposal, Proposal, ProposalKind};
-pub use text_field::{select_text_mode, TextMode, TextProfile};
+pub use text_field::{
+    select_text_mode, OutputTextField, OutputTextFieldError, TextMode, TextProfile,
+};
 pub use training_data::{
     run_training_data_readiness_preflight, TrainingDataReadinessConfig,
     TrainingDataReadinessSummary, TrainingLessonSpec,

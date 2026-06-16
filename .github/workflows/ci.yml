@@ -233,6 +233,10 @@ jobs:
               '"current_evidence_anchor": "E136B_ASSISTANT_TEXT_ROUTE_COMPOSITION_AND_BOUNDARY_CONFIRM"',
               "current_evidence_anchor = E136B assistant-text route composition and boundary confirm",
               "Current evidence anchor: E136B assistant-text route composition and boundary confirm",
+              "current_evidence_anchor = E136C_ASSISTANT_TEXT_POLISHED_RENDER_QUICK_TEST",
+              '"current_evidence_anchor": "E136C_ASSISTANT_TEXT_POLISHED_RENDER_QUICK_TEST"',
+              "current_evidence_anchor = E136C assistant-text polished render quick test",
+              "Current evidence anchor: E136C assistant-text polished render quick test",
           ]
           failures = []
           for path in files:

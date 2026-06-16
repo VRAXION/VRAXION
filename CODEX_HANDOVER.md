@@ -8,8 +8,8 @@ Last updated: 2026-06-16
 repo = VRAXION_anchorwiki
 branch = main
 latest_release_target = v6.1.7
-current_evidence_anchor = E136C assistant-text polished render quick test on main
-current_status = E136C confirmed 12/12 quick inference samples render short scoped assistant text with 0 raw action leaks and 0 direct-write claims
+current_evidence_anchor = E136D OutputTextField binary matrix smoke on main
+current_status = E136D confirmed OutputTextField as N x 8 UTF-8 byte matrix with 10/10 cases, 7/7 roundtrips, 3/3 rejects, zero-fill, and tamper detection
 ```
 
 This is the first file a fresh Codex should read after cloning the repo.
@@ -344,6 +344,25 @@ forbidden_claim_total = 0
 direct_write_claim_total = 0
 ```
 
+E136D locks the output-side text field representation:
+
+```text
+field_name = OutputTextField
+matrix_shape = N x 8 bit cells
+row_meaning = one UTF-8 byte
+case_count = 10
+pass_count = 10
+fail_count = 0
+commit_case_count = 7
+reject_case_count = 3
+roundtrip_pass_count = 7
+zero_fill_pass_count = 10
+overflow_reject_count = 1
+direct_write_reject_count = 1
+nul_reject_count = 1
+tamper_detect_count = 1
+```
+
 ## Claim Boundary
 
 Allowed:
@@ -377,6 +396,9 @@ E136C confirms a first quick polished text render layer over those routes, with
 short deterministic outputs for greeting, summary, code, source-defer, JSON,
 no-solve math, safety, comparison, translation, no-overwrite, rejected-response,
 and outline cases.
+E136D confirms the output side can hold committed text as a binary
+OutputTextField, where the matrix is N x 8 bit cells and each row is one UTF-8
+byte.
 ```
 
 System-level interpretation:
@@ -402,6 +424,8 @@ It can compose those assistant/text operators into bounded route stacks in a
 controlled assistant/text route-composition proxy.
 It can render short polished deterministic assistant text for a 12-sample quick
 set without raw route/action label leakage.
+It can represent committed output text in an Agency-gated OutputTextField binary
+matrix with roundtrip, reject, zero-fill, and tamper-detection checks.
 It can promote prior scoped CoreMemoryCandidate operators to Orange/Legendary
 when the E121-style gate is satisfied.
 It is not an open-domain LLM/chatbot.
@@ -442,6 +466,7 @@ docs/research/E135_MATH_TEXT_MULTI_ROUTE_ASSISTANT_DIALOGUE_STATE_GAUNTLET_RESUL
 docs/research/E136A_ASSISTANT_TEXT_SKILL_FARM_MUTATION_PRUNE_ORANGE_CYCLE_RESULT.md
 docs/research/E136B_ASSISTANT_TEXT_ROUTE_COMPOSITION_AND_BOUNDARY_CONFIRM_RESULT.md
 docs/research/E136C_ASSISTANT_TEXT_POLISHED_RENDER_QUICK_TEST_RESULT.md
+docs/research/E136D_OUTPUT_TEXT_FIELD_BINARY_MATRIX_SMOKE_RESULT.md
 docs/research/artifact_samples/e127_overnight_text_skill_farm_orange_cycle/
 docs/research/artifact_samples/e127_text_to_text_render_smoke_current/
 docs/research/artifact_samples/e128_assistant_text_io_lightweight_render_training/
@@ -456,6 +481,7 @@ docs/research/artifact_samples/e135_math_text_multi_route_assistant_dialogue_sta
 docs/research/artifact_samples/e136a_assistant_text_skill_farm_mutation_prune_orange_cycle/
 docs/research/artifact_samples/e136b_assistant_text_route_composition_and_boundary_confirm/
 docs/research/artifact_samples/e136c_assistant_text_polished_render_quick_test/
+docs/research/artifact_samples/e136d_output_text_field_binary_matrix_smoke/
 ```
 
 ## Legal / License
@@ -537,6 +563,16 @@ E136C RAW ACTION LEAKS = 0
 E136C DIRECT-WRITE CLAIMS = 0
 ```
 
+Expected E136D output-field smoke:
+
+```text
+E136D OUTPUT TEXT FIELD = 10/10
+E136D ROUNDTRIPS = 7/7
+E136D GUARDED REJECTS = 3/3
+E136D ZERO-FILL = 10/10
+E136D TAMPER DETECT = 1/1
+```
+
 ## Local E136 Seed Pack
 
 After E135, a local assistant/text seed pack was downloaded and normalized for
@@ -591,6 +627,9 @@ python -m py_compile scripts/probes/run_e136b_assistant_text_route_composition_a
 python scripts/probes/run_e136b_assistant_text_route_composition_and_boundary_confirm.py --dataset target/datasets/missing_e136b_smoke.jsonl --dataset-manifest target/datasets/missing_e136b_manifest.json --download-manifest target/datasets/missing_e136b_download.json --allow-builtin-dataset --dataset-row-limit 120 --min-dataset-rows 1 --route-cases-per-operator 40 --boundary-cases-per-operator 12 --control-cases-per-operator 8 --out target/ci/e136b_assistant_text_route_composition_and_boundary_confirm --sample-out ""
 python -m py_compile scripts/probes/run_e136c_assistant_text_polished_render_quick_test.py
 python scripts/probes/run_e136c_assistant_text_polished_render_quick_test.py --out target/ci/e136c_assistant_text_polished_render_quick_test --sample-out ""
+python -m py_compile scripts/probes/run_e136d_output_text_field_binary_matrix_smoke.py
+python scripts/probes/run_e136d_output_text_field_binary_matrix_smoke.py --out target/ci/e136d_output_text_field_binary_matrix_smoke --sample-out ""
+cargo test -p vraxion-runtime output_text_field
 python -m compileall -q scripts
 cargo test --workspace
 git diff --check
@@ -632,8 +671,8 @@ Do not delete or commit them without an explicit cleanup decision.
 Recommended next steps:
 
 ```text
-1. Run E136D assistant-text render training set and heldout confirmation before
-   claiming robust text generation beyond the 12-sample quick smoke.
+1. Run E136E OutputTextField route-render integration before claiming E136C
+   rendered responses flow through the binary output field end to end.
 2. Run a later assistant/open-domain boundary probe before claiming broader
    assistant readiness.
 3. Decide whether to continue E127 with a fresh candidate pack or pause farming.

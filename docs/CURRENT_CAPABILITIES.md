@@ -305,6 +305,20 @@ forbidden claims = 0
 direct-write claims = 0
 ```
 
+Current E136D OutputTextField binary matrix evidence:
+
+```text
+field name = OutputTextField
+matrix shape = N x 8 bit cells
+row meaning = one UTF-8 byte
+case count = 10
+pass count = 10
+committed text roundtrips = 7 / 7
+guarded rejects = 3 / 3
+zero-fill checks = 10 / 10
+tamper detection = 1 / 1
+```
+
 These are scoped operators, not general-purpose neural skills. A larger count is
 not automatically better; value depends on safe activation, low cost, correct
 scope, reloadability, and no-harm evidence.
@@ -359,6 +373,9 @@ scope, reloadability, and no-harm evidence.
 - render short polished deterministic assistant text for a 12-sample quick set
   covering greeting, summary, code, source-defer, JSON, no-solve math, safety,
   comparison, translation, no-overwrite, rejected-response, and outline cases;
+- store committed output text in an `OutputTextField` represented as an N x 8
+  binary matrix, with UTF-8 byte roundtrip, overflow/direct-write/NUL reject,
+  zero-fill, and tamper-detection smoke coverage;
 - avoid claiming a stable answer when the scoped evidence chain is incomplete.
 
 ### Visible calculation-trace validation

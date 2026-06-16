@@ -1,0 +1,17 @@
+{
+  "artifact_contract": "E136D_OUTPUT_TEXT_FIELD_BINARY_MATRIX_SMOKE",
+  "case_count": 10,
+  "commit_case_count": 7,
+  "direct_write_reject_count": 1,
+  "fail_count": 0,
+  "matrix_shape_pass_count": 10,
+  "nul_reject_count": 1,
+  "overflow_reject_count": 1,
+  "pass_count": 10,
+  "reject_case_count": 3,
+  "roundtrip_pass_count": 7,
+  "seconds": 0.006,
+  "tamper_detect_count": 1,
+  "utf8_valid_count": 7,
+  "zero_fill_pass_count": 10
+}
