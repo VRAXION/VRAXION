@@ -1,6 +1,24 @@
 # Changelog
 
-This changelog is narrowed to the current v6 / E127-E136K evidence anchor. Full historical beta, probe, Python SDK, legacy Rust, and research-output history is preserved in git history and archive tags.
+This changelog is narrowed to the current v6 / E127-E136L evidence anchor. Full historical beta, probe, Python SDK, legacy Rust, and research-output history is preserved in git history and archive tags.
+
+## 2026-06-17 - E136L Runtime Replacement Canary And Tightened Challenger Confirm
+
+- Added `scripts/probes/run_e136l_runtime_replacement_canary_and_tightened_challenger_confirm.py`.
+- Tested the E136K apply plan as a rollback-safe runtime canary simulation:
+  16/16 direct canaries passed with the old trigger removed in canary and the
+  selected variant active.
+- Preserved the safety split: 11 tightened challenger/OOD rows remain held, 7
+  abstract lineage rows remain held, production runtime applies 0, destructive
+  applies 0.
+- Canary impact preserved from E136J/E136K: 188,597,925 current activations,
+  166,354,720 selected activations, 22,243,205 shadow-pruned activations, and
+  direct-canary removed activations 3,450,257.
+- Rollback audit passed: 16 rollback-manifest entries, rollback triggers 0,
+  strict recall misses 0, wrong-scope proxy calls 0, hard negatives 0,
+  unsupported answers 0, and direct Flow writes 0.
+- Track decision: proceed to E136M runtime replacement apply or abstract
+  lineage split; do not destructively apply challenger/abstract rows yet.
 
 ## 2026-06-17 - E136K Operator Replacement Apply Plan Or Flow-Scale Transfer
 

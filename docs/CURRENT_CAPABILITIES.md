@@ -354,7 +354,35 @@ unsupported-claim rejects = 6
 OutputTextField roundtrip/checksum/zero-fill = 70 / 70
 ```
 
-Current E136K operator replacement apply-plan evidence:
+Current E136L runtime replacement canary evidence:
+
+```text
+operator count = 34
+direct canary tested = 16
+direct canary passed = 16
+old operators removed in canary = 16
+runtime replacement canary allowed = 16
+production runtime applies = 0
+destructive applies = 0
+challenger/OOD tested = 11
+challenger hold = 11
+abstract lineage hold = 7
+rollback manifest entries = 16
+rollback triggers = 0
+direct canary legacy activations = 60,362,384
+direct canary selected activations = 56,912,127
+direct canary removed activations = 3,450,257
+direct canary removed ratio = 0.057159
+sample rows processed = 8,345
+sample direct removed activations = 1,031
+strict recall misses = 0
+wrong-scope proxy calls = 0
+hard negatives = 0
+unsupported answers = 0
+direct Flow writes = 0
+```
+
+Previous E136K operator replacement apply-plan evidence:
 
 ```text
 operator count = 34
@@ -634,6 +662,10 @@ shadow operator apply / residual prune
 operator replacement apply planning
   split shadow-proven variants into rollback-safe direct canaries,
   challenger/OOD-required replacements, and abstract lineage holds
+
+runtime replacement canary
+  remove legacy triggers in canary, activate selected variants, and audit
+  rollback triggers before any production runtime replacement
 ```
 
 ## What it cannot claim yet

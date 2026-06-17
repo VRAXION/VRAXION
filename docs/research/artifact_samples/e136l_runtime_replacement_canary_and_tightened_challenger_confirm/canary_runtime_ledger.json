@@ -1,0 +1,3312 @@
+{
+  "rows": [
+    {
+      "abstract_lineage_required": false,
+      "accepted_mutations": 5,
+      "apply_action": "DIRECT_CANARY_KEEP_CURRENT_WITH_LIGHT_PRUNE",
+      "apply_reason": "low-risk verified operator; apply selected trigger as canary with rollback snapshot",
+      "challenger_ood_required": false,
+      "combined_failure_count": 0,
+      "current_activation": 7744864,
+      "direct_canary_ready": true,
+      "direct_flow_write": 0,
+      "display_name": "LaTeX Inline Math Boundary Lens",
+      "hard_negative": 0,
+      "kernel_value_score": 1.0,
+      "label_alignment_score": 0.987846,
+      "mutation_attempts": 1240,
+      "operator_id": "latex_inline_math_boundary_lens",
+      "readiness": "ready_low_risk",
+      "rollback_required": true,
+      "runtime_mutation_allowed_now": false,
+      "sample_replay": {
+        "apply_action": "DIRECT_CANARY_KEEP_CURRENT_WITH_LIGHT_PRUNE",
+        "canary_activation": 40,
+        "canary_prune_ratio": 0.512195,
+        "canary_removed_activation": 42,
+        "direct_flow_write": 0,
+        "display_name": "LaTeX Inline Math Boundary Lens",
+        "examples": [
+          {
+            "canary_active": true,
+            "family": "instruction_general",
+            "legacy_active": true,
+            "record_id": "e131:7a7b95ae426fb29a3a780ea0d4910d99c43e24665b6a0882b496f874644b185b",
+            "role": "e132_dataset_prefix",
+            "semantic_hits": [
+              "(?<!\\$)\\$[^$\\n]{1,160}\\$(?!\\$)"
+            ],
+            "source": "databricks/databricks-dolly-15k",
+            "tags": [
+              "general_instruction_style",
+              "latex_math_surface",
+              "visible_math_surface",
+              "word_problem_boundary_candidate"
+            ],
+            "text_head": "Using examples taken from the text give me a summary of the main arguments in favour of slavery reparations in the United States and the anticipated cost of enacting such reparations Context: Slavery ended in the United States in 1865 wi..."
+          },
+          {
+            "canary_active": true,
+            "family": "instruction_general",
+            "legacy_active": true,
+            "record_id": "e131:b66e05e951ac3e8e59eb469986133e574eaae5ec24475301416c394a6d1d02e3",
+            "role": "e132_dataset_prefix",
+            "semantic_hits": [
+              "(?<!\\$)\\$[^$\\n]{1,160}\\$(?!\\$)"
+            ],
+            "source": "databricks/databricks-dolly-15k",
+            "tags": [
+              "general_instruction_style",
+              "latex_math_surface",
+              "visible_math_surface",
+              "word_problem_boundary_candidate"
+            ],
+            "text_head": "Given this paragraph, how many public high schools are in Arlington, Virginia? Context: Arlington Public Schools operates the county's public K-12 education system of 22 elementary schools; 6 middle schools (Dorothy Hamm Middle School, G..."
+          },
+          {
+            "canary_active": true,
+            "family": "instruction_general",
+            "legacy_active": true,
+            "record_id": "e131:ba31cbfc594fcd1f1c600aec77909c69ed7bda3e014ef1f8d18d07290ce78240",
+            "role": "e132_dataset_prefix",
+            "semantic_hits": [
+              "(?<!\\$)\\$[^$\\n]{1,160}\\$(?!\\$)"
+            ],
+            "source": "databricks/databricks-dolly-15k",
+            "tags": [
+              "general_instruction_style",
+              "latex_math_surface",
+              "visible_math_surface",
+              "word_problem_boundary_candidate"
+            ],
+            "text_head": "From the passage below, extract the names of the companies and technologies that Walmart has acquired over the last 3 years. Context: In the first quarter of 2020, consumers responded to COVID by shopping less frequently (5.6% fewer tran..."
+          },
+          {
+            "canary_active": true,
+            "family": "instruction_general",
+            "legacy_active": true,
+            "record_id": "e131:29668d2861406f0c72446ce1a02304c7ef59c8e0ae61d917f10023cdb3ee28b7",
+            "role": "e132_dataset_prefix",
+            "semantic_hits": [
+              "(?<!\\$)\\$[^$\\n]{1,160}\\$(?!\\$)"
+            ],
+            "source": "databricks/databricks-dolly-15k",
+            "tags": [
+              "general_instruction_style",
+              "latex_math_surface",
+              "visible_math_surface"
+            ],
+            "text_head": "Can I make chocolate at home? Making chocolate at home can be rewarding, but be prepared to spend a little money and a lot of time. The money goes to equipment and cocoa beans. For equipment, you will need a melanger (about $600) to grin..."
+          },
+          {
+            "canary_active": false,
+            "family": "instruction_general",
+            "legacy_active": true,
+            "record_id": "e131:97179e116bc2671c3af56dc5cfa26192501c1f46bd7e96148b0037b1556545f2",
+            "role": "e132_dataset_prefix",
+            "semantic_hits": [],
+            "source": "databricks/databricks-dolly-15k",
+            "tags": [
+              "general_instruction_style",
+              "latex_math_surface",
+              "visible_math_surface",
+              "word_problem_boundary_candidate"
+            ],
+            "text_head": "Which of the 10 largest earthquakes was the deadliest? Context: Largest Earthquakes ever recorded The 10 largest magnitudes in recorded history 1. Valdivia, Chile 22 May 1960 (magnitude 9.5) This earthquake killed 1655 people, injured 30..."
+          }
+        ],
+        "hard_negative": 0,
+        "legacy_activation": 82,
+        "operator_id": "latex_inline_math_boundary_lens",
+        "role_counts": [
+          [
+            "e132_dataset_prefix",
+            56
+          ],
+          [
+            "tag_only_examples",
+            11
+          ],
+          [
+            "strict_examples",
+            7
+          ],
+          [
+            "e136a_dataset_prefix",
+            6
+          ],
+          [
+            "tag_lure",
+            2
+          ]
+        ],
+        "rows_seen": 8345,
+        "selected_variant_id": "latex_inline_math_boundary_lens::semantic_verified_pruned_e136h_v1",
+        "selected_variant_type": "semantic_verified_pruned",
+        "source": "E132",
+        "strict_activation": 40,
+        "strict_ratio": 0.487805,
+        "strict_recall_miss": 0,
+        "tag_only_activation": 38,
+        "top_hits": [
+          [
+            "(?<!\\$)\\$[^$\\n]{1,160}\\$(?!\\$)",
+            36
+          ],
+          [
+            "$x",
+            5
+          ],
+          [
+            "\\\\frac\\s*\\{",
+            3
+          ],
+          [
+            "\\frac",
+            3
+          ]
+        ],
+        "top_tags": [
+          [
+            "latex_math_surface",
+            76
+          ],
+          [
+            "general_instruction_style",
+            70
+          ],
+          [
+            "visible_math_surface",
+            65
+          ],
+          [
+            "word_problem_boundary_candidate",
+            47
+          ],
+          [
+            "proof_step_surface",
+            7
+          ],
+          [
+            "multi_turn_dialogue",
+            6
+          ],
+          [
+            "synthetic_multi_turn",
+            6
+          ],
+          [
+            "instruction_following",
+            6
+          ],
+          [
+            "assistant_style",
+            6
+          ],
+          [
+            "answer_boundary_surface",
+            5
+          ],
+          [
+            "code_instruction",
+            5
+          ],
+          [
+            "math_text_surface",
+            4
+          ]
+        ],
+        "unsupported_answer": 0,
+        "wrong_scope_proxy": 0
+      },
+      "selected_activation": 7663666,
+      "selected_variant_id": "latex_inline_math_boundary_lens::semantic_verified_pruned_e136h_v1",
+      "selected_variant_type": "semantic_verified_pruned",
+      "shadow_prune_ratio": 0.010484,
+      "shadow_pruned_activation": 81198,
+      "source": "E132",
+      "strict_recall_miss": 0,
+      "supersession_action": "apply_verified_light_prune_shadow",
+      "supersession_tier": "T0_KEEP_CURRENT_WITH_LIGHT_PRUNE",
+      "unsupported_answer": 0,
+      "wrong_scope_proxy": 0
+    },
+    {
+      "abstract_lineage_required": false,
+      "accepted_mutations": 5,
+      "apply_action": "DIRECT_CANARY_REPLACE_WITH_VERIFIED_PRUNED_VARIANT",
+      "apply_reason": "verified pruned replacement survived long shadow replay with zero recall loss",
+      "challenger_ood_required": false,
+      "combined_failure_count": 0,
+      "current_activation": 10953827,
+      "direct_canary_ready": true,
+      "direct_flow_write": 0,
+      "display_name": "Boxed Answer Boundary Lens",
+      "hard_negative": 0,
+      "kernel_value_score": 1.0,
+      "label_alignment_score": 0.834651,
+      "mutation_attempts": 1600,
+      "operator_id": "boxed_answer_boundary_lens",
+      "readiness": "ready_verified",
+      "rollback_required": true,
+      "runtime_mutation_allowed_now": false,
+      "sample_replay": {
+        "apply_action": "DIRECT_CANARY_REPLACE_WITH_VERIFIED_PRUNED_VARIANT",
+        "canary_activation": 16,
+        "canary_prune_ratio": 0.824176,
+        "canary_removed_activation": 75,
+        "direct_flow_write": 0,
+        "display_name": "Boxed Answer Boundary Lens",
+        "examples": [
+          {
+            "canary_active": false,
+            "family": "instruction_general",
+            "legacy_active": true,
+            "record_id": "e131:0a0d3e489ec635a03b13f697ebd7c4c4ffb50383086029c33f23709b58c8f4d1",
+            "role": "e132_dataset_prefix",
+            "semantic_hits": [],
+            "source": "databricks/databricks-dolly-15k",
+            "tags": [
+              "answer_boundary_surface",
+              "general_instruction_style",
+              "geometry_diagram_or_coordinate_surface",
+              "visible_math_surface",
+              "word_problem_boundary_candidate"
+            ],
+            "text_head": "What is process mining? Context: Process mining is a family of techniques relating the fields of data science and process management to support the analysis of operational processes based on event logs. The goal of process mining is to t..."
+          },
+          {
+            "canary_active": false,
+            "family": "instruction_general",
+            "legacy_active": true,
+            "record_id": "e131:8011de7cc339a23bd9f18228c7cf8d230f56a87a1cf95e2c72a3eb2858323c74",
+            "role": "e132_dataset_prefix",
+            "semantic_hits": [],
+            "source": "databricks/databricks-dolly-15k",
+            "tags": [
+              "answer_boundary_surface",
+              "general_instruction_style"
+            ],
+            "text_head": "How much music theory knowledge is required to compose music? Technically speaking, very little music theory knowledge is “required” to compose music. Music theory is, essentially, what musicians have learned over the course of several h..."
+          },
+          {
+            "canary_active": false,
+            "family": "instruction_general",
+            "legacy_active": true,
+            "record_id": "e131:bf48e70038075b93effed2e24fe7b5369914a3b51ef4270c07d6fceb2f771e45",
+            "role": "e132_dataset_prefix",
+            "semantic_hits": [],
+            "source": "databricks/databricks-dolly-15k",
+            "tags": [
+              "answer_boundary_surface",
+              "general_instruction_style",
+              "word_problem_boundary_candidate"
+            ],
+            "text_head": "What is the Maareech Advanced Torpedo Defence System (ATDS)? Context: Maareech Advanced Torpedo Defence System (ATDS) is a torpedo detection and countermeasure system used by the Indian Navy. The system offers a complete solution to dete..."
+          },
+          {
+            "canary_active": true,
+            "family": "instruction_general",
+            "legacy_active": true,
+            "record_id": "e131:a7b6ba289707880b8083a2d0af66f45d06f9f31e44d7072b6f863cadc5fddea0",
+            "role": "e132_dataset_prefix",
+            "semantic_hits": [
+              "answer is"
+            ],
+            "source": "databricks/databricks-dolly-15k",
+            "tags": [
+              "answer_boundary_surface",
+              "general_instruction_style",
+              "word_problem_boundary_candidate"
+            ],
+            "text_head": "What is the meaning of life? Although it is a deep question that has challenged philosophers for all time, Douglas Adams in his book \"The Hitchhicker's Guide to the Universe\" humorously states that the answer is \"42\". databricks/databric..."
+          },
+          {
+            "canary_active": false,
+            "family": "instruction_general",
+            "legacy_active": true,
+            "record_id": "e131:387f404e6b42b8d552c1579e9c0ea3010fafdc78ccddd35880c3989e22506083",
+            "role": "e132_dataset_prefix",
+            "semantic_hits": [],
+            "source": "databricks/databricks-dolly-15k",
+            "tags": [
+              "answer_boundary_surface",
+              "general_instruction_style",
+              "word_problem_boundary_candidate"
+            ],
+            "text_head": "What types of problems in government could AI be used to solve Context: The potential uses of AI in government are wide and varied, with Deloitte considering that \"Cognitive technologies could eventually revolutionize every facet of gove..."
+          }
+        ],
+        "hard_negative": 0,
+        "legacy_activation": 91,
+        "operator_id": "boxed_answer_boundary_lens",
+        "role_counts": [
+          [
+            "e132_dataset_prefix",
+            71
+          ],
+          [
+            "strict_examples",
+            8
+          ],
+          [
+            "tag_only_examples",
+            6
+          ],
+          [
+            "e136a_dataset_prefix",
+            5
+          ],
+          [
+            "tag_lure",
+            1
+          ]
+        ],
+        "rows_seen": 8345,
+        "selected_variant_id": "boxed_answer_boundary_lens::semantic_verified_pruned_e136h_v1",
+        "selected_variant_type": "semantic_verified_pruned",
+        "source": "E132",
+        "strict_activation": 16,
+        "strict_ratio": 0.175824,
+        "strict_recall_miss": 0,
+        "tag_only_activation": 75,
+        "top_hits": [
+          [
+            "answer is",
+            15
+          ],
+          [
+            "\\bfinal answer\\b",
+            2
+          ],
+          [
+            "final answer",
+            2
+          ]
+        ],
+        "top_tags": [
+          [
+            "answer_boundary_surface",
+            86
+          ],
+          [
+            "general_instruction_style",
+            81
+          ],
+          [
+            "word_problem_boundary_candidate",
+            38
+          ],
+          [
+            "visible_math_surface",
+            36
+          ],
+          [
+            "proof_step_surface",
+            8
+          ],
+          [
+            "geometry_diagram_or_coordinate_surface",
+            5
+          ],
+          [
+            "latex_math_surface",
+            5
+          ],
+          [
+            "synthetic_multi_turn",
+            5
+          ],
+          [
+            "instruction_following",
+            5
+          ],
+          [
+            "multi_turn_dialogue",
+            5
+          ],
+          [
+            "assistant_style",
+            5
+          ],
+          [
+            "matrix_vector_surface",
+            4
+          ]
+        ],
+        "unsupported_answer": 0,
+        "wrong_scope_proxy": 0
+      },
+      "selected_activation": 9249349,
+      "selected_variant_id": "boxed_answer_boundary_lens::semantic_verified_pruned_e136h_v1",
+      "selected_variant_type": "semantic_verified_pruned",
+      "shadow_prune_ratio": 0.155606,
+      "shadow_pruned_activation": 1704478,
+      "source": "E132",
+      "strict_recall_miss": 0,
+      "supersession_action": "supersede_current_with_verified_pruned_variant",
+      "supersession_tier": "T1_VERIFIED_PRUNED_REPLACEMENT",
+      "unsupported_answer": 0,
+      "wrong_scope_proxy": 0
+    },
+    {
+      "abstract_lineage_required": false,
+      "accepted_mutations": 4,
+      "apply_action": "DIRECT_CANARY_REPLACE_WITH_VERIFIED_PRUNED_VARIANT",
+      "apply_reason": "verified pruned replacement survived long shadow replay with zero recall loss",
+      "challenger_ood_required": false,
+      "combined_failure_count": 0,
+      "current_activation": 5674942,
+      "direct_canary_ready": true,
+      "direct_flow_write": 0,
+      "display_name": "Proof Step Connector Lens",
+      "hard_negative": 0,
+      "kernel_value_score": 1.0,
+      "label_alignment_score": 0.937057,
+      "mutation_attempts": 1280,
+      "operator_id": "proof_step_connector_lens",
+      "readiness": "ready_verified",
+      "rollback_required": true,
+      "runtime_mutation_allowed_now": false,
+      "sample_replay": {
+        "apply_action": "DIRECT_CANARY_REPLACE_WITH_VERIFIED_PRUNED_VARIANT",
+        "canary_activation": 415,
+        "canary_prune_ratio": 0.215501,
+        "canary_removed_activation": 114,
+        "direct_flow_write": 0,
+        "display_name": "Proof Step Connector Lens",
+        "examples": [
+          {
+            "canary_active": false,
+            "family": "instruction_general",
+            "legacy_active": true,
+            "record_id": "e131:1798f78709ab670a1abc1011319d5291af1bfed08be7eab9b2975732b808588b",
+            "role": "e132_dataset_prefix",
+            "semantic_hits": [],
+            "source": "databricks/databricks-dolly-15k",
+            "tags": [
+              "general_instruction_style",
+              "proof_step_surface"
+            ],
+            "text_head": "When was the wheel invented? No one knows when the wheel was first made. Archaeological evidence seems to show that the wheel was first used to make pottery in Mesopotamia about 7,000 years ago, during the Neolithic period. Later, it was..."
+          },
+          {
+            "canary_active": true,
+            "family": "instruction_general",
+            "legacy_active": true,
+            "record_id": "e131:7c9318cd5ed49064c0953f63ec4a8238135f772bfd3ad533eac1e5436b385eea",
+            "role": "e132_dataset_prefix",
+            "semantic_hits": [
+              "thus"
+            ],
+            "source": "databricks/databricks-dolly-15k",
+            "tags": [
+              "general_instruction_style",
+              "math_text_surface",
+              "visible_math_surface"
+            ],
+            "text_head": "Who was the first to record the Needles and Pins song? Context: \"Needles and Pins\" is a rock song credited to American writers Jack Nitzsche and Sonny Bono. Jackie DeShannon recorded it in 1963 and other versions followed. The most succe..."
+          },
+          {
+            "canary_active": false,
+            "family": "instruction_general",
+            "legacy_active": true,
+            "record_id": "e131:9e9f86392cbf6f3cb7d89c77cefe2e8ce3ead103d320db7192d3c4eff07e29f0",
+            "role": "e132_dataset_prefix",
+            "semantic_hits": [],
+            "source": "databricks/databricks-dolly-15k",
+            "tags": [
+              "general_instruction_style",
+              "proof_step_surface"
+            ],
+            "text_head": "Provide me a list of the different types of harnesses used in rock climbing Context: Different types of climbing warrant particular features for harnesses. Sport climbers typically use minimalistic harnesses, some with sewn-on gear loops..."
+          },
+          {
+            "canary_active": true,
+            "family": "instruction_general",
+            "legacy_active": true,
+            "record_id": "e131:8cfa7b8b29ee140d30a598b20e5634fd878294826a008630d27e9e142759b921",
+            "role": "e132_dataset_prefix",
+            "semantic_hits": [
+              "therefore"
+            ],
+            "source": "databricks/databricks-dolly-15k",
+            "tags": [
+              "general_instruction_style",
+              "proof_step_surface"
+            ],
+            "text_head": "Is beauty objective or subjective? The opinions on this question vary from person to person. Statistically, a pattern of preference is easily visible on what people would describe as beautiful. An evident example of this phenomenon is a..."
+          },
+          {
+            "canary_active": false,
+            "family": "instruction_general",
+            "legacy_active": true,
+            "record_id": "e131:9a4d8a1be6cbd14c6606be31dd2091b3e0c11522acf69827dff15f55cbd8564a",
+            "role": "e132_dataset_prefix",
+            "semantic_hits": [],
+            "source": "databricks/databricks-dolly-15k",
+            "tags": [
+              "general_instruction_style",
+              "visible_math_surface",
+              "word_problem_boundary_candidate"
+            ],
+            "text_head": "What is HiFI? Context: High fidelity (often shortened to Hi-Fi or HiFi) is the high-quality reproduction of sound. It is popular with audiophiles and home audio enthusiasts. Ideally, high-fidelity equipment has inaudible noise and distor..."
+          }
+        ],
+        "hard_negative": 0,
+        "legacy_activation": 529,
+        "operator_id": "proof_step_connector_lens",
+        "role_counts": [
+          [
+            "e136a_dataset_prefix",
+            333
+          ],
+          [
+            "e132_dataset_prefix",
+            184
+          ],
+          [
+            "tag_only_examples",
+            7
+          ],
+          [
+            "strict_examples",
+            4
+          ],
+          [
+            "tag_lure",
+            1
+          ]
+        ],
+        "rows_seen": 8345,
+        "selected_variant_id": "proof_step_connector_lens::semantic_verified_pruned_e136h_v1",
+        "selected_variant_type": "semantic_verified_pruned",
+        "source": "E132",
+        "strict_activation": 415,
+        "strict_ratio": 0.784499,
+        "strict_recall_miss": 0,
+        "tag_only_activation": 40,
+        "top_hits": [
+          [
+            "we have",
+            143
+          ],
+          [
+            "therefore",
+            133
+          ],
+          [
+            "thus",
+            105
+          ],
+          [
+            "hence",
+            39
+          ],
+          [
+            "implies",
+            17
+          ],
+          [
+            "substituting",
+            9
+          ],
+          [
+            "equating",
+            1
+          ]
+        ],
+        "top_tags": [
+          [
+            "multi_turn_dialogue",
+            333
+          ],
+          [
+            "synthetic_multi_turn",
+            333
+          ],
+          [
+            "instruction_following",
+            333
+          ],
+          [
+            "assistant_style",
+            333
+          ],
+          [
+            "general_instruction_style",
+            191
+          ],
+          [
+            "math_text_surface",
+            156
+          ],
+          [
+            "code_instruction",
+            115
+          ],
+          [
+            "proof_step_surface",
+            108
+          ],
+          [
+            "visible_math_surface",
+            94
+          ],
+          [
+            "word_problem_boundary_candidate",
+            83
+          ],
+          [
+            "summarization",
+            77
+          ],
+          [
+            "refusal_or_boundary",
+            77
+          ]
+        ],
+        "unsupported_answer": 0,
+        "wrong_scope_proxy": 0
+      },
+      "selected_activation": 5338813,
+      "selected_variant_id": "proof_step_connector_lens::semantic_verified_pruned_e136h_v1",
+      "selected_variant_type": "semantic_verified_pruned",
+      "shadow_prune_ratio": 0.05923,
+      "shadow_pruned_activation": 336129,
+      "source": "E132",
+      "strict_recall_miss": 0,
+      "supersession_action": "supersede_current_with_verified_pruned_variant",
+      "supersession_tier": "T1_VERIFIED_PRUNED_REPLACEMENT",
+      "unsupported_answer": 0,
+      "wrong_scope_proxy": 0
+    },
+    {
+      "abstract_lineage_required": false,
+      "accepted_mutations": 1,
+      "apply_action": "DIRECT_CANARY_REPLACE_WITH_VERIFIED_PRUNED_VARIANT",
+      "apply_reason": "verified pruned replacement survived long shadow replay with zero recall loss",
+      "challenger_ood_required": false,
+      "combined_failure_count": 0,
+      "current_activation": 1604733,
+      "direct_canary_ready": true,
+      "direct_flow_write": 0,
+      "display_name": "Geometry Diagram Reference Guard",
+      "hard_negative": 0,
+      "kernel_value_score": 0.897092,
+      "label_alignment_score": 0.881157,
+      "mutation_attempts": 1360,
+      "operator_id": "geometry_diagram_reference_guard",
+      "readiness": "ready_verified",
+      "rollback_required": true,
+      "runtime_mutation_allowed_now": false,
+      "sample_replay": {
+        "apply_action": "DIRECT_CANARY_REPLACE_WITH_VERIFIED_PRUNED_VARIANT",
+        "canary_activation": 103,
+        "canary_prune_ratio": 0.550218,
+        "canary_removed_activation": 126,
+        "direct_flow_write": 0,
+        "display_name": "Geometry Diagram Reference Guard",
+        "examples": [
+          {
+            "canary_active": true,
+            "family": "instruction_general",
+            "legacy_active": true,
+            "record_id": "e131:fbd63c3868e6b32071081c8963b1959bb5797bc844ab8a14afb2d61b118d6653",
+            "role": "e132_dataset_prefix",
+            "semantic_hits": [
+              "\\btriangle\\b|\\bcircle\\b|\\bangle\\b|\\bdiagram\\b|\\bcoordinates?\\b",
+              "circle"
+            ],
+            "source": "databricks/databricks-dolly-15k",
+            "tags": [
+              "general_instruction_style",
+              "geometry_diagram_or_coordinate_surface",
+              "word_problem_boundary_candidate"
+            ],
+            "text_head": "What is a polygon? A polygon is a form in Geometry. It is a single dimensional plane made of connecting lines and any number of vertices. It is a closed chain of connected line segments or edges. The vertices of the polygon are formed wh..."
+          },
+          {
+            "canary_active": true,
+            "family": "instruction_general",
+            "legacy_active": true,
+            "record_id": "e131:0a0d3e489ec635a03b13f697ebd7c4c4ffb50383086029c33f23709b58c8f4d1",
+            "role": "e132_dataset_prefix",
+            "semantic_hits": [
+              "\\btriangle\\b|\\bcircle\\b|\\bangle\\b|\\bdiagram\\b|\\bcoordinates?\\b",
+              "angle"
+            ],
+            "source": "databricks/databricks-dolly-15k",
+            "tags": [
+              "answer_boundary_surface",
+              "general_instruction_style",
+              "geometry_diagram_or_coordinate_surface",
+              "visible_math_surface",
+              "word_problem_boundary_candidate"
+            ],
+            "text_head": "What is process mining? Context: Process mining is a family of techniques relating the fields of data science and process management to support the analysis of operational processes based on event logs. The goal of process mining is to t..."
+          },
+          {
+            "canary_active": true,
+            "family": "instruction_general",
+            "legacy_active": true,
+            "record_id": "e131:309e7b71367779b3e5190d2c55edebe6ed3bfd255f1c0d66dc2b39f26f0d9899",
+            "role": "e132_dataset_prefix",
+            "semantic_hits": [
+              "\\btriangle\\b|\\bcircle\\b|\\bangle\\b|\\bdiagram\\b|\\bcoordinates?\\b",
+              "circle"
+            ],
+            "source": "databricks/databricks-dolly-15k",
+            "tags": [
+              "general_instruction_style",
+              "geometry_diagram_or_coordinate_surface"
+            ],
+            "text_head": "What are some unique curtain tie backs that you can make yourself? There are many items you can use to make a curtain tie back. Some ideas for this include a chain, a circle and pin, jute rope, wooden beaded rope, a necklack or bracelet,..."
+          },
+          {
+            "canary_active": false,
+            "family": "instruction_general",
+            "legacy_active": true,
+            "record_id": "e131:e1726d1e1b3ae15c545a7c8280aff7d6ecdfd65ba86f211cf32292a9187e8db6",
+            "role": "e132_dataset_prefix",
+            "semantic_hits": [],
+            "source": "databricks/databricks-dolly-15k",
+            "tags": [
+              "general_instruction_style",
+              "word_problem_boundary_candidate"
+            ],
+            "text_head": "What is a dispersive prism? Context: In optics, a dispersive prism is an optical prism that is used to disperse light, that is, to separate light into its spectral components (the colors of the rainbow). Different wavelengths (colors) of..."
+          },
+          {
+            "canary_active": true,
+            "family": "instruction_general",
+            "legacy_active": true,
+            "record_id": "e131:9bd338e80d168e585b02042ac4665b90361f958636f1116b1d83230338ddb910",
+            "role": "e132_dataset_prefix",
+            "semantic_hits": [
+              "\\btriangle\\b|\\bcircle\\b|\\bangle\\b|\\bdiagram\\b|\\bcoordinates?\\b",
+              "coordinates"
+            ],
+            "source": "databricks/databricks-dolly-15k",
+            "tags": [
+              "general_instruction_style",
+              "geometry_diagram_or_coordinate_surface",
+              "visible_math_surface",
+              "word_problem_boundary_candidate"
+            ],
+            "text_head": "What is the Research Collaboratory for Structural Bioinformatics Protein Data Bank (RCSB PDB)? The Research Collaboratory for Structural Bioinformatics Protein Data Bank (RCSB PDB) is a database that provides a wealth of information abou..."
+          }
+        ],
+        "hard_negative": 0,
+        "legacy_activation": 229,
+        "operator_id": "geometry_diagram_reference_guard",
+        "role_counts": [
+          [
+            "e136a_dataset_prefix",
+            149
+          ],
+          [
+            "e132_dataset_prefix",
+            69
+          ],
+          [
+            "tag_only_examples",
+            6
+          ],
+          [
+            "strict_examples",
+            4
+          ],
+          [
+            "tag_lure",
+            1
+          ]
+        ],
+        "rows_seen": 8345,
+        "selected_variant_id": "geometry_diagram_reference_guard::semantic_verified_pruned_e136h_v1",
+        "selected_variant_type": "semantic_verified_pruned",
+        "source": "E132",
+        "strict_activation": 103,
+        "strict_ratio": 0.449782,
+        "strict_recall_miss": 0,
+        "tag_only_activation": 16,
+        "top_hits": [
+          [
+            "\\btriangle\\b|\\bcircle\\b|\\bangle\\b|\\bdiagram\\b|\\bcoordinates?\\b",
+            103
+          ],
+          [
+            "circle",
+            49
+          ],
+          [
+            "triangle",
+            24
+          ],
+          [
+            "angle",
+            23
+          ],
+          [
+            "diagram",
+            7
+          ],
+          [
+            "coordinates",
+            6
+          ],
+          [
+            "\\[asy\\]|\\bdraw\\(",
+            1
+          ]
+        ],
+        "top_tags": [
+          [
+            "multi_turn_dialogue",
+            149
+          ],
+          [
+            "synthetic_multi_turn",
+            149
+          ],
+          [
+            "instruction_following",
+            149
+          ],
+          [
+            "assistant_style",
+            149
+          ],
+          [
+            "general_instruction_style",
+            78
+          ],
+          [
+            "geometry_diagram_or_coordinate_surface",
+            55
+          ],
+          [
+            "math_text_surface",
+            51
+          ],
+          [
+            "code_instruction",
+            41
+          ],
+          [
+            "visible_math_surface",
+            39
+          ],
+          [
+            "word_problem_boundary_candidate",
+            34
+          ],
+          [
+            "refusal_or_boundary",
+            34
+          ],
+          [
+            "summarization",
+            20
+          ]
+        ],
+        "unsupported_answer": 0,
+        "wrong_scope_proxy": 0
+      },
+      "selected_activation": 1422035,
+      "selected_variant_id": "geometry_diagram_reference_guard::semantic_verified_pruned_e136h_v1",
+      "selected_variant_type": "semantic_verified_pruned",
+      "shadow_prune_ratio": 0.113849,
+      "shadow_pruned_activation": 182698,
+      "source": "E132",
+      "strict_recall_miss": 0,
+      "supersession_action": "supersede_current_with_verified_pruned_variant",
+      "supersession_tier": "T1_VERIFIED_PRUNED_REPLACEMENT",
+      "unsupported_answer": 0,
+      "wrong_scope_proxy": 0
+    },
+    {
+      "abstract_lineage_required": false,
+      "accepted_mutations": 5,
+      "apply_action": "DIRECT_CANARY_REPLACE_WITH_VERIFIED_PRUNED_VARIANT",
+      "apply_reason": "verified pruned replacement survived long shadow replay with zero recall loss",
+      "challenger_ood_required": false,
+      "combined_failure_count": 0,
+      "current_activation": 458497,
+      "direct_canary_ready": true,
+      "direct_flow_write": 0,
+      "display_name": "Matrix / Vector Block Lens",
+      "hard_negative": 0,
+      "kernel_value_score": 0.731598,
+      "label_alignment_score": 0.920493,
+      "mutation_attempts": 1560,
+      "operator_id": "matrix_vector_block_lens",
+      "readiness": "ready_verified",
+      "rollback_required": true,
+      "runtime_mutation_allowed_now": false,
+      "sample_replay": {
+        "apply_action": "DIRECT_CANARY_REPLACE_WITH_VERIFIED_PRUNED_VARIANT",
+        "canary_activation": 43,
+        "canary_prune_ratio": 0.295082,
+        "canary_removed_activation": 18,
+        "direct_flow_write": 0,
+        "display_name": "Matrix / Vector Block Lens",
+        "examples": [
+          {
+            "canary_active": true,
+            "family": "instruction_general",
+            "legacy_active": true,
+            "record_id": "e131:d2c1e8a40a8643a330723fbc8dcc094d0a275ece6d4e2d5f9b50c35bb6855158",
+            "role": "e132_dataset_prefix",
+            "semantic_hits": [
+              "\\bmatrix\\b|\\bvector\\b|\\bdot product\\b|\\bprojection\\b",
+              "vector"
+            ],
+            "source": "databricks/databricks-dolly-15k",
+            "tags": [
+              "general_instruction_style",
+              "matrix_vector_surface",
+              "visible_math_surface",
+              "word_problem_boundary_candidate"
+            ],
+            "text_head": "What is SVM? Context: In machine learning, support vector machines (SVMs, also support vector networks) are supervised learning models with associated learning algorithms that analyze data for classification and regression analysis. Deve..."
+          },
+          {
+            "canary_active": true,
+            "family": "instruction_general",
+            "legacy_active": true,
+            "record_id": "e131:42f73910aabb18400d29f8ee5fa3ea8935800f1f6187c4d27e4fba18b79e19ad",
+            "role": "e132_dataset_prefix",
+            "semantic_hits": [
+              "\\bmatrix\\b|\\bvector\\b|\\bdot product\\b|\\bprojection\\b",
+              "matrix"
+            ],
+            "source": "databricks/databricks-dolly-15k",
+            "tags": [
+              "general_instruction_style",
+              "matrix_vector_surface",
+              "visible_math_surface"
+            ],
+            "text_head": "Categorize these movies that came out in 1999 as cartoons or live-action: The Matrix, Stuart Little, Cruel Intentions, The Iron Giant, The Blair Witch Project, South Park: Bigger, Longer, and Uncut, The Sixth Sense Cartoons: Stuart Littl..."
+          },
+          {
+            "canary_active": true,
+            "family": "instruction_general",
+            "legacy_active": true,
+            "record_id": "e131:34cbffa961f294842a9d61f9d1118de3e8d1844a38a0c34bd90537309019057a",
+            "role": "e132_dataset_prefix",
+            "semantic_hits": [
+              "\\bmatrix\\b|\\bvector\\b|\\bdot product\\b|\\bprojection\\b",
+              "matrix"
+            ],
+            "source": "databricks/databricks-dolly-15k",
+            "tags": [
+              "general_instruction_style",
+              "matrix_vector_surface"
+            ],
+            "text_head": "Give me a list of 10 different SciFi movies and which year they were released Independence Day (1999) Dune (2021) Solaris (2002) Inception (2010) Gattaca (1997) Jurassic Park (1993) AI Artificial Intelligence (2001) The Matrix (1999) The..."
+          },
+          {
+            "canary_active": true,
+            "family": "instruction_general",
+            "legacy_active": true,
+            "record_id": "e131:2e0f6a1aaf866eab29a00aa234535a40558573e48aa9f188fe06770450678f6c",
+            "role": "e132_dataset_prefix",
+            "semantic_hits": [
+              "\\bmatrix\\b|\\bvector\\b|\\bdot product\\b|\\bprojection\\b",
+              "matrix"
+            ],
+            "source": "databricks/databricks-dolly-15k",
+            "tags": [
+              "general_instruction_style",
+              "matrix_vector_surface"
+            ],
+            "text_head": "What do The Matrix, Point Break, Constantine, and John Wick have in common? They are all Keanu Reeves movies. databricks/databricks-dolly-15k"
+          },
+          {
+            "canary_active": true,
+            "family": "instruction_general",
+            "legacy_active": true,
+            "record_id": "e131:70b4b72245ec443f429572970a2a9aa036caffdbb11c0a53b0cbaf8db794786c",
+            "role": "e132_dataset_prefix",
+            "semantic_hits": [
+              "\\bmatrix\\b|\\bvector\\b|\\bdot product\\b|\\bprojection\\b",
+              "matrix"
+            ],
+            "source": "databricks/databricks-dolly-15k",
+            "tags": [
+              "general_instruction_style",
+              "matrix_vector_surface",
+              "word_problem_boundary_candidate"
+            ],
+            "text_head": "According to the given paragraph, how do convolutional neural networks avoid overfitting in machine learning? Context: In deep learning, a convolutional neural network (CNN) is a class of artificial neural network most commonly applied t..."
+          }
+        ],
+        "hard_negative": 0,
+        "legacy_activation": 61,
+        "operator_id": "matrix_vector_block_lens",
+        "role_counts": [
+          [
+            "e136a_dataset_prefix",
+            36
+          ],
+          [
+            "e132_dataset_prefix",
+            14
+          ],
+          [
+            "tag_only_examples",
+            6
+          ],
+          [
+            "strict_examples",
+            4
+          ],
+          [
+            "tag_lure",
+            1
+          ]
+        ],
+        "rows_seen": 8345,
+        "selected_variant_id": "matrix_vector_block_lens::semantic_verified_pruned_e136h_v1",
+        "selected_variant_type": "semantic_verified_pruned",
+        "source": "E132",
+        "strict_activation": 43,
+        "strict_ratio": 0.704918,
+        "strict_recall_miss": 0,
+        "tag_only_activation": 6,
+        "top_hits": [
+          [
+            "\\bmatrix\\b|\\bvector\\b|\\bdot product\\b|\\bprojection\\b",
+            43
+          ],
+          [
+            "vector",
+            20
+          ],
+          [
+            "matrix",
+            17
+          ],
+          [
+            "projection",
+            7
+          ]
+        ],
+        "top_tags": [
+          [
+            "multi_turn_dialogue",
+            37
+          ],
+          [
+            "synthetic_multi_turn",
+            37
+          ],
+          [
+            "instruction_following",
+            37
+          ],
+          [
+            "assistant_style",
+            37
+          ],
+          [
+            "matrix_vector_surface",
+            24
+          ],
+          [
+            "code_instruction",
+            23
+          ],
+          [
+            "general_instruction_style",
+            21
+          ],
+          [
+            "visible_math_surface",
+            16
+          ],
+          [
+            "summarization",
+            14
+          ],
+          [
+            "word_problem_boundary_candidate",
+            13
+          ],
+          [
+            "math_text_surface",
+            13
+          ],
+          [
+            "refusal_or_boundary",
+            8
+          ]
+        ],
+        "unsupported_answer": 0,
+        "wrong_scope_proxy": 0
+      },
+      "selected_activation": 421528,
+      "selected_variant_id": "matrix_vector_block_lens::semantic_verified_pruned_e136h_v1",
+      "selected_variant_type": "semantic_verified_pruned",
+      "shadow_prune_ratio": 0.080631,
+      "shadow_pruned_activation": 36969,
+      "source": "E132",
+      "strict_recall_miss": 0,
+      "supersession_action": "supersede_current_with_verified_pruned_variant",
+      "supersession_tier": "T1_VERIFIED_PRUNED_REPLACEMENT",
+      "unsupported_answer": 0,
+      "wrong_scope_proxy": 0
+    },
+    {
+      "abstract_lineage_required": false,
+      "accepted_mutations": 5,
+      "apply_action": "DIRECT_CANARY_REPLACE_WITH_VERIFIED_PRUNED_VARIANT",
+      "apply_reason": "verified pruned replacement survived long shadow replay with zero recall loss",
+      "challenger_ood_required": false,
+      "combined_failure_count": 0,
+      "current_activation": 11644650,
+      "direct_canary_ready": true,
+      "direct_flow_write": 0,
+      "display_name": "Word Problem No-Solve Guard V2",
+      "hard_negative": 0,
+      "kernel_value_score": 1.0,
+      "label_alignment_score": 0.946284,
+      "mutation_attempts": 1000,
+      "operator_id": "word_problem_no_solve_guard_v2",
+      "readiness": "ready_verified",
+      "rollback_required": true,
+      "runtime_mutation_allowed_now": false,
+      "sample_replay": {
+        "apply_action": "DIRECT_CANARY_REPLACE_WITH_VERIFIED_PRUNED_VARIANT",
+        "canary_activation": 2184,
+        "canary_prune_ratio": 0.175538,
+        "canary_removed_activation": 465,
+        "direct_flow_write": 0,
+        "display_name": "Word Problem No-Solve Guard V2",
+        "examples": [
+          {
+            "canary_active": true,
+            "family": "instruction_general",
+            "legacy_active": true,
+            "record_id": "e131:dd40f7765a915bba5289331b24de9caac27b714b889345055a031e9888e4d51a",
+            "role": "e132_dataset_prefix",
+            "semantic_hits": [
+              "what is"
+            ],
+            "source": "databricks/databricks-dolly-15k",
+            "tags": [
+              "general_instruction_style",
+              "visible_math_surface",
+              "word_problem_boundary_candidate"
+            ],
+            "text_head": "Given a reference text about Lollapalooza, where does it take place, who started it and what is it? Context: Lollapalooza /ˌlɒləpəˈluːzə/ (Lolla) is an annual American four-day music festival held in Grant Park in Chicago. It originally..."
+          },
+          {
+            "canary_active": true,
+            "family": "instruction_general",
+            "legacy_active": true,
+            "record_id": "e131:e1137730bf21f38f9d6b9f2d069acf89cb8109f939b4f78f094a664cb5f7303b",
+            "role": "e132_dataset_prefix",
+            "semantic_hits": [
+              "what is"
+            ],
+            "source": "databricks/databricks-dolly-15k",
+            "tags": [
+              "general_instruction_style",
+              "visible_math_surface",
+              "word_problem_boundary_candidate"
+            ],
+            "text_head": "Who was John Moses Browning? Context: John Moses Browning (January 23, 1855 – November 26, 1926) was an American firearm designer who developed many varieties of military and civilian firearms, cartridges, and gun mechanisms – many of wh..."
+          },
+          {
+            "canary_active": true,
+            "family": "instruction_general",
+            "legacy_active": true,
+            "record_id": "e131:7b723fd89333b76822097d3a8c215f7fd20cee65ee3f3202c1f9536652625f7f",
+            "role": "e132_dataset_prefix",
+            "semantic_hits": [
+              "what is"
+            ],
+            "source": "databricks/databricks-dolly-15k",
+            "tags": [
+              "general_instruction_style",
+              "math_text_surface",
+              "visible_math_surface"
+            ],
+            "text_head": "Who is Thomas Jefferson? Context: Thomas Jefferson (April 13, 1743 – July 4, 1826) was an American statesman, diplomat, lawyer, architect, philosopher, and Founding Father who served as the third president of the United States from 1801..."
+          },
+          {
+            "canary_active": true,
+            "family": "instruction_general",
+            "legacy_active": true,
+            "record_id": "e131:fbd63c3868e6b32071081c8963b1959bb5797bc844ab8a14afb2d61b118d6653",
+            "role": "e132_dataset_prefix",
+            "semantic_hits": [
+              "what is"
+            ],
+            "source": "databricks/databricks-dolly-15k",
+            "tags": [
+              "general_instruction_style",
+              "geometry_diagram_or_coordinate_surface",
+              "word_problem_boundary_candidate"
+            ],
+            "text_head": "What is a polygon? A polygon is a form in Geometry. It is a single dimensional plane made of connecting lines and any number of vertices. It is a closed chain of connected line segments or edges. The vertices of the polygon are formed wh..."
+          },
+          {
+            "canary_active": true,
+            "family": "instruction_general",
+            "legacy_active": true,
+            "record_id": "e131:0a0d3e489ec635a03b13f697ebd7c4c4ffb50383086029c33f23709b58c8f4d1",
+            "role": "e132_dataset_prefix",
+            "semantic_hits": [
+              "find",
+              "what is"
+            ],
+            "source": "databricks/databricks-dolly-15k",
+            "tags": [
+              "answer_boundary_surface",
+              "general_instruction_style",
+              "geometry_diagram_or_coordinate_surface",
+              "visible_math_surface",
+              "word_problem_boundary_candidate"
+            ],
+            "text_head": "What is process mining? Context: Process mining is a family of techniques relating the fields of data science and process management to support the analysis of operational processes based on event logs. The goal of process mining is to t..."
+          }
+        ],
+        "hard_negative": 0,
+        "legacy_activation": 2649,
+        "operator_id": "word_problem_no_solve_guard_v2",
+        "role_counts": [
+          [
+            "e136a_dataset_prefix",
+            1325
+          ],
+          [
+            "e132_dataset_prefix",
+            1280
+          ],
+          [
+            "strict_examples",
+            22
+          ],
+          [
+            "tag_only_examples",
+            21
+          ],
+          [
+            "tag_lure",
+            1
+          ]
+        ],
+        "rows_seen": 8345,
+        "selected_variant_id": "word_problem_no_solve_guard_v2::semantic_verified_pruned_e136h_v1",
+        "selected_variant_type": "semantic_verified_pruned",
+        "source": "E132",
+        "strict_activation": 2184,
+        "strict_ratio": 0.824462,
+        "strict_recall_miss": 0,
+        "tag_only_activation": 164,
+        "top_hits": [
+          [
+            "what is",
+            984
+          ],
+          [
+            "find",
+            870
+          ],
+          [
+            "total",
+            206
+          ],
+          [
+            "how many",
+            165
+          ],
+          [
+            "average",
+            137
+          ],
+          [
+            "probability",
+            33
+          ],
+          [
+            "compute",
+            21
+          ],
+          [
+            "randomly",
+            11
+          ]
+        ],
+        "top_tags": [
+          [
+            "multi_turn_dialogue",
+            1327
+          ],
+          [
+            "synthetic_multi_turn",
+            1327
+          ],
+          [
+            "instruction_following",
+            1327
+          ],
+          [
+            "assistant_style",
+            1327
+          ],
+          [
+            "general_instruction_style",
+            1314
+          ],
+          [
+            "word_problem_boundary_candidate",
+            1113
+          ],
+          [
+            "math_text_surface",
+            639
+          ],
+          [
+            "visible_math_surface",
+            492
+          ],
+          [
+            "code_instruction",
+            403
+          ],
+          [
+            "refusal_or_boundary",
+            330
+          ],
+          [
+            "summarization",
+            201
+          ],
+          [
+            "proof_step_surface",
+            55
+          ]
+        ],
+        "unsupported_answer": 0,
+        "wrong_scope_proxy": 0
+      },
+      "selected_activation": 11069055,
+      "selected_variant_id": "word_problem_no_solve_guard_v2::semantic_verified_pruned_e136h_v1",
+      "selected_variant_type": "semantic_verified_pruned",
+      "shadow_prune_ratio": 0.04943,
+      "shadow_pruned_activation": 575595,
+      "source": "E132",
+      "strict_recall_miss": 0,
+      "supersession_action": "supersede_current_with_verified_pruned_variant",
+      "supersession_tier": "T1_VERIFIED_PRUNED_REPLACEMENT",
+      "unsupported_answer": 0,
+      "wrong_scope_proxy": 0
+    },
+    {
+      "abstract_lineage_required": false,
+      "accepted_mutations": 4,
+      "apply_action": "DIRECT_CANARY_REPLACE_WITH_VERIFIED_PRUNED_VARIANT",
+      "apply_reason": "verified pruned replacement survived long shadow replay with zero recall loss",
+      "challenger_ood_required": false,
+      "combined_failure_count": 0,
+      "current_activation": 6775530,
+      "direct_canary_ready": true,
+      "direct_flow_write": 0,
+      "display_name": "Instruction Task Decomposition Lens",
+      "hard_negative": 0,
+      "kernel_value_score": 1.0,
+      "label_alignment_score": 0.937178,
+      "mutation_attempts": 960,
+      "operator_id": "instruction_task_decomposition_lens",
+      "readiness": "ready_verified",
+      "rollback_required": true,
+      "runtime_mutation_allowed_now": false,
+      "sample_replay": {
+        "apply_action": "DIRECT_CANARY_REPLACE_WITH_VERIFIED_PRUNED_VARIANT",
+        "canary_activation": 1817,
+        "canary_prune_ratio": 0.077197,
+        "canary_removed_activation": 152,
+        "direct_flow_write": 0,
+        "display_name": "Instruction Task Decomposition Lens",
+        "examples": [
+          {
+            "canary_active": true,
+            "family": "ultrachat_200k_data_train_sft_00000_of_00003_a3ecf92756993583",
+            "legacy_active": true,
+            "record_id": "huggingfaceh4_ultrachat_200k_3bfe041ed7161747af4b0125",
+            "role": "e136a_dataset_prefix",
+            "semantic_hits": [
+              "instructions",
+              "steps"
+            ],
+            "source": "HuggingFaceH4/ultrachat_200k",
+            "tags": [
+              "assistant_style",
+              "instruction_following",
+              "multi_turn_dialogue",
+              "refusal_or_boundary",
+              "synthetic_multi_turn"
+            ],
+            "text_head": "These instructions apply to section-based themes (Responsive 6.0+, Retina 4.0+, Parallax 3.0+ Turbo 2.0+, Mobilia 5.0+). What theme version am I using? On your Collections pages & Featured Collections sections, you can easily show the se..."
+          },
+          {
+            "canary_active": true,
+            "family": "ultrachat_200k_data_train_sft_00000_of_00003_a3ecf92756993583",
+            "legacy_active": true,
+            "record_id": "huggingfaceh4_ultrachat_200k_54e29f5fb43b9a0a2f4fad0f",
+            "role": "e136a_dataset_prefix",
+            "semantic_hits": [
+              "finally"
+            ],
+            "source": "HuggingFaceH4/ultrachat_200k",
+            "tags": [
+              "assistant_style",
+              "instruction_following",
+              "multi_turn_dialogue",
+              "refusal_or_boundary",
+              "synthetic_multi_turn"
+            ],
+            "text_head": "Write an essay that evaluates the positive and negative influence of social media on personal relationships, citing specific examples and research to support your claims. Analyze the ways in which social media usage affects communication..."
+          },
+          {
+            "canary_active": true,
+            "family": "ultrachat_200k_data_train_sft_00000_of_00003_a3ecf92756993583",
+            "legacy_active": true,
+            "record_id": "huggingfaceh4_ultrachat_200k_6356d3d0dd17bb3c89dfde9f",
+            "role": "e136a_dataset_prefix",
+            "semantic_hits": [
+              "second"
+            ],
+            "source": "HuggingFaceH4/ultrachat_200k",
+            "tags": [
+              "assistant_style",
+              "instruction_following",
+              "math_text_surface",
+              "multi_turn_dialogue",
+              "synthetic_multi_turn"
+            ],
+            "text_head": "What many companies do when planning their global marketing strategies is to organize the world’s countries into three categories. Emerging Markets – Markets regarded as having the most potential for growth (e.g. Huge countries such as C..."
+          },
+          {
+            "canary_active": true,
+            "family": "ultrachat_200k_data_train_sft_00000_of_00003_a3ecf92756993583",
+            "legacy_active": true,
+            "record_id": "huggingfaceh4_ultrachat_200k_af3e7951dc8f6edd825341e3",
+            "role": "e136a_dataset_prefix",
+            "semantic_hits": [
+              "how to",
+              "instructions"
+            ],
+            "source": "HuggingFaceH4/ultrachat_200k",
+            "tags": [
+              "assistant_style",
+              "code_instruction",
+              "instruction_following",
+              "math_text_surface",
+              "multi_turn_dialogue",
+              "refusal_or_boundary",
+              "synthetic_multi_turn"
+            ],
+            "text_head": "Write a Python program that can identify and remove duplicate images from a given folder or directory. The program should be able to compare images based on their content and file size, and determine which ones are exact duplicates. The..."
+          },
+          {
+            "canary_active": true,
+            "family": "ultrachat_200k_data_train_sft_00000_of_00003_a3ecf92756993583",
+            "legacy_active": true,
+            "record_id": "huggingfaceh4_ultrachat_200k_027dc3c2fba24e2441959de4",
+            "role": "e136a_dataset_prefix",
+            "semantic_hits": [
+              "how to",
+              "instructions",
+              "step"
+            ],
+            "source": "HuggingFaceH4/ultrachat_200k",
+            "tags": [
+              "assistant_style",
+              "instruction_following",
+              "multi_turn_dialogue",
+              "refusal_or_boundary",
+              "synthetic_multi_turn"
+            ],
+            "text_head": "Please provide a specific cooking method for the salmon, as well as any seasonings or ingredients necessary to complete the dish. Additionally, include instructions for how to properly prepare the salmon before cooking, such as removing..."
+          }
+        ],
+        "hard_negative": 0,
+        "legacy_activation": 1969,
+        "operator_id": "instruction_task_decomposition_lens",
+        "role_counts": [
+          [
+            "e136a_dataset_prefix",
+            1961
+          ],
+          [
+            "tag_only_examples",
+            5
+          ],
+          [
+            "strict_examples",
+            3
+          ]
+        ],
+        "rows_seen": 8345,
+        "selected_variant_id": "instruction_task_decomposition_lens::semantic_verified_pruned_e136h_v1",
+        "selected_variant_type": "semantic_verified_pruned",
+        "source": "E136A",
+        "strict_activation": 1817,
+        "strict_ratio": 0.922803,
+        "strict_recall_miss": 0,
+        "tag_only_activation": 152,
+        "top_hits": [
+          [
+            "first",
+            672
+          ],
+          [
+            "how to",
+            574
+          ],
+          [
+            "step",
+            409
+          ],
+          [
+            "finally",
+            347
+          ],
+          [
+            "instructions",
+            312
+          ],
+          [
+            "steps",
+            229
+          ],
+          [
+            "second",
+            207
+          ],
+          [
+            "guide",
+            206
+          ]
+        ],
+        "top_tags": [
+          [
+            "multi_turn_dialogue",
+            1969
+          ],
+          [
+            "synthetic_multi_turn",
+            1969
+          ],
+          [
+            "instruction_following",
+            1969
+          ],
+          [
+            "assistant_style",
+            1969
+          ],
+          [
+            "code_instruction",
+            575
+          ],
+          [
+            "math_text_surface",
+            545
+          ],
+          [
+            "refusal_or_boundary",
+            485
+          ],
+          [
+            "summarization",
+            286
+          ]
+        ],
+        "unsupported_answer": 0,
+        "wrong_scope_proxy": 0
+      },
+      "selected_activation": 6357032,
+      "selected_variant_id": "instruction_task_decomposition_lens::semantic_verified_pruned_e136h_v1",
+      "selected_variant_type": "semantic_verified_pruned",
+      "shadow_prune_ratio": 0.061766,
+      "shadow_pruned_activation": 418498,
+      "source": "E136A",
+      "strict_recall_miss": 0,
+      "supersession_action": "supersede_current_with_verified_pruned_variant",
+      "supersession_tier": "T1_VERIFIED_PRUNED_REPLACEMENT",
+      "unsupported_answer": 0,
+      "wrong_scope_proxy": 0
+    },
+    {
+      "abstract_lineage_required": false,
+      "accepted_mutations": 3,
+      "apply_action": "DIRECT_CANARY_KEEP_CURRENT_WITH_LIGHT_PRUNE",
+      "apply_reason": "low-risk verified operator; apply selected trigger as canary with rollback snapshot",
+      "challenger_ood_required": false,
+      "combined_failure_count": 0,
+      "current_activation": 1248623,
+      "direct_canary_ready": true,
+      "direct_flow_write": 0,
+      "display_name": "Summarization Request Lens",
+      "hard_negative": 0,
+      "kernel_value_score": 0.881747,
+      "label_alignment_score": 0.98301,
+      "mutation_attempts": 1320,
+      "operator_id": "summarization_request_lens",
+      "readiness": "ready_low_risk",
+      "rollback_required": true,
+      "runtime_mutation_allowed_now": false,
+      "sample_replay": {
+        "apply_action": "DIRECT_CANARY_KEEP_CURRENT_WITH_LIGHT_PRUNE",
+        "canary_activation": 432,
+        "canary_prune_ratio": 0.029213,
+        "canary_removed_activation": 13,
+        "direct_flow_write": 0,
+        "display_name": "Summarization Request Lens",
+        "examples": [
+          {
+            "canary_active": true,
+            "family": "ultrachat_200k_data_train_sft_00000_of_00003_a3ecf92756993583",
+            "legacy_active": true,
+            "record_id": "huggingfaceh4_ultrachat_200k_582f607d8eac412d8008dba4",
+            "role": "e136a_dataset_prefix",
+            "semantic_hits": [
+              "summarize"
+            ],
+            "source": "HuggingFaceH4/ultrachat_200k",
+            "tags": [
+              "assistant_style",
+              "instruction_following",
+              "multi_turn_dialogue",
+              "refusal_or_boundary",
+              "summarization",
+              "synthetic_multi_turn"
+            ],
+            "text_head": "Can you summarize the key objective of the EAA TC-RBA working group mentioned in the given text material? Answer according to: A major task of the working group will be to try to find consensus on one single concept for airborne sound in..."
+          },
+          {
+            "canary_active": true,
+            "family": "ultrachat_200k_data_train_sft_00000_of_00003_a3ecf92756993583",
+            "legacy_active": true,
+            "record_id": "huggingfaceh4_ultrachat_200k_8b50823365df9f9641233f90",
+            "role": "e136a_dataset_prefix",
+            "semantic_hits": [
+              "goals",
+              "summarize"
+            ],
+            "source": "HuggingFaceH4/ultrachat_200k",
+            "tags": [
+              "assistant_style",
+              "instruction_following",
+              "multi_turn_dialogue",
+              "summarization",
+              "synthetic_multi_turn"
+            ],
+            "text_head": "Write a personal essay of at least 500 words that discusses the significance of setting and achieving goals in your life. Your essay should include specific examples of how goal-setting has impacted your success and personal growth, as w..."
+          },
+          {
+            "canary_active": true,
+            "family": "ultrachat_200k_data_train_sft_00000_of_00003_a3ecf92756993583",
+            "legacy_active": true,
+            "record_id": "huggingfaceh4_ultrachat_200k_a211858cae42b2da04ec1f06",
+            "role": "e136a_dataset_prefix",
+            "semantic_hits": [
+              "goals",
+              "summarize"
+            ],
+            "source": "HuggingFaceH4/ultrachat_200k",
+            "tags": [
+              "assistant_style",
+              "instruction_following",
+              "multi_turn_dialogue",
+              "summarization",
+              "synthetic_multi_turn"
+            ],
+            "text_head": "Prepare an agenda and schedule a date and time for a meeting where the marketing team will discuss the goals, target audience, budget, strategies, and timeline for the implementation of the new marketing campaign. Make sure to invite all..."
+          },
+          {
+            "canary_active": true,
+            "family": "ultrachat_200k_data_train_sft_00000_of_00003_a3ecf92756993583",
+            "legacy_active": true,
+            "record_id": "huggingfaceh4_ultrachat_200k_5a4abc15c653b356f17235e2",
+            "role": "e136a_dataset_prefix",
+            "semantic_hits": [
+              "goals"
+            ],
+            "source": "HuggingFaceH4/ultrachat_200k",
+            "tags": [
+              "assistant_style",
+              "instruction_following",
+              "math_text_surface",
+              "multi_turn_dialogue",
+              "summarization",
+              "synthetic_multi_turn"
+            ],
+            "text_head": "What kind of collaborative work is expected of the Art Teacher at The School of Arts and Sciences? Generate according to: The School of Arts and Sciences, at 3208 Thomasville Rd, Tallahassee, FL is seeking applications for a Kindergarten..."
+          },
+          {
+            "canary_active": true,
+            "family": "ultrachat_200k_data_train_sft_00000_of_00003_a3ecf92756993583",
+            "legacy_active": true,
+            "record_id": "huggingfaceh4_ultrachat_200k_7f15ec4c966b2b5debc46fd6",
+            "role": "e136a_dataset_prefix",
+            "semantic_hits": [
+              "summary"
+            ],
+            "source": "HuggingFaceH4/ultrachat_200k",
+            "tags": [
+              "assistant_style",
+              "instruction_following",
+              "multi_turn_dialogue",
+              "summarization",
+              "synthetic_multi_turn"
+            ],
+            "text_head": "Given the text: Tennessee Gov. Bill Haslam has appointed the Hon. Muecke Barker to a new advisory board for the University of Tennessee at Chattanooga. Haslam recently appointed 20 members to new advisory boards for each of the four camp..."
+          }
+        ],
+        "hard_negative": 0,
+        "legacy_activation": 445,
+        "operator_id": "summarization_request_lens",
+        "role_counts": [
+          [
+            "e136a_dataset_prefix",
+            441
+          ],
+          [
+            "strict_examples",
+            3
+          ],
+          [
+            "tag_only_examples",
+            1
+          ]
+        ],
+        "rows_seen": 8345,
+        "selected_variant_id": "summarization_request_lens::semantic_verified_pruned_e136h_v1",
+        "selected_variant_type": "semantic_verified_pruned",
+        "source": "E136A",
+        "strict_activation": 432,
+        "strict_ratio": 0.970787,
+        "strict_recall_miss": 0,
+        "tag_only_activation": 13,
+        "top_hits": [
+          [
+            "summarize",
+            221
+          ],
+          [
+            "summary",
+            195
+          ],
+          [
+            "goals",
+            50
+          ],
+          [
+            "key points",
+            15
+          ],
+          [
+            "condense",
+            1
+          ]
+        ],
+        "top_tags": [
+          [
+            "summarization",
+            445
+          ],
+          [
+            "instruction_following",
+            445
+          ],
+          [
+            "assistant_style",
+            445
+          ],
+          [
+            "multi_turn_dialogue",
+            444
+          ],
+          [
+            "synthetic_multi_turn",
+            444
+          ],
+          [
+            "code_instruction",
+            146
+          ],
+          [
+            "math_text_surface",
+            115
+          ],
+          [
+            "refusal_or_boundary",
+            97
+          ],
+          [
+            "human_written_instruction",
+            1
+          ]
+        ],
+        "unsupported_answer": 0,
+        "wrong_scope_proxy": 0
+      },
+      "selected_activation": 1226959,
+      "selected_variant_id": "summarization_request_lens::semantic_verified_pruned_e136h_v1",
+      "selected_variant_type": "semantic_verified_pruned",
+      "shadow_prune_ratio": 0.01735,
+      "shadow_pruned_activation": 21664,
+      "source": "E136A",
+      "strict_recall_miss": 0,
+      "supersession_action": "apply_verified_light_prune_shadow",
+      "supersession_tier": "T0_KEEP_CURRENT_WITH_LIGHT_PRUNE",
+      "unsupported_answer": 0,
+      "wrong_scope_proxy": 0
+    },
+    {
+      "abstract_lineage_required": false,
+      "accepted_mutations": 1,
+      "apply_action": "DIRECT_CANARY_KEEP_CURRENT_WITH_LIGHT_PRUNE",
+      "apply_reason": "low-risk verified operator; apply selected trigger as canary with rollback snapshot",
+      "challenger_ood_required": false,
+      "combined_failure_count": 0,
+      "current_activation": 372504,
+      "direct_canary_ready": true,
+      "direct_flow_write": 0,
+      "display_name": "Refusal Boundary Guard",
+      "hard_negative": 0,
+      "kernel_value_score": 0.734046,
+      "label_alignment_score": 0.999636,
+      "mutation_attempts": 1600,
+      "operator_id": "refusal_boundary_guard",
+      "readiness": "ready_low_risk",
+      "rollback_required": true,
+      "runtime_mutation_allowed_now": false,
+      "sample_replay": {
+        "apply_action": "DIRECT_CANARY_KEEP_CURRENT_WITH_LIGHT_PRUNE",
+        "canary_activation": 106,
+        "canary_prune_ratio": 0.009346,
+        "canary_removed_activation": 1,
+        "direct_flow_write": 0,
+        "display_name": "Refusal Boundary Guard",
+        "examples": [
+          {
+            "canary_active": true,
+            "family": "ultrachat_200k_data_train_sft_00000_of_00003_a3ecf92756993583",
+            "legacy_active": true,
+            "record_id": "huggingfaceh4_ultrachat_200k_aef6c78719b524784541cb64",
+            "role": "e136a_dataset_prefix",
+            "semantic_hits": [
+              "don't have access"
+            ],
+            "source": "HuggingFaceH4/ultrachat_200k",
+            "tags": [
+              "assistant_style",
+              "code_instruction",
+              "instruction_following",
+              "multi_turn_dialogue",
+              "refusal_or_boundary",
+              "synthetic_multi_turn"
+            ],
+            "text_head": "The general aim of my research is to understand the neural basis of psychiatric disorders. We focus on what makes someone vulnerable to the development of psychiatric disorders, on how various treatments exert their effect, and on the de..."
+          },
+          {
+            "canary_active": true,
+            "family": "ultrachat_200k_data_train_sft_00000_of_00003_a3ecf92756993583",
+            "legacy_active": true,
+            "record_id": "huggingfaceh4_ultrachat_200k_f2c44ed3d5c9a46d460ae1a9",
+            "role": "e136a_dataset_prefix",
+            "semantic_hits": [
+              "don't have access"
+            ],
+            "source": "HuggingFaceH4/ultrachat_200k",
+            "tags": [
+              "assistant_style",
+              "instruction_following",
+              "math_text_surface",
+              "multi_turn_dialogue",
+              "refusal_or_boundary",
+              "synthetic_multi_turn"
+            ],
+            "text_head": "What is the significance of the guru bead in a mala bracelet? Generate according to: This Black Onyx and Sandalwood mala bracelet features genuine fragrant Sandalwood from Kathmandu, Nepal and natural Black Onyx gemstone beads. This boho..."
+          },
+          {
+            "canary_active": true,
+            "family": "ultrachat_200k_data_train_sft_00000_of_00003_a3ecf92756993583",
+            "legacy_active": true,
+            "record_id": "huggingfaceh4_ultrachat_200k_670ba7b5cf13bf3014834a15",
+            "role": "e136a_dataset_prefix",
+            "semantic_hits": [
+              "don't have access"
+            ],
+            "source": "HuggingFaceH4/ultrachat_200k",
+            "tags": [
+              "assistant_style",
+              "code_instruction",
+              "instruction_following",
+              "multi_turn_dialogue",
+              "refusal_or_boundary",
+              "synthetic_multi_turn"
+            ],
+            "text_head": "“I don't like reviews. Can we get rid of them?\" The most important thing about reviews is to understand they are opportunities in disguise. Great reviews are hidden testimonials from your patients about your services. Reviews that are le..."
+          },
+          {
+            "canary_active": true,
+            "family": "ultrachat_200k_data_train_sft_00000_of_00003_a3ecf92756993583",
+            "legacy_active": true,
+            "record_id": "huggingfaceh4_ultrachat_200k_1d34e2b6c919317af95b832e",
+            "role": "e136a_dataset_prefix",
+            "semantic_hits": [
+              "not able"
+            ],
+            "source": "HuggingFaceH4/ultrachat_200k",
+            "tags": [
+              "assistant_style",
+              "instruction_following",
+              "multi_turn_dialogue",
+              "refusal_or_boundary",
+              "synthetic_multi_turn"
+            ],
+            "text_head": "Share tips for dealing with difficulty sealing the menstrual cup. Of course! Proper cleaning and maintenance of your menstrual cup is important for good health and hygiene. Here's how to clean and maintain your cup: Cleaning: 1. Wash you..."
+          },
+          {
+            "canary_active": true,
+            "family": "ultrachat_200k_data_train_sft_00000_of_00003_a3ecf92756993583",
+            "legacy_active": true,
+            "record_id": "huggingfaceh4_ultrachat_200k_a59f40c05f95c9c786a0de71",
+            "role": "e136a_dataset_prefix",
+            "semantic_hits": [
+              "not able"
+            ],
+            "source": "HuggingFaceH4/ultrachat_200k",
+            "tags": [
+              "assistant_style",
+              "instruction_following",
+              "multi_turn_dialogue",
+              "refusal_or_boundary",
+              "synthetic_multi_turn"
+            ],
+            "text_head": "This is a great thing that I had forgotten about also. There used to be cookbooks just for this that gave you times and mileage.. The only thing that I would add is to make damn sure you don't have any oil, fuel or exhaust leaks or you a..."
+          }
+        ],
+        "hard_negative": 0,
+        "legacy_activation": 107,
+        "operator_id": "refusal_boundary_guard",
+        "role_counts": [
+          [
+            "e136a_dataset_prefix",
+            106
+          ],
+          [
+            "tag_only_examples",
+            1
+          ]
+        ],
+        "rows_seen": 8345,
+        "selected_variant_id": "refusal_boundary_guard::semantic_verified_pruned_e136h_v1",
+        "selected_variant_type": "semantic_verified_pruned",
+        "source": "E136A",
+        "strict_activation": 106,
+        "strict_ratio": 0.990654,
+        "strict_recall_miss": 0,
+        "tag_only_activation": 1,
+        "top_hits": [
+          [
+            "\\bcannot\\b|\\bcan't\\b|\\bunable\\b|\\bnot appropriate\\b|\\brefuse\\b",
+            63
+          ],
+          [
+            "can't",
+            33
+          ],
+          [
+            "don't have access",
+            32
+          ],
+          [
+            "unable",
+            19
+          ],
+          [
+            "cannot",
+            15
+          ],
+          [
+            "not able",
+            11
+          ],
+          [
+            "do not have access",
+            7
+          ]
+        ],
+        "top_tags": [
+          [
+            "refusal_or_boundary",
+            107
+          ],
+          [
+            "multi_turn_dialogue",
+            107
+          ],
+          [
+            "synthetic_multi_turn",
+            107
+          ],
+          [
+            "instruction_following",
+            107
+          ],
+          [
+            "assistant_style",
+            107
+          ],
+          [
+            "code_instruction",
+            27
+          ],
+          [
+            "math_text_surface",
+            25
+          ],
+          [
+            "summarization",
+            16
+          ]
+        ],
+        "unsupported_answer": 0,
+        "wrong_scope_proxy": 0
+      },
+      "selected_activation": 372356,
+      "selected_variant_id": "refusal_boundary_guard::semantic_verified_pruned_e136h_v1",
+      "selected_variant_type": "semantic_verified_pruned",
+      "shadow_prune_ratio": 0.000397,
+      "shadow_pruned_activation": 148,
+      "source": "E136A",
+      "strict_recall_miss": 0,
+      "supersession_action": "apply_verified_light_prune_shadow",
+      "supersession_tier": "T0_KEEP_CURRENT_WITH_LIGHT_PRUNE",
+      "unsupported_answer": 0,
+      "wrong_scope_proxy": 0
+    },
+    {
+      "abstract_lineage_required": false,
+      "accepted_mutations": 1,
+      "apply_action": "DIRECT_CANARY_KEEP_CURRENT_WITH_LIGHT_PRUNE",
+      "apply_reason": "low-risk verified operator; apply selected trigger as canary with rollback snapshot",
+      "challenger_ood_required": false,
+      "combined_failure_count": 0,
+      "current_activation": 184186,
+      "direct_canary_ready": true,
+      "direct_flow_write": 0,
+      "display_name": "Helpful / Harmless Preference Guard",
+      "hard_negative": 0,
+      "kernel_value_score": 0.661134,
+      "label_alignment_score": 1.0,
+      "mutation_attempts": 1280,
+      "operator_id": "helpful_harmless_preference_guard",
+      "readiness": "ready_low_risk",
+      "rollback_required": true,
+      "runtime_mutation_allowed_now": false,
+      "sample_replay": {
+        "apply_action": "DIRECT_CANARY_KEEP_CURRENT_WITH_LIGHT_PRUNE",
+        "canary_activation": 0,
+        "canary_prune_ratio": 1.0,
+        "canary_removed_activation": 2,
+        "direct_flow_write": 0,
+        "display_name": "Helpful / Harmless Preference Guard",
+        "examples": [
+          {
+            "canary_active": false,
+            "family": "tag_lure",
+            "legacy_active": true,
+            "record_id": "e136l_tag_lure_helpful_harmless_preference_guard",
+            "role": "tag_lure",
+            "semantic_hits": [],
+            "source": "builtin/e136l_tag_lure",
+            "tags": [
+              "helpful_harmless"
+            ],
+            "text_head": "This neutral scheduling note is a tag-only canary fixture. It contains no formula, no code block, no source claim, no safety request, and no format constraint. This neutral scheduling note is a tag-only canary fixture. It contains no for..."
+          },
+          {
+            "canary_active": false,
+            "family": "tag_lure",
+            "legacy_active": true,
+            "record_id": "e136l_tag_lure_rejected_response_contrast_lens",
+            "role": "tag_lure",
+            "semantic_hits": [],
+            "source": "builtin/e136l_tag_lure",
+            "tags": [
+              "preference_boundary"
+            ],
+            "text_head": "This neutral scheduling note is a tag-only canary fixture. It contains no formula, no code block, no source claim, no safety request, and no format constraint. This neutral scheduling note is a tag-only canary fixture. It contains no for..."
+          }
+        ],
+        "hard_negative": 0,
+        "legacy_activation": 2,
+        "operator_id": "helpful_harmless_preference_guard",
+        "role_counts": [
+          [
+            "tag_lure",
+            2
+          ]
+        ],
+        "rows_seen": 8345,
+        "selected_variant_id": "helpful_harmless_preference_guard::semantic_verified_pruned_e136h_v1",
+        "selected_variant_type": "semantic_verified_pruned",
+        "source": "E136A",
+        "strict_activation": 0,
+        "strict_ratio": 0.0,
+        "strict_recall_miss": 0,
+        "tag_only_activation": 2,
+        "top_hits": [],
+        "top_tags": [
+          [
+            "helpful_harmless",
+            1
+          ],
+          [
+            "preference_boundary",
+            1
+          ]
+        ],
+        "unsupported_answer": 0,
+        "wrong_scope_proxy": 0
+      },
+      "selected_activation": 184186,
+      "selected_variant_id": "helpful_harmless_preference_guard::semantic_verified_pruned_e136h_v1",
+      "selected_variant_type": "semantic_verified_pruned",
+      "shadow_prune_ratio": 0.0,
+      "shadow_pruned_activation": 0,
+      "source": "E136A",
+      "strict_recall_miss": 0,
+      "supersession_action": "apply_verified_light_prune_shadow",
+      "supersession_tier": "T0_KEEP_CURRENT_WITH_LIGHT_PRUNE",
+      "unsupported_answer": 0,
+      "wrong_scope_proxy": 0
+    },
+    {
+      "abstract_lineage_required": false,
+      "accepted_mutations": 2,
+      "apply_action": "DIRECT_CANARY_KEEP_CURRENT_WITH_LIGHT_PRUNE",
+      "apply_reason": "low-risk verified operator; apply selected trigger as canary with rollback snapshot",
+      "challenger_ood_required": false,
+      "combined_failure_count": 0,
+      "current_activation": 2220000,
+      "direct_canary_ready": true,
+      "direct_flow_write": 0,
+      "display_name": "Rejected Response Contrast Lens",
+      "hard_negative": 0,
+      "kernel_value_score": 0.966041,
+      "label_alignment_score": 1.0,
+      "mutation_attempts": 1440,
+      "operator_id": "rejected_response_contrast_lens",
+      "readiness": "ready_low_risk",
+      "rollback_required": true,
+      "runtime_mutation_allowed_now": false,
+      "sample_replay": {
+        "apply_action": "DIRECT_CANARY_KEEP_CURRENT_WITH_LIGHT_PRUNE",
+        "canary_activation": 4,
+        "canary_prune_ratio": 0.2,
+        "canary_removed_activation": 1,
+        "direct_flow_write": 0,
+        "display_name": "Rejected Response Contrast Lens",
+        "examples": [
+          {
+            "canary_active": true,
+            "family": "hh-rlhf_harmless_base_train",
+            "legacy_active": true,
+            "record_id": "e136l_strict_examples_helpful_harmless_preference_guard_0",
+            "role": "strict_examples",
+            "semantic_hits": [
+              "source_hint"
+            ],
+            "source": "Anthropic/hh-rlhf",
+            "tags": [
+              "assistant_style",
+              "helpful_harmless",
+              "instruction_following",
+              "preference_boundary"
+            ],
+            "text_head": "If you were going to steal from a convenience store, do you think it would be better in the morning or at night? I really couldn’t say, I’m not familiar with stealing convenience store items. Anthropic/hh-rlhf It is good to consider the..."
+          },
+          {
+            "canary_active": true,
+            "family": "hh-rlhf_harmless_base_train",
+            "legacy_active": true,
+            "record_id": "e136l_strict_examples_helpful_harmless_preference_guard_1",
+            "role": "strict_examples",
+            "semantic_hits": [
+              "source_hint"
+            ],
+            "source": "Anthropic/hh-rlhf",
+            "tags": [
+              "assistant_style",
+              "helpful_harmless",
+              "instruction_following",
+              "multi_turn_dialogue",
+              "preference_boundary"
+            ],
+            "text_head": "Do you think little children can be annoying? I know it's not popular to say things like this, but children really irritate me and sometimes I wanna go off on them. I'm sorry, this doesn't seem like the kind of thing I'm built to handle...."
+          },
+          {
+            "canary_active": true,
+            "family": "hh-rlhf_harmless_base_train",
+            "legacy_active": true,
+            "record_id": "e136l_strict_examples_rejected_response_contrast_lens_0",
+            "role": "strict_examples",
+            "semantic_hits": [
+              "source_hint"
+            ],
+            "source": "Anthropic/hh-rlhf",
+            "tags": [
+              "assistant_style",
+              "helpful_harmless",
+              "instruction_following",
+              "multi_turn_dialogue",
+              "preference_boundary"
+            ],
+            "text_head": "What are some cuss words in english? I haven't even thought about it. Anthropic/hh-rlhf Ass. What are some cuss words in english? I haven't even thought about it. Anthropic/hh-rlhf Ass. Anthropic/hh-rlhf"
+          },
+          {
+            "canary_active": true,
+            "family": "hh-rlhf_harmless_base_train",
+            "legacy_active": true,
+            "record_id": "e136l_strict_examples_rejected_response_contrast_lens_1",
+            "role": "strict_examples",
+            "semantic_hits": [
+              "source_hint"
+            ],
+            "source": "Anthropic/hh-rlhf",
+            "tags": [
+              "assistant_style",
+              "helpful_harmless",
+              "instruction_following",
+              "multi_turn_dialogue",
+              "preference_boundary"
+            ],
+            "text_head": "What kind of noises did dinosaurs make? You can read? Anthropic/hh-rlhf there’s a lot of stuff humans don’t know What kind of noises did dinosaurs make? You can read? Anthropic/hh-rlhf there’s a lot of stuff humans don’t know Anthropic/h..."
+          },
+          {
+            "canary_active": false,
+            "family": "tag_lure",
+            "legacy_active": true,
+            "record_id": "e136l_tag_lure_rejected_response_contrast_lens",
+            "role": "tag_lure",
+            "semantic_hits": [],
+            "source": "builtin/e136l_tag_lure",
+            "tags": [
+              "preference_boundary"
+            ],
+            "text_head": "This neutral scheduling note is a tag-only canary fixture. It contains no formula, no code block, no source claim, no safety request, and no format constraint. This neutral scheduling note is a tag-only canary fixture. It contains no for..."
+          }
+        ],
+        "hard_negative": 0,
+        "legacy_activation": 5,
+        "operator_id": "rejected_response_contrast_lens",
+        "role_counts": [
+          [
+            "strict_examples",
+            4
+          ],
+          [
+            "tag_lure",
+            1
+          ]
+        ],
+        "rows_seen": 8345,
+        "selected_variant_id": "rejected_response_contrast_lens::semantic_verified_pruned_e136h_v1",
+        "selected_variant_type": "semantic_verified_pruned",
+        "source": "E136A",
+        "strict_activation": 4,
+        "strict_ratio": 0.8,
+        "strict_recall_miss": 0,
+        "tag_only_activation": 1,
+        "top_hits": [
+          [
+            "source_hint",
+            4
+          ]
+        ],
+        "top_tags": [
+          [
+            "preference_boundary",
+            5
+          ],
+          [
+            "instruction_following",
+            4
+          ],
+          [
+            "assistant_style",
+            4
+          ],
+          [
+            "helpful_harmless",
+            4
+          ],
+          [
+            "multi_turn_dialogue",
+            3
+          ]
+        ],
+        "unsupported_answer": 0,
+        "wrong_scope_proxy": 0
+      },
+      "selected_activation": 2220000,
+      "selected_variant_id": "rejected_response_contrast_lens::semantic_verified_pruned_e136h_v1",
+      "selected_variant_type": "semantic_verified_pruned",
+      "shadow_prune_ratio": 0.0,
+      "shadow_pruned_activation": 0,
+      "source": "E136A",
+      "strict_recall_miss": 0,
+      "supersession_action": "apply_verified_light_prune_shadow",
+      "supersession_tier": "T0_KEEP_CURRENT_WITH_LIGHT_PRUNE",
+      "unsupported_answer": 0,
+      "wrong_scope_proxy": 0
+    },
+    {
+      "abstract_lineage_required": false,
+      "accepted_mutations": 3,
+      "apply_action": "DIRECT_CANARY_KEEP_CURRENT_WITH_LIGHT_PRUNE",
+      "apply_reason": "low-risk verified operator; apply selected trigger as canary with rollback snapshot",
+      "challenger_ood_required": false,
+      "combined_failure_count": 0,
+      "current_activation": 175800,
+      "direct_canary_ready": true,
+      "direct_flow_write": 0,
+      "display_name": "Source Absence Defer Guard",
+      "hard_negative": 0,
+      "kernel_value_score": 0.668004,
+      "label_alignment_score": 0.999443,
+      "mutation_attempts": 1600,
+      "operator_id": "source_absence_defer_guard",
+      "readiness": "ready_low_risk",
+      "rollback_required": true,
+      "runtime_mutation_allowed_now": false,
+      "sample_replay": {
+        "apply_action": "DIRECT_CANARY_KEEP_CURRENT_WITH_LIGHT_PRUNE",
+        "canary_activation": 82,
+        "canary_prune_ratio": 0.02381,
+        "canary_removed_activation": 2,
+        "direct_flow_write": 0,
+        "display_name": "Source Absence Defer Guard",
+        "examples": [
+          {
+            "canary_active": true,
+            "family": "ultrachat_200k_data_train_sft_00000_of_00003_a3ecf92756993583",
+            "legacy_active": true,
+            "record_id": "huggingfaceh4_ultrachat_200k_44c29973f03fa987bd7f7439",
+            "role": "e136a_dataset_prefix",
+            "semantic_hits": [
+              "\\blatest\\b|\\btoday\\b|\\bcurrent\\b|\\bofficial\\b|\\bdocumentation\\b",
+              "latest"
+            ],
+            "source": "HuggingFaceH4/ultrachat_200k",
+            "tags": [
+              "assistant_style",
+              "instruction_following",
+              "multi_turn_dialogue",
+              "refusal_or_boundary",
+              "synthetic_multi_turn"
+            ],
+            "text_head": "De León, previewing the speech he will give today, said he will highlight his Senate Bill 535, which directs a quarter of the proceeds from the Greenhouse Gas Reduction Fund to projects that benefit disadvantaged communities. On Thursday..."
+          },
+          {
+            "canary_active": true,
+            "family": "ultrachat_200k_data_train_sft_00000_of_00003_a3ecf92756993583",
+            "legacy_active": true,
+            "record_id": "huggingfaceh4_ultrachat_200k_aef6c78719b524784541cb64",
+            "role": "e136a_dataset_prefix",
+            "semantic_hits": [
+              "do(?:es)? not have access|don't have access|cannot access|no live",
+              "don't have access"
+            ],
+            "source": "HuggingFaceH4/ultrachat_200k",
+            "tags": [
+              "assistant_style",
+              "code_instruction",
+              "instruction_following",
+              "multi_turn_dialogue",
+              "refusal_or_boundary",
+              "synthetic_multi_turn"
+            ],
+            "text_head": "The general aim of my research is to understand the neural basis of psychiatric disorders. We focus on what makes someone vulnerable to the development of psychiatric disorders, on how various treatments exert their effect, and on the de..."
+          },
+          {
+            "canary_active": true,
+            "family": "ultrachat_200k_data_train_sft_00000_of_00003_a3ecf92756993583",
+            "legacy_active": true,
+            "record_id": "huggingfaceh4_ultrachat_200k_f2c44ed3d5c9a46d460ae1a9",
+            "role": "e136a_dataset_prefix",
+            "semantic_hits": [
+              "do(?:es)? not have access|don't have access|cannot access|no live",
+              "don't have access"
+            ],
+            "source": "HuggingFaceH4/ultrachat_200k",
+            "tags": [
+              "assistant_style",
+              "instruction_following",
+              "math_text_surface",
+              "multi_turn_dialogue",
+              "refusal_or_boundary",
+              "synthetic_multi_turn"
+            ],
+            "text_head": "What is the significance of the guru bead in a mala bracelet? Generate according to: This Black Onyx and Sandalwood mala bracelet features genuine fragrant Sandalwood from Kathmandu, Nepal and natural Black Onyx gemstone beads. This boho..."
+          },
+          {
+            "canary_active": true,
+            "family": "ultrachat_200k_data_train_sft_00000_of_00003_a3ecf92756993583",
+            "legacy_active": true,
+            "record_id": "huggingfaceh4_ultrachat_200k_670ba7b5cf13bf3014834a15",
+            "role": "e136a_dataset_prefix",
+            "semantic_hits": [
+              "do(?:es)? not have access|don't have access|cannot access|no live",
+              "don't have access"
+            ],
+            "source": "HuggingFaceH4/ultrachat_200k",
+            "tags": [
+              "assistant_style",
+              "code_instruction",
+              "instruction_following",
+              "multi_turn_dialogue",
+              "refusal_or_boundary",
+              "synthetic_multi_turn"
+            ],
+            "text_head": "“I don't like reviews. Can we get rid of them?\" The most important thing about reviews is to understand they are opportunities in disguise. Great reviews are hidden testimonials from your patients about your services. Reviews that are le..."
+          },
+          {
+            "canary_active": true,
+            "family": "ultrachat_200k_data_train_sft_00000_of_00003_a3ecf92756993583",
+            "legacy_active": true,
+            "record_id": "huggingfaceh4_ultrachat_200k_41a298a7dea5ed4bf6c7b719",
+            "role": "e136a_dataset_prefix",
+            "semantic_hits": [
+              "\\blatest\\b|\\btoday\\b|\\bcurrent\\b|\\bofficial\\b|\\bdocumentation\\b",
+              "latest"
+            ],
+            "source": "HuggingFaceH4/ultrachat_200k",
+            "tags": [
+              "assistant_style",
+              "instruction_following",
+              "multi_turn_dialogue",
+              "refusal_or_boundary",
+              "synthetic_multi_turn"
+            ],
+            "text_head": "Write a realistic, character-driven drama taking place in a contemporary setting that explores the emotional journey of a married couple who struggles with infertility and ultimately decides whether or not to pursue adoption as a means o..."
+          }
+        ],
+        "hard_negative": 0,
+        "legacy_activation": 84,
+        "operator_id": "source_absence_defer_guard",
+        "role_counts": [
+          [
+            "e136a_dataset_prefix",
+            82
+          ],
+          [
+            "tag_only_examples",
+            2
+          ]
+        ],
+        "rows_seen": 8345,
+        "selected_variant_id": "source_absence_defer_guard::semantic_verified_pruned_e136h_v1",
+        "selected_variant_type": "semantic_verified_pruned",
+        "source": "E136A",
+        "strict_activation": 82,
+        "strict_ratio": 0.97619,
+        "strict_recall_miss": 0,
+        "tag_only_activation": 2,
+        "top_hits": [
+          [
+            "\\blatest\\b|\\btoday\\b|\\bcurrent\\b|\\bofficial\\b|\\bdocumentation\\b",
+            53
+          ],
+          [
+            "do(?:es)? not have access|don't have access|cannot access|no live",
+            39
+          ],
+          [
+            "don't have access",
+            32
+          ],
+          [
+            "latest",
+            31
+          ],
+          [
+            "documentation",
+            12
+          ],
+          [
+            "check with",
+            8
+          ],
+          [
+            "do not have access",
+            7
+          ]
+        ],
+        "top_tags": [
+          [
+            "refusal_or_boundary",
+            84
+          ],
+          [
+            "multi_turn_dialogue",
+            84
+          ],
+          [
+            "synthetic_multi_turn",
+            84
+          ],
+          [
+            "instruction_following",
+            84
+          ],
+          [
+            "assistant_style",
+            84
+          ],
+          [
+            "code_instruction",
+            35
+          ],
+          [
+            "math_text_surface",
+            17
+          ],
+          [
+            "summarization",
+            16
+          ]
+        ],
+        "unsupported_answer": 0,
+        "wrong_scope_proxy": 0
+      },
+      "selected_activation": 175689,
+      "selected_variant_id": "source_absence_defer_guard::semantic_verified_pruned_e136h_v1",
+      "selected_variant_type": "semantic_verified_pruned",
+      "shadow_prune_ratio": 0.000631,
+      "shadow_pruned_activation": 111,
+      "source": "E136A",
+      "strict_recall_miss": 0,
+      "supersession_action": "apply_verified_light_prune_shadow",
+      "supersession_tier": "T0_KEEP_CURRENT_WITH_LIGHT_PRUNE",
+      "unsupported_answer": 0,
+      "wrong_scope_proxy": 0
+    },
+    {
+      "abstract_lineage_required": false,
+      "accepted_mutations": 2,
+      "apply_action": "DIRECT_CANARY_KEEP_CURRENT_WITH_LIGHT_PRUNE",
+      "apply_reason": "low-risk verified operator; apply selected trigger as canary with rollback snapshot",
+      "challenger_ood_required": false,
+      "combined_failure_count": 0,
+      "current_activation": 180042,
+      "direct_canary_ready": true,
+      "direct_flow_write": 0,
+      "display_name": "Human-Written Instruction Style Lens",
+      "hard_negative": 0,
+      "kernel_value_score": 0.659161,
+      "label_alignment_score": 1.0,
+      "mutation_attempts": 1400,
+      "operator_id": "human_written_instruction_style_lens",
+      "readiness": "ready_low_risk",
+      "rollback_required": true,
+      "runtime_mutation_allowed_now": false,
+      "sample_replay": {
+        "apply_action": "DIRECT_CANARY_KEEP_CURRENT_WITH_LIGHT_PRUNE",
+        "canary_activation": 2,
+        "canary_prune_ratio": 0.0,
+        "canary_removed_activation": 0,
+        "direct_flow_write": 0,
+        "display_name": "Human-Written Instruction Style Lens",
+        "examples": [
+          {
+            "canary_active": true,
+            "family": "no_robots_data_train_sft_00000_of_00001",
+            "legacy_active": true,
+            "record_id": "e136l_strict_examples_human_written_instruction_style_lens_0",
+            "role": "strict_examples",
+            "semantic_hits": [
+              "source_hint",
+              "summarize"
+            ],
+            "source": "HuggingFaceH4/no_robots",
+            "tags": [
+              "assistant_style",
+              "human_written_instruction",
+              "instruction_following",
+              "summarization"
+            ],
+            "text_head": "Please summarize the goals for scientists in this text: Within three days, the intertwined cup nest of grasses was complete, featuring a canopy of overhanging grasses to conceal it. And decades later, it served as Rinkert’s portal to the..."
+          },
+          {
+            "canary_active": true,
+            "family": "no_robots_data_train_sft_00000_of_00001",
+            "legacy_active": true,
+            "record_id": "e136l_strict_examples_human_written_instruction_style_lens_1",
+            "role": "strict_examples",
+            "semantic_hits": [
+              "source_hint",
+              "write"
+            ],
+            "source": "HuggingFaceH4/no_robots",
+            "tags": [
+              "assistant_style",
+              "human_written_instruction",
+              "instruction_following"
+            ],
+            "text_head": "Help write a letter of 100 -200 words to my future self for Kyra, reflecting on her goals and aspirations. Dear Future Self, I hope you're happy and proud of what you've achieved. As I write this, I'm excited to think about our goals and..."
+          }
+        ],
+        "hard_negative": 0,
+        "legacy_activation": 2,
+        "operator_id": "human_written_instruction_style_lens",
+        "role_counts": [
+          [
+            "strict_examples",
+            2
+          ]
+        ],
+        "rows_seen": 8345,
+        "selected_variant_id": "human_written_instruction_style_lens::semantic_verified_pruned_e136h_v1",
+        "selected_variant_type": "semantic_verified_pruned",
+        "source": "E136A",
+        "strict_activation": 2,
+        "strict_ratio": 1.0,
+        "strict_recall_miss": 0,
+        "tag_only_activation": 0,
+        "top_hits": [
+          [
+            "source_hint",
+            2
+          ],
+          [
+            "summarize",
+            1
+          ],
+          [
+            "write",
+            1
+          ]
+        ],
+        "top_tags": [
+          [
+            "instruction_following",
+            2
+          ],
+          [
+            "human_written_instruction",
+            2
+          ],
+          [
+            "assistant_style",
+            2
+          ],
+          [
+            "summarization",
+            1
+          ]
+        ],
+        "unsupported_answer": 0,
+        "wrong_scope_proxy": 0
+      },
+      "selected_activation": 180042,
+      "selected_variant_id": "human_written_instruction_style_lens::semantic_verified_pruned_e136h_v1",
+      "selected_variant_type": "semantic_verified_pruned",
+      "shadow_prune_ratio": 0.0,
+      "shadow_pruned_activation": 0,
+      "source": "E136A",
+      "strict_recall_miss": 0,
+      "supersession_action": "apply_verified_light_prune_shadow",
+      "supersession_tier": "T0_KEEP_CURRENT_WITH_LIGHT_PRUNE",
+      "unsupported_answer": 0,
+      "wrong_scope_proxy": 0
+    },
+    {
+      "abstract_lineage_required": false,
+      "accepted_mutations": 4,
+      "apply_action": "DIRECT_CANARY_KEEP_CURRENT_WITH_LIGHT_PRUNE",
+      "apply_reason": "low-risk verified operator; apply selected trigger as canary with rollback snapshot",
+      "challenger_ood_required": false,
+      "combined_failure_count": 0,
+      "current_activation": 6481852,
+      "direct_canary_ready": true,
+      "direct_flow_write": 0,
+      "display_name": "Synthetic Dialogue Noise Guard",
+      "hard_negative": 0,
+      "kernel_value_score": 1.0,
+      "label_alignment_score": 1.0,
+      "mutation_attempts": 1120,
+      "operator_id": "synthetic_dialogue_noise_guard",
+      "readiness": "ready_low_risk",
+      "rollback_required": true,
+      "runtime_mutation_allowed_now": false,
+      "sample_replay": {
+        "apply_action": "DIRECT_CANARY_KEEP_CURRENT_WITH_LIGHT_PRUNE",
+        "canary_activation": 3259,
+        "canary_prune_ratio": 0.0,
+        "canary_removed_activation": 0,
+        "direct_flow_write": 0,
+        "display_name": "Synthetic Dialogue Noise Guard",
+        "examples": [
+          {
+            "canary_active": true,
+            "family": "ultrachat_200k_data_train_sft_00000_of_00003_a3ecf92756993583",
+            "legacy_active": true,
+            "record_id": "huggingfaceh4_ultrachat_200k_d7349ee1716c452d06eb45bd",
+            "role": "e136a_dataset_prefix",
+            "semantic_hits": [
+              "here are",
+              "source_hint",
+              "sure"
+            ],
+            "source": "HuggingFaceH4/ultrachat_200k",
+            "tags": [
+              "assistant_style",
+              "code_instruction",
+              "instruction_following",
+              "math_text_surface",
+              "multi_turn_dialogue",
+              "refusal_or_boundary",
+              "synthetic_multi_turn"
+            ],
+            "text_head": "Write a comprehensive blog post of at least 1000 words about the top 10 most eco-friendly cities in the world and their renewable energy initiatives. Use a formal and informative tone, and include statistics, case studies, and expert opi..."
+          },
+          {
+            "canary_active": true,
+            "family": "ultrachat_200k_data_train_sft_00000_of_00003_a3ecf92756993583",
+            "legacy_active": true,
+            "record_id": "huggingfaceh4_ultrachat_200k_44c29973f03fa987bd7f7439",
+            "role": "e136a_dataset_prefix",
+            "semantic_hits": [
+              "source_hint",
+              "sure"
+            ],
+            "source": "HuggingFaceH4/ultrachat_200k",
+            "tags": [
+              "assistant_style",
+              "instruction_following",
+              "multi_turn_dialogue",
+              "refusal_or_boundary",
+              "synthetic_multi_turn"
+            ],
+            "text_head": "De León, previewing the speech he will give today, said he will highlight his Senate Bill 535, which directs a quarter of the proceeds from the Greenhouse Gas Reduction Fund to projects that benefit disadvantaged communities. On Thursday..."
+          },
+          {
+            "canary_active": true,
+            "family": "ultrachat_200k_data_train_sft_00000_of_00003_a3ecf92756993583",
+            "legacy_active": true,
+            "record_id": "huggingfaceh4_ultrachat_200k_54e29f5fb43b9a0a2f4fad0f",
+            "role": "e136a_dataset_prefix",
+            "semantic_hits": [
+              "here are",
+              "source_hint",
+              "sure"
+            ],
+            "source": "HuggingFaceH4/ultrachat_200k",
+            "tags": [
+              "assistant_style",
+              "instruction_following",
+              "multi_turn_dialogue",
+              "refusal_or_boundary",
+              "synthetic_multi_turn"
+            ],
+            "text_head": "Write an essay that evaluates the positive and negative influence of social media on personal relationships, citing specific examples and research to support your claims. Analyze the ways in which social media usage affects communication..."
+          },
+          {
+            "canary_active": true,
+            "family": "ultrachat_200k_data_train_sft_00000_of_00003_a3ecf92756993583",
+            "legacy_active": true,
+            "record_id": "huggingfaceh4_ultrachat_200k_6356d3d0dd17bb3c89dfde9f",
+            "role": "e136a_dataset_prefix",
+            "semantic_hits": [
+              "can you",
+              "here are",
+              "source_hint"
+            ],
+            "source": "HuggingFaceH4/ultrachat_200k",
+            "tags": [
+              "assistant_style",
+              "instruction_following",
+              "math_text_surface",
+              "multi_turn_dialogue",
+              "synthetic_multi_turn"
+            ],
+            "text_head": "What many companies do when planning their global marketing strategies is to organize the world’s countries into three categories. Emerging Markets – Markets regarded as having the most potential for growth (e.g. Huge countries such as C..."
+          },
+          {
+            "canary_active": true,
+            "family": "ultrachat_200k_data_train_sft_00000_of_00003_a3ecf92756993583",
+            "legacy_active": true,
+            "record_id": "huggingfaceh4_ultrachat_200k_af3e7951dc8f6edd825341e3",
+            "role": "e136a_dataset_prefix",
+            "semantic_hits": [
+              "source_hint",
+              "sure"
+            ],
+            "source": "HuggingFaceH4/ultrachat_200k",
+            "tags": [
+              "assistant_style",
+              "code_instruction",
+              "instruction_following",
+              "math_text_surface",
+              "multi_turn_dialogue",
+              "refusal_or_boundary",
+              "synthetic_multi_turn"
+            ],
+            "text_head": "Write a Python program that can identify and remove duplicate images from a given folder or directory. The program should be able to compare images based on their content and file size, and determine which ones are exact duplicates. The..."
+          }
+        ],
+        "hard_negative": 0,
+        "legacy_activation": 3259,
+        "operator_id": "synthetic_dialogue_noise_guard",
+        "role_counts": [
+          [
+            "e136a_dataset_prefix",
+            3250
+          ],
+          [
+            "tag_only_examples",
+            5
+          ],
+          [
+            "strict_examples",
+            4
+          ]
+        ],
+        "rows_seen": 8345,
+        "selected_variant_id": "synthetic_dialogue_noise_guard::semantic_verified_pruned_e136h_v1",
+        "selected_variant_type": "semantic_verified_pruned",
+        "source": "E136A",
+        "strict_activation": 3259,
+        "strict_ratio": 1.0,
+        "strict_recall_miss": 0,
+        "tag_only_activation": 0,
+        "top_hits": [
+          [
+            "source_hint",
+            3259
+          ],
+          [
+            "here are",
+            1565
+          ],
+          [
+            "sure",
+            1543
+          ],
+          [
+            "can you",
+            646
+          ],
+          [
+            "please",
+            355
+          ],
+          [
+            "i don't",
+            80
+          ]
+        ],
+        "top_tags": [
+          [
+            "multi_turn_dialogue",
+            3259
+          ],
+          [
+            "synthetic_multi_turn",
+            3259
+          ],
+          [
+            "instruction_following",
+            3259
+          ],
+          [
+            "assistant_style",
+            3259
+          ],
+          [
+            "code_instruction",
+            998
+          ],
+          [
+            "math_text_surface",
+            858
+          ],
+          [
+            "refusal_or_boundary",
+            791
+          ],
+          [
+            "summarization",
+            525
+          ]
+        ],
+        "unsupported_answer": 0,
+        "wrong_scope_proxy": 0
+      },
+      "selected_activation": 6481852,
+      "selected_variant_id": "synthetic_dialogue_noise_guard::semantic_verified_pruned_e136h_v1",
+      "selected_variant_type": "semantic_verified_pruned",
+      "shadow_prune_ratio": 0.0,
+      "shadow_pruned_activation": 0,
+      "source": "E136A",
+      "strict_recall_miss": 0,
+      "supersession_action": "apply_verified_light_prune_shadow",
+      "supersession_tier": "T0_KEEP_CURRENT_WITH_LIGHT_PRUNE",
+      "unsupported_answer": 0,
+      "wrong_scope_proxy": 0
+    },
+    {
+      "abstract_lineage_required": false,
+      "accepted_mutations": 1,
+      "apply_action": "DIRECT_CANARY_KEEP_CURRENT_WITH_LIGHT_PRUNE",
+      "apply_reason": "low-risk verified operator; apply selected trigger as canary with rollback snapshot",
+      "challenger_ood_required": false,
+      "combined_failure_count": 0,
+      "current_activation": 2801159,
+      "direct_canary_ready": true,
+      "direct_flow_write": 0,
+      "display_name": "Reasoning Instruction Lens",
+      "hard_negative": 0,
+      "kernel_value_score": 1.0,
+      "label_alignment_score": 1.0,
+      "mutation_attempts": 1400,
+      "operator_id": "reasoning_instruction_lens",
+      "readiness": "ready_low_risk",
+      "rollback_required": true,
+      "runtime_mutation_allowed_now": false,
+      "sample_replay": {
+        "apply_action": "DIRECT_CANARY_KEEP_CURRENT_WITH_LIGHT_PRUNE",
+        "canary_activation": 1,
+        "canary_prune_ratio": 0.0,
+        "canary_removed_activation": 0,
+        "direct_flow_write": 0,
+        "display_name": "Reasoning Instruction Lens",
+        "examples": [
+          {
+            "canary_active": true,
+            "family": "slimorca_oo_labeled_correct_gpt4_sharegpt",
+            "legacy_active": true,
+            "record_id": "e136l_strict_examples_reasoning_instruction_lens_1",
+            "role": "strict_examples",
+            "semantic_hits": [
+              "answer the following",
+              "question",
+              "source_hint"
+            ],
+            "source": "Open-Orca/SlimOrca",
+            "tags": [
+              "assistant_style",
+              "instruction_following",
+              "math_text_surface",
+              "multi_turn_dialogue",
+              "reasoning_instruction"
+            ],
+            "text_head": "Answer the following question: - number is 54 - debutteam is pittsburgh steelers - draftpick is 166 - birth date is 24 may 1982 - weight is 243 - nfl is wal475737 - debutyear is 2005 - finalteam is new york sentinels - statlabel is tackl..."
+          }
+        ],
+        "hard_negative": 0,
+        "legacy_activation": 1,
+        "operator_id": "reasoning_instruction_lens",
+        "role_counts": [
+          [
+            "strict_examples",
+            1
+          ]
+        ],
+        "rows_seen": 8345,
+        "selected_variant_id": "reasoning_instruction_lens::semantic_verified_pruned_e136h_v1",
+        "selected_variant_type": "semantic_verified_pruned",
+        "source": "E136A",
+        "strict_activation": 1,
+        "strict_ratio": 1.0,
+        "strict_recall_miss": 0,
+        "tag_only_activation": 0,
+        "top_hits": [
+          [
+            "answer the following",
+            1
+          ],
+          [
+            "question",
+            1
+          ],
+          [
+            "source_hint",
+            1
+          ]
+        ],
+        "top_tags": [
+          [
+            "math_text_surface",
+            1
+          ],
+          [
+            "multi_turn_dialogue",
+            1
+          ],
+          [
+            "reasoning_instruction",
+            1
+          ],
+          [
+            "instruction_following",
+            1
+          ],
+          [
+            "assistant_style",
+            1
+          ]
+        ],
+        "unsupported_answer": 0,
+        "wrong_scope_proxy": 0
+      },
+      "selected_activation": 2801159,
+      "selected_variant_id": "reasoning_instruction_lens::semantic_verified_pruned_e136h_v1",
+      "selected_variant_type": "semantic_verified_pruned",
+      "shadow_prune_ratio": 0.0,
+      "shadow_pruned_activation": 0,
+      "source": "E136A",
+      "strict_recall_miss": 0,
+      "supersession_action": "apply_verified_light_prune_shadow",
+      "supersession_tier": "T0_KEEP_CURRENT_WITH_LIGHT_PRUNE",
+      "unsupported_answer": 0,
+      "wrong_scope_proxy": 0
+    },
+    {
+      "abstract_lineage_required": false,
+      "accepted_mutations": 2,
+      "apply_action": "DIRECT_CANARY_REPLACE_WITH_VERIFIED_PRUNED_VARIANT",
+      "apply_reason": "verified pruned replacement survived long shadow replay with zero recall loss",
+      "challenger_ood_required": false,
+      "combined_failure_count": 0,
+      "current_activation": 1841175,
+      "direct_canary_ready": true,
+      "direct_flow_write": 0,
+      "display_name": "Assistant Translation / Multilingual Lens",
+      "hard_negative": 0,
+      "kernel_value_score": 0.945043,
+      "label_alignment_score": 0.949864,
+      "mutation_attempts": 1080,
+      "operator_id": "assistant_translation_multilingual_lens",
+      "readiness": "ready_verified",
+      "rollback_required": true,
+      "runtime_mutation_allowed_now": false,
+      "sample_replay": {
+        "apply_action": "DIRECT_CANARY_REPLACE_WITH_VERIFIED_PRUNED_VARIANT",
+        "canary_activation": 521,
+        "canary_prune_ratio": 0.036969,
+        "canary_removed_activation": 20,
+        "direct_flow_write": 0,
+        "display_name": "Assistant Translation / Multilingual Lens",
+        "examples": [
+          {
+            "canary_active": true,
+            "family": "ultrachat_200k_data_train_sft_00000_of_00003_a3ecf92756993583",
+            "legacy_active": true,
+            "record_id": "huggingfaceh4_ultrachat_200k_6356d3d0dd17bb3c89dfde9f",
+            "role": "e136a_dataset_prefix",
+            "semantic_hits": [
+              "\\btranslate\\b|\\btranslation\\b|\\bspanish\\b|\\bfrench\\b|\\bgerman\\b|\\bhungarian\\b",
+              "language",
+              "translate"
+            ],
+            "source": "HuggingFaceH4/ultrachat_200k",
+            "tags": [
+              "assistant_style",
+              "instruction_following",
+              "math_text_surface",
+              "multi_turn_dialogue",
+              "synthetic_multi_turn"
+            ],
+            "text_head": "What many companies do when planning their global marketing strategies is to organize the world’s countries into three categories. Emerging Markets – Markets regarded as having the most potential for growth (e.g. Huge countries such as C..."
+          },
+          {
+            "canary_active": true,
+            "family": "ultrachat_200k_data_train_sft_00000_of_00003_a3ecf92756993583",
+            "legacy_active": true,
+            "record_id": "huggingfaceh4_ultrachat_200k_027dc3c2fba24e2441959de4",
+            "role": "e136a_dataset_prefix",
+            "semantic_hits": [
+              "language"
+            ],
+            "source": "HuggingFaceH4/ultrachat_200k",
+            "tags": [
+              "assistant_style",
+              "instruction_following",
+              "multi_turn_dialogue",
+              "refusal_or_boundary",
+              "synthetic_multi_turn"
+            ],
+            "text_head": "Please provide a specific cooking method for the salmon, as well as any seasonings or ingredients necessary to complete the dish. Additionally, include instructions for how to properly prepare the salmon before cooking, such as removing..."
+          },
+          {
+            "canary_active": true,
+            "family": "ultrachat_200k_data_train_sft_00000_of_00003_a3ecf92756993583",
+            "legacy_active": true,
+            "record_id": "huggingfaceh4_ultrachat_200k_e0430fb4405aee79be956dcc",
+            "role": "e136a_dataset_prefix",
+            "semantic_hits": [
+              "\\btranslate\\b|\\btranslation\\b|\\bspanish\\b|\\bfrench\\b|\\bgerman\\b|\\bhungarian\\b",
+              "language"
+            ],
+            "source": "HuggingFaceH4/ultrachat_200k",
+            "tags": [
+              "assistant_style",
+              "instruction_following",
+              "multi_turn_dialogue",
+              "synthetic_multi_turn"
+            ],
+            "text_head": "How did the Spanish conquest of the Low Countries in the 16th century impact European politics and culture? It's difficult to speculate on what might have happened had the Spanish not conquered the Low Countries. However, it is likely th..."
+          },
+          {
+            "canary_active": true,
+            "family": "ultrachat_200k_data_train_sft_00000_of_00003_a3ecf92756993583",
+            "legacy_active": true,
+            "record_id": "huggingfaceh4_ultrachat_200k_b2ac00afbd857a56c6d038b5",
+            "role": "e136a_dataset_prefix",
+            "semantic_hits": [
+              "language"
+            ],
+            "source": "HuggingFaceH4/ultrachat_200k",
+            "tags": [
+              "assistant_style",
+              "instruction_following",
+              "multi_turn_dialogue",
+              "synthetic_multi_turn"
+            ],
+            "text_head": "Write a character-driven short story that essentially deals with the theme of social media addiction and delve into the psychological effects that it could have on young minds. Pay close attention to the character arc of the protagonist,..."
+          },
+          {
+            "canary_active": true,
+            "family": "ultrachat_200k_data_train_sft_00000_of_00003_a3ecf92756993583",
+            "legacy_active": true,
+            "record_id": "huggingfaceh4_ultrachat_200k_7b1f892f3c6b27cfd6893c32",
+            "role": "e136a_dataset_prefix",
+            "semantic_hits": [
+              "language"
+            ],
+            "source": "HuggingFaceH4/ultrachat_200k",
+            "tags": [
+              "assistant_style",
+              "instruction_following",
+              "multi_turn_dialogue",
+              "synthetic_multi_turn"
+            ],
+            "text_head": "Develop a beginner level online course on how to learn a new language with a focus on building vocabulary, practicing grammar, and mastering pronunciation. Incorporate interactive activities such as quizzes, games, and audio exercises to..."
+          }
+        ],
+        "hard_negative": 0,
+        "legacy_activation": 541,
+        "operator_id": "assistant_translation_multilingual_lens",
+        "role_counts": [
+          [
+            "e136a_dataset_prefix",
+            540
+          ],
+          [
+            "strict_examples",
+            1
+          ]
+        ],
+        "rows_seen": 8345,
+        "selected_variant_id": "assistant_translation_multilingual_lens::semantic_verified_pruned_e136h_v1",
+        "selected_variant_type": "semantic_verified_pruned",
+        "source": "E136A",
+        "strict_activation": 521,
+        "strict_ratio": 0.963031,
+        "strict_recall_miss": 0,
+        "tag_only_activation": 20,
+        "top_hits": [
+          [
+            "language",
+            499
+          ],
+          [
+            "\\btranslate\\b|\\btranslation\\b|\\bspanish\\b|\\bfrench\\b|\\bgerman\\b|\\bhungarian\\b",
+            51
+          ],
+          [
+            "translate",
+            19
+          ],
+          [
+            "in english",
+            19
+          ],
+          [
+            "in spanish",
+            7
+          ]
+        ],
+        "top_tags": [
+          [
+            "multi_turn_dialogue",
+            541
+          ],
+          [
+            "instruction_following",
+            541
+          ],
+          [
+            "assistant_style",
+            541
+          ],
+          [
+            "synthetic_multi_turn",
+            540
+          ],
+          [
+            "code_instruction",
+            154
+          ],
+          [
+            "refusal_or_boundary",
+            138
+          ],
+          [
+            "math_text_surface",
+            134
+          ],
+          [
+            "summarization",
+            63
+          ],
+          [
+            "helpful_harmless",
+            1
+          ],
+          [
+            "preference_boundary",
+            1
+          ]
+        ],
+        "unsupported_answer": 0,
+        "wrong_scope_proxy": 0
+      },
+      "selected_activation": 1748406,
+      "selected_variant_id": "assistant_translation_multilingual_lens::semantic_verified_pruned_e136h_v1",
+      "selected_variant_type": "semantic_verified_pruned",
+      "shadow_prune_ratio": 0.050386,
+      "shadow_pruned_activation": 92769,
+      "source": "E136A",
+      "strict_recall_miss": 0,
+      "supersession_action": "supersede_current_with_verified_pruned_variant",
+      "supersession_tier": "T1_VERIFIED_PRUNED_REPLACEMENT",
+      "unsupported_answer": 0,
+      "wrong_scope_proxy": 0
+    }
+  ]
+}

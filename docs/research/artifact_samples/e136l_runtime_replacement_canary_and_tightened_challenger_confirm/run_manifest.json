@@ -1,0 +1,12 @@
+{
+  "artifact_contract": "E136L_RUNTIME_REPLACEMENT_CANARY_AND_TIGHTENED_CHALLENGER_CONFIRM",
+  "boundary": "runtime canary simulation only; no destructive runtime replacement or prune",
+  "e132_dataset": "target/datasets/e132_external_math_text_seed_pack/normalized/e132_external_math_text_skill_seed.jsonl",
+  "e132_rows": 4096,
+  "e136a_dataset": "target/datasets/e136_assistant_text_seed_pack/normalized/e136_assistant_text_skill_seed.jsonl",
+  "e136a_rows": 4096,
+  "e136h_artifact": "docs/research/artifact_samples/e136h_existing_operator_refinement_mutation_prune_night_cycle",
+  "e136k_artifact": "docs/research/artifact_samples/e136k_operator_replacement_apply_plan_or_flow_scale_transfer",
+  "prior_example_rows": 126,
+  "tag_lure_rows": 27
+}

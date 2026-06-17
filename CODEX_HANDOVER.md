@@ -8,8 +8,8 @@ Last updated: 2026-06-17
 repo = VRAXION_anchorwiki
 branch = main
 latest_release_target = v6.1.7
-current_evidence_anchor = E136K operator replacement apply plan or Flow-scale transfer on main
-current_status = E136K converted E136I/E136J replacement evidence into a rollback-safe runtime canary apply plan
+current_evidence_anchor = E136L runtime replacement canary and tightened challenger confirm on main
+current_status = E136L confirmed 16/16 direct runtime canaries with old triggers removed in canary and 0 rollback triggers
 ```
 
 This is the first file a fresh Codex should read after cloning the repo.
@@ -562,6 +562,39 @@ tightened-trigger replacements are promising but must pass challenger/OOD
 canary before runtime replacement. The 7 abstract kernels remain lineage holds.
 ```
 
+E136L tests that apply plan under rollback-safe runtime canary simulation:
+
+```text
+operator_count = 34
+direct_canary_tested_count = 16
+direct_canary_pass_count = 16
+old_operator_removed_in_canary_count = 16
+runtime_replacement_canary_allowed_count = 16
+production_runtime_apply_count = 0
+destructive_apply_count = 0
+
+challenger_ood_tested_count = 11
+challenger_hold_count = 11
+challenger_runtime_apply_allowed_count = 0
+abstract_lineage_hold_count = 7
+
+rollback_manifest_count = 16
+rollback_trigger_count = 0
+direct_canary_removed_activation_total = 3,450,257
+sample_direct_removed_activation_total = 1,031
+
+strict_recall_miss_total = 0
+wrong_scope_proxy_total = 0
+hard_negative_total = 0
+unsupported_answer_total = 0
+direct_flow_write_total = 0
+
+meaning:
+The 16 direct candidates passed the "old trigger removed, selected variant
+active" canary replay. This is not a destructive production apply. The 11
+challenger rows and 7 abstract lineage rows stay held.
+```
+
 ## Claim Boundary
 
 Allowed:
@@ -621,6 +654,9 @@ direct Flow writes.
 E136K confirms a rollback-safe non-destructive apply plan: 16 direct
 canary-ready candidates, 11 challenger/OOD-required replacements, 7 abstract
 lineage holds, 0 destructive applies, and 0 runtime mutations allowed now.
+E136L confirms those 16 direct candidates pass runtime-canary
+removal/replacement replay with 0 rollback triggers while the 11 challenger
+rows and 7 abstract lineage rows remain held.
 ```
 
 System-level interpretation:
@@ -706,6 +742,7 @@ docs/research/E136H_EXISTING_OPERATOR_REFINEMENT_MUTATION_PRUNE_NIGHT_CYCLE_RESU
 docs/research/E136I_OPERATOR_SUPERSESSION_AND_OUTPUT_LEDGER_PLANNING_RESULT.md
 docs/research/E136J_SHADOW_VARIANT_APPLY_AND_RESIDUAL_PRUNE_CONFIRM_RESULT.md
 docs/research/E136K_OPERATOR_REPLACEMENT_APPLY_PLAN_OR_FLOW_SCALE_TRANSFER_RESULT.md
+docs/research/E136L_RUNTIME_REPLACEMENT_CANARY_AND_TIGHTENED_CHALLENGER_CONFIRM_RESULT.md
 docs/research/artifact_samples/e127_overnight_text_skill_farm_orange_cycle/
 docs/research/artifact_samples/e127_text_to_text_render_smoke_current/
 docs/research/artifact_samples/e128_assistant_text_io_lightweight_render_training/
@@ -931,6 +968,28 @@ E136K HARD NEGATIVES = 0
 E136K DIRECT FLOW WRITES = 0
 ```
 
+Expected E136L runtime replacement canary:
+
+```text
+E136L OPERATORS = 34
+E136L DIRECT CANARY TESTED = 16
+E136L DIRECT CANARY PASSED = 16
+E136L OLD OPERATORS REMOVED IN CANARY = 16
+E136L RUNTIME REPLACEMENT CANARY ALLOWED = 16
+E136L PRODUCTION RUNTIME APPLIES = 0
+E136L DESTRUCTIVE APPLIES = 0
+E136L CHALLENGER HOLD = 11
+E136L ABSTRACT LINEAGE HOLD = 7
+E136L ROLLBACK MANIFEST = 16
+E136L ROLLBACK TRIGGERS = 0
+E136L DIRECT CANARY REMOVED ACTIVATIONS = 3,450,257
+E136L SAMPLE DIRECT REMOVED ACTIVATIONS = 1,031
+E136L STRICT RECALL MISSES = 0
+E136L WRONG SCOPE PROXY = 0
+E136L HARD NEGATIVES = 0
+E136L DIRECT FLOW WRITES = 0
+```
+
 ## Local E136 Seed Pack
 
 After E135, a local assistant/text seed pack was downloaded and normalized for
@@ -1039,8 +1098,8 @@ Do not delete or commit them without an explicit cleanup decision.
 Recommended next steps:
 
 ```text
-1. Run E136L runtime replacement canary and tightened challenger confirmation
-   before destructive prune or broad new-operator farming.
+1. Run E136M runtime replacement apply or abstract-lineage split before any
+   destructive prune or broad new-operator farming.
 2. Run a later assistant/open-domain boundary probe before claiming broader
    assistant readiness.
 3. Decide whether to continue E127 with a fresh candidate pack or pause farming.
