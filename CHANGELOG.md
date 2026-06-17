@@ -1,6 +1,23 @@
 # Changelog
 
-This changelog is narrowed to the current v6 / E127-E136M evidence anchor. Full historical beta, probe, Python SDK, legacy Rust, and research-output history is preserved in git history and archive tags.
+This changelog is narrowed to the current v6 / E127-E136N evidence anchor. Full historical beta, probe, Python SDK, legacy Rust, and research-output history is preserved in git history and archive tags.
+
+## 2026-06-17 - E136N Primary/Secondary Variant Governance
+
+- Added `scripts/probes/run_e136n_primary_secondary_variant_governance.py`.
+- Converted the E136M runtime-facing overlay into a primary/secondary variant
+  governance skeleton: 34 operators, 68 registry rows, 34 primary variants,
+  and 34 secondary variants.
+- Default runtime side is explicit: 16 primary-active overlay variants, 11
+  current primary variants while challenger rows wait, and 7 abstract-current
+  primary variants while lineage is resolved.
+- Held/fallback side is explicit: 16 rollback secondaries, 11 challenger
+  secondaries, and 7 lineage-hold secondaries.
+- Retirement lane exists but is not used yet: retired variants 0, retirement
+  candidates 0, destructive deletes 0, ambiguous primaries 0, missing primaries
+  0, and orphan secondaries 0.
+- Track decision: proceed to E136O challenger/OOD runtime replacement gauntlet
+  before promoting any of the 11 challenger secondaries.
 
 ## 2026-06-17 - E136M Runtime Replacement Apply Or Abstract Lineage Split
 

@@ -8,8 +8,8 @@ Last updated: 2026-06-17
 repo = VRAXION_anchorwiki
 branch = main
 latest_release_target = v6.1.7
-current_evidence_anchor = E136M runtime replacement apply or abstract lineage split on main
-current_status = E136M materialized 16 E136L direct canary winners as a rollback-safe runtime-facing overlay
+current_evidence_anchor = E136N primary/secondary variant governance on main
+current_status = E136N installs a primary/secondary registry skeleton over the E136M runtime-facing overlay
 ```
 
 This is the first file a fresh Codex should read after cloning the repo.
@@ -628,9 +628,51 @@ direct_flow_write_total = 0
 
 meaning:
 The runtime-facing apply surface is now the 16 direct canary winners only. The
-larger challenger-prune opportunity is explicitly not applied until E136N
+larger challenger-prune opportunity is explicitly not applied until E136O
 challenger/OOD evidence exists. This is still rollback-safe overlay evidence,
 not destructive deletion of legacy operators.
+```
+
+E136N installs primary/secondary variant governance over the E136M overlay:
+
+```text
+operator_count = 34
+variant_registry_row_count = 68
+primary_variant_count = 34
+secondary_variant_count = 34
+
+primary_active_count = 16
+primary_current_count = 11
+primary_abstract_current_count = 7
+secondary_rollback_count = 16
+secondary_challenger_count = 11
+secondary_lineage_hold_count = 7
+retired_redundant_count = 0
+
+retirement_lane_created_count = 16
+retirement_candidate_count = 0
+destructive_delete_count = 0
+ambiguous_primary_operator_count = 0
+missing_primary_operator_count = 0
+orphan_secondary_count = 0
+
+runtime_overlay_removed_activation_total = 3,450,257
+challenger_candidate_removed_not_applied = 18,792,948
+rollback_snapshot_count = 16
+rollback_trigger_count = 0
+
+strict_recall_miss_total = 0
+wrong_scope_proxy_total = 0
+hard_negative_total = 0
+unsupported_answer_total = 0
+direct_flow_write_total = 0
+
+meaning:
+All 34 operators now have exactly one primary variant and at least one
+secondary variant. The 16 E136M overlay winners are primary-active; the legacy
+versions are rollback secondaries. The 11 tightened candidates remain
+secondary challengers and the 7 abstract kernels remain lineage-hold
+secondaries. Nothing is retired or destructively deleted yet.
 ```
 
 ## Claim Boundary
@@ -699,6 +741,10 @@ E136M materializes those 16 direct candidates as a runtime-facing overlay with
 7 verified replacements, 9 light-prune overlays, 16 rollback snapshots, 0
 destructive deletes, and 18,792,948 challenger candidate pruned activations
 explicitly not applied.
+E136N records the current operator set in a primary/secondary registry: 34
+operators, 34 primaries, 34 secondaries, 16 primary-active overlays, 16 rollback
+secondaries, 11 challenger secondaries, 7 lineage-hold secondaries, 0 retired
+variants, and 0 destructive deletes.
 ```
 
 System-level interpretation:
@@ -786,6 +832,7 @@ docs/research/E136J_SHADOW_VARIANT_APPLY_AND_RESIDUAL_PRUNE_CONFIRM_RESULT.md
 docs/research/E136K_OPERATOR_REPLACEMENT_APPLY_PLAN_OR_FLOW_SCALE_TRANSFER_RESULT.md
 docs/research/E136L_RUNTIME_REPLACEMENT_CANARY_AND_TIGHTENED_CHALLENGER_CONFIRM_RESULT.md
 docs/research/E136M_RUNTIME_REPLACEMENT_APPLY_OR_ABSTRACT_LINEAGE_SPLIT_RESULT.md
+docs/research/E136N_PRIMARY_SECONDARY_VARIANT_GOVERNANCE_RESULT.md
 docs/research/artifact_samples/e127_overnight_text_skill_farm_orange_cycle/
 docs/research/artifact_samples/e127_text_to_text_render_smoke_current/
 docs/research/artifact_samples/e128_assistant_text_io_lightweight_render_training/
@@ -1056,6 +1103,35 @@ E136M HARD NEGATIVES = 0
 E136M DIRECT FLOW WRITES = 0
 ```
 
+Expected E136N primary/secondary variant governance:
+
+```text
+E136N OPERATORS = 34
+E136N VARIANT REGISTRY ROWS = 68
+E136N PRIMARY VARIANTS = 34
+E136N SECONDARY VARIANTS = 34
+E136N PRIMARY ACTIVE = 16
+E136N PRIMARY CURRENT = 11
+E136N PRIMARY ABSTRACT CURRENT = 7
+E136N SECONDARY ROLLBACK = 16
+E136N SECONDARY CHALLENGER = 11
+E136N SECONDARY LINEAGE HOLD = 7
+E136N RETIRED REDUNDANT = 0
+E136N RETIREMENT LANE CREATED = 16
+E136N RETIREMENT CANDIDATES = 0
+E136N DESTRUCTIVE DELETES = 0
+E136N AMBIGUOUS PRIMARY OPERATORS = 0
+E136N MISSING PRIMARY OPERATORS = 0
+E136N ORPHAN SECONDARIES = 0
+E136N RUNTIME OVERLAY REMOVED ACTIVATIONS = 3,450,257
+E136N CHALLENGER CANDIDATE REMOVED NOT APPLIED = 18,792,948
+E136N ROLLBACK TRIGGERS = 0
+E136N STRICT RECALL MISSES = 0
+E136N WRONG SCOPE PROXY = 0
+E136N HARD NEGATIVES = 0
+E136N DIRECT FLOW WRITES = 0
+```
+
 ## Local E136 Seed Pack
 
 After E135, a local assistant/text seed pack was downloaded and normalized for
@@ -1123,6 +1199,8 @@ python -m py_compile scripts/probes/run_e136h_existing_operator_refinement_mutat
 python scripts/probes/run_e136h_existing_operator_refinement_mutation_prune_night_cycle.py --cycles 2 --e132-rows-per-cycle 200 --e136a-rows-per-cycle 400 --out target/ci/e136h_existing_operator_refinement_mutation_prune_night_cycle --sample-out ""
 python -m py_compile scripts/probes/run_e136i_operator_supersession_and_output_ledger_planning.py
 python scripts/probes/run_e136i_operator_supersession_and_output_ledger_planning.py --out target/ci/e136i_operator_supersession_and_output_ledger_planning --sample-out ""
+python -m py_compile scripts/probes/run_e136n_primary_secondary_variant_governance.py
+python scripts/probes/run_e136n_primary_secondary_variant_governance.py --out target/ci/e136n_primary_secondary_variant_governance --sample-out ""
 python -m compileall -q scripts
 cargo test --workspace
 git diff --check
@@ -1164,7 +1242,7 @@ Do not delete or commit them without an explicit cleanup decision.
 Recommended next steps:
 
 ```text
-1. Run E136N challenger/OOD runtime replacement gauntlet before applying the
+1. Run E136O challenger/OOD runtime replacement gauntlet before applying the
    11 tightened-trigger hold rows or doing broad new-operator farming.
 2. Run a later assistant/open-domain boundary probe before claiming broader
    assistant readiness.

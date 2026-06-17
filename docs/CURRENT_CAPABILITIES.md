@@ -354,7 +354,38 @@ unsupported-claim rejects = 6
 OutputTextField roundtrip/checksum/zero-fill = 70 / 70
 ```
 
-Current E136M runtime replacement overlay evidence:
+Current E136N primary/secondary variant governance evidence:
+
+```text
+operator count = 34
+variant registry rows = 68
+primary variants = 34
+secondary variants = 34
+primary active = 16
+primary current = 11
+primary abstract current = 7
+secondary rollback = 16
+secondary challenger = 11
+secondary lineage hold = 7
+retired redundant = 0
+retirement lane created = 16
+retirement candidates = 0
+destructive deletes = 0
+ambiguous primary operators = 0
+missing primary operators = 0
+orphan secondaries = 0
+runtime overlay removed activations = 3,450,257
+challenger candidate removed not applied = 18,792,948
+rollback snapshots = 16
+rollback triggers = 0
+strict recall misses = 0
+wrong-scope proxy calls = 0
+hard negatives = 0
+unsupported answers = 0
+direct Flow writes = 0
+```
+
+Previous E136M runtime replacement overlay evidence:
 
 ```text
 operator count = 34
@@ -699,6 +730,10 @@ runtime replacement canary
 runtime replacement overlay
   activate the direct canary-passed selected variants in a rollback-safe
   runtime-facing overlay while holding challenger and abstract rows
+
+primary/secondary variant governance
+  keep each operator on exactly one primary variant while retaining explicit
+  rollback, challenger, and lineage-hold secondary variants
 ```
 
 ## What it cannot claim yet

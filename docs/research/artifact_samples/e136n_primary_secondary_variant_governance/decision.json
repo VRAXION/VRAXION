@@ -1,0 +1,6 @@
+{
+  "artifact_contract": "E136N_PRIMARY_SECONDARY_VARIANT_GOVERNANCE",
+  "decision": "e136n_primary_secondary_variant_governance_confirmed",
+  "next": "E136O_CHALLENGER_OOD_RUNTIME_REPLACEMENT_GAUNTLET",
+  "pass_gate": true
+}
