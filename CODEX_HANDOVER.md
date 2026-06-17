@@ -8,8 +8,8 @@ Last updated: 2026-06-17
 repo = VRAXION_anchorwiki
 branch = main
 latest_release_target = v6.1.7
-current_evidence_anchor = E136I operator supersession and output ledger planning on main
-current_status = E136I confirmed E136H selected variants can be classified for replacement readiness, challenger replay, abstract lineage, and output/prune impact
+current_evidence_anchor = E136J shadow variant apply and residual prune confirm on main
+current_status = E136J confirmed the E136I replacement ledger under long non-destructive shadow apply through the 19:00 deadline
 ```
 
 This is the first file a fresh Codex should read after cloning the repo.
@@ -504,6 +504,37 @@ replacement candidates, challenger-required replacements, abstract lineage
 kernels, and output/prune impact before any destructive apply.
 ```
 
+E136J shadow-applies the E136I replacement ledger without destructive runtime
+mutation or prune:
+
+```text
+stop_reason = deadline
+cycles_completed = 8,094
+rows_processed = 33,153,024
+elapsed_seconds = 46,317.709
+
+operator_count = 34
+replacement_ready_count = 27
+direct_runtime_candidate_count = 16
+tightened_challenger_required_count = 11
+abstract_lineage_required_count = 7
+
+current_activation_total = 188,597,925
+selected_activation_total = 166,354,720
+shadow_pruned_activation_total = 22,243,205
+
+strict_recall_miss_total = 0
+wrong_scope_proxy_total = 0
+hard_negative_total = 0
+unsupported_answer_total = 0
+direct_flow_write_total = 0
+
+meaning:
+E136J is the non-destructive shadow-apply confirmation for E136I. It passed the
+previous premature-finish failure mode, ran past six hours, and stopped only at
+the explicit 19:00 deadline.
+```
+
 ## Claim Boundary
 
 Allowed:
@@ -556,6 +587,10 @@ E136I confirms an explicit supersession/output ledger over the E136H selected
 variants: 27 replacement-ready variants, 16 direct runtime candidates, 11
 tightened challenger-required replacements, 7 abstract lineage-required
 kernels, 0 destructive drops, and projected output activation delta -482,637.
+E136J confirms those selected variants under non-destructive shadow apply over
+8,094 cycles and 33,153,024 replay rows: 22,243,205 shadow-pruned activations,
+0 strict recall misses, 0 wrong-scope proxy calls, 0 hard negatives, and 0
+direct Flow writes.
 ```
 
 System-level interpretation:
@@ -639,6 +674,7 @@ docs/research/E136F_IDLE_THINK_TICK_HELDOUT_SERIES_CONFIRM_RESULT.md
 docs/research/E136G_ADAPTIVE_IDLE_TICK_BUDGET_CONFIRM_RESULT.md
 docs/research/E136H_EXISTING_OPERATOR_REFINEMENT_MUTATION_PRUNE_NIGHT_CYCLE_RESULT.md
 docs/research/E136I_OPERATOR_SUPERSESSION_AND_OUTPUT_LEDGER_PLANNING_RESULT.md
+docs/research/E136J_SHADOW_VARIANT_APPLY_AND_RESIDUAL_PRUNE_CONFIRM_RESULT.md
 docs/research/artifact_samples/e127_overnight_text_skill_farm_orange_cycle/
 docs/research/artifact_samples/e127_text_to_text_render_smoke_current/
 docs/research/artifact_samples/e128_assistant_text_io_lightweight_render_training/
@@ -825,6 +861,27 @@ E136I HARD NEGATIVES = 0
 E136I DIRECT FLOW WRITES = 0
 ```
 
+Expected E136J shadow variant apply and residual prune confirm:
+
+```text
+E136J STOP REASON = deadline
+E136J CYCLES = 8,094
+E136J ROWS PROCESSED = 33,153,024
+E136J ELAPSED SECONDS = 46,317.709
+E136J OPERATORS = 34
+E136J REPLACEMENT READY = 27
+E136J DIRECT RUNTIME CANDIDATES = 16
+E136J TIGHTENED CHALLENGER REQUIRED = 11
+E136J ABSTRACT LINEAGE REQUIRED = 7
+E136J CURRENT ACTIVATIONS = 188,597,925
+E136J SELECTED ACTIVATIONS = 166,354,720
+E136J SHADOW PRUNED ACTIVATIONS = 22,243,205
+E136J STRICT RECALL MISSES = 0
+E136J WRONG SCOPE PROXY = 0
+E136J HARD NEGATIVES = 0
+E136J DIRECT FLOW WRITES = 0
+```
+
 ## Local E136 Seed Pack
 
 After E135, a local assistant/text seed pack was downloaded and normalized for
@@ -933,8 +990,8 @@ Do not delete or commit them without an explicit cleanup decision.
 Recommended next steps:
 
 ```text
-1. Run E136J shadow-variant apply and residual prune/OOD confirmation before
-   destructive prune or broad new-operator farming.
+1. Plan E136K operator replacement apply or Flow-scale transfer using E136J
+   shadow evidence before destructive prune or broad new-operator farming.
 2. Run a later assistant/open-domain boundary probe before claiming broader
    assistant readiness.
 3. Decide whether to continue E127 with a fresh candidate pack or pause farming.

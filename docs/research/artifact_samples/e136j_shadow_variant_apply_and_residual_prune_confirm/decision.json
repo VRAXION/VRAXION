@@ -1,0 +1,6 @@
+{
+  "artifact_contract": "E136J_SHADOW_VARIANT_APPLY_AND_RESIDUAL_PRUNE_CONFIRM",
+  "decision": "e136j_shadow_variant_apply_and_residual_prune_confirmed",
+  "next": "E136K_OPERATOR_REPLACEMENT_APPLY_PLAN_OR_FLOW_SCALE_TRANSFER",
+  "pass_gate": true
+}

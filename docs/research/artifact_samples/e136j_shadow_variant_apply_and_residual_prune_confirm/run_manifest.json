@@ -1,0 +1,14 @@
+{
+  "artifact_contract": "E136J_SHADOW_VARIANT_APPLY_AND_RESIDUAL_PRUNE_CONFIRM",
+  "boundary": "shadow apply only; no destructive runtime replacement or prune",
+  "deadline_epoch": 1781715600.0,
+  "e132_batch_rows": 2048,
+  "e132_dataset": "target/datasets/e132_external_math_text_seed_pack/normalized/e132_external_math_text_skill_seed.jsonl",
+  "e136a_batch_rows": 2048,
+  "e136a_dataset": "target/datasets/e136_assistant_text_seed_pack/normalized/e136_assistant_text_skill_seed.jsonl",
+  "e136i_artifact": "docs/research/artifact_samples/e136i_operator_supersession_and_output_ledger_planning",
+  "max_cycles": null,
+  "min_cycles": 100,
+  "min_wall_seconds": 0.0,
+  "run_until_local": "19:00"
+}

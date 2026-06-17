@@ -1,6 +1,26 @@
 # Changelog
 
-This changelog is narrowed to the current v6 / E127-E136I evidence anchor. Full historical beta, probe, Python SDK, legacy Rust, and research-output history is preserved in git history and archive tags.
+This changelog is narrowed to the current v6 / E127-E136J evidence anchor. Full historical beta, probe, Python SDK, legacy Rust, and research-output history is preserved in git history and archive tags.
+
+## 2026-06-17 - E136J Shadow Variant Apply And Residual Prune Confirm
+
+- Added `scripts/probes/run_e136j_shadow_variant_apply_and_residual_prune_confirm.py`.
+- Shadow-applied the E136I replacement ledger without destructive runtime
+  mutation or prune.
+- Ran the long guard to the explicit 19:00 local deadline instead of stopping
+  when the pass gate first became true.
+- Result: 8,094 cycles, 33,153,024 replay rows, 46,317.709 elapsed seconds,
+  and `stop_reason = deadline`.
+- Shadow impact: 34 operators replayed, 27 replacement-ready variants, 16
+  direct runtime candidates, 11 tightened challenger-required replacements, 7
+  abstract lineage-required kernels, 188,597,925 current activations,
+  166,354,720 selected activations, and 22,243,205 shadow-pruned activations.
+- Governance: 0 strict recall misses, 0 wrong-scope proxy calls, 0 hard
+  negatives, 0 unsupported answers, 0 direct Flow writes, and 0 checker
+  failures.
+- Boundary: shadow-apply confirmation only; not destructive runtime operator
+  replacement, production prune, new neural weights, or open-domain assistant
+  behavior.
 
 ## 2026-06-17 - E136I Operator Supersession And Output Ledger Planning
 

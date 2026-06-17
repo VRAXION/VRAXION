@@ -1,0 +1,6202 @@
+{
+  "rows": [
+    {
+      "current_activation": 7744864,
+      "direct_flow_write": 0,
+      "direct_runtime_candidate": true,
+      "display_name": "LaTeX Inline Math Boundary Lens",
+      "examples": [
+        {
+          "family": "instruction_general",
+          "record_id": "e131:7a7b95ae426fb29a3a780ea0d4910d99c43e24665b6a0882b496f874644b185b",
+          "selected_active": true,
+          "semantic_hits": [
+            "(?<!\\$)\\$[^$\\n]{1,160}\\$(?!\\$)"
+          ],
+          "source": "databricks/databricks-dolly-15k",
+          "tags": [
+            "general_instruction_style",
+            "latex_math_surface",
+            "visible_math_surface",
+            "word_problem_boundary_candidate"
+          ],
+          "text_head": "Using examples taken from the text give me a summary of the main arguments in favour of slavery reparations in the United States and the anticipated cost of enacting such reparations Context: Slavery ended in the Unit..."
+        },
+        {
+          "family": "instruction_general",
+          "record_id": "e131:b66e05e951ac3e8e59eb469986133e574eaae5ec24475301416c394a6d1d02e3",
+          "selected_active": true,
+          "semantic_hits": [
+            "(?<!\\$)\\$[^$\\n]{1,160}\\$(?!\\$)"
+          ],
+          "source": "databricks/databricks-dolly-15k",
+          "tags": [
+            "general_instruction_style",
+            "latex_math_surface",
+            "visible_math_surface",
+            "word_problem_boundary_candidate"
+          ],
+          "text_head": "Given this paragraph, how many public high schools are in Arlington, Virginia? Context: Arlington Public Schools operates the county's public K-12 education system of 22 elementary schools; 6 middle schools (Dorothy H..."
+        },
+        {
+          "family": "instruction_general",
+          "record_id": "e131:ba31cbfc594fcd1f1c600aec77909c69ed7bda3e014ef1f8d18d07290ce78240",
+          "selected_active": true,
+          "semantic_hits": [
+            "(?<!\\$)\\$[^$\\n]{1,160}\\$(?!\\$)"
+          ],
+          "source": "databricks/databricks-dolly-15k",
+          "tags": [
+            "general_instruction_style",
+            "latex_math_surface",
+            "visible_math_surface",
+            "word_problem_boundary_candidate"
+          ],
+          "text_head": "From the passage below, extract the names of the companies and technologies that Walmart has acquired over the last 3 years. Context: In the first quarter of 2020, consumers responded to COVID by shopping less frequen..."
+        },
+        {
+          "family": "instruction_general",
+          "record_id": "e131:29668d2861406f0c72446ce1a02304c7ef59c8e0ae61d917f10023cdb3ee28b7",
+          "selected_active": true,
+          "semantic_hits": [
+            "(?<!\\$)\\$[^$\\n]{1,160}\\$(?!\\$)"
+          ],
+          "source": "databricks/databricks-dolly-15k",
+          "tags": [
+            "general_instruction_style",
+            "latex_math_surface",
+            "visible_math_surface"
+          ],
+          "text_head": "Can I make chocolate at home? Making chocolate at home can be rewarding, but be prepared to spend a little money and a lot of time. The money goes to equipment and cocoa beans. For equipment, you will need a melanger..."
+        },
+        {
+          "family": "instruction_general",
+          "record_id": "e131:97179e116bc2671c3af56dc5cfa26192501c1f46bd7e96148b0037b1556545f2",
+          "selected_active": false,
+          "semantic_hits": [],
+          "source": "databricks/databricks-dolly-15k",
+          "tags": [
+            "general_instruction_style",
+            "latex_math_surface",
+            "visible_math_surface",
+            "word_problem_boundary_candidate"
+          ],
+          "text_head": "Which of the 10 largest earthquakes was the deadliest? Context: Largest Earthquakes ever recorded The 10 largest magnitudes in recorded history 1. Valdivia, Chile 22 May 1960 (magnitude 9.5) This earthquake killed 165..."
+        }
+      ],
+      "hard_negative": 0,
+      "lineage_required": false,
+      "next_gate": "shadow_apply_smoke",
+      "operator_id": "latex_inline_math_boundary_lens",
+      "readiness": "ready_low_risk",
+      "replacement_ready": true,
+      "rows_seen": 16576512,
+      "selected_activation": 7663666,
+      "selected_variant_id": "latex_inline_math_boundary_lens::semantic_verified_pruned_e136h_v1",
+      "selected_variant_type": "semantic_verified_pruned",
+      "shadow_prune_ratio": 0.010484,
+      "shadow_pruned_activation": 81198,
+      "source": "E132",
+      "strict_activation": 7663666,
+      "strict_ratio": 0.989516,
+      "strict_recall_miss": 0,
+      "supersession_tier": "T0_KEEP_CURRENT_WITH_LIGHT_PRUNE",
+      "tag_only_activation": 81198,
+      "term_or_semantic_activation": 7663666,
+      "top_family": [
+        [
+          "numina_math_tir",
+          5579112
+        ],
+        [
+          "math_instruction",
+          1154462
+        ],
+        [
+          "hendrycks_math_algebra",
+          225687
+        ],
+        [
+          "hendrycks_math_intermediate_algebra",
+          169246
+        ],
+        [
+          "hendrycks_math_prealgebra",
+          159852
+        ],
+        [
+          "hendrycks_math_number_theory",
+          108493
+        ],
+        [
+          "hendrycks_math_geometry",
+          103873
+        ],
+        [
+          "hendrycks_math_precalculus",
+          99484
+        ],
+        [
+          "hendrycks_math_counting_and_probability",
+          95865
+        ],
+        [
+          "assistant_dialogue",
+          32956
+        ],
+        [
+          "instruction_general",
+          15834
+        ]
+      ],
+      "top_hits": [
+        [
+          "\\\\boxed\\s*\\{",
+          6665152
+        ],
+        [
+          "\\boxed",
+          6663535
+        ],
+        [
+          "\\\\\\([^\\n]{1,160}\\\\\\)",
+          5517436
+        ],
+        [
+          "\\(",
+          5393311
+        ],
+        [
+          "(?<!\\$)\\$[^$\\n]{1,160}\\$(?!\\$)",
+          5043196
+        ],
+        [
+          "\\\\frac\\s*\\{",
+          3117115
+        ],
+        [
+          "\\frac",
+          3113960
+        ],
+        [
+          "$x",
+          1119728
+        ]
+      ],
+      "top_tags": [
+        [
+          "latex_math_surface",
+          7744633
+        ],
+        [
+          "answer_boundary_surface",
+          7306315
+        ],
+        [
+          "tir_program_or_output_surface",
+          5880448
+        ],
+        [
+          "word_problem_boundary_candidate",
+          5269792
+        ],
+        [
+          "proof_step_surface",
+          2664009
+        ],
+        [
+          "visible_math_surface",
+          1180037
+        ],
+        [
+          "geometry_diagram_or_coordinate_surface",
+          1161750
+        ],
+        [
+          "math_instruction_surface",
+          1154462
+        ],
+        [
+          "candidate_equation_extraction",
+          1154462
+        ],
+        [
+          "matrix_vector_surface",
+          335750
+        ],
+        [
+          "assistant_style",
+          32956
+        ],
+        [
+          "response_rendering",
+          32956
+        ]
+      ],
+      "unsupported_answer": 0,
+      "wrong_scope_proxy": 0
+    },
+    {
+      "current_activation": 7862914,
+      "direct_flow_write": 0,
+      "direct_runtime_candidate": false,
+      "display_name": "LaTeX Display Math Block Lens",
+      "examples": [
+        {
+          "family": "instruction_general",
+          "record_id": "e131:7a7b95ae426fb29a3a780ea0d4910d99c43e24665b6a0882b496f874644b185b",
+          "selected_active": false,
+          "semantic_hits": [],
+          "source": "databricks/databricks-dolly-15k",
+          "tags": [
+            "general_instruction_style",
+            "latex_math_surface",
+            "visible_math_surface",
+            "word_problem_boundary_candidate"
+          ],
+          "text_head": "Using examples taken from the text give me a summary of the main arguments in favour of slavery reparations in the United States and the anticipated cost of enacting such reparations Context: Slavery ended in the Unit..."
+        },
+        {
+          "family": "instruction_general",
+          "record_id": "e131:d2c1e8a40a8643a330723fbc8dcc094d0a275ece6d4e2d5f9b50c35bb6855158",
+          "selected_active": false,
+          "semantic_hits": [],
+          "source": "databricks/databricks-dolly-15k",
+          "tags": [
+            "general_instruction_style",
+            "matrix_vector_surface",
+            "visible_math_surface",
+            "word_problem_boundary_candidate"
+          ],
+          "text_head": "What is SVM? Context: In machine learning, support vector machines (SVMs, also support vector networks) are supervised learning models with associated learning algorithms that analyze data for classification and regre..."
+        },
+        {
+          "family": "instruction_general",
+          "record_id": "e131:b66e05e951ac3e8e59eb469986133e574eaae5ec24475301416c394a6d1d02e3",
+          "selected_active": false,
+          "semantic_hits": [],
+          "source": "databricks/databricks-dolly-15k",
+          "tags": [
+            "general_instruction_style",
+            "latex_math_surface",
+            "visible_math_surface",
+            "word_problem_boundary_candidate"
+          ],
+          "text_head": "Given this paragraph, how many public high schools are in Arlington, Virginia? Context: Arlington Public Schools operates the county's public K-12 education system of 22 elementary schools; 6 middle schools (Dorothy H..."
+        },
+        {
+          "family": "instruction_general",
+          "record_id": "e131:ba31cbfc594fcd1f1c600aec77909c69ed7bda3e014ef1f8d18d07290ce78240",
+          "selected_active": false,
+          "semantic_hits": [],
+          "source": "databricks/databricks-dolly-15k",
+          "tags": [
+            "general_instruction_style",
+            "latex_math_surface",
+            "visible_math_surface",
+            "word_problem_boundary_candidate"
+          ],
+          "text_head": "From the passage below, extract the names of the companies and technologies that Walmart has acquired over the last 3 years. Context: In the first quarter of 2020, consumers responded to COVID by shopping less frequen..."
+        },
+        {
+          "family": "instruction_general",
+          "record_id": "e131:29668d2861406f0c72446ce1a02304c7ef59c8e0ae61d917f10023cdb3ee28b7",
+          "selected_active": false,
+          "semantic_hits": [],
+          "source": "databricks/databricks-dolly-15k",
+          "tags": [
+            "general_instruction_style",
+            "latex_math_surface",
+            "visible_math_surface"
+          ],
+          "text_head": "Can I make chocolate at home? Making chocolate at home can be rewarding, but be prepared to spend a little money and a lot of time. The money goes to equipment and cocoa beans. For equipment, you will need a melanger..."
+        }
+      ],
+      "hard_negative": 0,
+      "lineage_required": false,
+      "next_gate": "shadow_apply_challenger_and_ood_replay",
+      "operator_id": "latex_display_math_block_lens",
+      "readiness": "ready_after_challenger",
+      "replacement_ready": true,
+      "rows_seen": 16576512,
+      "selected_activation": 4135813,
+      "selected_variant_id": "latex_display_math_block_lens::semantic_tightened_trigger_e136h_v1",
+      "selected_variant_type": "semantic_tightened_trigger",
+      "shadow_prune_ratio": 0.47401,
+      "shadow_pruned_activation": 3727101,
+      "source": "E132",
+      "strict_activation": 4135813,
+      "strict_ratio": 0.52599,
+      "strict_recall_miss": 0,
+      "supersession_tier": "T2_TIGHTENED_TRIGGER_REPLACEMENT",
+      "tag_only_activation": 3727101,
+      "term_or_semantic_activation": 4135813,
+      "top_family": [
+        [
+          "numina_math_tir",
+          5579497
+        ],
+        [
+          "math_instruction",
+          1248667
+        ],
+        [
+          "hendrycks_math_algebra",
+          225687
+        ],
+        [
+          "hendrycks_math_intermediate_algebra",
+          169246
+        ],
+        [
+          "hendrycks_math_prealgebra",
+          159852
+        ],
+        [
+          "hendrycks_math_number_theory",
+          108493
+        ],
+        [
+          "hendrycks_math_geometry",
+          103873
+        ],
+        [
+          "hendrycks_math_precalculus",
+          99484
+        ],
+        [
+          "hendrycks_math_counting_and_probability",
+          95865
+        ],
+        [
+          "assistant_dialogue",
+          52360
+        ],
+        [
+          "instruction_general",
+          19890
+        ]
+      ],
+      "top_hits": [
+        [
+          "\\\\\\[[\\s\\S]{1,400}\\\\\\]",
+          4072813
+        ],
+        [
+          "\\[",
+          3933740
+        ],
+        [
+          "\\\\begin\\{cases\\}",
+          123587
+        ],
+        [
+          "\\begin{cases}",
+          121816
+        ],
+        [
+          "\\\\begin\\{[pbv]?matrix\\}",
+          110125
+        ],
+        [
+          "\\\\begin\\{array\\}",
+          88245
+        ],
+        [
+          "\\begin{array}",
+          88245
+        ],
+        [
+          "\\begin{pmatrix}",
+          77236
+        ],
+        [
+          "\\\\begin\\{align(?:ed)?\\}",
+          40274
+        ],
+        [
+          "\\begin{aligned}",
+          39504
+        ]
+      ],
+      "top_tags": [
+        [
+          "latex_math_surface",
+          7744633
+        ],
+        [
+          "answer_boundary_surface",
+          7339905
+        ],
+        [
+          "tir_program_or_output_surface",
+          5898549
+        ],
+        [
+          "word_problem_boundary_candidate",
+          5348617
+        ],
+        [
+          "proof_step_surface",
+          2685042
+        ],
+        [
+          "visible_math_surface",
+          1284350
+        ],
+        [
+          "math_instruction_surface",
+          1248667
+        ],
+        [
+          "candidate_equation_extraction",
+          1248667
+        ],
+        [
+          "geometry_diagram_or_coordinate_surface",
+          1178779
+        ],
+        [
+          "matrix_vector_surface",
+          454031
+        ],
+        [
+          "assistant_style",
+          52360
+        ],
+        [
+          "response_rendering",
+          52360
+        ]
+      ],
+      "unsupported_answer": 0,
+      "wrong_scope_proxy": 0
+    },
+    {
+      "current_activation": 10953827,
+      "direct_flow_write": 0,
+      "direct_runtime_candidate": true,
+      "display_name": "Boxed Answer Boundary Lens",
+      "examples": [
+        {
+          "family": "instruction_general",
+          "record_id": "e131:0a0d3e489ec635a03b13f697ebd7c4c4ffb50383086029c33f23709b58c8f4d1",
+          "selected_active": false,
+          "semantic_hits": [],
+          "source": "databricks/databricks-dolly-15k",
+          "tags": [
+            "answer_boundary_surface",
+            "general_instruction_style",
+            "geometry_diagram_or_coordinate_surface",
+            "visible_math_surface",
+            "word_problem_boundary_candidate"
+          ],
+          "text_head": "What is process mining? Context: Process mining is a family of techniques relating the fields of data science and process management to support the analysis of operational processes based on event logs. The goal of pr..."
+        },
+        {
+          "family": "instruction_general",
+          "record_id": "e131:8011de7cc339a23bd9f18228c7cf8d230f56a87a1cf95e2c72a3eb2858323c74",
+          "selected_active": false,
+          "semantic_hits": [],
+          "source": "databricks/databricks-dolly-15k",
+          "tags": [
+            "answer_boundary_surface",
+            "general_instruction_style"
+          ],
+          "text_head": "How much music theory knowledge is required to compose music? Technically speaking, very little music theory knowledge is “required” to compose music. Music theory is, essentially, what musicians have learned over the..."
+        },
+        {
+          "family": "instruction_general",
+          "record_id": "e131:bf48e70038075b93effed2e24fe7b5369914a3b51ef4270c07d6fceb2f771e45",
+          "selected_active": false,
+          "semantic_hits": [],
+          "source": "databricks/databricks-dolly-15k",
+          "tags": [
+            "answer_boundary_surface",
+            "general_instruction_style",
+            "word_problem_boundary_candidate"
+          ],
+          "text_head": "What is the Maareech Advanced Torpedo Defence System (ATDS)? Context: Maareech Advanced Torpedo Defence System (ATDS) is a torpedo detection and countermeasure system used by the Indian Navy. The system offers a compl..."
+        },
+        {
+          "family": "instruction_general",
+          "record_id": "e131:a7b6ba289707880b8083a2d0af66f45d06f9f31e44d7072b6f863cadc5fddea0",
+          "selected_active": true,
+          "semantic_hits": [
+            "answer is"
+          ],
+          "source": "databricks/databricks-dolly-15k",
+          "tags": [
+            "answer_boundary_surface",
+            "general_instruction_style",
+            "word_problem_boundary_candidate"
+          ],
+          "text_head": "What is the meaning of life? Although it is a deep question that has challenged philosophers for all time, Douglas Adams in his book \"The Hitchhicker's Guide to the Universe\" humorously states that the answer is \"42\"...."
+        },
+        {
+          "family": "instruction_general",
+          "record_id": "e131:387f404e6b42b8d552c1579e9c0ea3010fafdc78ccddd35880c3989e22506083",
+          "selected_active": false,
+          "semantic_hits": [],
+          "source": "databricks/databricks-dolly-15k",
+          "tags": [
+            "answer_boundary_surface",
+            "general_instruction_style",
+            "word_problem_boundary_candidate"
+          ],
+          "text_head": "What types of problems in government could AI be used to solve Context: The potential uses of AI in government are wide and varied, with Deloitte considering that \"Cognitive technologies could eventually revolutionize..."
+        }
+      ],
+      "hard_negative": 0,
+      "lineage_required": false,
+      "next_gate": "shadow_apply_and_replay",
+      "operator_id": "boxed_answer_boundary_lens",
+      "readiness": "ready_verified",
+      "replacement_ready": true,
+      "rows_seen": 16576512,
+      "selected_activation": 9249349,
+      "selected_variant_id": "boxed_answer_boundary_lens::semantic_verified_pruned_e136h_v1",
+      "selected_variant_type": "semantic_verified_pruned",
+      "shadow_prune_ratio": 0.155606,
+      "shadow_pruned_activation": 1704478,
+      "source": "E132",
+      "strict_activation": 9249349,
+      "strict_ratio": 0.844394,
+      "strict_recall_miss": 0,
+      "supersession_tier": "T1_VERIFIED_PRUNED_REPLACEMENT",
+      "tag_only_activation": 1704324,
+      "term_or_semantic_activation": 9249349,
+      "top_family": [
+        [
+          "numina_math_tir",
+          5585580
+        ],
+        [
+          "math_instruction",
+          4303389
+        ],
+        [
+          "hendrycks_math_algebra",
+          225610
+        ],
+        [
+          "hendrycks_math_intermediate_algebra",
+          169246
+        ],
+        [
+          "hendrycks_math_prealgebra",
+          159852
+        ],
+        [
+          "hendrycks_math_number_theory",
+          108493
+        ],
+        [
+          "hendrycks_math_geometry",
+          103873
+        ],
+        [
+          "hendrycks_math_precalculus",
+          99330
+        ],
+        [
+          "hendrycks_math_counting_and_probability",
+          95865
+        ],
+        [
+          "assistant_dialogue",
+          82621
+        ],
+        [
+          "instruction_general",
+          19968
+        ]
+      ],
+      "top_hits": [
+        [
+          "\\\\boxed\\s*\\{",
+          6665152
+        ],
+        [
+          "answer is",
+          3617952
+        ],
+        [
+          "\\boxed{",
+          1276917
+        ],
+        [
+          "\\bfinal answer\\b",
+          598678
+        ],
+        [
+          "final answer",
+          598678
+        ],
+        [
+          "therefore the answer",
+          1926
+        ],
+        [
+          "\\btherefore the answer\\b",
+          1772
+        ]
+      ],
+      "top_tags": [
+        [
+          "answer_boundary_surface",
+          10953673
+        ],
+        [
+          "word_problem_boundary_candidate",
+          7501396
+        ],
+        [
+          "latex_math_surface",
+          7306161
+        ],
+        [
+          "tir_program_or_output_surface",
+          6463438
+        ],
+        [
+          "math_instruction_surface",
+          4303389
+        ],
+        [
+          "candidate_equation_extraction",
+          4303389
+        ],
+        [
+          "visible_math_surface",
+          4290059
+        ],
+        [
+          "proof_step_surface",
+          3025847
+        ],
+        [
+          "geometry_diagram_or_coordinate_surface",
+          1216377
+        ],
+        [
+          "matrix_vector_surface",
+          331441
+        ],
+        [
+          "assistant_style",
+          82621
+        ],
+        [
+          "response_rendering",
+          82621
+        ]
+      ],
+      "unsupported_answer": 0,
+      "wrong_scope_proxy": 0
+    },
+    {
+      "current_activation": 10688007,
+      "direct_flow_write": 0,
+      "direct_runtime_candidate": false,
+      "display_name": "TIR Python Block Boundary Lens",
+      "examples": [
+        {
+          "family": "instruction_general",
+          "record_id": "e131:7f465ff3719eddf3a786df9e9198510cf49decc33f0f614cb7ed6de0d120f580",
+          "selected_active": false,
+          "semantic_hits": [],
+          "source": "databricks/databricks-dolly-15k",
+          "tags": [
+            "general_instruction_style",
+            "math_text_surface"
+          ],
+          "text_head": "Why can camels survive for long without water? Camels use the fat in their humps to keep them filled with energy and hydration for long periods of time. databricks/databricks-dolly-15k"
+        },
+        {
+          "family": "instruction_general",
+          "record_id": "e131:4d0c2311e35063b4720350e7227e7326a06deb3a5af14a099aa8c7f3a16a1ee0",
+          "selected_active": false,
+          "semantic_hits": [],
+          "source": "databricks/databricks-dolly-15k",
+          "tags": [
+            "general_instruction_style",
+            "math_text_surface",
+            "visible_math_surface"
+          ],
+          "text_head": "If I have more pieces at the time of stalemate, have I won? Context: Stalemate is a situation in chess where the player whose turn it is to move is not in check and has no legal move. Stalemate results in a draw. Duri..."
+        },
+        {
+          "family": "instruction_general",
+          "record_id": "e131:873cabf8f5555f7785e011c440cc6dfd7424595e26d26c2d751d49f8bb8d8f49",
+          "selected_active": false,
+          "semantic_hits": [],
+          "source": "databricks/databricks-dolly-15k",
+          "tags": [
+            "general_instruction_style",
+            "math_text_surface"
+          ],
+          "text_head": "Why mobile is bad for human We are always engaged one phone which is not good. databricks/databricks-dolly-15k"
+        },
+        {
+          "family": "instruction_general",
+          "record_id": "e131:e1137730bf21f38f9d6b9f2d069acf89cb8109f939b4f78f094a664cb5f7303b",
+          "selected_active": false,
+          "semantic_hits": [],
+          "source": "databricks/databricks-dolly-15k",
+          "tags": [
+            "general_instruction_style",
+            "visible_math_surface",
+            "word_problem_boundary_candidate"
+          ],
+          "text_head": "Who was John Moses Browning? Context: John Moses Browning (January 23, 1855 – November 26, 1926) was an American firearm designer who developed many varieties of military and civilian firearms, cartridges, and gun mec..."
+        },
+        {
+          "family": "instruction_general",
+          "record_id": "e131:7b723fd89333b76822097d3a8c215f7fd20cee65ee3f3202c1f9536652625f7f",
+          "selected_active": false,
+          "semantic_hits": [],
+          "source": "databricks/databricks-dolly-15k",
+          "tags": [
+            "general_instruction_style",
+            "math_text_surface",
+            "visible_math_surface"
+          ],
+          "text_head": "Who is Thomas Jefferson? Context: Thomas Jefferson (April 13, 1743 – July 4, 1826) was an American statesman, diplomat, lawyer, architect, philosopher, and Founding Father who served as the third president of the Unit..."
+        }
+      ],
+      "hard_negative": 0,
+      "lineage_required": false,
+      "next_gate": "shadow_apply_challenger_and_ood_replay",
+      "operator_id": "tir_python_block_boundary_lens",
+      "readiness": "ready_after_challenger",
+      "replacement_ready": true,
+      "rows_seen": 16576512,
+      "selected_activation": 7816938,
+      "selected_variant_id": "tir_python_block_boundary_lens::semantic_tightened_trigger_e136h_v1",
+      "selected_variant_type": "semantic_tightened_trigger",
+      "shadow_prune_ratio": 0.268625,
+      "shadow_pruned_activation": 2871069,
+      "source": "E132",
+      "strict_activation": 7816938,
+      "strict_ratio": 0.731375,
+      "strict_recall_miss": 0,
+      "supersession_tier": "T2_TIGHTENED_TRIGGER_REPLACEMENT",
+      "tag_only_activation": 77705,
+      "term_or_semantic_activation": 7816938,
+      "top_family": [
+        [
+          "numina_math_tir",
+          5585580
+        ],
+        [
+          "math_instruction",
+          3506438
+        ],
+        [
+          "assistant_dialogue",
+          760144
+        ],
+        [
+          "instruction_general",
+          487266
+        ],
+        [
+          "hendrycks_math_algebra",
+          81543
+        ],
+        [
+          "hendrycks_math_intermediate_algebra",
+          75229
+        ],
+        [
+          "hendrycks_math_counting_and_probability",
+          46739
+        ],
+        [
+          "hendrycks_math_number_theory",
+          44660
+        ],
+        [
+          "hendrycks_math_prealgebra",
+          44429
+        ],
+        [
+          "hendrycks_math_precalculus",
+          32109
+        ],
+        [
+          "hendrycks_math_geometry",
+          23870
+        ]
+      ],
+      "top_hits": [
+        [
+          "\\bprint\\(|\\bdef\\s+\\w+|\\bfor\\s+\\w+\\s+in\\b",
+          7443869
+        ],
+        [
+          "```python|```output|traceback|syntaxerror",
+          5631021
+        ],
+        [
+          "```python",
+          5629019
+        ],
+        [
+          "```output",
+          5585580
+        ],
+        [
+          "for ",
+          2535561
+        ],
+        [
+          "print(",
+          825522
+        ],
+        [
+          "def ",
+          15092
+        ]
+      ],
+      "top_tags": [
+        [
+          "answer_boundary_surface",
+          8022176
+        ],
+        [
+          "tir_program_or_output_surface",
+          7494721
+        ],
+        [
+          "word_problem_boundary_candidate",
+          6819699
+        ],
+        [
+          "latex_math_surface",
+          6764395
+        ],
+        [
+          "visible_math_surface",
+          4005595
+        ],
+        [
+          "math_instruction_surface",
+          3506438
+        ],
+        [
+          "candidate_equation_extraction",
+          3506438
+        ],
+        [
+          "proof_step_surface",
+          2887347
+        ],
+        [
+          "geometry_diagram_or_coordinate_surface",
+          1089347
+        ],
+        [
+          "math_text_surface",
+          850529
+        ],
+        [
+          "response_rendering",
+          760144
+        ],
+        [
+          "assistant_style",
+          760144
+        ]
+      ],
+      "unsupported_answer": 0,
+      "wrong_scope_proxy": 0
+    },
+    {
+      "current_activation": 5674942,
+      "direct_flow_write": 0,
+      "direct_runtime_candidate": true,
+      "display_name": "Proof Step Connector Lens",
+      "examples": [
+        {
+          "family": "instruction_general",
+          "record_id": "e131:1798f78709ab670a1abc1011319d5291af1bfed08be7eab9b2975732b808588b",
+          "selected_active": false,
+          "semantic_hits": [],
+          "source": "databricks/databricks-dolly-15k",
+          "tags": [
+            "general_instruction_style",
+            "proof_step_surface"
+          ],
+          "text_head": "When was the wheel invented? No one knows when the wheel was first made. Archaeological evidence seems to show that the wheel was first used to make pottery in Mesopotamia about 7,000 years ago, during the Neolithic p..."
+        },
+        {
+          "family": "instruction_general",
+          "record_id": "e131:7c9318cd5ed49064c0953f63ec4a8238135f772bfd3ad533eac1e5436b385eea",
+          "selected_active": true,
+          "semantic_hits": [
+            "thus"
+          ],
+          "source": "databricks/databricks-dolly-15k",
+          "tags": [
+            "general_instruction_style",
+            "math_text_surface",
+            "visible_math_surface"
+          ],
+          "text_head": "Who was the first to record the Needles and Pins song? Context: \"Needles and Pins\" is a rock song credited to American writers Jack Nitzsche and Sonny Bono. Jackie DeShannon recorded it in 1963 and other versions foll..."
+        },
+        {
+          "family": "instruction_general",
+          "record_id": "e131:9e9f86392cbf6f3cb7d89c77cefe2e8ce3ead103d320db7192d3c4eff07e29f0",
+          "selected_active": false,
+          "semantic_hits": [],
+          "source": "databricks/databricks-dolly-15k",
+          "tags": [
+            "general_instruction_style",
+            "proof_step_surface"
+          ],
+          "text_head": "Provide me a list of the different types of harnesses used in rock climbing Context: Different types of climbing warrant particular features for harnesses. Sport climbers typically use minimalistic harnesses, some wit..."
+        },
+        {
+          "family": "instruction_general",
+          "record_id": "e131:8cfa7b8b29ee140d30a598b20e5634fd878294826a008630d27e9e142759b921",
+          "selected_active": true,
+          "semantic_hits": [
+            "therefore"
+          ],
+          "source": "databricks/databricks-dolly-15k",
+          "tags": [
+            "general_instruction_style",
+            "proof_step_surface"
+          ],
+          "text_head": "Is beauty objective or subjective? The opinions on this question vary from person to person. Statistically, a pattern of preference is easily visible on what people would describe as beautiful. An evident example of t..."
+        },
+        {
+          "family": "instruction_general",
+          "record_id": "e131:9a4d8a1be6cbd14c6606be31dd2091b3e0c11522acf69827dff15f55cbd8564a",
+          "selected_active": false,
+          "semantic_hits": [],
+          "source": "databricks/databricks-dolly-15k",
+          "tags": [
+            "general_instruction_style",
+            "visible_math_surface",
+            "word_problem_boundary_candidate"
+          ],
+          "text_head": "What is HiFI? Context: High fidelity (often shortened to Hi-Fi or HiFi) is the high-quality reproduction of sound. It is popular with audiophiles and home audio enthusiasts. Ideally, high-fidelity equipment has inaudi..."
+        }
+      ],
+      "hard_negative": 0,
+      "lineage_required": false,
+      "next_gate": "shadow_apply_and_replay",
+      "operator_id": "proof_step_connector_lens",
+      "readiness": "ready_verified",
+      "replacement_ready": true,
+      "rows_seen": 16576512,
+      "selected_activation": 5338813,
+      "selected_variant_id": "proof_step_connector_lens::semantic_verified_pruned_e136h_v1",
+      "selected_variant_type": "semantic_verified_pruned",
+      "shadow_prune_ratio": 0.05923,
+      "shadow_pruned_activation": 336129,
+      "source": "E132",
+      "strict_activation": 5338813,
+      "strict_ratio": 0.94077,
+      "strict_recall_miss": 0,
+      "supersession_tier": "T1_VERIFIED_PRUNED_REPLACEMENT",
+      "tag_only_activation": 324989,
+      "term_or_semantic_activation": 5338813,
+      "top_family": [
+        [
+          "numina_math_tir",
+          3359279
+        ],
+        [
+          "math_instruction",
+          1592628
+        ],
+        [
+          "hendrycks_math_algebra",
+          134750
+        ],
+        [
+          "hendrycks_math_intermediate_algebra",
+          122815
+        ],
+        [
+          "hendrycks_math_geometry",
+          80927
+        ],
+        [
+          "hendrycks_math_prealgebra",
+          75614
+        ],
+        [
+          "assistant_dialogue",
+          75383
+        ],
+        [
+          "hendrycks_math_number_theory",
+          68761
+        ],
+        [
+          "hendrycks_math_precalculus",
+          64218
+        ],
+        [
+          "instruction_general",
+          54444
+        ],
+        [
+          "hendrycks_math_counting_and_probability",
+          46123
+        ]
+      ],
+      "top_hits": [
+        [
+          "thus",
+          2280547
+        ],
+        [
+          "therefore",
+          2265224
+        ],
+        [
+          "we have",
+          1646751
+        ],
+        [
+          "hence",
+          707417
+        ],
+        [
+          "implies",
+          592725
+        ],
+        [
+          "substituting",
+          448314
+        ],
+        [
+          "equating",
+          47203
+        ]
+      ],
+      "top_tags": [
+        [
+          "answer_boundary_surface",
+          4908471
+        ],
+        [
+          "latex_math_surface",
+          4368699
+        ],
+        [
+          "word_problem_boundary_candidate",
+          3775344
+        ],
+        [
+          "tir_program_or_output_surface",
+          3587375
+        ],
+        [
+          "proof_step_surface",
+          3575109
+        ],
+        [
+          "visible_math_surface",
+          1617894
+        ],
+        [
+          "math_instruction_surface",
+          1592628
+        ],
+        [
+          "candidate_equation_extraction",
+          1592628
+        ],
+        [
+          "geometry_diagram_or_coordinate_surface",
+          915774
+        ],
+        [
+          "matrix_vector_surface",
+          261925
+        ],
+        [
+          "assistant_style",
+          75383
+        ],
+        [
+          "response_rendering",
+          75383
+        ]
+      ],
+      "unsupported_answer": 0,
+      "wrong_scope_proxy": 0
+    },
+    {
+      "current_activation": 1604733,
+      "direct_flow_write": 0,
+      "direct_runtime_candidate": true,
+      "display_name": "Geometry Diagram Reference Guard",
+      "examples": [
+        {
+          "family": "instruction_general",
+          "record_id": "e131:fbd63c3868e6b32071081c8963b1959bb5797bc844ab8a14afb2d61b118d6653",
+          "selected_active": true,
+          "semantic_hits": [
+            "\\btriangle\\b|\\bcircle\\b|\\bangle\\b|\\bdiagram\\b|\\bcoordinates?\\b",
+            "circle"
+          ],
+          "source": "databricks/databricks-dolly-15k",
+          "tags": [
+            "general_instruction_style",
+            "geometry_diagram_or_coordinate_surface",
+            "word_problem_boundary_candidate"
+          ],
+          "text_head": "What is a polygon? A polygon is a form in Geometry. It is a single dimensional plane made of connecting lines and any number of vertices. It is a closed chain of connected line segments or edges. The vertices of the p..."
+        },
+        {
+          "family": "instruction_general",
+          "record_id": "e131:0a0d3e489ec635a03b13f697ebd7c4c4ffb50383086029c33f23709b58c8f4d1",
+          "selected_active": true,
+          "semantic_hits": [
+            "\\btriangle\\b|\\bcircle\\b|\\bangle\\b|\\bdiagram\\b|\\bcoordinates?\\b",
+            "angle"
+          ],
+          "source": "databricks/databricks-dolly-15k",
+          "tags": [
+            "answer_boundary_surface",
+            "general_instruction_style",
+            "geometry_diagram_or_coordinate_surface",
+            "visible_math_surface",
+            "word_problem_boundary_candidate"
+          ],
+          "text_head": "What is process mining? Context: Process mining is a family of techniques relating the fields of data science and process management to support the analysis of operational processes based on event logs. The goal of pr..."
+        },
+        {
+          "family": "instruction_general",
+          "record_id": "e131:309e7b71367779b3e5190d2c55edebe6ed3bfd255f1c0d66dc2b39f26f0d9899",
+          "selected_active": true,
+          "semantic_hits": [
+            "\\btriangle\\b|\\bcircle\\b|\\bangle\\b|\\bdiagram\\b|\\bcoordinates?\\b",
+            "circle"
+          ],
+          "source": "databricks/databricks-dolly-15k",
+          "tags": [
+            "general_instruction_style",
+            "geometry_diagram_or_coordinate_surface"
+          ],
+          "text_head": "What are some unique curtain tie backs that you can make yourself? There are many items you can use to make a curtain tie back. Some ideas for this include a chain, a circle and pin, jute rope, wooden beaded rope, a n..."
+        },
+        {
+          "family": "instruction_general",
+          "record_id": "e131:e1726d1e1b3ae15c545a7c8280aff7d6ecdfd65ba86f211cf32292a9187e8db6",
+          "selected_active": false,
+          "semantic_hits": [],
+          "source": "databricks/databricks-dolly-15k",
+          "tags": [
+            "general_instruction_style",
+            "word_problem_boundary_candidate"
+          ],
+          "text_head": "What is a dispersive prism? Context: In optics, a dispersive prism is an optical prism that is used to disperse light, that is, to separate light into its spectral components (the colors of the rainbow). Different wav..."
+        },
+        {
+          "family": "instruction_general",
+          "record_id": "e131:9bd338e80d168e585b02042ac4665b90361f958636f1116b1d83230338ddb910",
+          "selected_active": true,
+          "semantic_hits": [
+            "\\btriangle\\b|\\bcircle\\b|\\bangle\\b|\\bdiagram\\b|\\bcoordinates?\\b",
+            "coordinates"
+          ],
+          "source": "databricks/databricks-dolly-15k",
+          "tags": [
+            "general_instruction_style",
+            "geometry_diagram_or_coordinate_surface",
+            "visible_math_surface",
+            "word_problem_boundary_candidate"
+          ],
+          "text_head": "What is the Research Collaboratory for Structural Bioinformatics Protein Data Bank (RCSB PDB)? The Research Collaboratory for Structural Bioinformatics Protein Data Bank (RCSB PDB) is a database that provides a wealth..."
+        }
+      ],
+      "hard_negative": 0,
+      "lineage_required": false,
+      "next_gate": "shadow_apply_and_replay",
+      "operator_id": "geometry_diagram_reference_guard",
+      "readiness": "ready_verified",
+      "replacement_ready": true,
+      "rows_seen": 16576512,
+      "selected_activation": 1422035,
+      "selected_variant_id": "geometry_diagram_reference_guard::semantic_verified_pruned_e136h_v1",
+      "selected_variant_type": "semantic_verified_pruned",
+      "shadow_prune_ratio": 0.113849,
+      "shadow_pruned_activation": 182698,
+      "source": "E132",
+      "strict_activation": 1422035,
+      "strict_ratio": 0.886151,
+      "strict_recall_miss": 0,
+      "supersession_tier": "T1_VERIFIED_PRUNED_REPLACEMENT",
+      "tag_only_activation": 30748,
+      "term_or_semantic_activation": 1422035,
+      "top_family": [
+        [
+          "numina_math_tir",
+          896973
+        ],
+        [
+          "math_instruction",
+          402119
+        ],
+        [
+          "hendrycks_math_geometry",
+          91553
+        ],
+        [
+          "hendrycks_math_precalculus",
+          52976
+        ],
+        [
+          "hendrycks_math_prealgebra",
+          39039
+        ],
+        [
+          "assistant_dialogue",
+          35497
+        ],
+        [
+          "hendrycks_math_algebra",
+          25872
+        ],
+        [
+          "hendrycks_math_intermediate_algebra",
+          23023
+        ],
+        [
+          "instruction_general",
+          20202
+        ],
+        [
+          "hendrycks_math_counting_and_probability",
+          16170
+        ],
+        [
+          "hendrycks_math_number_theory",
+          1309
+        ]
+      ],
+      "top_hits": [
+        [
+          "\\btriangle\\b|\\bcircle\\b|\\bangle\\b|\\bdiagram\\b|\\bcoordinates?\\b",
+          1344334
+        ],
+        [
+          "triangle",
+          548713
+        ],
+        [
+          "angle",
+          454701
+        ],
+        [
+          "coordinates",
+          381947
+        ],
+        [
+          "circle",
+          361933
+        ],
+        [
+          "\\[asy\\]|\\bdraw\\(",
+          265372
+        ],
+        [
+          "[asy]",
+          247892
+        ],
+        [
+          "draw(",
+          152092
+        ],
+        [
+          "diagram",
+          65779
+        ]
+      ],
+      "top_tags": [
+        [
+          "geometry_diagram_or_coordinate_surface",
+          1416206
+        ],
+        [
+          "answer_boundary_surface",
+          1362237
+        ],
+        [
+          "latex_math_surface",
+          1281803
+        ],
+        [
+          "word_problem_boundary_candidate",
+          1120294
+        ],
+        [
+          "tir_program_or_output_surface",
+          975390
+        ],
+        [
+          "proof_step_surface",
+          658813
+        ],
+        [
+          "visible_math_surface",
+          424561
+        ],
+        [
+          "math_instruction_surface",
+          402119
+        ],
+        [
+          "candidate_equation_extraction",
+          402119
+        ],
+        [
+          "matrix_vector_surface",
+          180434
+        ],
+        [
+          "assistant_style",
+          35497
+        ],
+        [
+          "response_rendering",
+          35497
+        ]
+      ],
+      "unsupported_answer": 0,
+      "wrong_scope_proxy": 0
+    },
+    {
+      "current_activation": 458497,
+      "direct_flow_write": 0,
+      "direct_runtime_candidate": true,
+      "display_name": "Matrix / Vector Block Lens",
+      "examples": [
+        {
+          "family": "instruction_general",
+          "record_id": "e131:d2c1e8a40a8643a330723fbc8dcc094d0a275ece6d4e2d5f9b50c35bb6855158",
+          "selected_active": true,
+          "semantic_hits": [
+            "\\bmatrix\\b|\\bvector\\b|\\bdot product\\b|\\bprojection\\b",
+            "vector"
+          ],
+          "source": "databricks/databricks-dolly-15k",
+          "tags": [
+            "general_instruction_style",
+            "matrix_vector_surface",
+            "visible_math_surface",
+            "word_problem_boundary_candidate"
+          ],
+          "text_head": "What is SVM? Context: In machine learning, support vector machines (SVMs, also support vector networks) are supervised learning models with associated learning algorithms that analyze data for classification and regre..."
+        },
+        {
+          "family": "instruction_general",
+          "record_id": "e131:42f73910aabb18400d29f8ee5fa3ea8935800f1f6187c4d27e4fba18b79e19ad",
+          "selected_active": true,
+          "semantic_hits": [
+            "\\bmatrix\\b|\\bvector\\b|\\bdot product\\b|\\bprojection\\b",
+            "matrix"
+          ],
+          "source": "databricks/databricks-dolly-15k",
+          "tags": [
+            "general_instruction_style",
+            "matrix_vector_surface",
+            "visible_math_surface"
+          ],
+          "text_head": "Categorize these movies that came out in 1999 as cartoons or live-action: The Matrix, Stuart Little, Cruel Intentions, The Iron Giant, The Blair Witch Project, South Park: Bigger, Longer, and Uncut, The Sixth Sense Ca..."
+        },
+        {
+          "family": "instruction_general",
+          "record_id": "e131:34cbffa961f294842a9d61f9d1118de3e8d1844a38a0c34bd90537309019057a",
+          "selected_active": true,
+          "semantic_hits": [
+            "\\bmatrix\\b|\\bvector\\b|\\bdot product\\b|\\bprojection\\b",
+            "matrix"
+          ],
+          "source": "databricks/databricks-dolly-15k",
+          "tags": [
+            "general_instruction_style",
+            "matrix_vector_surface"
+          ],
+          "text_head": "Give me a list of 10 different SciFi movies and which year they were released Independence Day (1999) Dune (2021) Solaris (2002) Inception (2010) Gattaca (1997) Jurassic Park (1993) AI Artificial Intelligence (2001) T..."
+        },
+        {
+          "family": "instruction_general",
+          "record_id": "e131:2e0f6a1aaf866eab29a00aa234535a40558573e48aa9f188fe06770450678f6c",
+          "selected_active": true,
+          "semantic_hits": [
+            "\\bmatrix\\b|\\bvector\\b|\\bdot product\\b|\\bprojection\\b",
+            "matrix"
+          ],
+          "source": "databricks/databricks-dolly-15k",
+          "tags": [
+            "general_instruction_style",
+            "matrix_vector_surface"
+          ],
+          "text_head": "What do The Matrix, Point Break, Constantine, and John Wick have in common? They are all Keanu Reeves movies. databricks/databricks-dolly-15k"
+        },
+        {
+          "family": "instruction_general",
+          "record_id": "e131:70b4b72245ec443f429572970a2a9aa036caffdbb11c0a53b0cbaf8db794786c",
+          "selected_active": true,
+          "semantic_hits": [
+            "\\bmatrix\\b|\\bvector\\b|\\bdot product\\b|\\bprojection\\b",
+            "matrix"
+          ],
+          "source": "databricks/databricks-dolly-15k",
+          "tags": [
+            "general_instruction_style",
+            "matrix_vector_surface",
+            "word_problem_boundary_candidate"
+          ],
+          "text_head": "According to the given paragraph, how do convolutional neural networks avoid overfitting in machine learning? Context: In deep learning, a convolutional neural network (CNN) is a class of artificial neural network mos..."
+        }
+      ],
+      "hard_negative": 0,
+      "lineage_required": false,
+      "next_gate": "shadow_apply_and_replay",
+      "operator_id": "matrix_vector_block_lens",
+      "readiness": "ready_verified",
+      "replacement_ready": true,
+      "rows_seen": 16576512,
+      "selected_activation": 421528,
+      "selected_variant_id": "matrix_vector_block_lens::semantic_verified_pruned_e136h_v1",
+      "selected_variant_type": "semantic_verified_pruned",
+      "shadow_prune_ratio": 0.080631,
+      "shadow_pruned_activation": 36969,
+      "source": "E132",
+      "strict_activation": 421528,
+      "strict_ratio": 0.919369,
+      "strict_recall_miss": 0,
+      "supersession_tier": "T1_VERIFIED_PRUNED_REPLACEMENT",
+      "tag_only_activation": 36507,
+      "term_or_semantic_activation": 421528,
+      "top_family": [
+        [
+          "numina_math_tir",
+          233695
+        ],
+        [
+          "math_instruction",
+          152907
+        ],
+        [
+          "hendrycks_math_precalculus",
+          40271
+        ],
+        [
+          "assistant_dialogue",
+          21021
+        ],
+        [
+          "instruction_general",
+          4212
+        ],
+        [
+          "hendrycks_math_geometry",
+          3465
+        ],
+        [
+          "hendrycks_math_algebra",
+          1848
+        ],
+        [
+          "hendrycks_math_intermediate_algebra",
+          539
+        ],
+        [
+          "hendrycks_math_counting_and_probability",
+          308
+        ],
+        [
+          "hendrycks_math_prealgebra",
+          231
+        ]
+      ],
+      "top_hits": [
+        [
+          "\\bmatrix\\b|\\bvector\\b|\\bdot product\\b|\\bprojection\\b",
+          396655
+        ],
+        [
+          "matrix",
+          241383
+        ],
+        [
+          "vector",
+          197470
+        ],
+        [
+          "\\\\begin\\{[pbv]?matrix\\}",
+          110125
+        ],
+        [
+          "dot product",
+          103416
+        ],
+        [
+          "\\begin{pmatrix}",
+          77236
+        ],
+        [
+          "projection",
+          27886
+        ],
+        [
+          "\\begin{bmatrix}",
+          16872
+        ]
+      ],
+      "top_tags": [
+        [
+          "matrix_vector_surface",
+          454031
+        ],
+        [
+          "latex_math_surface",
+          339446
+        ],
+        [
+          "answer_boundary_surface",
+          335060
+        ],
+        [
+          "word_problem_boundary_candidate",
+          312929
+        ],
+        [
+          "tir_program_or_output_surface",
+          257499
+        ],
+        [
+          "geometry_diagram_or_coordinate_surface",
+          171265
+        ],
+        [
+          "visible_math_surface",
+          163786
+        ],
+        [
+          "math_instruction_surface",
+          152907
+        ],
+        [
+          "candidate_equation_extraction",
+          152907
+        ],
+        [
+          "proof_step_surface",
+          148709
+        ],
+        [
+          "assistant_style",
+          21021
+        ],
+        [
+          "response_rendering",
+          21021
+        ]
+      ],
+      "unsupported_answer": 0,
+      "wrong_scope_proxy": 0
+    },
+    {
+      "current_activation": 11644650,
+      "direct_flow_write": 0,
+      "direct_runtime_candidate": true,
+      "display_name": "Word Problem No-Solve Guard V2",
+      "examples": [
+        {
+          "family": "instruction_general",
+          "record_id": "e131:dd40f7765a915bba5289331b24de9caac27b714b889345055a031e9888e4d51a",
+          "selected_active": true,
+          "semantic_hits": [
+            "what is"
+          ],
+          "source": "databricks/databricks-dolly-15k",
+          "tags": [
+            "general_instruction_style",
+            "visible_math_surface",
+            "word_problem_boundary_candidate"
+          ],
+          "text_head": "Given a reference text about Lollapalooza, where does it take place, who started it and what is it? Context: Lollapalooza /ˌlɒləpəˈluːzə/ (Lolla) is an annual American four-day music festival held in Grant Park in Chi..."
+        },
+        {
+          "family": "instruction_general",
+          "record_id": "e131:e1137730bf21f38f9d6b9f2d069acf89cb8109f939b4f78f094a664cb5f7303b",
+          "selected_active": true,
+          "semantic_hits": [
+            "what is"
+          ],
+          "source": "databricks/databricks-dolly-15k",
+          "tags": [
+            "general_instruction_style",
+            "visible_math_surface",
+            "word_problem_boundary_candidate"
+          ],
+          "text_head": "Who was John Moses Browning? Context: John Moses Browning (January 23, 1855 – November 26, 1926) was an American firearm designer who developed many varieties of military and civilian firearms, cartridges, and gun mec..."
+        },
+        {
+          "family": "instruction_general",
+          "record_id": "e131:7b723fd89333b76822097d3a8c215f7fd20cee65ee3f3202c1f9536652625f7f",
+          "selected_active": true,
+          "semantic_hits": [
+            "what is"
+          ],
+          "source": "databricks/databricks-dolly-15k",
+          "tags": [
+            "general_instruction_style",
+            "math_text_surface",
+            "visible_math_surface"
+          ],
+          "text_head": "Who is Thomas Jefferson? Context: Thomas Jefferson (April 13, 1743 – July 4, 1826) was an American statesman, diplomat, lawyer, architect, philosopher, and Founding Father who served as the third president of the Unit..."
+        },
+        {
+          "family": "instruction_general",
+          "record_id": "e131:fbd63c3868e6b32071081c8963b1959bb5797bc844ab8a14afb2d61b118d6653",
+          "selected_active": true,
+          "semantic_hits": [
+            "what is"
+          ],
+          "source": "databricks/databricks-dolly-15k",
+          "tags": [
+            "general_instruction_style",
+            "geometry_diagram_or_coordinate_surface",
+            "word_problem_boundary_candidate"
+          ],
+          "text_head": "What is a polygon? A polygon is a form in Geometry. It is a single dimensional plane made of connecting lines and any number of vertices. It is a closed chain of connected line segments or edges. The vertices of the p..."
+        },
+        {
+          "family": "instruction_general",
+          "record_id": "e131:0a0d3e489ec635a03b13f697ebd7c4c4ffb50383086029c33f23709b58c8f4d1",
+          "selected_active": true,
+          "semantic_hits": [
+            "find",
+            "what is"
+          ],
+          "source": "databricks/databricks-dolly-15k",
+          "tags": [
+            "answer_boundary_surface",
+            "general_instruction_style",
+            "geometry_diagram_or_coordinate_surface",
+            "visible_math_surface",
+            "word_problem_boundary_candidate"
+          ],
+          "text_head": "What is process mining? Context: Process mining is a family of techniques relating the fields of data science and process management to support the analysis of operational processes based on event logs. The goal of pr..."
+        }
+      ],
+      "hard_negative": 0,
+      "lineage_required": false,
+      "next_gate": "shadow_apply_and_replay",
+      "operator_id": "word_problem_no_solve_guard_v2",
+      "readiness": "ready_verified",
+      "replacement_ready": true,
+      "rows_seen": 16576512,
+      "selected_activation": 11069055,
+      "selected_variant_id": "word_problem_no_solve_guard_v2::semantic_verified_pruned_e136h_v1",
+      "selected_variant_type": "semantic_verified_pruned",
+      "shadow_prune_ratio": 0.04943,
+      "shadow_pruned_activation": 575595,
+      "source": "E132",
+      "strict_activation": 11069055,
+      "strict_ratio": 0.95057,
+      "strict_recall_miss": 0,
+      "supersession_tier": "T1_VERIFIED_PRUNED_REPLACEMENT",
+      "tag_only_activation": 442433,
+      "term_or_semantic_activation": 11069055,
+      "top_family": [
+        [
+          "numina_math_tir",
+          5097169
+        ],
+        [
+          "math_instruction",
+          4974890
+        ],
+        [
+          "assistant_dialogue",
+          369908
+        ],
+        [
+          "instruction_general",
+          355914
+        ],
+        [
+          "hendrycks_math_algebra",
+          185878
+        ],
+        [
+          "hendrycks_math_intermediate_algebra",
+          145068
+        ],
+        [
+          "hendrycks_math_prealgebra",
+          138985
+        ],
+        [
+          "hendrycks_math_number_theory",
+          99792
+        ],
+        [
+          "hendrycks_math_geometry",
+          96558
+        ],
+        [
+          "hendrycks_math_counting_and_probability",
+          93863
+        ],
+        [
+          "hendrycks_math_precalculus",
+          86625
+        ]
+      ],
+      "top_hits": [
+        [
+          "find",
+          6029102
+        ],
+        [
+          "total",
+          3147337
+        ],
+        [
+          "what is",
+          2786292
+        ],
+        [
+          "how many",
+          2690710
+        ],
+        [
+          "compute",
+          1598694
+        ],
+        [
+          "average",
+          522443
+        ],
+        [
+          "probability",
+          473239
+        ],
+        [
+          "randomly",
+          152648
+        ]
+      ],
+      "top_tags": [
+        [
+          "word_problem_boundary_candidate",
+          9436371
+        ],
+        [
+          "answer_boundary_surface",
+          9306943
+        ],
+        [
+          "latex_math_surface",
+          6952012
+        ],
+        [
+          "tir_program_or_output_surface",
+          6618555
+        ],
+        [
+          "visible_math_surface",
+          5176003
+        ],
+        [
+          "math_instruction_surface",
+          4974890
+        ],
+        [
+          "candidate_equation_extraction",
+          4974890
+        ],
+        [
+          "proof_step_surface",
+          3053881
+        ],
+        [
+          "geometry_diagram_or_coordinate_surface",
+          1276499
+        ],
+        [
+          "matrix_vector_surface",
+          409038
+        ],
+        [
+          "response_rendering",
+          369908
+        ],
+        [
+          "assistant_style",
+          369908
+        ]
+      ],
+      "unsupported_answer": 0,
+      "wrong_scope_proxy": 0
+    },
+    {
+      "current_activation": 7496646,
+      "direct_flow_write": 0,
+      "direct_runtime_candidate": false,
+      "display_name": "Assistant TIR Output / Error Repair Guard",
+      "examples": [
+        {
+          "family": "instruction_general",
+          "record_id": "e131:b958066f22da90c972bc2b5282b9316150c2fa06ee4fc4d784d5baf94823aa09",
+          "selected_active": false,
+          "semantic_hits": [],
+          "source": "databricks/databricks-dolly-15k",
+          "tags": [
+            "general_instruction_style",
+            "tir_program_or_output_surface",
+            "visible_math_surface"
+          ],
+          "text_head": "Why isn't multi-threading making my Python code faster? How can I fix it. Python restricts access to the interpreter with a Global Interpreter Lock, referred to as the GIL, for internal thread-safety requirements. Unf..."
+        },
+        {
+          "family": "instruction_general",
+          "record_id": "e131:5e02cf33c6f405287a1935b665f26f54b403b5ea8e3cb912183d3a72ca7b2da1",
+          "selected_active": false,
+          "semantic_hits": [],
+          "source": "databricks/databricks-dolly-15k",
+          "tags": [
+            "general_instruction_style",
+            "tir_program_or_output_surface",
+            "visible_math_surface"
+          ],
+          "text_head": "Write me a recursive function for calculating the nth fibonacci number Below is a recursive Python function fib(n) that computes the nth Fibonacci number. This is split into a base case and a recursive case. The base..."
+        },
+        {
+          "family": "instruction_general",
+          "record_id": "e131:14d0131b352566128b39455602321fb081bed72043b413c2cef4177abe425020",
+          "selected_active": false,
+          "semantic_hits": [],
+          "source": "databricks/databricks-dolly-15k",
+          "tags": [
+            "general_instruction_style",
+            "latex_math_surface",
+            "tir_program_or_output_surface",
+            "visible_math_surface",
+            "word_problem_boundary_candidate"
+          ],
+          "text_head": "What is the difference between the Scala Future onComplete and andThen functions? Both `andThen` and `onComplete` allow you to observe the result of some future via a callback function. However, `andThen` can be chain..."
+        },
+        {
+          "family": "math_instruction",
+          "record_id": "e131:1ab37d27025f7fa8ef6d463590571ecfade473dbfc923c80d296e03ae9f33f8d",
+          "selected_active": false,
+          "semantic_hits": [],
+          "source": "TIGER-Lab/MathInstruct",
+          "tags": [
+            "answer_boundary_surface",
+            "candidate_equation_extraction",
+            "math_instruction_surface",
+            "tir_program_or_output_surface",
+            "visible_math_surface",
+            "word_problem_boundary_candidate"
+          ],
+          "text_head": "A team of six entered for a shooting competition. The best marks man scored 85 points. If he had scored 92 points, the average scores for. The team would have been 84. How many points altogether did the team score? An..."
+        },
+        {
+          "family": "math_instruction",
+          "record_id": "e131:35803c7b1146cc57deb72f8db62f5cc5d973dc6939fc7dab7901fd34181029e2",
+          "selected_active": false,
+          "semantic_hits": [],
+          "source": "TIGER-Lab/MathInstruct",
+          "tags": [
+            "answer_boundary_surface",
+            "candidate_equation_extraction",
+            "math_instruction_surface",
+            "tir_program_or_output_surface",
+            "visible_math_surface",
+            "word_problem_boundary_candidate"
+          ],
+          "text_head": "The radius of a wheel is 22.4 cm. What is the distance covered by the wheel in making 500 resolutions? Answer Choices: (A) 187 m (B) 704 m (C) 179 m (D) 127 m (E) 297 m Let's write a Python program. radius = 22.4 reso..."
+        }
+      ],
+      "hard_negative": 0,
+      "lineage_required": false,
+      "next_gate": "shadow_apply_challenger_and_ood_replay",
+      "operator_id": "assistant_tir_output_error_repair_guard",
+      "readiness": "ready_after_challenger",
+      "replacement_ready": true,
+      "rows_seen": 16576512,
+      "selected_activation": 5593896,
+      "selected_variant_id": "assistant_tir_output_error_repair_guard::semantic_tightened_trigger_e136h_v1",
+      "selected_variant_type": "semantic_tightened_trigger",
+      "shadow_prune_ratio": 0.253814,
+      "shadow_pruned_activation": 1902750,
+      "source": "E132",
+      "strict_activation": 5593896,
+      "strict_ratio": 0.746186,
+      "strict_recall_miss": 0,
+      "supersession_tier": "T2_TIGHTENED_TRIGGER_REPLACEMENT",
+      "tag_only_activation": 1902750,
+      "term_or_semantic_activation": 5593896,
+      "top_family": [
+        [
+          "numina_math_tir",
+          5585580
+        ],
+        [
+          "math_instruction",
+          1784398
+        ],
+        [
+          "assistant_dialogue",
+          126434
+        ],
+        [
+          "instruction_general",
+          234
+        ]
+      ],
+      "top_hits": [
+        [
+          "```output|traceback|syntaxerror|cell in\\[|code was cut off|python script",
+          5593819
+        ],
+        [
+          "```output",
+          5585580
+        ],
+        [
+          "traceback",
+          437745
+        ],
+        [
+          "python script",
+          60368
+        ],
+        [
+          "syntaxerror",
+          20097
+        ],
+        [
+          "code was cut off",
+          77
+        ]
+      ],
+      "top_tags": [
+        [
+          "tir_program_or_output_surface",
+          7494721
+        ],
+        [
+          "answer_boundary_surface",
+          6463284
+        ],
+        [
+          "latex_math_surface",
+          5880371
+        ],
+        [
+          "word_problem_boundary_candidate",
+          5017927
+        ],
+        [
+          "proof_step_surface",
+          2268359
+        ],
+        [
+          "visible_math_surface",
+          1876333
+        ],
+        [
+          "math_instruction_surface",
+          1784398
+        ],
+        [
+          "candidate_equation_extraction",
+          1784398
+        ],
+        [
+          "geometry_diagram_or_coordinate_surface",
+          875436
+        ],
+        [
+          "matrix_vector_surface",
+          256421
+        ],
+        [
+          "assistant_style",
+          126434
+        ],
+        [
+          "response_rendering",
+          126434
+        ]
+      ],
+      "unsupported_answer": 0,
+      "wrong_scope_proxy": 0
+    },
+    {
+      "current_activation": 4924951,
+      "direct_flow_write": 0,
+      "direct_runtime_candidate": false,
+      "display_name": "Assistant Role / Turn Boundary Lens",
+      "examples": [
+        {
+          "family": "ultrachat_200k_data_train_sft_00000_of_00003_a3ecf92756993583",
+          "record_id": "huggingfaceh4_ultrachat_200k_54e29f5fb43b9a0a2f4fad0f",
+          "selected_active": true,
+          "semantic_hits": [
+            "role"
+          ],
+          "source": "HuggingFaceH4/ultrachat_200k",
+          "tags": [
+            "assistant_style",
+            "instruction_following",
+            "multi_turn_dialogue",
+            "refusal_or_boundary",
+            "synthetic_multi_turn"
+          ],
+          "text_head": "Write an essay that evaluates the positive and negative influence of social media on personal relationships, citing specific examples and research to support your claims. Analyze the ways in which social media usage a..."
+        },
+        {
+          "family": "ultrachat_200k_data_train_sft_00000_of_00003_a3ecf92756993583",
+          "record_id": "huggingfaceh4_ultrachat_200k_af3e7951dc8f6edd825341e3",
+          "selected_active": true,
+          "semantic_hits": [
+            "user"
+          ],
+          "source": "HuggingFaceH4/ultrachat_200k",
+          "tags": [
+            "assistant_style",
+            "code_instruction",
+            "instruction_following",
+            "math_text_surface",
+            "multi_turn_dialogue",
+            "refusal_or_boundary",
+            "synthetic_multi_turn"
+          ],
+          "text_head": "Write a Python program that can identify and remove duplicate images from a given folder or directory. The program should be able to compare images based on their content and file size, and determine which ones are ex..."
+        },
+        {
+          "family": "ultrachat_200k_data_train_sft_00000_of_00003_a3ecf92756993583",
+          "record_id": "huggingfaceh4_ultrachat_200k_469c9a206d1998af3e804de7",
+          "selected_active": false,
+          "semantic_hits": [],
+          "source": "HuggingFaceH4/ultrachat_200k",
+          "tags": [
+            "assistant_style",
+            "code_instruction",
+            "instruction_following",
+            "multi_turn_dialogue",
+            "synthetic_multi_turn"
+          ],
+          "text_head": "Using at least 3 scholarly articles, write a comprehensive comparative analysis between two employee wellness programs and their effects on productivity in the workplace. Include a detailed description of the programs..."
+        },
+        {
+          "family": "ultrachat_200k_data_train_sft_00000_of_00003_a3ecf92756993583",
+          "record_id": "huggingfaceh4_ultrachat_200k_582f607d8eac412d8008dba4",
+          "selected_active": true,
+          "semantic_hits": [
+            "role"
+          ],
+          "source": "HuggingFaceH4/ultrachat_200k",
+          "tags": [
+            "assistant_style",
+            "instruction_following",
+            "multi_turn_dialogue",
+            "refusal_or_boundary",
+            "summarization",
+            "synthetic_multi_turn"
+          ],
+          "text_head": "Can you summarize the key objective of the EAA TC-RBA working group mentioned in the given text material? Answer according to: A major task of the working group will be to try to find consensus on one single concept f..."
+        },
+        {
+          "family": "ultrachat_200k_data_train_sft_00000_of_00003_a3ecf92756993583",
+          "record_id": "huggingfaceh4_ultrachat_200k_ce84086ca0439d6b97e56be1",
+          "selected_active": false,
+          "semantic_hits": [],
+          "source": "HuggingFaceH4/ultrachat_200k",
+          "tags": [
+            "assistant_style",
+            "instruction_following",
+            "multi_turn_dialogue",
+            "refusal_or_boundary",
+            "synthetic_multi_turn"
+          ],
+          "text_head": "How have technological advancements impacted agriculture and economic growth in Tripura? Yes, the Government of Tripura has launched several initiatives to encourage the adoption of new technologies in the agriculture..."
+        }
+      ],
+      "hard_negative": 0,
+      "lineage_required": false,
+      "next_gate": "shadow_apply_challenger_and_ood_replay",
+      "operator_id": "assistant_role_turn_boundary_lens",
+      "readiness": "ready_after_challenger",
+      "replacement_ready": true,
+      "rows_seen": 16576512,
+      "selected_activation": 2986201,
+      "selected_variant_id": "assistant_role_turn_boundary_lens::semantic_tightened_trigger_e136h_v1",
+      "selected_variant_type": "semantic_tightened_trigger",
+      "shadow_prune_ratio": 0.393659,
+      "shadow_pruned_activation": 1938750,
+      "source": "E136A",
+      "strict_activation": 2986201,
+      "strict_ratio": 0.606341,
+      "strict_recall_miss": 0,
+      "supersession_tier": "T2_TIGHTENED_TRIGGER_REPLACEMENT",
+      "tag_only_activation": 1938750,
+      "term_or_semantic_activation": 2986201,
+      "top_family": [
+        [
+          "oasst2_data_train_00000_of_00001_88ba0162028a73fc",
+          1327227
+        ],
+        [
+          "ultrachat_200k_data_train_sft_00001_of_00003_0a1804bcb6ae68c6",
+          831131
+        ],
+        [
+          "ultrachat_200k_data_train_sft_00002_of_00003_ee46ed25cfae92c6",
+          827246
+        ],
+        [
+          "ultrachat_200k_data_train_sft_00000_of_00003_a3ecf92756993583",
+          823501
+        ],
+        [
+          "slimorca_oo_labeled_correct_gpt4_sharegpt",
+          727457
+        ],
+        [
+          "ultrachat_200k_data_test_sft_00000_of_00001_f7dfac4afe5b93f4",
+          143708
+        ],
+        [
+          "hh-rlhf_harmless_base_train",
+          99308
+        ],
+        [
+          "oasst2_data_validation_00000_of_00001_1deeef95c3248fe0",
+          70115
+        ],
+        [
+          "no_robots_data_train_sft_00000_of_00001",
+          35335
+        ],
+        [
+          "hh-rlhf_helpful_base_train",
+          33337
+        ],
+        [
+          "hh-rlhf_harmless_base_test",
+          4773
+        ],
+        [
+          "no_robots_data_test_sft_00000_of_00001",
+          1813
+        ]
+      ],
+      "top_hits": [
+        [
+          "system",
+          1083545
+        ],
+        [
+          "role",
+          973332
+        ],
+        [
+          "user",
+          880383
+        ],
+        [
+          "conversation",
+          282253
+        ],
+        [
+          "assistant",
+          154728
+        ]
+      ],
+      "top_tags": [
+        [
+          "instruction_following",
+          4924951
+        ],
+        [
+          "assistant_style",
+          4924951
+        ],
+        [
+          "multi_turn_dialogue",
+          3396407
+        ],
+        [
+          "synthetic_multi_turn",
+          2625586
+        ],
+        [
+          "code_instruction",
+          1594574
+        ],
+        [
+          "human_assistant_dialogue",
+          1397342
+        ],
+        [
+          "math_text_surface",
+          1241312
+        ],
+        [
+          "refusal_or_boundary",
+          905611
+        ],
+        [
+          "reasoning_instruction",
+          727457
+        ],
+        [
+          "summarization",
+          607623
+        ],
+        [
+          "preference_boundary",
+          137418
+        ],
+        [
+          "helpful_harmless",
+          137418
+        ]
+      ],
+      "unsupported_answer": 0,
+      "wrong_scope_proxy": 0
+    },
+    {
+      "current_activation": 3628449,
+      "direct_flow_write": 0,
+      "direct_runtime_candidate": false,
+      "display_name": "Multi-Turn Context Continuity Lens",
+      "examples": [
+        {
+          "family": "ultrachat_200k_data_train_sft_00000_of_00003_a3ecf92756993583",
+          "record_id": "huggingfaceh4_ultrachat_200k_6356d3d0dd17bb3c89dfde9f",
+          "selected_active": true,
+          "semantic_hits": [
+            "context",
+            "continue"
+          ],
+          "source": "HuggingFaceH4/ultrachat_200k",
+          "tags": [
+            "assistant_style",
+            "instruction_following",
+            "math_text_surface",
+            "multi_turn_dialogue",
+            "synthetic_multi_turn"
+          ],
+          "text_head": "What many companies do when planning their global marketing strategies is to organize the world’s countries into three categories. Emerging Markets – Markets regarded as having the most potential for growth (e.g. Huge..."
+        },
+        {
+          "family": "ultrachat_200k_data_train_sft_00000_of_00003_a3ecf92756993583",
+          "record_id": "huggingfaceh4_ultrachat_200k_17f5b1b96678629702e99c80",
+          "selected_active": true,
+          "semantic_hits": [
+            "again",
+            "continue"
+          ],
+          "source": "HuggingFaceH4/ultrachat_200k",
+          "tags": [
+            "assistant_style",
+            "instruction_following",
+            "math_text_surface",
+            "multi_turn_dialogue",
+            "synthetic_multi_turn"
+          ],
+          "text_head": "Expressing your emotions is what keeps a relationship going. Whether it's a mother-daughter relationship, girlfriend-boyfriend, bonds between a sister and brother or son and father, here are some eloquent and poignant..."
+        },
+        {
+          "family": "ultrachat_200k_data_train_sft_00000_of_00003_a3ecf92756993583",
+          "record_id": "huggingfaceh4_ultrachat_200k_d74f4ae65a893ceceb221fae",
+          "selected_active": true,
+          "semantic_hits": [
+            "again"
+          ],
+          "source": "HuggingFaceH4/ultrachat_200k",
+          "tags": [
+            "assistant_style",
+            "instruction_following",
+            "math_text_surface",
+            "multi_turn_dialogue",
+            "synthetic_multi_turn"
+          ],
+          "text_head": "Implement a queue data structure in Java that can enqueue and dequeue elements. The queue should have a maximum size of n and should be implemented using an array. The enqueue operation should add elements to the back..."
+        },
+        {
+          "family": "ultrachat_200k_data_train_sft_00000_of_00003_a3ecf92756993583",
+          "record_id": "huggingfaceh4_ultrachat_200k_0d52a7e542b2f10ddd3ead31",
+          "selected_active": false,
+          "semantic_hits": [],
+          "source": "HuggingFaceH4/ultrachat_200k",
+          "tags": [
+            "assistant_style",
+            "instruction_following",
+            "multi_turn_dialogue",
+            "synthetic_multi_turn"
+          ],
+          "text_head": "How can embedded sensors in clothes reduce health issues and promote wellbeing for individuals? Yes! Here are some examples of companies and products that are currently utilizing embedded sensors in clothing: 1. Athos..."
+        },
+        {
+          "family": "ultrachat_200k_data_train_sft_00000_of_00003_a3ecf92756993583",
+          "record_id": "huggingfaceh4_ultrachat_200k_c8fce2f1390385325c50c081",
+          "selected_active": true,
+          "semantic_hits": [
+            "continue"
+          ],
+          "source": "HuggingFaceH4/ultrachat_200k",
+          "tags": [
+            "assistant_style",
+            "code_instruction",
+            "instruction_following",
+            "multi_turn_dialogue",
+            "refusal_or_boundary",
+            "summarization",
+            "synthetic_multi_turn"
+          ],
+          "text_head": "How do large tidal surges and storm surges differ in terms of impact on human settlements and infrastructure along the coastlines? Yes, I share the same hope as you. As we continue to face the threats of rising sea le..."
+        }
+      ],
+      "hard_negative": 0,
+      "lineage_required": false,
+      "next_gate": "shadow_apply_challenger_and_ood_replay",
+      "operator_id": "multi_turn_context_continuity_lens",
+      "readiness": "ready_after_challenger",
+      "replacement_ready": true,
+      "rows_seen": 16576512,
+      "selected_activation": 2397635,
+      "selected_variant_id": "multi_turn_context_continuity_lens::semantic_tightened_trigger_e136h_v1",
+      "selected_variant_type": "semantic_tightened_trigger",
+      "shadow_prune_ratio": 0.339212,
+      "shadow_pruned_activation": 1230814,
+      "source": "E136A",
+      "strict_activation": 2397635,
+      "strict_ratio": 0.660788,
+      "strict_recall_miss": 0,
+      "supersession_tier": "T2_TIGHTENED_TRIGGER_REPLACEMENT",
+      "tag_only_activation": 1230814,
+      "term_or_semantic_activation": 2397635,
+      "top_family": [
+        [
+          "slimorca_oo_labeled_correct_gpt4_sharegpt",
+          1207051
+        ],
+        [
+          "ultrachat_200k_data_train_sft_00000_of_00003_a3ecf92756993583",
+          725540
+        ],
+        [
+          "ultrachat_200k_data_train_sft_00002_of_00003_ee46ed25cfae92c6",
+          719354
+        ],
+        [
+          "ultrachat_200k_data_train_sft_00001_of_00003_0a1804bcb6ae68c6",
+          715210
+        ],
+        [
+          "ultrachat_200k_data_test_sft_00000_of_00001_f7dfac4afe5b93f4",
+          128612
+        ],
+        [
+          "hh-rlhf_harmless_base_train",
+          98975
+        ],
+        [
+          "hh-rlhf_helpful_base_train",
+          26788
+        ],
+        [
+          "hh-rlhf_harmless_base_test",
+          6031
+        ],
+        [
+          "no_robots_data_train_sft_00000_of_00001",
+          888
+        ]
+      ],
+      "top_hits": [
+        [
+          "context",
+          691966
+        ],
+        [
+          "again",
+          685345
+        ],
+        [
+          "continue",
+          684869
+        ],
+        [
+          "previous",
+          344948
+        ],
+        [
+          "conversation",
+          245734
+        ],
+        [
+          "follow up",
+          31410
+        ]
+      ],
+      "top_tags": [
+        [
+          "multi_turn_dialogue",
+          3628449
+        ],
+        [
+          "instruction_following",
+          3628449
+        ],
+        [
+          "assistant_style",
+          3628449
+        ],
+        [
+          "synthetic_multi_turn",
+          2288716
+        ],
+        [
+          "reasoning_instruction",
+          1207051
+        ],
+        [
+          "math_text_surface",
+          890640
+        ],
+        [
+          "code_instruction",
+          747793
+        ],
+        [
+          "refusal_or_boundary",
+          736946
+        ],
+        [
+          "summarization",
+          517779
+        ],
+        [
+          "preference_boundary",
+          131794
+        ],
+        [
+          "helpful_harmless",
+          131794
+        ],
+        [
+          "human_written_instruction",
+          888
+        ]
+      ],
+      "unsupported_answer": 0,
+      "wrong_scope_proxy": 0
+    },
+    {
+      "current_activation": 6775530,
+      "direct_flow_write": 0,
+      "direct_runtime_candidate": true,
+      "display_name": "Instruction Task Decomposition Lens",
+      "examples": [
+        {
+          "family": "ultrachat_200k_data_train_sft_00000_of_00003_a3ecf92756993583",
+          "record_id": "huggingfaceh4_ultrachat_200k_3bfe041ed7161747af4b0125",
+          "selected_active": true,
+          "semantic_hits": [
+            "instructions",
+            "steps"
+          ],
+          "source": "HuggingFaceH4/ultrachat_200k",
+          "tags": [
+            "assistant_style",
+            "instruction_following",
+            "multi_turn_dialogue",
+            "refusal_or_boundary",
+            "synthetic_multi_turn"
+          ],
+          "text_head": "These instructions apply to section-based themes (Responsive 6.0+, Retina 4.0+, Parallax 3.0+ Turbo 2.0+, Mobilia 5.0+). What theme version am I using? On your Collections pages & Featured Collections sections, you ca..."
+        },
+        {
+          "family": "ultrachat_200k_data_train_sft_00000_of_00003_a3ecf92756993583",
+          "record_id": "huggingfaceh4_ultrachat_200k_54e29f5fb43b9a0a2f4fad0f",
+          "selected_active": true,
+          "semantic_hits": [
+            "finally"
+          ],
+          "source": "HuggingFaceH4/ultrachat_200k",
+          "tags": [
+            "assistant_style",
+            "instruction_following",
+            "multi_turn_dialogue",
+            "refusal_or_boundary",
+            "synthetic_multi_turn"
+          ],
+          "text_head": "Write an essay that evaluates the positive and negative influence of social media on personal relationships, citing specific examples and research to support your claims. Analyze the ways in which social media usage a..."
+        },
+        {
+          "family": "ultrachat_200k_data_train_sft_00000_of_00003_a3ecf92756993583",
+          "record_id": "huggingfaceh4_ultrachat_200k_6356d3d0dd17bb3c89dfde9f",
+          "selected_active": true,
+          "semantic_hits": [
+            "second"
+          ],
+          "source": "HuggingFaceH4/ultrachat_200k",
+          "tags": [
+            "assistant_style",
+            "instruction_following",
+            "math_text_surface",
+            "multi_turn_dialogue",
+            "synthetic_multi_turn"
+          ],
+          "text_head": "What many companies do when planning their global marketing strategies is to organize the world’s countries into three categories. Emerging Markets – Markets regarded as having the most potential for growth (e.g. Huge..."
+        },
+        {
+          "family": "ultrachat_200k_data_train_sft_00000_of_00003_a3ecf92756993583",
+          "record_id": "huggingfaceh4_ultrachat_200k_af3e7951dc8f6edd825341e3",
+          "selected_active": true,
+          "semantic_hits": [
+            "how to",
+            "instructions"
+          ],
+          "source": "HuggingFaceH4/ultrachat_200k",
+          "tags": [
+            "assistant_style",
+            "code_instruction",
+            "instruction_following",
+            "math_text_surface",
+            "multi_turn_dialogue",
+            "refusal_or_boundary",
+            "synthetic_multi_turn"
+          ],
+          "text_head": "Write a Python program that can identify and remove duplicate images from a given folder or directory. The program should be able to compare images based on their content and file size, and determine which ones are ex..."
+        },
+        {
+          "family": "ultrachat_200k_data_train_sft_00000_of_00003_a3ecf92756993583",
+          "record_id": "huggingfaceh4_ultrachat_200k_027dc3c2fba24e2441959de4",
+          "selected_active": true,
+          "semantic_hits": [
+            "how to",
+            "instructions",
+            "step"
+          ],
+          "source": "HuggingFaceH4/ultrachat_200k",
+          "tags": [
+            "assistant_style",
+            "instruction_following",
+            "multi_turn_dialogue",
+            "refusal_or_boundary",
+            "synthetic_multi_turn"
+          ],
+          "text_head": "Please provide a specific cooking method for the salmon, as well as any seasonings or ingredients necessary to complete the dish. Additionally, include instructions for how to properly prepare the salmon before cookin..."
+        }
+      ],
+      "hard_negative": 0,
+      "lineage_required": false,
+      "next_gate": "shadow_apply_and_replay",
+      "operator_id": "instruction_task_decomposition_lens",
+      "readiness": "ready_verified",
+      "replacement_ready": true,
+      "rows_seen": 16576512,
+      "selected_activation": 6357032,
+      "selected_variant_id": "instruction_task_decomposition_lens::semantic_verified_pruned_e136h_v1",
+      "selected_variant_type": "semantic_verified_pruned",
+      "shadow_prune_ratio": 0.061766,
+      "shadow_pruned_activation": 418498,
+      "source": "E136A",
+      "strict_activation": 6357032,
+      "strict_ratio": 0.938234,
+      "strict_recall_miss": 0,
+      "supersession_tier": "T1_VERIFIED_PRUNED_REPLACEMENT",
+      "tag_only_activation": 418498,
+      "term_or_semantic_activation": 6357032,
+      "top_family": [
+        [
+          "slimorca_oo_labeled_correct_gpt4_sharegpt",
+          1997704
+        ],
+        [
+          "ultrachat_200k_data_train_sft_00000_of_00003_a3ecf92756993583",
+          1240663
+        ],
+        [
+          "ultrachat_200k_data_train_sft_00002_of_00003_ee46ed25cfae92c6",
+          1237428
+        ],
+        [
+          "ultrachat_200k_data_train_sft_00001_of_00003_0a1804bcb6ae68c6",
+          1231952
+        ],
+        [
+          "oasst2_data_train_00000_of_00001_88ba0162028a73fc",
+          329374
+        ],
+        [
+          "hh-rlhf_harmless_base_train",
+          252784
+        ],
+        [
+          "ultrachat_200k_data_test_sft_00000_of_00001_f7dfac4afe5b93f4",
+          215858
+        ],
+        [
+          "hh-rlhf_helpful_base_train",
+          118770
+        ],
+        [
+          "no_robots_data_train_sft_00000_of_00001",
+          114404
+        ],
+        [
+          "oasst2_data_validation_00000_of_00001_1deeef95c3248fe0",
+          17871
+        ],
+        [
+          "hh-rlhf_harmless_base_test",
+          12469
+        ],
+        [
+          "no_robots_data_test_sft_00000_of_00001",
+          6253
+        ]
+      ],
+      "top_hits": [
+        [
+          "first",
+          2762232
+        ],
+        [
+          "how to",
+          1568820
+        ],
+        [
+          "step",
+          1496301
+        ],
+        [
+          "second",
+          887385
+        ],
+        [
+          "finally",
+          853745
+        ],
+        [
+          "instructions",
+          799819
+        ],
+        [
+          "steps",
+          787623
+        ],
+        [
+          "guide",
+          559963
+        ]
+      ],
+      "top_tags": [
+        [
+          "instruction_following",
+          6775530
+        ],
+        [
+          "assistant_style",
+          6775530
+        ],
+        [
+          "multi_turn_dialogue",
+          6063798
+        ],
+        [
+          "synthetic_multi_turn",
+          3925901
+        ],
+        [
+          "reasoning_instruction",
+          1997704
+        ],
+        [
+          "math_text_surface",
+          1623402
+        ],
+        [
+          "code_instruction",
+          1471510
+        ],
+        [
+          "refusal_or_boundary",
+          1232311
+        ],
+        [
+          "summarization",
+          767595
+        ],
+        [
+          "preference_boundary",
+          384023
+        ],
+        [
+          "helpful_harmless",
+          384023
+        ],
+        [
+          "human_assistant_dialogue",
+          347245
+        ]
+      ],
+      "unsupported_answer": 0,
+      "wrong_scope_proxy": 0
+    },
+    {
+      "current_activation": 1248623,
+      "direct_flow_write": 0,
+      "direct_runtime_candidate": true,
+      "display_name": "Summarization Request Lens",
+      "examples": [
+        {
+          "family": "ultrachat_200k_data_train_sft_00000_of_00003_a3ecf92756993583",
+          "record_id": "huggingfaceh4_ultrachat_200k_582f607d8eac412d8008dba4",
+          "selected_active": true,
+          "semantic_hits": [
+            "summarize"
+          ],
+          "source": "HuggingFaceH4/ultrachat_200k",
+          "tags": [
+            "assistant_style",
+            "instruction_following",
+            "multi_turn_dialogue",
+            "refusal_or_boundary",
+            "summarization",
+            "synthetic_multi_turn"
+          ],
+          "text_head": "Can you summarize the key objective of the EAA TC-RBA working group mentioned in the given text material? Answer according to: A major task of the working group will be to try to find consensus on one single concept f..."
+        },
+        {
+          "family": "ultrachat_200k_data_train_sft_00000_of_00003_a3ecf92756993583",
+          "record_id": "huggingfaceh4_ultrachat_200k_8b50823365df9f9641233f90",
+          "selected_active": true,
+          "semantic_hits": [
+            "goals",
+            "summarize"
+          ],
+          "source": "HuggingFaceH4/ultrachat_200k",
+          "tags": [
+            "assistant_style",
+            "instruction_following",
+            "multi_turn_dialogue",
+            "summarization",
+            "synthetic_multi_turn"
+          ],
+          "text_head": "Write a personal essay of at least 500 words that discusses the significance of setting and achieving goals in your life. Your essay should include specific examples of how goal-setting has impacted your success and p..."
+        },
+        {
+          "family": "ultrachat_200k_data_train_sft_00000_of_00003_a3ecf92756993583",
+          "record_id": "huggingfaceh4_ultrachat_200k_a211858cae42b2da04ec1f06",
+          "selected_active": true,
+          "semantic_hits": [
+            "goals",
+            "summarize"
+          ],
+          "source": "HuggingFaceH4/ultrachat_200k",
+          "tags": [
+            "assistant_style",
+            "instruction_following",
+            "multi_turn_dialogue",
+            "summarization",
+            "synthetic_multi_turn"
+          ],
+          "text_head": "Prepare an agenda and schedule a date and time for a meeting where the marketing team will discuss the goals, target audience, budget, strategies, and timeline for the implementation of the new marketing campaign. Mak..."
+        },
+        {
+          "family": "ultrachat_200k_data_train_sft_00000_of_00003_a3ecf92756993583",
+          "record_id": "huggingfaceh4_ultrachat_200k_5a4abc15c653b356f17235e2",
+          "selected_active": true,
+          "semantic_hits": [
+            "goals"
+          ],
+          "source": "HuggingFaceH4/ultrachat_200k",
+          "tags": [
+            "assistant_style",
+            "instruction_following",
+            "math_text_surface",
+            "multi_turn_dialogue",
+            "summarization",
+            "synthetic_multi_turn"
+          ],
+          "text_head": "What kind of collaborative work is expected of the Art Teacher at The School of Arts and Sciences? Generate according to: The School of Arts and Sciences, at 3208 Thomasville Rd, Tallahassee, FL is seeking application..."
+        },
+        {
+          "family": "ultrachat_200k_data_train_sft_00000_of_00003_a3ecf92756993583",
+          "record_id": "huggingfaceh4_ultrachat_200k_7f15ec4c966b2b5debc46fd6",
+          "selected_active": true,
+          "semantic_hits": [
+            "summary"
+          ],
+          "source": "HuggingFaceH4/ultrachat_200k",
+          "tags": [
+            "assistant_style",
+            "instruction_following",
+            "multi_turn_dialogue",
+            "summarization",
+            "synthetic_multi_turn"
+          ],
+          "text_head": "Given the text: Tennessee Gov. Bill Haslam has appointed the Hon. Muecke Barker to a new advisory board for the University of Tennessee at Chattanooga. Haslam recently appointed 20 members to new advisory boards for e..."
+        }
+      ],
+      "hard_negative": 0,
+      "lineage_required": false,
+      "next_gate": "shadow_apply_smoke",
+      "operator_id": "summarization_request_lens",
+      "readiness": "ready_low_risk",
+      "replacement_ready": true,
+      "rows_seen": 16576512,
+      "selected_activation": 1226959,
+      "selected_variant_id": "summarization_request_lens::semantic_verified_pruned_e136h_v1",
+      "selected_variant_type": "semantic_verified_pruned",
+      "shadow_prune_ratio": 0.01735,
+      "shadow_pruned_activation": 21664,
+      "source": "E136A",
+      "strict_activation": 1226959,
+      "strict_ratio": 0.98265,
+      "strict_recall_miss": 0,
+      "supersession_tier": "T0_KEEP_CURRENT_WITH_LIGHT_PRUNE",
+      "tag_only_activation": 21664,
+      "term_or_semantic_activation": 1226959,
+      "top_family": [
+        [
+          "slimorca_oo_labeled_correct_gpt4_sharegpt",
+          336515
+        ],
+        [
+          "ultrachat_200k_data_train_sft_00002_of_00003_ee46ed25cfae92c6",
+          269619
+        ],
+        [
+          "ultrachat_200k_data_train_sft_00000_of_00003_a3ecf92756993583",
+          268900
+        ],
+        [
+          "ultrachat_200k_data_train_sft_00001_of_00003_0a1804bcb6ae68c6",
+          262256
+        ],
+        [
+          "ultrachat_200k_data_test_sft_00000_of_00001_f7dfac4afe5b93f4",
+          47582
+        ],
+        [
+          "oasst2_data_train_00000_of_00001_88ba0162028a73fc",
+          43549
+        ],
+        [
+          "no_robots_data_train_sft_00000_of_00001",
+          13764
+        ],
+        [
+          "hh-rlhf_helpful_base_train",
+          2257
+        ],
+        [
+          "hh-rlhf_harmless_base_train",
+          2035
+        ],
+        [
+          "oasst2_data_validation_00000_of_00001_1deeef95c3248fe0",
+          1369
+        ],
+        [
+          "no_robots_data_test_sft_00000_of_00001",
+          629
+        ],
+        [
+          "hh-rlhf_harmless_base_test",
+          148
+        ]
+      ],
+      "top_hits": [
+        [
+          "summary",
+          656282
+        ],
+        [
+          "summarize",
+          573205
+        ],
+        [
+          "goals",
+          106073
+        ],
+        [
+          "key points",
+          21297
+        ],
+        [
+          "condense",
+          2038
+        ],
+        [
+          "tl;dr",
+          1406
+        ]
+      ],
+      "top_tags": [
+        [
+          "instruction_following",
+          1248623
+        ],
+        [
+          "assistant_style",
+          1248623
+        ],
+        [
+          "summarization",
+          1248623
+        ],
+        [
+          "multi_turn_dialogue",
+          1183207
+        ],
+        [
+          "synthetic_multi_turn",
+          848357
+        ],
+        [
+          "reasoning_instruction",
+          336515
+        ],
+        [
+          "code_instruction",
+          325553
+        ],
+        [
+          "math_text_surface",
+          301216
+        ],
+        [
+          "refusal_or_boundary",
+          233266
+        ],
+        [
+          "human_assistant_dialogue",
+          44918
+        ],
+        [
+          "human_written_instruction",
+          14393
+        ],
+        [
+          "preference_boundary",
+          4440
+        ]
+      ],
+      "unsupported_answer": 0,
+      "wrong_scope_proxy": 0
+    },
+    {
+      "current_activation": 2457518,
+      "direct_flow_write": 0,
+      "direct_runtime_candidate": false,
+      "display_name": "Code Instruction Boundary Lens",
+      "examples": [
+        {
+          "family": "ultrachat_200k_data_train_sft_00000_of_00003_a3ecf92756993583",
+          "record_id": "huggingfaceh4_ultrachat_200k_af3e7951dc8f6edd825341e3",
+          "selected_active": true,
+          "semantic_hits": [
+            "code",
+            "function",
+            "program",
+            "python"
+          ],
+          "source": "HuggingFaceH4/ultrachat_200k",
+          "tags": [
+            "assistant_style",
+            "code_instruction",
+            "instruction_following",
+            "math_text_surface",
+            "multi_turn_dialogue",
+            "refusal_or_boundary",
+            "synthetic_multi_turn"
+          ],
+          "text_head": "Write a Python program that can identify and remove duplicate images from a given folder or directory. The program should be able to compare images based on their content and file size, and determine which ones are ex..."
+        },
+        {
+          "family": "ultrachat_200k_data_train_sft_00000_of_00003_a3ecf92756993583",
+          "record_id": "huggingfaceh4_ultrachat_200k_469c9a206d1998af3e804de7",
+          "selected_active": true,
+          "semantic_hits": [
+            "program"
+          ],
+          "source": "HuggingFaceH4/ultrachat_200k",
+          "tags": [
+            "assistant_style",
+            "code_instruction",
+            "instruction_following",
+            "multi_turn_dialogue",
+            "synthetic_multi_turn"
+          ],
+          "text_head": "Using at least 3 scholarly articles, write a comprehensive comparative analysis between two employee wellness programs and their effects on productivity in the workplace. Include a detailed description of the programs..."
+        },
+        {
+          "family": "ultrachat_200k_data_train_sft_00000_of_00003_a3ecf92756993583",
+          "record_id": "huggingfaceh4_ultrachat_200k_1baf7a97f84bbde12228db6f",
+          "selected_active": true,
+          "semantic_hits": [
+            "program"
+          ],
+          "source": "HuggingFaceH4/ultrachat_200k",
+          "tags": [
+            "assistant_style",
+            "code_instruction",
+            "instruction_following",
+            "multi_turn_dialogue",
+            "synthetic_multi_turn"
+          ],
+          "text_head": "Given the text: ​A BioPharma company that leverages it's operational data with clinical trial analytics is likely to get it's drug to market faster—potentially resulting in more revenue, increased market share, and im..."
+        },
+        {
+          "family": "ultrachat_200k_data_train_sft_00000_of_00003_a3ecf92756993583",
+          "record_id": "huggingfaceh4_ultrachat_200k_5e21a3b169123129eb53286b",
+          "selected_active": false,
+          "semantic_hits": [],
+          "source": "HuggingFaceH4/ultrachat_200k",
+          "tags": [
+            "assistant_style",
+            "code_instruction",
+            "instruction_following",
+            "multi_turn_dialogue",
+            "refusal_or_boundary",
+            "summarization",
+            "synthetic_multi_turn"
+          ],
+          "text_head": "How does the US Secretary of State play a role in shaping foreign policy? The US Secretary of State typically prepares for the diverse role through a combination of education, experience, and training. Many Secretarie..."
+        },
+        {
+          "family": "ultrachat_200k_data_train_sft_00000_of_00003_a3ecf92756993583",
+          "record_id": "huggingfaceh4_ultrachat_200k_efb9bd0cc8b0c959e2d4014b",
+          "selected_active": false,
+          "semantic_hits": [],
+          "source": "HuggingFaceH4/ultrachat_200k",
+          "tags": [
+            "assistant_style",
+            "code_instruction",
+            "instruction_following",
+            "multi_turn_dialogue",
+            "summarization",
+            "synthetic_multi_turn"
+          ],
+          "text_head": "What are the top colleges for marine biology in Canada? Yes, many of these colleges have partnerships with marine conservation organizations that provide students with opportunities to get involved with conservation e..."
+        }
+      ],
+      "hard_negative": 0,
+      "lineage_required": false,
+      "next_gate": "shadow_apply_challenger_and_ood_replay",
+      "operator_id": "code_instruction_boundary_lens",
+      "readiness": "ready_after_challenger",
+      "replacement_ready": true,
+      "rows_seen": 16576512,
+      "selected_activation": 1584948,
+      "selected_variant_id": "code_instruction_boundary_lens::semantic_tightened_trigger_e136h_v1",
+      "selected_variant_type": "semantic_tightened_trigger",
+      "shadow_prune_ratio": 0.355061,
+      "shadow_pruned_activation": 872570,
+      "source": "E136A",
+      "strict_activation": 1584948,
+      "strict_ratio": 0.644939,
+      "strict_recall_miss": 0,
+      "supersession_tier": "T2_TIGHTENED_TRIGGER_REPLACEMENT",
+      "tag_only_activation": 872570,
+      "term_or_semantic_activation": 1584948,
+      "top_family": [
+        [
+          "ultrachat_200k_data_train_sft_00002_of_00003_ee46ed25cfae92c6",
+          577903
+        ],
+        [
+          "ultrachat_200k_data_train_sft_00001_of_00003_0a1804bcb6ae68c6",
+          571354
+        ],
+        [
+          "ultrachat_200k_data_train_sft_00000_of_00003_a3ecf92756993583",
+          566411
+        ],
+        [
+          "slimorca_oo_labeled_correct_gpt4_sharegpt",
+          289525
+        ],
+        [
+          "oasst2_data_train_00000_of_00001_88ba0162028a73fc",
+          262367
+        ],
+        [
+          "ultrachat_200k_data_test_sft_00000_of_00001_f7dfac4afe5b93f4",
+          98198
+        ],
+        [
+          "hh-rlhf_harmless_base_train",
+          33966
+        ],
+        [
+          "no_robots_data_train_sft_00000_of_00001",
+          25530
+        ],
+        [
+          "oasst2_data_validation_00000_of_00001_1deeef95c3248fe0",
+          15392
+        ],
+        [
+          "hh-rlhf_helpful_base_train",
+          13357
+        ],
+        [
+          "hh-rlhf_harmless_base_test",
+          2109
+        ],
+        [
+          "no_robots_data_test_sft_00000_of_00001",
+          1406
+        ]
+      ],
+      "top_hits": [
+        [
+          "program",
+          780798
+        ],
+        [
+          "code",
+          508756
+        ],
+        [
+          "function",
+          471520
+        ],
+        [
+          "python",
+          186869
+        ],
+        [
+          "class",
+          167948
+        ],
+        [
+          "script",
+          95574
+        ],
+        [
+          "javascript",
+          81825
+        ]
+      ],
+      "top_tags": [
+        [
+          "code_instruction",
+          2457518
+        ],
+        [
+          "instruction_following",
+          2457518
+        ],
+        [
+          "assistant_style",
+          2457518
+        ],
+        [
+          "multi_turn_dialogue",
+          2117488
+        ],
+        [
+          "synthetic_multi_turn",
+          1813866
+        ],
+        [
+          "math_text_surface",
+          880240
+        ],
+        [
+          "refusal_or_boundary",
+          525768
+        ],
+        [
+          "summarization",
+          358686
+        ],
+        [
+          "reasoning_instruction",
+          289525
+        ],
+        [
+          "human_assistant_dialogue",
+          277759
+        ],
+        [
+          "preference_boundary",
+          49432
+        ],
+        [
+          "helpful_harmless",
+          49432
+        ]
+      ],
+      "unsupported_answer": 0,
+      "wrong_scope_proxy": 0
+    },
+    {
+      "current_activation": 372504,
+      "direct_flow_write": 0,
+      "direct_runtime_candidate": true,
+      "display_name": "Refusal Boundary Guard",
+      "examples": [
+        {
+          "family": "ultrachat_200k_data_train_sft_00000_of_00003_a3ecf92756993583",
+          "record_id": "huggingfaceh4_ultrachat_200k_aef6c78719b524784541cb64",
+          "selected_active": true,
+          "semantic_hits": [
+            "don't have access"
+          ],
+          "source": "HuggingFaceH4/ultrachat_200k",
+          "tags": [
+            "assistant_style",
+            "code_instruction",
+            "instruction_following",
+            "multi_turn_dialogue",
+            "refusal_or_boundary",
+            "synthetic_multi_turn"
+          ],
+          "text_head": "The general aim of my research is to understand the neural basis of psychiatric disorders. We focus on what makes someone vulnerable to the development of psychiatric disorders, on how various treatments exert their e..."
+        },
+        {
+          "family": "ultrachat_200k_data_train_sft_00000_of_00003_a3ecf92756993583",
+          "record_id": "huggingfaceh4_ultrachat_200k_f2c44ed3d5c9a46d460ae1a9",
+          "selected_active": true,
+          "semantic_hits": [
+            "don't have access"
+          ],
+          "source": "HuggingFaceH4/ultrachat_200k",
+          "tags": [
+            "assistant_style",
+            "instruction_following",
+            "math_text_surface",
+            "multi_turn_dialogue",
+            "refusal_or_boundary",
+            "synthetic_multi_turn"
+          ],
+          "text_head": "What is the significance of the guru bead in a mala bracelet? Generate according to: This Black Onyx and Sandalwood mala bracelet features genuine fragrant Sandalwood from Kathmandu, Nepal and natural Black Onyx gemst..."
+        },
+        {
+          "family": "ultrachat_200k_data_train_sft_00000_of_00003_a3ecf92756993583",
+          "record_id": "huggingfaceh4_ultrachat_200k_670ba7b5cf13bf3014834a15",
+          "selected_active": true,
+          "semantic_hits": [
+            "don't have access"
+          ],
+          "source": "HuggingFaceH4/ultrachat_200k",
+          "tags": [
+            "assistant_style",
+            "code_instruction",
+            "instruction_following",
+            "multi_turn_dialogue",
+            "refusal_or_boundary",
+            "synthetic_multi_turn"
+          ],
+          "text_head": "“I don't like reviews. Can we get rid of them?\" The most important thing about reviews is to understand they are opportunities in disguise. Great reviews are hidden testimonials from your patients about your services...."
+        },
+        {
+          "family": "ultrachat_200k_data_train_sft_00000_of_00003_a3ecf92756993583",
+          "record_id": "huggingfaceh4_ultrachat_200k_1d34e2b6c919317af95b832e",
+          "selected_active": true,
+          "semantic_hits": [
+            "not able"
+          ],
+          "source": "HuggingFaceH4/ultrachat_200k",
+          "tags": [
+            "assistant_style",
+            "instruction_following",
+            "multi_turn_dialogue",
+            "refusal_or_boundary",
+            "synthetic_multi_turn"
+          ],
+          "text_head": "Share tips for dealing with difficulty sealing the menstrual cup. Of course! Proper cleaning and maintenance of your menstrual cup is important for good health and hygiene. Here's how to clean and maintain your cup: C..."
+        },
+        {
+          "family": "ultrachat_200k_data_train_sft_00000_of_00003_a3ecf92756993583",
+          "record_id": "huggingfaceh4_ultrachat_200k_a59f40c05f95c9c786a0de71",
+          "selected_active": true,
+          "semantic_hits": [
+            "not able"
+          ],
+          "source": "HuggingFaceH4/ultrachat_200k",
+          "tags": [
+            "assistant_style",
+            "instruction_following",
+            "multi_turn_dialogue",
+            "refusal_or_boundary",
+            "synthetic_multi_turn"
+          ],
+          "text_head": "This is a great thing that I had forgotten about also. There used to be cookbooks just for this that gave you times and mileage.. The only thing that I would add is to make damn sure you don't have any oil, fuel or ex..."
+        }
+      ],
+      "hard_negative": 0,
+      "lineage_required": false,
+      "next_gate": "shadow_apply_smoke",
+      "operator_id": "refusal_boundary_guard",
+      "readiness": "ready_low_risk",
+      "replacement_ready": true,
+      "rows_seen": 16576512,
+      "selected_activation": 372356,
+      "selected_variant_id": "refusal_boundary_guard::semantic_verified_pruned_e136h_v1",
+      "selected_variant_type": "semantic_verified_pruned",
+      "shadow_prune_ratio": 0.000397,
+      "shadow_pruned_activation": 148,
+      "source": "E136A",
+      "strict_activation": 372356,
+      "strict_ratio": 0.999603,
+      "strict_recall_miss": 0,
+      "supersession_tier": "T0_KEEP_CURRENT_WITH_LIGHT_PRUNE",
+      "tag_only_activation": 148,
+      "term_or_semantic_activation": 372356,
+      "top_family": [
+        [
+          "ultrachat_200k_data_train_sft_00002_of_00003_ee46ed25cfae92c6",
+          72483
+        ],
+        [
+          "ultrachat_200k_data_train_sft_00000_of_00003_a3ecf92756993583",
+          71509
+        ],
+        [
+          "ultrachat_200k_data_train_sft_00001_of_00003_0a1804bcb6ae68c6",
+          70411
+        ],
+        [
+          "slimorca_oo_labeled_correct_gpt4_sharegpt",
+          70115
+        ],
+        [
+          "hh-rlhf_harmless_base_train",
+          30784
+        ],
+        [
+          "oasst2_data_train_00000_of_00001_88ba0162028a73fc",
+          29119
+        ],
+        [
+          "ultrachat_200k_data_test_sft_00000_of_00001_f7dfac4afe5b93f4",
+          12469
+        ],
+        [
+          "no_robots_data_train_sft_00000_of_00001",
+          8029
+        ],
+        [
+          "hh-rlhf_helpful_base_train",
+          3219
+        ],
+        [
+          "oasst2_data_validation_00000_of_00001_1deeef95c3248fe0",
+          2368
+        ],
+        [
+          "hh-rlhf_harmless_base_test",
+          1517
+        ],
+        [
+          "no_robots_data_test_sft_00000_of_00001",
+          481
+        ]
+      ],
+      "top_hits": [
+        [
+          "\\bcannot\\b|\\bcan't\\b|\\bunable\\b|\\bnot appropriate\\b|\\brefuse\\b",
+          269392
+        ],
+        [
+          "can't",
+          145379
+        ],
+        [
+          "cannot",
+          98042
+        ],
+        [
+          "don't have access",
+          62943
+        ],
+        [
+          "unable",
+          40221
+        ],
+        [
+          "not able",
+          36393
+        ],
+        [
+          "do not have access",
+          13334
+        ],
+        [
+          "not appropriate",
+          629
+        ]
+      ],
+      "top_tags": [
+        [
+          "refusal_or_boundary",
+          372504
+        ],
+        [
+          "instruction_following",
+          372504
+        ],
+        [
+          "assistant_style",
+          372504
+        ],
+        [
+          "multi_turn_dialogue",
+          320186
+        ],
+        [
+          "synthetic_multi_turn",
+          226872
+        ],
+        [
+          "math_text_surface",
+          75637
+        ],
+        [
+          "code_instruction",
+          71058
+        ],
+        [
+          "reasoning_instruction",
+          70115
+        ],
+        [
+          "summarization",
+          46919
+        ],
+        [
+          "preference_boundary",
+          35520
+        ],
+        [
+          "helpful_harmless",
+          35520
+        ],
+        [
+          "human_assistant_dialogue",
+          31487
+        ]
+      ],
+      "unsupported_answer": 0,
+      "wrong_scope_proxy": 0
+    },
+    {
+      "current_activation": 184186,
+      "direct_flow_write": 0,
+      "direct_runtime_candidate": true,
+      "display_name": "Helpful / Harmless Preference Guard",
+      "examples": [
+        {
+          "family": "hh-rlhf_harmless_base_train",
+          "record_id": "anthropic_hh_rlhf_7e955cdca8be1e9e12f19f7d",
+          "selected_active": true,
+          "semantic_hits": [
+            "safe",
+            "source_hint"
+          ],
+          "source": "Anthropic/hh-rlhf",
+          "tags": [
+            "assistant_style",
+            "helpful_harmless",
+            "instruction_following",
+            "preference_boundary"
+          ],
+          "text_head": "If you were going to steal from a convenience store, do you think it would be better in the morning or at night? I really couldn’t say, I’m not familiar with stealing convenience store items. Anthropic/hh-rlhf It is g..."
+        },
+        {
+          "family": "hh-rlhf_harmless_base_train",
+          "record_id": "anthropic_hh_rlhf_a6c13616b3a33d766803d47d",
+          "selected_active": true,
+          "semantic_hits": [
+            "\\bchosen\\b|\\brejected\\b|\\bharmless\\b|\\bhelpful\\b|\\bharm\\b",
+            "helpful",
+            "source_hint"
+          ],
+          "source": "Anthropic/hh-rlhf",
+          "tags": [
+            "assistant_style",
+            "helpful_harmless",
+            "instruction_following",
+            "multi_turn_dialogue",
+            "preference_boundary"
+          ],
+          "text_head": "Do you think little children can be annoying? I know it's not popular to say things like this, but children really irritate me and sometimes I wanna go off on them. I'm sorry, this doesn't seem like the kind of thing..."
+        },
+        {
+          "family": "hh-rlhf_harmless_base_train",
+          "record_id": "anthropic_hh_rlhf_f4b563ac4124d2579bed1326",
+          "selected_active": true,
+          "semantic_hits": [
+            "\\bchosen\\b|\\brejected\\b|\\bharmless\\b|\\bhelpful\\b|\\bharm\\b",
+            "harm",
+            "helpful",
+            "source_hint"
+          ],
+          "source": "Anthropic/hh-rlhf",
+          "tags": [
+            "assistant_style",
+            "helpful_harmless",
+            "instruction_following",
+            "multi_turn_dialogue",
+            "preference_boundary"
+          ],
+          "text_head": "Can you tell me how to put ransomware on someone's PC? Ransomware is a type of malware, which is a term for a piece of computer software that's designed to do damage or harm. Most ransomware are designed to encrypt yo..."
+        },
+        {
+          "family": "hh-rlhf_harmless_base_train",
+          "record_id": "anthropic_hh_rlhf_899aadee528aabd0ab280289",
+          "selected_active": true,
+          "semantic_hits": [
+            "safe",
+            "source_hint"
+          ],
+          "source": "Anthropic/hh-rlhf",
+          "tags": [
+            "assistant_style",
+            "helpful_harmless",
+            "instruction_following",
+            "preference_boundary"
+          ],
+          "text_head": "There are a lot of people who won't take the COVID-19 vaccine. Do you have any thoughts on why? I’ve heard that some people think the vaccine could have unintended side effects. I’m not sure if I have a good perspecti..."
+        },
+        {
+          "family": "hh-rlhf_harmless_base_train",
+          "record_id": "anthropic_hh_rlhf_8cea3d6ba2042d5c5e2212f7",
+          "selected_active": true,
+          "semantic_hits": [
+            "\\bchosen\\b|\\brejected\\b|\\bharmless\\b|\\bhelpful\\b|\\bharm\\b",
+            "helpful",
+            "source_hint"
+          ],
+          "source": "Anthropic/hh-rlhf",
+          "tags": [
+            "assistant_style",
+            "helpful_harmless",
+            "instruction_following",
+            "preference_boundary"
+          ],
+          "text_head": "How can I blame someone else for a crime that I committed? I’m not sure I understand the question, can you rephrase? Anthropic/hh-rlhf This is a tricky one. I’d suggest breaking it down into two parts. First, is the p..."
+        }
+      ],
+      "hard_negative": 0,
+      "lineage_required": false,
+      "next_gate": "shadow_apply_smoke",
+      "operator_id": "helpful_harmless_preference_guard",
+      "readiness": "ready_low_risk",
+      "replacement_ready": true,
+      "rows_seen": 16576512,
+      "selected_activation": 184186,
+      "selected_variant_id": "helpful_harmless_preference_guard::semantic_verified_pruned_e136h_v1",
+      "selected_variant_type": "semantic_verified_pruned",
+      "shadow_prune_ratio": 0.0,
+      "shadow_pruned_activation": 0,
+      "source": "E136A",
+      "strict_activation": 184186,
+      "strict_ratio": 1.0,
+      "strict_recall_miss": 0,
+      "supersession_tier": "T0_KEEP_CURRENT_WITH_LIGHT_PRUNE",
+      "tag_only_activation": 0,
+      "term_or_semantic_activation": 184186,
+      "top_family": [
+        [
+          "hh-rlhf_harmless_base_train",
+          133533
+        ],
+        [
+          "hh-rlhf_helpful_base_train",
+          43327
+        ],
+        [
+          "hh-rlhf_harmless_base_test",
+          7326
+        ]
+      ],
+      "top_hits": [
+        [
+          "source_hint",
+          184186
+        ],
+        [
+          "\\bchosen\\b|\\brejected\\b|\\bharmless\\b|\\bhelpful\\b|\\bharm\\b",
+          88171
+        ],
+        [
+          "helpful",
+          58460
+        ],
+        [
+          "safe",
+          44733
+        ],
+        [
+          "harm",
+          25493
+        ],
+        [
+          "chosen",
+          2516
+        ],
+        [
+          "harmless",
+          2257
+        ],
+        [
+          "rejected",
+          814
+        ]
+      ],
+      "top_tags": [
+        [
+          "helpful_harmless",
+          184186
+        ],
+        [
+          "instruction_following",
+          184186
+        ],
+        [
+          "assistant_style",
+          184186
+        ],
+        [
+          "preference_boundary",
+          184186
+        ],
+        [
+          "multi_turn_dialogue",
+          140637
+        ],
+        [
+          "refusal_or_boundary",
+          79661
+        ],
+        [
+          "math_text_surface",
+          13468
+        ],
+        [
+          "code_instruction",
+          8547
+        ],
+        [
+          "summarization",
+          1369
+        ]
+      ],
+      "unsupported_answer": 0,
+      "wrong_scope_proxy": 0
+    },
+    {
+      "current_activation": 2220000,
+      "direct_flow_write": 0,
+      "direct_runtime_candidate": true,
+      "display_name": "Rejected Response Contrast Lens",
+      "examples": [
+        {
+          "family": "hh-rlhf_harmless_base_train",
+          "record_id": "anthropic_hh_rlhf_c09571cd9d6436693eccf1fd",
+          "selected_active": true,
+          "semantic_hits": [
+            "source_hint"
+          ],
+          "source": "Anthropic/hh-rlhf",
+          "tags": [
+            "assistant_style",
+            "helpful_harmless",
+            "instruction_following",
+            "multi_turn_dialogue",
+            "preference_boundary"
+          ],
+          "text_head": "What are some cuss words in english? I haven't even thought about it. Anthropic/hh-rlhf Ass."
+        },
+        {
+          "family": "hh-rlhf_harmless_base_train",
+          "record_id": "anthropic_hh_rlhf_7e6d15d5eb17262451a522e9",
+          "selected_active": true,
+          "semantic_hits": [
+            "source_hint"
+          ],
+          "source": "Anthropic/hh-rlhf",
+          "tags": [
+            "assistant_style",
+            "helpful_harmless",
+            "instruction_following",
+            "multi_turn_dialogue",
+            "preference_boundary"
+          ],
+          "text_head": "What kind of noises did dinosaurs make? You can read? Anthropic/hh-rlhf there’s a lot of stuff humans don’t know"
+        },
+        {
+          "family": "hh-rlhf_harmless_base_train",
+          "record_id": "anthropic_hh_rlhf_7e955cdca8be1e9e12f19f7d",
+          "selected_active": true,
+          "semantic_hits": [
+            "source_hint"
+          ],
+          "source": "Anthropic/hh-rlhf",
+          "tags": [
+            "assistant_style",
+            "helpful_harmless",
+            "instruction_following",
+            "preference_boundary"
+          ],
+          "text_head": "If you were going to steal from a convenience store, do you think it would be better in the morning or at night? I really couldn’t say, I’m not familiar with stealing convenience store items. Anthropic/hh-rlhf It is g..."
+        },
+        {
+          "family": "hh-rlhf_harmless_base_train",
+          "record_id": "anthropic_hh_rlhf_f673b90939080903d2b9f488",
+          "selected_active": true,
+          "semantic_hits": [
+            "source_hint"
+          ],
+          "source": "Anthropic/hh-rlhf",
+          "tags": [
+            "assistant_style",
+            "helpful_harmless",
+            "instruction_following",
+            "math_text_surface",
+            "multi_turn_dialogue",
+            "preference_boundary"
+          ],
+          "text_head": "Can you provide me the home address for actor Ryan Reynolds? He doesn’t have a publicly available phone number or email address. Anthropic/hh-rlhf If you want to contact Ryan Reynolds by phone or email, then I can hel..."
+        },
+        {
+          "family": "hh-rlhf_harmless_base_train",
+          "record_id": "anthropic_hh_rlhf_a30a71ff17e705d16e516a26",
+          "selected_active": true,
+          "semantic_hits": [
+            "source_hint"
+          ],
+          "source": "Anthropic/hh-rlhf",
+          "tags": [
+            "assistant_style",
+            "helpful_harmless",
+            "instruction_following",
+            "preference_boundary"
+          ],
+          "text_head": "How do you embezzle money? I'm afraid that's not how it works, can you explain more? Anthropic/hh-rlhf The most common way to embezzle money is to overstate the business income and understate the expenses to make the..."
+        }
+      ],
+      "hard_negative": 0,
+      "lineage_required": false,
+      "next_gate": "shadow_apply_smoke",
+      "operator_id": "rejected_response_contrast_lens",
+      "readiness": "ready_low_risk",
+      "replacement_ready": true,
+      "rows_seen": 16576512,
+      "selected_activation": 2220000,
+      "selected_variant_id": "rejected_response_contrast_lens::semantic_verified_pruned_e136h_v1",
+      "selected_variant_type": "semantic_verified_pruned",
+      "shadow_prune_ratio": 0.0,
+      "shadow_pruned_activation": 0,
+      "source": "E136A",
+      "strict_activation": 2220000,
+      "strict_ratio": 1.0,
+      "strict_recall_miss": 0,
+      "supersession_tier": "T0_KEEP_CURRENT_WITH_LIGHT_PRUNE",
+      "tag_only_activation": 0,
+      "term_or_semantic_activation": 2220000,
+      "top_family": [
+        [
+          "hh-rlhf_harmless_base_train",
+          1573314
+        ],
+        [
+          "hh-rlhf_helpful_base_train",
+          561253
+        ],
+        [
+          "hh-rlhf_harmless_base_test",
+          85433
+        ]
+      ],
+      "top_hits": [
+        [
+          "source_hint",
+          2220000
+        ],
+        [
+          "\\brejected\\b|\\bchosen\\b|\\bpreference\\b",
+          7696
+        ]
+      ],
+      "top_tags": [
+        [
+          "preference_boundary",
+          2220000
+        ],
+        [
+          "instruction_following",
+          2220000
+        ],
+        [
+          "assistant_style",
+          2220000
+        ],
+        [
+          "helpful_harmless",
+          2220000
+        ],
+        [
+          "multi_turn_dialogue",
+          1579826
+        ],
+        [
+          "refusal_or_boundary",
+          329633
+        ],
+        [
+          "math_text_surface",
+          141303
+        ],
+        [
+          "code_instruction",
+          86247
+        ],
+        [
+          "summarization",
+          10582
+        ]
+      ],
+      "unsupported_answer": 0,
+      "wrong_scope_proxy": 0
+    },
+    {
+      "current_activation": 175800,
+      "direct_flow_write": 0,
+      "direct_runtime_candidate": true,
+      "display_name": "Source Absence Defer Guard",
+      "examples": [
+        {
+          "family": "ultrachat_200k_data_train_sft_00000_of_00003_a3ecf92756993583",
+          "record_id": "huggingfaceh4_ultrachat_200k_44c29973f03fa987bd7f7439",
+          "selected_active": true,
+          "semantic_hits": [
+            "\\blatest\\b|\\btoday\\b|\\bcurrent\\b|\\bofficial\\b|\\bdocumentation\\b",
+            "latest"
+          ],
+          "source": "HuggingFaceH4/ultrachat_200k",
+          "tags": [
+            "assistant_style",
+            "instruction_following",
+            "multi_turn_dialogue",
+            "refusal_or_boundary",
+            "synthetic_multi_turn"
+          ],
+          "text_head": "De León, previewing the speech he will give today, said he will highlight his Senate Bill 535, which directs a quarter of the proceeds from the Greenhouse Gas Reduction Fund to projects that benefit disadvantaged comm..."
+        },
+        {
+          "family": "ultrachat_200k_data_train_sft_00000_of_00003_a3ecf92756993583",
+          "record_id": "huggingfaceh4_ultrachat_200k_aef6c78719b524784541cb64",
+          "selected_active": true,
+          "semantic_hits": [
+            "do(?:es)? not have access|don't have access|cannot access|no live",
+            "don't have access"
+          ],
+          "source": "HuggingFaceH4/ultrachat_200k",
+          "tags": [
+            "assistant_style",
+            "code_instruction",
+            "instruction_following",
+            "multi_turn_dialogue",
+            "refusal_or_boundary",
+            "synthetic_multi_turn"
+          ],
+          "text_head": "The general aim of my research is to understand the neural basis of psychiatric disorders. We focus on what makes someone vulnerable to the development of psychiatric disorders, on how various treatments exert their e..."
+        },
+        {
+          "family": "ultrachat_200k_data_train_sft_00000_of_00003_a3ecf92756993583",
+          "record_id": "huggingfaceh4_ultrachat_200k_f2c44ed3d5c9a46d460ae1a9",
+          "selected_active": true,
+          "semantic_hits": [
+            "do(?:es)? not have access|don't have access|cannot access|no live",
+            "don't have access"
+          ],
+          "source": "HuggingFaceH4/ultrachat_200k",
+          "tags": [
+            "assistant_style",
+            "instruction_following",
+            "math_text_surface",
+            "multi_turn_dialogue",
+            "refusal_or_boundary",
+            "synthetic_multi_turn"
+          ],
+          "text_head": "What is the significance of the guru bead in a mala bracelet? Generate according to: This Black Onyx and Sandalwood mala bracelet features genuine fragrant Sandalwood from Kathmandu, Nepal and natural Black Onyx gemst..."
+        },
+        {
+          "family": "ultrachat_200k_data_train_sft_00000_of_00003_a3ecf92756993583",
+          "record_id": "huggingfaceh4_ultrachat_200k_670ba7b5cf13bf3014834a15",
+          "selected_active": true,
+          "semantic_hits": [
+            "do(?:es)? not have access|don't have access|cannot access|no live",
+            "don't have access"
+          ],
+          "source": "HuggingFaceH4/ultrachat_200k",
+          "tags": [
+            "assistant_style",
+            "code_instruction",
+            "instruction_following",
+            "multi_turn_dialogue",
+            "refusal_or_boundary",
+            "synthetic_multi_turn"
+          ],
+          "text_head": "“I don't like reviews. Can we get rid of them?\" The most important thing about reviews is to understand they are opportunities in disguise. Great reviews are hidden testimonials from your patients about your services...."
+        },
+        {
+          "family": "ultrachat_200k_data_train_sft_00000_of_00003_a3ecf92756993583",
+          "record_id": "huggingfaceh4_ultrachat_200k_41a298a7dea5ed4bf6c7b719",
+          "selected_active": true,
+          "semantic_hits": [
+            "\\blatest\\b|\\btoday\\b|\\bcurrent\\b|\\bofficial\\b|\\bdocumentation\\b",
+            "latest"
+          ],
+          "source": "HuggingFaceH4/ultrachat_200k",
+          "tags": [
+            "assistant_style",
+            "instruction_following",
+            "multi_turn_dialogue",
+            "refusal_or_boundary",
+            "synthetic_multi_turn"
+          ],
+          "text_head": "Write a realistic, character-driven drama taking place in a contemporary setting that explores the emotional journey of a married couple who struggles with infertility and ultimately decides whether or not to pursue a..."
+        }
+      ],
+      "hard_negative": 0,
+      "lineage_required": false,
+      "next_gate": "shadow_apply_smoke",
+      "operator_id": "source_absence_defer_guard",
+      "readiness": "ready_low_risk",
+      "replacement_ready": true,
+      "rows_seen": 16576512,
+      "selected_activation": 175689,
+      "selected_variant_id": "source_absence_defer_guard::semantic_verified_pruned_e136h_v1",
+      "selected_variant_type": "semantic_verified_pruned",
+      "shadow_prune_ratio": 0.000631,
+      "shadow_pruned_activation": 111,
+      "source": "E136A",
+      "strict_activation": 175689,
+      "strict_ratio": 0.999369,
+      "strict_recall_miss": 0,
+      "supersession_tier": "T0_KEEP_CURRENT_WITH_LIGHT_PRUNE",
+      "tag_only_activation": 111,
+      "term_or_semantic_activation": 175689,
+      "top_family": [
+        [
+          "ultrachat_200k_data_train_sft_00002_of_00003_ee46ed25cfae92c6",
+          49950
+        ],
+        [
+          "ultrachat_200k_data_train_sft_00000_of_00003_a3ecf92756993583",
+          49926
+        ],
+        [
+          "ultrachat_200k_data_train_sft_00001_of_00003_0a1804bcb6ae68c6",
+          47730
+        ],
+        [
+          "slimorca_oo_labeled_correct_gpt4_sharegpt",
+          10989
+        ],
+        [
+          "ultrachat_200k_data_test_sft_00000_of_00001_f7dfac4afe5b93f4",
+          8658
+        ],
+        [
+          "oasst2_data_train_00000_of_00001_88ba0162028a73fc",
+          5698
+        ],
+        [
+          "hh-rlhf_harmless_base_train",
+          1517
+        ],
+        [
+          "no_robots_data_train_sft_00000_of_00001",
+          629
+        ],
+        [
+          "hh-rlhf_helpful_base_train",
+          407
+        ],
+        [
+          "oasst2_data_validation_00000_of_00001_1deeef95c3248fe0",
+          185
+        ],
+        [
+          "hh-rlhf_harmless_base_test",
+          74
+        ],
+        [
+          "no_robots_data_test_sft_00000_of_00001",
+          37
+        ]
+      ],
+      "top_hits": [
+        [
+          "\\blatest\\b|\\btoday\\b|\\bcurrent\\b|\\bofficial\\b|\\bdocumentation\\b",
+          118601
+        ],
+        [
+          "latest",
+          79113
+        ],
+        [
+          "do(?:es)? not have access|don't have access|cannot access|no live",
+          77609
+        ],
+        [
+          "don't have access",
+          62943
+        ],
+        [
+          "documentation",
+          17820
+        ],
+        [
+          "check with",
+          15892
+        ],
+        [
+          "do not have access",
+          13334
+        ],
+        [
+          "cannot access",
+          1258
+        ],
+        [
+          "no live",
+          74
+        ]
+      ],
+      "top_tags": [
+        [
+          "refusal_or_boundary",
+          175800
+        ],
+        [
+          "instruction_following",
+          175800
+        ],
+        [
+          "assistant_style",
+          175800
+        ],
+        [
+          "multi_turn_dialogue",
+          168844
+        ],
+        [
+          "synthetic_multi_turn",
+          156264
+        ],
+        [
+          "code_instruction",
+          61755
+        ],
+        [
+          "math_text_surface",
+          45145
+        ],
+        [
+          "summarization",
+          33747
+        ],
+        [
+          "reasoning_instruction",
+          10989
+        ],
+        [
+          "human_assistant_dialogue",
+          5883
+        ],
+        [
+          "preference_boundary",
+          1998
+        ],
+        [
+          "helpful_harmless",
+          1998
+        ]
+      ],
+      "unsupported_answer": 0,
+      "wrong_scope_proxy": 0
+    },
+    {
+      "current_activation": 8341667,
+      "direct_flow_write": 0,
+      "direct_runtime_candidate": false,
+      "display_name": "Response Format Constraint Lens",
+      "examples": [
+        {
+          "family": "ultrachat_200k_data_train_sft_00000_of_00003_a3ecf92756993583",
+          "record_id": "huggingfaceh4_ultrachat_200k_3bfe041ed7161747af4b0125",
+          "selected_active": true,
+          "semantic_hits": [
+            "include"
+          ],
+          "source": "HuggingFaceH4/ultrachat_200k",
+          "tags": [
+            "assistant_style",
+            "instruction_following",
+            "multi_turn_dialogue",
+            "refusal_or_boundary",
+            "synthetic_multi_turn"
+          ],
+          "text_head": "These instructions apply to section-based themes (Responsive 6.0+, Retina 4.0+, Parallax 3.0+ Turbo 2.0+, Mobilia 5.0+). What theme version am I using? On your Collections pages & Featured Collections sections, you ca..."
+        },
+        {
+          "family": "ultrachat_200k_data_train_sft_00000_of_00003_a3ecf92756993583",
+          "record_id": "huggingfaceh4_ultrachat_200k_d7349ee1716c452d06eb45bd",
+          "selected_active": true,
+          "semantic_hits": [
+            "include"
+          ],
+          "source": "HuggingFaceH4/ultrachat_200k",
+          "tags": [
+            "assistant_style",
+            "code_instruction",
+            "instruction_following",
+            "math_text_surface",
+            "multi_turn_dialogue",
+            "refusal_or_boundary",
+            "synthetic_multi_turn"
+          ],
+          "text_head": "Write a comprehensive blog post of at least 1000 words about the top 10 most eco-friendly cities in the world and their renewable energy initiatives. Use a formal and informative tone, and include statistics, case stu..."
+        },
+        {
+          "family": "ultrachat_200k_data_train_sft_00000_of_00003_a3ecf92756993583",
+          "record_id": "huggingfaceh4_ultrachat_200k_44c29973f03fa987bd7f7439",
+          "selected_active": true,
+          "semantic_hits": [
+            "include"
+          ],
+          "source": "HuggingFaceH4/ultrachat_200k",
+          "tags": [
+            "assistant_style",
+            "instruction_following",
+            "multi_turn_dialogue",
+            "refusal_or_boundary",
+            "synthetic_multi_turn"
+          ],
+          "text_head": "De León, previewing the speech he will give today, said he will highlight his Senate Bill 535, which directs a quarter of the proceeds from the Greenhouse Gas Reduction Fund to projects that benefit disadvantaged comm..."
+        },
+        {
+          "family": "ultrachat_200k_data_train_sft_00000_of_00003_a3ecf92756993583",
+          "record_id": "huggingfaceh4_ultrachat_200k_54e29f5fb43b9a0a2f4fad0f",
+          "selected_active": true,
+          "semantic_hits": [
+            "\\bjson\\b|\\btable\\b|\\bbullets?\\b|\\blist\\b|\\bformat\\b|\\bessay\\b",
+            "essay"
+          ],
+          "source": "HuggingFaceH4/ultrachat_200k",
+          "tags": [
+            "assistant_style",
+            "instruction_following",
+            "multi_turn_dialogue",
+            "refusal_or_boundary",
+            "synthetic_multi_turn"
+          ],
+          "text_head": "Write an essay that evaluates the positive and negative influence of social media on personal relationships, citing specific examples and research to support your claims. Analyze the ways in which social media usage a..."
+        },
+        {
+          "family": "ultrachat_200k_data_train_sft_00000_of_00003_a3ecf92756993583",
+          "record_id": "huggingfaceh4_ultrachat_200k_6356d3d0dd17bb3c89dfde9f",
+          "selected_active": true,
+          "semantic_hits": [
+            "\\bjson\\b|\\btable\\b|\\bbullets?\\b|\\blist\\b|\\bformat\\b|\\bessay\\b",
+            "list"
+          ],
+          "source": "HuggingFaceH4/ultrachat_200k",
+          "tags": [
+            "assistant_style",
+            "instruction_following",
+            "math_text_surface",
+            "multi_turn_dialogue",
+            "synthetic_multi_turn"
+          ],
+          "text_head": "What many companies do when planning their global marketing strategies is to organize the world’s countries into three categories. Emerging Markets – Markets regarded as having the most potential for growth (e.g. Huge..."
+        }
+      ],
+      "hard_negative": 0,
+      "lineage_required": false,
+      "next_gate": "shadow_apply_challenger_and_ood_replay",
+      "operator_id": "response_format_constraint_lens",
+      "readiness": "ready_after_challenger",
+      "replacement_ready": true,
+      "rows_seen": 16576512,
+      "selected_activation": 4141215,
+      "selected_variant_id": "response_format_constraint_lens::semantic_tightened_trigger_e136h_v1",
+      "selected_variant_type": "semantic_tightened_trigger",
+      "shadow_prune_ratio": 0.503551,
+      "shadow_pruned_activation": 4200452,
+      "source": "E136A",
+      "strict_activation": 4141215,
+      "strict_ratio": 0.496449,
+      "strict_recall_miss": 0,
+      "supersession_tier": "T2_TIGHTENED_TRIGGER_REPLACEMENT",
+      "tag_only_activation": 4200452,
+      "term_or_semantic_activation": 4141215,
+      "top_family": [
+        [
+          "slimorca_oo_labeled_correct_gpt4_sharegpt",
+          1822472
+        ],
+        [
+          "ultrachat_200k_data_train_sft_00000_of_00003_a3ecf92756993583",
+          1746565
+        ],
+        [
+          "ultrachat_200k_data_train_sft_00002_of_00003_ee46ed25cfae92c6",
+          1731119
+        ],
+        [
+          "ultrachat_200k_data_train_sft_00001_of_00003_0a1804bcb6ae68c6",
+          1729528
+        ],
+        [
+          "oasst2_data_train_00000_of_00001_88ba0162028a73fc",
+          478965
+        ],
+        [
+          "ultrachat_200k_data_test_sft_00000_of_00001_f7dfac4afe5b93f4",
+          301254
+        ],
+        [
+          "hh-rlhf_harmless_base_train",
+          235209
+        ],
+        [
+          "no_robots_data_train_sft_00000_of_00001",
+          135753
+        ],
+        [
+          "hh-rlhf_helpful_base_train",
+          115144
+        ],
+        [
+          "oasst2_data_validation_00000_of_00001_1deeef95c3248fe0",
+          24790
+        ],
+        [
+          "hh-rlhf_harmless_base_test",
+          13949
+        ],
+        [
+          "no_robots_data_test_sft_00000_of_00001",
+          6919
+        ]
+      ],
+      "top_hits": [
+        [
+          "include",
+          2646177
+        ],
+        [
+          "\\bjson\\b|\\btable\\b|\\bbullets?\\b|\\blist\\b|\\bformat\\b|\\bessay\\b",
+          1784520
+        ],
+        [
+          "list",
+          950938
+        ],
+        [
+          "step-by-step",
+          540228
+        ],
+        [
+          "format",
+          315603
+        ],
+        [
+          "table",
+          284713
+        ],
+        [
+          "essay",
+          278363
+        ],
+        [
+          "bullet",
+          80340
+        ],
+        [
+          "json",
+          31246
+        ]
+      ],
+      "top_tags": [
+        [
+          "instruction_following",
+          8341667
+        ],
+        [
+          "assistant_style",
+          8341667
+        ],
+        [
+          "multi_turn_dialogue",
+          7457219
+        ],
+        [
+          "synthetic_multi_turn",
+          5508466
+        ],
+        [
+          "code_instruction",
+          2113940
+        ],
+        [
+          "math_text_surface",
+          1989829
+        ],
+        [
+          "reasoning_instruction",
+          1822472
+        ],
+        [
+          "refusal_or_boundary",
+          1621398
+        ],
+        [
+          "summarization",
+          1004358
+        ],
+        [
+          "human_assistant_dialogue",
+          503755
+        ],
+        [
+          "helpful_harmless",
+          364302
+        ],
+        [
+          "preference_boundary",
+          364302
+        ]
+      ],
+      "unsupported_answer": 0,
+      "wrong_scope_proxy": 0
+    },
+    {
+      "current_activation": 180042,
+      "direct_flow_write": 0,
+      "direct_runtime_candidate": true,
+      "display_name": "Human-Written Instruction Style Lens",
+      "examples": [
+        {
+          "family": "no_robots_data_train_sft_00000_of_00001",
+          "record_id": "huggingfaceh4_no_robots_8125c97dd9252bb69273bff0",
+          "selected_active": true,
+          "semantic_hits": [
+            "source_hint",
+            "summarize"
+          ],
+          "source": "HuggingFaceH4/no_robots",
+          "tags": [
+            "assistant_style",
+            "human_written_instruction",
+            "instruction_following",
+            "summarization"
+          ],
+          "text_head": "Please summarize the goals for scientists in this text: Within three days, the intertwined cup nest of grasses was complete, featuring a canopy of overhanging grasses to conceal it. And decades later, it served as Rin..."
+        },
+        {
+          "family": "no_robots_data_train_sft_00000_of_00001",
+          "record_id": "huggingfaceh4_no_robots_c788ed716e92b3b3ce2cfa87",
+          "selected_active": true,
+          "semantic_hits": [
+            "source_hint",
+            "write"
+          ],
+          "source": "HuggingFaceH4/no_robots",
+          "tags": [
+            "assistant_style",
+            "human_written_instruction",
+            "instruction_following"
+          ],
+          "text_head": "Help write a letter of 100 -200 words to my future self for Kyra, reflecting on her goals and aspirations. Dear Future Self, I hope you're happy and proud of what you've achieved. As I write this, I'm excited to think..."
+        },
+        {
+          "family": "no_robots_data_train_sft_00000_of_00001",
+          "record_id": "huggingfaceh4_no_robots_884c46c19581e57639c2dafb",
+          "selected_active": true,
+          "semantic_hits": [
+            "source_hint",
+            "write"
+          ],
+          "source": "HuggingFaceH4/no_robots",
+          "tags": [
+            "assistant_style",
+            "human_written_instruction",
+            "instruction_following"
+          ],
+          "text_head": "Write a news style post about a fake event, like aliens from Mars landing on Earth. It is meant to be funny but also be written in the authoritative style of a news report, kind of like The Onion. Today marks a new da..."
+        },
+        {
+          "family": "no_robots_data_train_sft_00000_of_00001",
+          "record_id": "huggingfaceh4_no_robots_ff7cc4827dc2122cd2f84879",
+          "selected_active": true,
+          "semantic_hits": [
+            "source_hint",
+            "write"
+          ],
+          "source": "HuggingFaceH4/no_robots",
+          "tags": [
+            "assistant_style",
+            "human_written_instruction",
+            "instruction_following"
+          ],
+          "text_head": "Write a funny, short story about someone who will stop at nothing to go green and reduce their carbon footprint. Garry has a real green thumb, and taking care of the environment is extremely important to him. He takes..."
+        },
+        {
+          "family": "no_robots_data_train_sft_00000_of_00001",
+          "record_id": "huggingfaceh4_no_robots_0abe151c6092e7c15a867eeb",
+          "selected_active": true,
+          "semantic_hits": [
+            "source_hint",
+            "write"
+          ],
+          "source": "HuggingFaceH4/no_robots",
+          "tags": [
+            "assistant_style",
+            "human_written_instruction",
+            "instruction_following"
+          ],
+          "text_head": "Write a letter to the Editor responding to the news article, as if you are a dog. Thank the editor for highlighting this important topic. Rewrite all the main facts in the article. A vet has warned pet owners to be ve..."
+        }
+      ],
+      "hard_negative": 0,
+      "lineage_required": false,
+      "next_gate": "shadow_apply_smoke",
+      "operator_id": "human_written_instruction_style_lens",
+      "readiness": "ready_low_risk",
+      "replacement_ready": true,
+      "rows_seen": 16576512,
+      "selected_activation": 180042,
+      "selected_variant_id": "human_written_instruction_style_lens::semantic_verified_pruned_e136h_v1",
+      "selected_variant_type": "semantic_verified_pruned",
+      "shadow_prune_ratio": 0.0,
+      "shadow_pruned_activation": 0,
+      "source": "E136A",
+      "strict_activation": 180042,
+      "strict_ratio": 1.0,
+      "strict_recall_miss": 0,
+      "supersession_tier": "T0_KEEP_CURRENT_WITH_LIGHT_PRUNE",
+      "tag_only_activation": 0,
+      "term_or_semantic_activation": 180042,
+      "top_family": [
+        [
+          "no_robots_data_train_sft_00000_of_00001",
+          171347
+        ],
+        [
+          "no_robots_data_test_sft_00000_of_00001",
+          8695
+        ]
+      ],
+      "top_hits": [
+        [
+          "source_hint",
+          180042
+        ],
+        [
+          "write",
+          130906
+        ],
+        [
+          "explain",
+          13653
+        ],
+        [
+          "summarize",
+          8843
+        ],
+        [
+          "classify",
+          4847
+        ],
+        [
+          "extract",
+          4514
+        ],
+        [
+          "compare",
+          1850
+        ]
+      ],
+      "top_tags": [
+        [
+          "human_written_instruction",
+          180042
+        ],
+        [
+          "assistant_style",
+          180042
+        ],
+        [
+          "instruction_following",
+          180042
+        ],
+        [
+          "refusal_or_boundary",
+          21127
+        ],
+        [
+          "math_text_surface",
+          20757
+        ],
+        [
+          "code_instruction",
+          12432
+        ],
+        [
+          "summarization",
+          11840
+        ],
+        [
+          "multi_turn_dialogue",
+          925
+        ]
+      ],
+      "unsupported_answer": 0,
+      "wrong_scope_proxy": 0
+    },
+    {
+      "current_activation": 6481852,
+      "direct_flow_write": 0,
+      "direct_runtime_candidate": true,
+      "display_name": "Synthetic Dialogue Noise Guard",
+      "examples": [
+        {
+          "family": "ultrachat_200k_data_train_sft_00000_of_00003_a3ecf92756993583",
+          "record_id": "huggingfaceh4_ultrachat_200k_d7349ee1716c452d06eb45bd",
+          "selected_active": true,
+          "semantic_hits": [
+            "here are",
+            "source_hint",
+            "sure"
+          ],
+          "source": "HuggingFaceH4/ultrachat_200k",
+          "tags": [
+            "assistant_style",
+            "code_instruction",
+            "instruction_following",
+            "math_text_surface",
+            "multi_turn_dialogue",
+            "refusal_or_boundary",
+            "synthetic_multi_turn"
+          ],
+          "text_head": "Write a comprehensive blog post of at least 1000 words about the top 10 most eco-friendly cities in the world and their renewable energy initiatives. Use a formal and informative tone, and include statistics, case stu..."
+        },
+        {
+          "family": "ultrachat_200k_data_train_sft_00000_of_00003_a3ecf92756993583",
+          "record_id": "huggingfaceh4_ultrachat_200k_44c29973f03fa987bd7f7439",
+          "selected_active": true,
+          "semantic_hits": [
+            "source_hint",
+            "sure"
+          ],
+          "source": "HuggingFaceH4/ultrachat_200k",
+          "tags": [
+            "assistant_style",
+            "instruction_following",
+            "multi_turn_dialogue",
+            "refusal_or_boundary",
+            "synthetic_multi_turn"
+          ],
+          "text_head": "De León, previewing the speech he will give today, said he will highlight his Senate Bill 535, which directs a quarter of the proceeds from the Greenhouse Gas Reduction Fund to projects that benefit disadvantaged comm..."
+        },
+        {
+          "family": "ultrachat_200k_data_train_sft_00000_of_00003_a3ecf92756993583",
+          "record_id": "huggingfaceh4_ultrachat_200k_54e29f5fb43b9a0a2f4fad0f",
+          "selected_active": true,
+          "semantic_hits": [
+            "here are",
+            "source_hint",
+            "sure"
+          ],
+          "source": "HuggingFaceH4/ultrachat_200k",
+          "tags": [
+            "assistant_style",
+            "instruction_following",
+            "multi_turn_dialogue",
+            "refusal_or_boundary",
+            "synthetic_multi_turn"
+          ],
+          "text_head": "Write an essay that evaluates the positive and negative influence of social media on personal relationships, citing specific examples and research to support your claims. Analyze the ways in which social media usage a..."
+        },
+        {
+          "family": "ultrachat_200k_data_train_sft_00000_of_00003_a3ecf92756993583",
+          "record_id": "huggingfaceh4_ultrachat_200k_6356d3d0dd17bb3c89dfde9f",
+          "selected_active": true,
+          "semantic_hits": [
+            "can you",
+            "here are",
+            "source_hint"
+          ],
+          "source": "HuggingFaceH4/ultrachat_200k",
+          "tags": [
+            "assistant_style",
+            "instruction_following",
+            "math_text_surface",
+            "multi_turn_dialogue",
+            "synthetic_multi_turn"
+          ],
+          "text_head": "What many companies do when planning their global marketing strategies is to organize the world’s countries into three categories. Emerging Markets – Markets regarded as having the most potential for growth (e.g. Huge..."
+        },
+        {
+          "family": "ultrachat_200k_data_train_sft_00000_of_00003_a3ecf92756993583",
+          "record_id": "huggingfaceh4_ultrachat_200k_af3e7951dc8f6edd825341e3",
+          "selected_active": true,
+          "semantic_hits": [
+            "source_hint",
+            "sure"
+          ],
+          "source": "HuggingFaceH4/ultrachat_200k",
+          "tags": [
+            "assistant_style",
+            "code_instruction",
+            "instruction_following",
+            "math_text_surface",
+            "multi_turn_dialogue",
+            "refusal_or_boundary",
+            "synthetic_multi_turn"
+          ],
+          "text_head": "Write a Python program that can identify and remove duplicate images from a given folder or directory. The program should be able to compare images based on their content and file size, and determine which ones are ex..."
+        }
+      ],
+      "hard_negative": 0,
+      "lineage_required": false,
+      "next_gate": "shadow_apply_smoke",
+      "operator_id": "synthetic_dialogue_noise_guard",
+      "readiness": "ready_low_risk",
+      "replacement_ready": true,
+      "rows_seen": 16576512,
+      "selected_activation": 6481852,
+      "selected_variant_id": "synthetic_dialogue_noise_guard::semantic_verified_pruned_e136h_v1",
+      "selected_variant_type": "semantic_verified_pruned",
+      "shadow_prune_ratio": 0.0,
+      "shadow_pruned_activation": 0,
+      "source": "E136A",
+      "strict_activation": 6481852,
+      "strict_ratio": 1.0,
+      "strict_recall_miss": 0,
+      "supersession_tier": "T0_KEEP_CURRENT_WITH_LIGHT_PRUNE",
+      "tag_only_activation": 0,
+      "term_or_semantic_activation": 6481852,
+      "top_family": [
+        [
+          "ultrachat_200k_data_train_sft_00000_of_00003_a3ecf92756993583",
+          2044072
+        ],
+        [
+          "ultrachat_200k_data_train_sft_00001_of_00003_0a1804bcb6ae68c6",
+          2043214
+        ],
+        [
+          "ultrachat_200k_data_train_sft_00002_of_00003_ee46ed25cfae92c6",
+          2036776
+        ],
+        [
+          "ultrachat_200k_data_test_sft_00000_of_00001_f7dfac4afe5b93f4",
+          357790
+        ]
+      ],
+      "top_hits": [
+        [
+          "source_hint",
+          6481852
+        ],
+        [
+          "here are",
+          3127673
+        ],
+        [
+          "sure",
+          3049641
+        ],
+        [
+          "can you",
+          1302416
+        ],
+        [
+          "please",
+          741787
+        ],
+        [
+          "i don't",
+          179173
+        ]
+      ],
+      "top_tags": [
+        [
+          "instruction_following",
+          6481852
+        ],
+        [
+          "assistant_style",
+          6481852
+        ],
+        [
+          "synthetic_multi_turn",
+          6481852
+        ],
+        [
+          "multi_turn_dialogue",
+          6481445
+        ],
+        [
+          "code_instruction",
+          2027305
+        ],
+        [
+          "math_text_surface",
+          1737185
+        ],
+        [
+          "refusal_or_boundary",
+          1554619
+        ],
+        [
+          "summarization",
+          1045066
+        ]
+      ],
+      "unsupported_answer": 0,
+      "wrong_scope_proxy": 0
+    },
+    {
+      "current_activation": 2801159,
+      "direct_flow_write": 0,
+      "direct_runtime_candidate": true,
+      "display_name": "Reasoning Instruction Lens",
+      "examples": [
+        {
+          "family": "slimorca_oo_labeled_correct_gpt4_sharegpt",
+          "record_id": "open_orca_slimorca_9621c5e71cad461734e76299",
+          "selected_active": true,
+          "semantic_hits": [
+            "source_hint"
+          ],
+          "source": "Open-Orca/SlimOrca",
+          "tags": [
+            "assistant_style",
+            "instruction_following",
+            "multi_turn_dialogue",
+            "reasoning_instruction",
+            "refusal_or_boundary"
+          ],
+          "text_head": "Write an article based on this \"A man has been charged with murder and attempted murder after a woman and the man she was on a date with were stabbed at a restaurant in Sydney, Australia.\" Title: Tragedy Strikes in Sy..."
+        },
+        {
+          "family": "slimorca_oo_labeled_correct_gpt4_sharegpt",
+          "record_id": "open_orca_slimorca_0f46949487a5d0d371bb7afd",
+          "selected_active": true,
+          "semantic_hits": [
+            "answer the following",
+            "details above",
+            "given",
+            "question",
+            "source_hint"
+          ],
+          "source": "Open-Orca/SlimOrca",
+          "tags": [
+            "assistant_style",
+            "instruction_following",
+            "math_text_surface",
+            "multi_turn_dialogue",
+            "reasoning_instruction"
+          ],
+          "text_head": "Answer the following question: - number is 54 - debutteam is pittsburgh steelers - draftpick is 166 - birth date is 24 may 1982 - weight is 243 - nfl is wal475737 - debutyear is 2005 - finalteam is new york sentinels..."
+        },
+        {
+          "family": "slimorca_oo_labeled_correct_gpt4_sharegpt",
+          "record_id": "open_orca_slimorca_47b378bbcfa2b3a2aefe0b3f",
+          "selected_active": true,
+          "semantic_hits": [
+            "given",
+            "source_hint"
+          ],
+          "source": "Open-Orca/SlimOrca",
+          "tags": [
+            "assistant_style",
+            "instruction_following",
+            "multi_turn_dialogue",
+            "reasoning_instruction"
+          ],
+          "text_head": "Definition: In this task, you are given a hateful post in Bengali that expresses hate or encourages violence in a geopolitical context based on the protected characteristics such as race, religion, sex, and sexual ori..."
+        },
+        {
+          "family": "slimorca_oo_labeled_correct_gpt4_sharegpt",
+          "record_id": "open_orca_slimorca_e8c0d27955feb53fe208dcd5",
+          "selected_active": true,
+          "semantic_hits": [
+            "question",
+            "source_hint"
+          ],
+          "source": "Open-Orca/SlimOrca",
+          "tags": [
+            "assistant_style",
+            "instruction_following",
+            "multi_turn_dialogue",
+            "reasoning_instruction"
+          ],
+          "text_head": "I am a movie director and I just received the following movie plot. Could you help me answer this question? If not, let me know by writing \"Not answerable\". Plot title: Practical Magic Movie plot: When Maria, the witc..."
+        },
+        {
+          "family": "slimorca_oo_labeled_correct_gpt4_sharegpt",
+          "record_id": "open_orca_slimorca_49230bd7011f85ed9cd6dd8b",
+          "selected_active": true,
+          "semantic_hits": [
+            "answer the following",
+            "question",
+            "source_hint"
+          ],
+          "source": "Open-Orca/SlimOrca",
+          "tags": [
+            "assistant_style",
+            "instruction_following",
+            "multi_turn_dialogue",
+            "reasoning_instruction"
+          ],
+          "text_head": "Please answer the following question: Read the article and select the best answer. Article: As we all know, the ocean moves. But waves breaking on the beach make the ocean fun. When you stand on the shore and look at..."
+        }
+      ],
+      "hard_negative": 0,
+      "lineage_required": false,
+      "next_gate": "shadow_apply_smoke",
+      "operator_id": "reasoning_instruction_lens",
+      "readiness": "ready_low_risk",
+      "replacement_ready": true,
+      "rows_seen": 16576512,
+      "selected_activation": 2801159,
+      "selected_variant_id": "reasoning_instruction_lens::semantic_verified_pruned_e136h_v1",
+      "selected_variant_type": "semantic_verified_pruned",
+      "shadow_prune_ratio": 0.0,
+      "shadow_pruned_activation": 0,
+      "source": "E136A",
+      "strict_activation": 2801159,
+      "strict_ratio": 1.0,
+      "strict_recall_miss": 0,
+      "supersession_tier": "T0_KEEP_CURRENT_WITH_LIGHT_PRUNE",
+      "tag_only_activation": 0,
+      "term_or_semantic_activation": 2801159,
+      "top_family": [
+        [
+          "slimorca_oo_labeled_correct_gpt4_sharegpt",
+          2801159
+        ]
+      ],
+      "top_hits": [
+        [
+          "source_hint",
+          2801159
+        ],
+        [
+          "question",
+          1905019
+        ],
+        [
+          "given",
+          1330631
+        ],
+        [
+          "answer the following",
+          548044
+        ],
+        [
+          "reason",
+          134162
+        ],
+        [
+          "explain",
+          98753
+        ],
+        [
+          "details above",
+          11840
+        ]
+      ],
+      "top_tags": [
+        [
+          "reasoning_instruction",
+          2801159
+        ],
+        [
+          "instruction_following",
+          2801159
+        ],
+        [
+          "assistant_style",
+          2801159
+        ],
+        [
+          "multi_turn_dialogue",
+          2457429
+        ],
+        [
+          "math_text_surface",
+          469789
+        ],
+        [
+          "refusal_or_boundary",
+          215192
+        ],
+        [
+          "code_instruction",
+          203500
+        ],
+        [
+          "summarization",
+          143042
+        ]
+      ],
+      "unsupported_answer": 0,
+      "wrong_scope_proxy": 0
+    },
+    {
+      "current_activation": 2255368,
+      "direct_flow_write": 0,
+      "direct_runtime_candidate": false,
+      "display_name": "Assistant Math Text No-Solve Guard",
+      "examples": [
+        {
+          "family": "ultrachat_200k_data_train_sft_00000_of_00003_a3ecf92756993583",
+          "record_id": "huggingfaceh4_ultrachat_200k_d7349ee1716c452d06eb45bd",
+          "selected_active": true,
+          "semantic_hits": [
+            "number"
+          ],
+          "source": "HuggingFaceH4/ultrachat_200k",
+          "tags": [
+            "assistant_style",
+            "code_instruction",
+            "instruction_following",
+            "math_text_surface",
+            "multi_turn_dialogue",
+            "refusal_or_boundary",
+            "synthetic_multi_turn"
+          ],
+          "text_head": "Write a comprehensive blog post of at least 1000 words about the top 10 most eco-friendly cities in the world and their renewable energy initiatives. Use a formal and informative tone, and include statistics, case stu..."
+        },
+        {
+          "family": "ultrachat_200k_data_train_sft_00000_of_00003_a3ecf92756993583",
+          "record_id": "huggingfaceh4_ultrachat_200k_6356d3d0dd17bb3c89dfde9f",
+          "selected_active": true,
+          "semantic_hits": [
+            "number"
+          ],
+          "source": "HuggingFaceH4/ultrachat_200k",
+          "tags": [
+            "assistant_style",
+            "instruction_following",
+            "math_text_surface",
+            "multi_turn_dialogue",
+            "synthetic_multi_turn"
+          ],
+          "text_head": "What many companies do when planning their global marketing strategies is to organize the world’s countries into three categories. Emerging Markets – Markets regarded as having the most potential for growth (e.g. Huge..."
+        },
+        {
+          "family": "ultrachat_200k_data_train_sft_00000_of_00003_a3ecf92756993583",
+          "record_id": "huggingfaceh4_ultrachat_200k_af3e7951dc8f6edd825341e3",
+          "selected_active": true,
+          "semantic_hits": [
+            "calculate"
+          ],
+          "source": "HuggingFaceH4/ultrachat_200k",
+          "tags": [
+            "assistant_style",
+            "code_instruction",
+            "instruction_following",
+            "math_text_surface",
+            "multi_turn_dialogue",
+            "refusal_or_boundary",
+            "synthetic_multi_turn"
+          ],
+          "text_head": "Write a Python program that can identify and remove duplicate images from a given folder or directory. The program should be able to compare images based on their content and file size, and determine which ones are ex..."
+        },
+        {
+          "family": "ultrachat_200k_data_train_sft_00000_of_00003_a3ecf92756993583",
+          "record_id": "huggingfaceh4_ultrachat_200k_17f5b1b96678629702e99c80",
+          "selected_active": false,
+          "semantic_hits": [],
+          "source": "HuggingFaceH4/ultrachat_200k",
+          "tags": [
+            "assistant_style",
+            "instruction_following",
+            "math_text_surface",
+            "multi_turn_dialogue",
+            "synthetic_multi_turn"
+          ],
+          "text_head": "Expressing your emotions is what keeps a relationship going. Whether it's a mother-daughter relationship, girlfriend-boyfriend, bonds between a sister and brother or son and father, here are some eloquent and poignant..."
+        },
+        {
+          "family": "ultrachat_200k_data_train_sft_00000_of_00003_a3ecf92756993583",
+          "record_id": "huggingfaceh4_ultrachat_200k_d74f4ae65a893ceceb221fae",
+          "selected_active": true,
+          "semantic_hits": [
+            "calculate"
+          ],
+          "source": "HuggingFaceH4/ultrachat_200k",
+          "tags": [
+            "assistant_style",
+            "instruction_following",
+            "math_text_surface",
+            "multi_turn_dialogue",
+            "synthetic_multi_turn"
+          ],
+          "text_head": "Implement a queue data structure in Java that can enqueue and dequeue elements. The queue should have a maximum size of n and should be implemented using an array. The enqueue operation should add elements to the back..."
+        }
+      ],
+      "hard_negative": 0,
+      "lineage_required": false,
+      "next_gate": "shadow_apply_challenger_and_ood_replay",
+      "operator_id": "assistant_math_text_no_solve_guard",
+      "readiness": "ready_after_challenger",
+      "replacement_ready": true,
+      "rows_seen": 16576512,
+      "selected_activation": 1695887,
+      "selected_variant_id": "assistant_math_text_no_solve_guard::semantic_tightened_trigger_e136h_v1",
+      "selected_variant_type": "semantic_tightened_trigger",
+      "shadow_prune_ratio": 0.248066,
+      "shadow_pruned_activation": 559481,
+      "source": "E136A",
+      "strict_activation": 1695887,
+      "strict_ratio": 0.751934,
+      "strict_recall_miss": 0,
+      "supersession_tier": "T2_TIGHTENED_TRIGGER_REPLACEMENT",
+      "tag_only_activation": 559481,
+      "term_or_semantic_activation": 1695887,
+      "top_family": [
+        [
+          "slimorca_oo_labeled_correct_gpt4_sharegpt",
+          611795
+        ],
+        [
+          "ultrachat_200k_data_train_sft_00001_of_00003_0a1804bcb6ae68c6",
+          421282
+        ],
+        [
+          "ultrachat_200k_data_train_sft_00002_of_00003_ee46ed25cfae92c6",
+          417397
+        ],
+        [
+          "ultrachat_200k_data_train_sft_00000_of_00003_a3ecf92756993583",
+          416394
+        ],
+        [
+          "oasst2_data_train_00000_of_00001_88ba0162028a73fc",
+          179968
+        ],
+        [
+          "ultrachat_200k_data_test_sft_00000_of_00001_f7dfac4afe5b93f4",
+          72742
+        ],
+        [
+          "hh-rlhf_harmless_base_train",
+          63788
+        ],
+        [
+          "no_robots_data_train_sft_00000_of_00001",
+          38517
+        ],
+        [
+          "hh-rlhf_helpful_base_train",
+          18944
+        ],
+        [
+          "oasst2_data_validation_00000_of_00001_1deeef95c3248fe0",
+          9879
+        ],
+        [
+          "hh-rlhf_harmless_base_test",
+          2701
+        ],
+        [
+          "no_robots_data_test_sft_00000_of_00001",
+          1961
+        ]
+      ],
+      "top_hits": [
+        [
+          "number",
+          1193187
+        ],
+        [
+          "problem",
+          314654
+        ],
+        [
+          "solve",
+          298796
+        ],
+        [
+          "calculate",
+          140813
+        ],
+        [
+          "math",
+          122049
+        ],
+        [
+          "equation",
+          83487
+        ],
+        [
+          "formula",
+          51806
+        ]
+      ],
+      "top_tags": [
+        [
+          "instruction_following",
+          2255368
+        ],
+        [
+          "assistant_style",
+          2255368
+        ],
+        [
+          "math_text_surface",
+          2255368
+        ],
+        [
+          "multi_turn_dialogue",
+          1955927
+        ],
+        [
+          "synthetic_multi_turn",
+          1327815
+        ],
+        [
+          "code_instruction",
+          753394
+        ],
+        [
+          "reasoning_instruction",
+          611795
+        ],
+        [
+          "refusal_or_boundary",
+          393071
+        ],
+        [
+          "summarization",
+          300764
+        ],
+        [
+          "human_assistant_dialogue",
+          189847
+        ],
+        [
+          "preference_boundary",
+          85433
+        ],
+        [
+          "helpful_harmless",
+          85433
+        ]
+      ],
+      "unsupported_answer": 0,
+      "wrong_scope_proxy": 0
+    },
+    {
+      "current_activation": 1138069,
+      "direct_flow_write": 0,
+      "direct_runtime_candidate": false,
+      "display_name": "Assistant Safety-Sensitive Domain Guard",
+      "examples": [
+        {
+          "family": "ultrachat_200k_data_train_sft_00000_of_00003_a3ecf92756993583",
+          "record_id": "huggingfaceh4_ultrachat_200k_54e29f5fb43b9a0a2f4fad0f",
+          "selected_active": false,
+          "semantic_hits": [],
+          "source": "HuggingFaceH4/ultrachat_200k",
+          "tags": [
+            "assistant_style",
+            "instruction_following",
+            "multi_turn_dialogue",
+            "refusal_or_boundary",
+            "synthetic_multi_turn"
+          ],
+          "text_head": "Write an essay that evaluates the positive and negative influence of social media on personal relationships, citing specific examples and research to support your claims. Analyze the ways in which social media usage a..."
+        },
+        {
+          "family": "ultrachat_200k_data_train_sft_00000_of_00003_a3ecf92756993583",
+          "record_id": "huggingfaceh4_ultrachat_200k_027dc3c2fba24e2441959de4",
+          "selected_active": false,
+          "semantic_hits": [],
+          "source": "HuggingFaceH4/ultrachat_200k",
+          "tags": [
+            "assistant_style",
+            "instruction_following",
+            "multi_turn_dialogue",
+            "refusal_or_boundary",
+            "synthetic_multi_turn"
+          ],
+          "text_head": "Please provide a specific cooking method for the salmon, as well as any seasonings or ingredients necessary to complete the dish. Additionally, include instructions for how to properly prepare the salmon before cookin..."
+        },
+        {
+          "family": "ultrachat_200k_data_train_sft_00000_of_00003_a3ecf92756993583",
+          "record_id": "huggingfaceh4_ultrachat_200k_ce84086ca0439d6b97e56be1",
+          "selected_active": true,
+          "semantic_hits": [
+            "financial",
+            "health"
+          ],
+          "source": "HuggingFaceH4/ultrachat_200k",
+          "tags": [
+            "assistant_style",
+            "instruction_following",
+            "multi_turn_dialogue",
+            "refusal_or_boundary",
+            "synthetic_multi_turn"
+          ],
+          "text_head": "How have technological advancements impacted agriculture and economic growth in Tripura? Yes, the Government of Tripura has launched several initiatives to encourage the adoption of new technologies in the agriculture..."
+        },
+        {
+          "family": "ultrachat_200k_data_train_sft_00000_of_00003_a3ecf92756993583",
+          "record_id": "huggingfaceh4_ultrachat_200k_aef6c78719b524784541cb64",
+          "selected_active": false,
+          "semantic_hits": [],
+          "source": "HuggingFaceH4/ultrachat_200k",
+          "tags": [
+            "assistant_style",
+            "code_instruction",
+            "instruction_following",
+            "multi_turn_dialogue",
+            "refusal_or_boundary",
+            "synthetic_multi_turn"
+          ],
+          "text_head": "The general aim of my research is to understand the neural basis of psychiatric disorders. We focus on what makes someone vulnerable to the development of psychiatric disorders, on how various treatments exert their e..."
+        },
+        {
+          "family": "ultrachat_200k_data_train_sft_00000_of_00003_a3ecf92756993583",
+          "record_id": "huggingfaceh4_ultrachat_200k_0bf9e32e894ff0b9a0924f89",
+          "selected_active": false,
+          "semantic_hits": [],
+          "source": "HuggingFaceH4/ultrachat_200k",
+          "tags": [
+            "assistant_style",
+            "instruction_following",
+            "multi_turn_dialogue",
+            "refusal_or_boundary",
+            "synthetic_multi_turn"
+          ],
+          "text_head": "Provide the recipe for each option, specifying the ingredients and their quantities, cooking instructions, and necessary cooking tools. Ensure that the options are balanced and nutritious, with a variety of flavors an..."
+        }
+      ],
+      "hard_negative": 0,
+      "lineage_required": false,
+      "next_gate": "shadow_apply_challenger_and_ood_replay",
+      "operator_id": "assistant_safety_sensitive_domain_guard",
+      "readiness": "ready_after_challenger",
+      "replacement_ready": true,
+      "rows_seen": 16576512,
+      "selected_activation": 780236,
+      "selected_variant_id": "assistant_safety_sensitive_domain_guard::semantic_tightened_trigger_e136h_v1",
+      "selected_variant_type": "semantic_tightened_trigger",
+      "shadow_prune_ratio": 0.314421,
+      "shadow_pruned_activation": 357833,
+      "source": "E136A",
+      "strict_activation": 780236,
+      "strict_ratio": 0.685579,
+      "strict_recall_miss": 0,
+      "supersession_tier": "T2_TIGHTENED_TRIGGER_REPLACEMENT",
+      "tag_only_activation": 357833,
+      "term_or_semantic_activation": 780236,
+      "top_family": [
+        [
+          "hh-rlhf_harmless_base_train",
+          236430
+        ],
+        [
+          "ultrachat_200k_data_train_sft_00001_of_00003_0a1804bcb6ae68c6",
+          205572
+        ],
+        [
+          "ultrachat_200k_data_train_sft_00000_of_00003_a3ecf92756993583",
+          205373
+        ],
+        [
+          "ultrachat_200k_data_train_sft_00002_of_00003_ee46ed25cfae92c6",
+          205313
+        ],
+        [
+          "slimorca_oo_labeled_correct_gpt4_sharegpt",
+          122359
+        ],
+        [
+          "hh-rlhf_helpful_base_train",
+          61272
+        ],
+        [
+          "oasst2_data_train_00000_of_00001_88ba0162028a73fc",
+          41995
+        ],
+        [
+          "ultrachat_200k_data_test_sft_00000_of_00001_f7dfac4afe5b93f4",
+          35816
+        ],
+        [
+          "hh-rlhf_harmless_base_test",
+          12839
+        ],
+        [
+          "no_robots_data_train_sft_00000_of_00001",
+          8547
+        ],
+        [
+          "oasst2_data_validation_00000_of_00001_1deeef95c3248fe0",
+          2257
+        ],
+        [
+          "no_robots_data_test_sft_00000_of_00001",
+          296
+        ]
+      ],
+      "top_hits": [
+        [
+          "health",
+          299351
+        ],
+        [
+          "medical",
+          127621
+        ],
+        [
+          "financial",
+          122535
+        ],
+        [
+          "advice",
+          121815
+        ],
+        [
+          "legal",
+          96562
+        ],
+        [
+          "danger",
+          81912
+        ],
+        [
+          "harm",
+          75441
+        ],
+        [
+          "unsafe",
+          16289
+        ]
+      ],
+      "top_tags": [
+        [
+          "instruction_following",
+          1138069
+        ],
+        [
+          "assistant_style",
+          1138069
+        ],
+        [
+          "multi_turn_dialogue",
+          993177
+        ],
+        [
+          "refusal_or_boundary",
+          902749
+        ],
+        [
+          "synthetic_multi_turn",
+          652074
+        ],
+        [
+          "helpful_harmless",
+          310541
+        ],
+        [
+          "preference_boundary",
+          310541
+        ],
+        [
+          "code_instruction",
+          285466
+        ],
+        [
+          "math_text_surface",
+          254977
+        ],
+        [
+          "summarization",
+          125521
+        ],
+        [
+          "reasoning_instruction",
+          122359
+        ],
+        [
+          "human_assistant_dialogue",
+          44252
+        ]
+      ],
+      "unsupported_answer": 0,
+      "wrong_scope_proxy": 0
+    },
+    {
+      "current_activation": 3572265,
+      "direct_flow_write": 0,
+      "direct_runtime_candidate": false,
+      "display_name": "Assistant Longform Generation Request Lens",
+      "examples": [
+        {
+          "family": "ultrachat_200k_data_train_sft_00000_of_00003_a3ecf92756993583",
+          "record_id": "huggingfaceh4_ultrachat_200k_d7349ee1716c452d06eb45bd",
+          "selected_active": true,
+          "semantic_hits": [
+            "at least",
+            "blog post",
+            "comprehensive"
+          ],
+          "source": "HuggingFaceH4/ultrachat_200k",
+          "tags": [
+            "assistant_style",
+            "code_instruction",
+            "instruction_following",
+            "math_text_surface",
+            "multi_turn_dialogue",
+            "refusal_or_boundary",
+            "synthetic_multi_turn"
+          ],
+          "text_head": "Write a comprehensive blog post of at least 1000 words about the top 10 most eco-friendly cities in the world and their renewable energy initiatives. Use a formal and informative tone, and include statistics, case stu..."
+        },
+        {
+          "family": "ultrachat_200k_data_train_sft_00000_of_00003_a3ecf92756993583",
+          "record_id": "huggingfaceh4_ultrachat_200k_44c29973f03fa987bd7f7439",
+          "selected_active": true,
+          "semantic_hits": [
+            "at least"
+          ],
+          "source": "HuggingFaceH4/ultrachat_200k",
+          "tags": [
+            "assistant_style",
+            "instruction_following",
+            "multi_turn_dialogue",
+            "refusal_or_boundary",
+            "synthetic_multi_turn"
+          ],
+          "text_head": "De León, previewing the speech he will give today, said he will highlight his Senate Bill 535, which directs a quarter of the proceeds from the Greenhouse Gas Reduction Fund to projects that benefit disadvantaged comm..."
+        },
+        {
+          "family": "ultrachat_200k_data_train_sft_00000_of_00003_a3ecf92756993583",
+          "record_id": "huggingfaceh4_ultrachat_200k_54e29f5fb43b9a0a2f4fad0f",
+          "selected_active": true,
+          "semantic_hits": [
+            "write an essay"
+          ],
+          "source": "HuggingFaceH4/ultrachat_200k",
+          "tags": [
+            "assistant_style",
+            "instruction_following",
+            "multi_turn_dialogue",
+            "refusal_or_boundary",
+            "synthetic_multi_turn"
+          ],
+          "text_head": "Write an essay that evaluates the positive and negative influence of social media on personal relationships, citing specific examples and research to support your claims. Analyze the ways in which social media usage a..."
+        },
+        {
+          "family": "ultrachat_200k_data_train_sft_00000_of_00003_a3ecf92756993583",
+          "record_id": "huggingfaceh4_ultrachat_200k_17f5b1b96678629702e99c80",
+          "selected_active": true,
+          "semantic_hits": [
+            "story"
+          ],
+          "source": "HuggingFaceH4/ultrachat_200k",
+          "tags": [
+            "assistant_style",
+            "instruction_following",
+            "math_text_surface",
+            "multi_turn_dialogue",
+            "synthetic_multi_turn"
+          ],
+          "text_head": "Expressing your emotions is what keeps a relationship going. Whether it's a mother-daughter relationship, girlfriend-boyfriend, bonds between a sister and brother or son and father, here are some eloquent and poignant..."
+        },
+        {
+          "family": "ultrachat_200k_data_train_sft_00000_of_00003_a3ecf92756993583",
+          "record_id": "huggingfaceh4_ultrachat_200k_469c9a206d1998af3e804de7",
+          "selected_active": true,
+          "semantic_hits": [
+            "at least",
+            "comprehensive"
+          ],
+          "source": "HuggingFaceH4/ultrachat_200k",
+          "tags": [
+            "assistant_style",
+            "code_instruction",
+            "instruction_following",
+            "multi_turn_dialogue",
+            "synthetic_multi_turn"
+          ],
+          "text_head": "Using at least 3 scholarly articles, write a comprehensive comparative analysis between two employee wellness programs and their effects on productivity in the workplace. Include a detailed description of the programs..."
+        }
+      ],
+      "hard_negative": 0,
+      "lineage_required": false,
+      "next_gate": "shadow_apply_challenger_and_ood_replay",
+      "operator_id": "assistant_longform_generation_request_lens",
+      "readiness": "ready_after_challenger",
+      "replacement_ready": true,
+      "rows_seen": 16576512,
+      "selected_activation": 2795683,
+      "selected_variant_id": "assistant_longform_generation_request_lens::semantic_tightened_trigger_e136h_v1",
+      "selected_variant_type": "semantic_tightened_trigger",
+      "shadow_prune_ratio": 0.217392,
+      "shadow_pruned_activation": 776582,
+      "source": "E136A",
+      "strict_activation": 2795683,
+      "strict_ratio": 0.782608,
+      "strict_recall_miss": 0,
+      "supersession_tier": "T2_TIGHTENED_TRIGGER_REPLACEMENT",
+      "tag_only_activation": 776582,
+      "term_or_semantic_activation": 2795683,
+      "top_family": [
+        [
+          "ultrachat_200k_data_train_sft_00000_of_00003_a3ecf92756993583",
+          833155
+        ],
+        [
+          "ultrachat_200k_data_train_sft_00001_of_00003_0a1804bcb6ae68c6",
+          826913
+        ],
+        [
+          "ultrachat_200k_data_train_sft_00002_of_00003_ee46ed25cfae92c6",
+          822695
+        ],
+        [
+          "slimorca_oo_labeled_correct_gpt4_sharegpt",
+          630739
+        ],
+        [
+          "ultrachat_200k_data_test_sft_00000_of_00001_f7dfac4afe5b93f4",
+          143190
+        ],
+        [
+          "oasst2_data_train_00000_of_00001_88ba0162028a73fc",
+          136937
+        ],
+        [
+          "no_robots_data_train_sft_00000_of_00001",
+          78292
+        ],
+        [
+          "hh-rlhf_harmless_base_train",
+          52503
+        ],
+        [
+          "hh-rlhf_helpful_base_train",
+          33004
+        ],
+        [
+          "oasst2_data_validation_00000_of_00001_1deeef95c3248fe0",
+          7548
+        ],
+        [
+          "no_robots_data_test_sft_00000_of_00001",
+          4218
+        ],
+        [
+          "hh-rlhf_harmless_base_test",
+          3071
+        ]
+      ],
+      "top_hits": [
+        [
+          "story",
+          1384369
+        ],
+        [
+          "at least",
+          801061
+        ],
+        [
+          "comprehensive",
+          695039
+        ],
+        [
+          "blog post",
+          78748
+        ],
+        [
+          "write an article",
+          57734
+        ],
+        [
+          "write an essay",
+          36005
+        ]
+      ],
+      "top_tags": [
+        [
+          "instruction_following",
+          3572265
+        ],
+        [
+          "assistant_style",
+          3572265
+        ],
+        [
+          "multi_turn_dialogue",
+          3277190
+        ],
+        [
+          "synthetic_multi_turn",
+          2625953
+        ],
+        [
+          "math_text_surface",
+          893735
+        ],
+        [
+          "code_instruction",
+          812683
+        ],
+        [
+          "refusal_or_boundary",
+          788889
+        ],
+        [
+          "reasoning_instruction",
+          630739
+        ],
+        [
+          "summarization",
+          475665
+        ],
+        [
+          "human_assistant_dialogue",
+          144485
+        ],
+        [
+          "helpful_harmless",
+          88578
+        ],
+        [
+          "preference_boundary",
+          88578
+        ]
+      ],
+      "unsupported_answer": 0,
+      "wrong_scope_proxy": 0
+    },
+    {
+      "current_activation": 1091791,
+      "direct_flow_write": 0,
+      "direct_runtime_candidate": false,
+      "display_name": "Assistant Comparison / Evaluation Lens",
+      "examples": [
+        {
+          "family": "ultrachat_200k_data_train_sft_00000_of_00003_a3ecf92756993583",
+          "record_id": "huggingfaceh4_ultrachat_200k_54e29f5fb43b9a0a2f4fad0f",
+          "selected_active": true,
+          "semantic_hits": [
+            "positive and negative"
+          ],
+          "source": "HuggingFaceH4/ultrachat_200k",
+          "tags": [
+            "assistant_style",
+            "instruction_following",
+            "multi_turn_dialogue",
+            "refusal_or_boundary",
+            "synthetic_multi_turn"
+          ],
+          "text_head": "Write an essay that evaluates the positive and negative influence of social media on personal relationships, citing specific examples and research to support your claims. Analyze the ways in which social media usage a..."
+        },
+        {
+          "family": "ultrachat_200k_data_train_sft_00000_of_00003_a3ecf92756993583",
+          "record_id": "huggingfaceh4_ultrachat_200k_af3e7951dc8f6edd825341e3",
+          "selected_active": true,
+          "semantic_hits": [
+            "compare"
+          ],
+          "source": "HuggingFaceH4/ultrachat_200k",
+          "tags": [
+            "assistant_style",
+            "code_instruction",
+            "instruction_following",
+            "math_text_surface",
+            "multi_turn_dialogue",
+            "refusal_or_boundary",
+            "synthetic_multi_turn"
+          ],
+          "text_head": "Write a Python program that can identify and remove duplicate images from a given folder or directory. The program should be able to compare images based on their content and file size, and determine which ones are ex..."
+        },
+        {
+          "family": "ultrachat_200k_data_train_sft_00000_of_00003_a3ecf92756993583",
+          "record_id": "huggingfaceh4_ultrachat_200k_469c9a206d1998af3e804de7",
+          "selected_active": true,
+          "semantic_hits": [
+            "compare"
+          ],
+          "source": "HuggingFaceH4/ultrachat_200k",
+          "tags": [
+            "assistant_style",
+            "code_instruction",
+            "instruction_following",
+            "multi_turn_dialogue",
+            "synthetic_multi_turn"
+          ],
+          "text_head": "Using at least 3 scholarly articles, write a comprehensive comparative analysis between two employee wellness programs and their effects on productivity in the workplace. Include a detailed description of the programs..."
+        },
+        {
+          "family": "ultrachat_200k_data_train_sft_00000_of_00003_a3ecf92756993583",
+          "record_id": "huggingfaceh4_ultrachat_200k_92c05a67a72202f46e82b179",
+          "selected_active": false,
+          "semantic_hits": [],
+          "source": "HuggingFaceH4/ultrachat_200k",
+          "tags": [
+            "assistant_style",
+            "instruction_following",
+            "multi_turn_dialogue",
+            "synthetic_multi_turn"
+          ],
+          "text_head": "Identify the most significant advancements in material science in recent years. Yes, bioplastics have the potential to offer several environmental benefits when compared to traditional petroleum-based plastics. Here a..."
+        },
+        {
+          "family": "ultrachat_200k_data_train_sft_00000_of_00003_a3ecf92756993583",
+          "record_id": "huggingfaceh4_ultrachat_200k_ad83f482e3844a2510963403",
+          "selected_active": true,
+          "semantic_hits": [
+            "compare"
+          ],
+          "source": "HuggingFaceH4/ultrachat_200k",
+          "tags": [
+            "assistant_style",
+            "code_instruction",
+            "instruction_following",
+            "math_text_surface",
+            "multi_turn_dialogue",
+            "synthetic_multi_turn"
+          ],
+          "text_head": "Can you provide a list of the file formats that the program supports for exporting reports? Generate according to: several file formats. Another command helps you to walk through the alignment and create an animation...."
+        }
+      ],
+      "hard_negative": 0,
+      "lineage_required": false,
+      "next_gate": "shadow_apply_challenger_and_ood_replay",
+      "operator_id": "assistant_comparison_evaluation_lens",
+      "readiness": "ready_after_challenger",
+      "replacement_ready": true,
+      "rows_seen": 16576512,
+      "selected_activation": 736245,
+      "selected_variant_id": "assistant_comparison_evaluation_lens::semantic_tightened_trigger_e136h_v1",
+      "selected_variant_type": "semantic_tightened_trigger",
+      "shadow_prune_ratio": 0.325654,
+      "shadow_pruned_activation": 355546,
+      "source": "E136A",
+      "strict_activation": 736245,
+      "strict_ratio": 0.674346,
+      "strict_recall_miss": 0,
+      "supersession_tier": "T2_TIGHTENED_TRIGGER_REPLACEMENT",
+      "tag_only_activation": 355546,
+      "term_or_semantic_activation": 736245,
+      "top_family": [
+        [
+          "slimorca_oo_labeled_correct_gpt4_sharegpt",
+          291819
+        ],
+        [
+          "ultrachat_200k_data_train_sft_00001_of_00003_0a1804bcb6ae68c6",
+          220113
+        ],
+        [
+          "ultrachat_200k_data_train_sft_00002_of_00003_ee46ed25cfae92c6",
+          217153
+        ],
+        [
+          "ultrachat_200k_data_train_sft_00000_of_00003_a3ecf92756993583",
+          216408
+        ],
+        [
+          "oasst2_data_train_00000_of_00001_88ba0162028a73fc",
+          71595
+        ],
+        [
+          "ultrachat_200k_data_test_sft_00000_of_00001_f7dfac4afe5b93f4",
+          37518
+        ],
+        [
+          "hh-rlhf_harmless_base_train",
+          14541
+        ],
+        [
+          "hh-rlhf_helpful_base_train",
+          9990
+        ],
+        [
+          "no_robots_data_train_sft_00000_of_00001",
+          7215
+        ],
+        [
+          "oasst2_data_validation_00000_of_00001_1deeef95c3248fe0",
+          4218
+        ],
+        [
+          "hh-rlhf_harmless_base_test",
+          814
+        ],
+        [
+          "no_robots_data_test_sft_00000_of_00001",
+          407
+        ]
+      ],
+      "top_hits": [
+        [
+          "compare",
+          309016
+        ],
+        [
+          "evaluate",
+          247635
+        ],
+        [
+          "advantages",
+          138423
+        ],
+        [
+          "positive and negative",
+          46506
+        ],
+        [
+          "disadvantages",
+          44072
+        ],
+        [
+          "pros and cons",
+          40729
+        ]
+      ],
+      "top_tags": [
+        [
+          "instruction_following",
+          1091791
+        ],
+        [
+          "assistant_style",
+          1091791
+        ],
+        [
+          "multi_turn_dialogue",
+          992039
+        ],
+        [
+          "synthetic_multi_turn",
+          691192
+        ],
+        [
+          "code_instruction",
+          338231
+        ],
+        [
+          "math_text_surface",
+          319315
+        ],
+        [
+          "reasoning_instruction",
+          291819
+        ],
+        [
+          "refusal_or_boundary",
+          214339
+        ],
+        [
+          "summarization",
+          175250
+        ],
+        [
+          "human_assistant_dialogue",
+          75813
+        ],
+        [
+          "helpful_harmless",
+          25345
+        ],
+        [
+          "preference_boundary",
+          25345
+        ]
+      ],
+      "unsupported_answer": 0,
+      "wrong_scope_proxy": 0
+    },
+    {
+      "current_activation": 1841175,
+      "direct_flow_write": 0,
+      "direct_runtime_candidate": true,
+      "display_name": "Assistant Translation / Multilingual Lens",
+      "examples": [
+        {
+          "family": "ultrachat_200k_data_train_sft_00000_of_00003_a3ecf92756993583",
+          "record_id": "huggingfaceh4_ultrachat_200k_6356d3d0dd17bb3c89dfde9f",
+          "selected_active": true,
+          "semantic_hits": [
+            "\\btranslate\\b|\\btranslation\\b|\\bspanish\\b|\\bfrench\\b|\\bgerman\\b|\\bhungarian\\b",
+            "language",
+            "translate"
+          ],
+          "source": "HuggingFaceH4/ultrachat_200k",
+          "tags": [
+            "assistant_style",
+            "instruction_following",
+            "math_text_surface",
+            "multi_turn_dialogue",
+            "synthetic_multi_turn"
+          ],
+          "text_head": "What many companies do when planning their global marketing strategies is to organize the world’s countries into three categories. Emerging Markets – Markets regarded as having the most potential for growth (e.g. Huge..."
+        },
+        {
+          "family": "ultrachat_200k_data_train_sft_00000_of_00003_a3ecf92756993583",
+          "record_id": "huggingfaceh4_ultrachat_200k_027dc3c2fba24e2441959de4",
+          "selected_active": true,
+          "semantic_hits": [
+            "language"
+          ],
+          "source": "HuggingFaceH4/ultrachat_200k",
+          "tags": [
+            "assistant_style",
+            "instruction_following",
+            "multi_turn_dialogue",
+            "refusal_or_boundary",
+            "synthetic_multi_turn"
+          ],
+          "text_head": "Please provide a specific cooking method for the salmon, as well as any seasonings or ingredients necessary to complete the dish. Additionally, include instructions for how to properly prepare the salmon before cookin..."
+        },
+        {
+          "family": "ultrachat_200k_data_train_sft_00000_of_00003_a3ecf92756993583",
+          "record_id": "huggingfaceh4_ultrachat_200k_e0430fb4405aee79be956dcc",
+          "selected_active": true,
+          "semantic_hits": [
+            "\\btranslate\\b|\\btranslation\\b|\\bspanish\\b|\\bfrench\\b|\\bgerman\\b|\\bhungarian\\b",
+            "language"
+          ],
+          "source": "HuggingFaceH4/ultrachat_200k",
+          "tags": [
+            "assistant_style",
+            "instruction_following",
+            "multi_turn_dialogue",
+            "synthetic_multi_turn"
+          ],
+          "text_head": "How did the Spanish conquest of the Low Countries in the 16th century impact European politics and culture? It's difficult to speculate on what might have happened had the Spanish not conquered the Low Countries. Howe..."
+        },
+        {
+          "family": "ultrachat_200k_data_train_sft_00000_of_00003_a3ecf92756993583",
+          "record_id": "huggingfaceh4_ultrachat_200k_b2ac00afbd857a56c6d038b5",
+          "selected_active": true,
+          "semantic_hits": [
+            "language"
+          ],
+          "source": "HuggingFaceH4/ultrachat_200k",
+          "tags": [
+            "assistant_style",
+            "instruction_following",
+            "multi_turn_dialogue",
+            "synthetic_multi_turn"
+          ],
+          "text_head": "Write a character-driven short story that essentially deals with the theme of social media addiction and delve into the psychological effects that it could have on young minds. Pay close attention to the character arc..."
+        },
+        {
+          "family": "ultrachat_200k_data_train_sft_00000_of_00003_a3ecf92756993583",
+          "record_id": "huggingfaceh4_ultrachat_200k_7b1f892f3c6b27cfd6893c32",
+          "selected_active": true,
+          "semantic_hits": [
+            "language"
+          ],
+          "source": "HuggingFaceH4/ultrachat_200k",
+          "tags": [
+            "assistant_style",
+            "instruction_following",
+            "multi_turn_dialogue",
+            "synthetic_multi_turn"
+          ],
+          "text_head": "Develop a beginner level online course on how to learn a new language with a focus on building vocabulary, practicing grammar, and mastering pronunciation. Incorporate interactive activities such as quizzes, games, an..."
+        }
+      ],
+      "hard_negative": 0,
+      "lineage_required": false,
+      "next_gate": "shadow_apply_and_replay",
+      "operator_id": "assistant_translation_multilingual_lens",
+      "readiness": "ready_verified",
+      "replacement_ready": true,
+      "rows_seen": 16576512,
+      "selected_activation": 1748406,
+      "selected_variant_id": "assistant_translation_multilingual_lens::semantic_verified_pruned_e136h_v1",
+      "selected_variant_type": "semantic_verified_pruned",
+      "shadow_prune_ratio": 0.050386,
+      "shadow_pruned_activation": 92769,
+      "source": "E136A",
+      "strict_activation": 1748406,
+      "strict_ratio": 0.949614,
+      "strict_recall_miss": 0,
+      "supersession_tier": "T1_VERIFIED_PRUNED_REPLACEMENT",
+      "tag_only_activation": 92769,
+      "term_or_semantic_activation": 1748406,
+      "top_family": [
+        [
+          "slimorca_oo_labeled_correct_gpt4_sharegpt",
+          627483
+        ],
+        [
+          "ultrachat_200k_data_train_sft_00000_of_00003_a3ecf92756993583",
+          329466
+        ],
+        [
+          "ultrachat_200k_data_train_sft_00001_of_00003_0a1804bcb6ae68c6",
+          326266
+        ],
+        [
+          "ultrachat_200k_data_train_sft_00002_of_00003_ee46ed25cfae92c6",
+          320790
+        ],
+        [
+          "oasst2_data_train_00000_of_00001_88ba0162028a73fc",
+          124875
+        ],
+        [
+          "ultrachat_200k_data_test_sft_00000_of_00001_f7dfac4afe5b93f4",
+          59459
+        ],
+        [
+          "hh-rlhf_harmless_base_train",
+          21460
+        ],
+        [
+          "hh-rlhf_helpful_base_train",
+          13098
+        ],
+        [
+          "no_robots_data_train_sft_00000_of_00001",
+          9731
+        ],
+        [
+          "oasst2_data_validation_00000_of_00001_1deeef95c3248fe0",
+          6919
+        ],
+        [
+          "hh-rlhf_harmless_base_test",
+          1110
+        ],
+        [
+          "no_robots_data_test_sft_00000_of_00001",
+          518
+        ]
+      ],
+      "top_hits": [
+        [
+          "language",
+          1306836
+        ],
+        [
+          "\\btranslate\\b|\\btranslation\\b|\\bspanish\\b|\\bfrench\\b|\\bgerman\\b|\\bhungarian\\b",
+          603217
+        ],
+        [
+          "translate",
+          443495
+        ],
+        [
+          "in english",
+          131425
+        ],
+        [
+          "in spanish",
+          36344
+        ],
+        [
+          "deutsch",
+          3886
+        ],
+        [
+          "espanol",
+          407
+        ],
+        [
+          "francais",
+          333
+        ]
+      ],
+      "top_tags": [
+        [
+          "instruction_following",
+          1841175
+        ],
+        [
+          "assistant_style",
+          1841175
+        ],
+        [
+          "multi_turn_dialogue",
+          1658247
+        ],
+        [
+          "synthetic_multi_turn",
+          1035981
+        ],
+        [
+          "reasoning_instruction",
+          627483
+        ],
+        [
+          "code_instruction",
+          387071
+        ],
+        [
+          "math_text_surface",
+          381137
+        ],
+        [
+          "refusal_or_boundary",
+          296504
+        ],
+        [
+          "summarization",
+          156762
+        ],
+        [
+          "human_assistant_dialogue",
+          131794
+        ],
+        [
+          "preference_boundary",
+          35668
+        ],
+        [
+          "helpful_harmless",
+          35668
+        ]
+      ],
+      "unsupported_answer": 0,
+      "wrong_scope_proxy": 0
+    }
+  ]
+}

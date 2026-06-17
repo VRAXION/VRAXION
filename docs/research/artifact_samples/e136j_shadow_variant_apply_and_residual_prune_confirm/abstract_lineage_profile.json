@@ -1,0 +1,1509 @@
+{
+  "rows": [
+    {
+      "current_activation": 8675528,
+      "direct_flow_write": 0,
+      "direct_runtime_candidate": false,
+      "display_name": "Equation System Alignment Lens",
+      "examples": [
+        {
+          "family": "instruction_general",
+          "record_id": "e131:7a7b95ae426fb29a3a780ea0d4910d99c43e24665b6a0882b496f874644b185b",
+          "selected_active": true,
+          "semantic_hits": [],
+          "source": "databricks/databricks-dolly-15k",
+          "tags": [
+            "general_instruction_style",
+            "latex_math_surface",
+            "visible_math_surface",
+            "word_problem_boundary_candidate"
+          ],
+          "text_head": "Using examples taken from the text give me a summary of the main arguments in favour of slavery reparations in the United States and the anticipated cost of enacting such reparations Context: Slavery ended in the Unit..."
+        },
+        {
+          "family": "instruction_general",
+          "record_id": "e131:1798f78709ab670a1abc1011319d5291af1bfed08be7eab9b2975732b808588b",
+          "selected_active": true,
+          "semantic_hits": [],
+          "source": "databricks/databricks-dolly-15k",
+          "tags": [
+            "general_instruction_style",
+            "proof_step_surface"
+          ],
+          "text_head": "When was the wheel invented? No one knows when the wheel was first made. Archaeological evidence seems to show that the wheel was first used to make pottery in Mesopotamia about 7,000 years ago, during the Neolithic p..."
+        },
+        {
+          "family": "instruction_general",
+          "record_id": "e131:9e9f86392cbf6f3cb7d89c77cefe2e8ce3ead103d320db7192d3c4eff07e29f0",
+          "selected_active": true,
+          "semantic_hits": [],
+          "source": "databricks/databricks-dolly-15k",
+          "tags": [
+            "general_instruction_style",
+            "proof_step_surface"
+          ],
+          "text_head": "Provide me a list of the different types of harnesses used in rock climbing Context: Different types of climbing warrant particular features for harnesses. Sport climbers typically use minimalistic harnesses, some wit..."
+        },
+        {
+          "family": "instruction_general",
+          "record_id": "e131:8cfa7b8b29ee140d30a598b20e5634fd878294826a008630d27e9e142759b921",
+          "selected_active": true,
+          "semantic_hits": [],
+          "source": "databricks/databricks-dolly-15k",
+          "tags": [
+            "general_instruction_style",
+            "proof_step_surface"
+          ],
+          "text_head": "Is beauty objective or subjective? The opinions on this question vary from person to person. Statistically, a pattern of preference is easily visible on what people would describe as beautiful. An evident example of t..."
+        },
+        {
+          "family": "instruction_general",
+          "record_id": "e131:56574a87f576a0c858f0dfae06266b9c4a02e8301322b0d123aae0918cdafeea",
+          "selected_active": true,
+          "semantic_hits": [],
+          "source": "databricks/databricks-dolly-15k",
+          "tags": [
+            "general_instruction_style",
+            "proof_step_surface",
+            "visible_math_surface",
+            "word_problem_boundary_candidate"
+          ],
+          "text_head": "Given this paragraph about Billie Eilish, tell me who produced her debut single, also tell me what is her chart-topping single? Context: Billie Eilish Pirate Baird O'Connell (/ˈaɪlɪʃ/ EYE-lish; born December 18, 2001)..."
+        }
+      ],
+      "hard_negative": 0,
+      "lineage_required": true,
+      "next_gate": "lineage_name_and_counterfactual_supersession",
+      "operator_id": "equation_system_alignment_lens",
+      "readiness": "lineage_required_before_supersession",
+      "replacement_ready": false,
+      "rows_seen": 16576512,
+      "selected_activation": 8675528,
+      "selected_variant_id": "equation_system_alignment_lens::abstract_kernel_shadow_e136h_v1",
+      "selected_variant_type": "abstract_kernel_shadow",
+      "shadow_prune_ratio": 0.0,
+      "shadow_pruned_activation": 0,
+      "source": "E132",
+      "strict_activation": 1028545,
+      "strict_ratio": 0.118557,
+      "strict_recall_miss": 0,
+      "supersession_tier": "T3_ABSTRACT_KERNEL_LINEAGE_REQUIRED",
+      "tag_only_activation": 7646675,
+      "term_or_semantic_activation": 1028545,
+      "top_family": [
+        [
+          "numina_math_tir",
+          5581268
+        ],
+        [
+          "math_instruction",
+          2006753
+        ],
+        [
+          "hendrycks_math_algebra",
+          225687
+        ],
+        [
+          "hendrycks_math_intermediate_algebra",
+          169246
+        ],
+        [
+          "hendrycks_math_prealgebra",
+          159852
+        ],
+        [
+          "hendrycks_math_number_theory",
+          108493
+        ],
+        [
+          "hendrycks_math_geometry",
+          103873
+        ],
+        [
+          "hendrycks_math_precalculus",
+          99484
+        ],
+        [
+          "hendrycks_math_counting_and_probability",
+          95865
+        ],
+        [
+          "assistant_dialogue",
+          80157
+        ],
+        [
+          "instruction_general",
+          44850
+        ]
+      ],
+      "top_hits": [
+        [
+          "\\\\",
+          627587
+        ],
+        [
+          "system of equations",
+          459936
+        ],
+        [
+          "\\begin{align",
+          262283
+        ],
+        [
+          "\\begin{aligned}",
+          39504
+        ],
+        [
+          "simultaneous equations",
+          5852
+        ]
+      ],
+      "top_tags": [
+        [
+          "answer_boundary_surface",
+          7763521
+        ],
+        [
+          "latex_math_surface",
+          7744633
+        ],
+        [
+          "tir_program_or_output_surface",
+          6065259
+        ],
+        [
+          "word_problem_boundary_candidate",
+          5864843
+        ],
+        [
+          "proof_step_surface",
+          3575109
+        ],
+        [
+          "visible_math_surface",
+          2041798
+        ],
+        [
+          "math_instruction_surface",
+          2006753
+        ],
+        [
+          "candidate_equation_extraction",
+          2006753
+        ],
+        [
+          "geometry_diagram_or_coordinate_surface",
+          1224857
+        ],
+        [
+          "matrix_vector_surface",
+          366258
+        ],
+        [
+          "assistant_style",
+          80157
+        ],
+        [
+          "response_rendering",
+          80157
+        ]
+      ],
+      "unsupported_answer": 0,
+      "wrong_scope_proxy": 0
+    },
+    {
+      "current_activation": 9980958,
+      "direct_flow_write": 0,
+      "direct_runtime_candidate": false,
+      "display_name": "Piecewise / Case Function Lens",
+      "examples": [
+        {
+          "family": "instruction_general",
+          "record_id": "e131:4d0c2311e35063b4720350e7227e7326a06deb3a5af14a099aa8c7f3a16a1ee0",
+          "selected_active": true,
+          "semantic_hits": [],
+          "source": "databricks/databricks-dolly-15k",
+          "tags": [
+            "general_instruction_style",
+            "math_text_surface",
+            "visible_math_surface"
+          ],
+          "text_head": "If I have more pieces at the time of stalemate, have I won? Context: Stalemate is a situation in chess where the player whose turn it is to move is not in check and has no legal move. Stalemate results in a draw. Duri..."
+        },
+        {
+          "family": "instruction_general",
+          "record_id": "e131:b4276c162164aed4edb4c6ddf866b4906d3b848bfcf319c2d224e152212a4e15",
+          "selected_active": true,
+          "semantic_hits": [],
+          "source": "databricks/databricks-dolly-15k",
+          "tags": [
+            "general_instruction_style",
+            "math_text_surface",
+            "visible_math_surface"
+          ],
+          "text_head": "How do I start running? Make sure you get comfortable running shoes and attire. Start with achievable goal in mind like a 5K race. If you never ran before, start gradually from a walk, to brisk walk, light jog aiming..."
+        },
+        {
+          "family": "instruction_general",
+          "record_id": "e131:7a7b95ae426fb29a3a780ea0d4910d99c43e24665b6a0882b496f874644b185b",
+          "selected_active": true,
+          "semantic_hits": [],
+          "source": "databricks/databricks-dolly-15k",
+          "tags": [
+            "general_instruction_style",
+            "latex_math_surface",
+            "visible_math_surface",
+            "word_problem_boundary_candidate"
+          ],
+          "text_head": "Using examples taken from the text give me a summary of the main arguments in favour of slavery reparations in the United States and the anticipated cost of enacting such reparations Context: Slavery ended in the Unit..."
+        },
+        {
+          "family": "instruction_general",
+          "record_id": "e131:9dd886727b5b435005d95bf538b6f8d827395995e7a0e402b1fba5360a1a6844",
+          "selected_active": true,
+          "semantic_hits": [],
+          "source": "databricks/databricks-dolly-15k",
+          "tags": [
+            "general_instruction_style",
+            "math_text_surface"
+          ],
+          "text_head": "Did dinosaurs have lips? Recent research suggests that the popular perception that dinosaurs had exposed teeth may be incorrect, and the current hypothesis is that the Tyrannosaurus rex did indeed have lips. A 2023 st..."
+        },
+        {
+          "family": "instruction_general",
+          "record_id": "e131:2acfae1df1175242d072c6faec6449e6075c429503c3b1d878eb480472c28b72",
+          "selected_active": true,
+          "semantic_hits": [],
+          "source": "databricks/databricks-dolly-15k",
+          "tags": [
+            "general_instruction_style",
+            "math_text_surface"
+          ],
+          "text_head": "Are lilies safe for cats? No, lilies are toxic to cats if consumed and should not be kept in a household with cats databricks/databricks-dolly-15k"
+        }
+      ],
+      "hard_negative": 0,
+      "lineage_required": true,
+      "next_gate": "lineage_name_and_counterfactual_supersession",
+      "operator_id": "piecewise_case_function_lens",
+      "readiness": "lineage_required_before_supersession",
+      "replacement_ready": false,
+      "rows_seen": 16576512,
+      "selected_activation": 9980958,
+      "selected_variant_id": "piecewise_case_function_lens::abstract_kernel_shadow_e136h_v1",
+      "selected_variant_type": "abstract_kernel_shadow",
+      "shadow_prune_ratio": 0.0,
+      "shadow_pruned_activation": 0,
+      "source": "E132",
+      "strict_activation": 2554610,
+      "strict_ratio": 0.255948,
+      "strict_recall_miss": 0,
+      "supersession_tier": "T3_ABSTRACT_KERNEL_LINEAGE_REQUIRED",
+      "tag_only_activation": 5509108,
+      "term_or_semantic_activation": 2554610,
+      "top_family": [
+        [
+          "numina_math_tir",
+          5585349
+        ],
+        [
+          "math_instruction",
+          2880349
+        ],
+        [
+          "assistant_dialogue",
+          410410
+        ],
+        [
+          "hendrycks_math_algebra",
+          225687
+        ],
+        [
+          "hendrycks_math_intermediate_algebra",
+          169246
+        ],
+        [
+          "hendrycks_math_prealgebra",
+          159852
+        ],
+        [
+          "instruction_general",
+          142350
+        ],
+        [
+          "hendrycks_math_number_theory",
+          108493
+        ],
+        [
+          "hendrycks_math_geometry",
+          103873
+        ],
+        [
+          "hendrycks_math_precalculus",
+          99484
+        ],
+        [
+          "hendrycks_math_counting_and_probability",
+          95865
+        ]
+      ],
+      "top_hits": [
+        [
+          "function",
+          1969314
+        ],
+        [
+          " if ",
+          716124
+        ],
+        [
+          "\\begin{cases}",
+          121816
+        ],
+        [
+          "\\left\\{",
+          65759
+        ],
+        [
+          "piecewise",
+          56365
+        ]
+      ],
+      "top_tags": [
+        [
+          "answer_boundary_surface",
+          8519917
+        ],
+        [
+          "latex_math_surface",
+          7744633
+        ],
+        [
+          "word_problem_boundary_candidate",
+          6680586
+        ],
+        [
+          "tir_program_or_output_surface",
+          6392160
+        ],
+        [
+          "visible_math_surface",
+          3074891
+        ],
+        [
+          "proof_step_surface",
+          3012517
+        ],
+        [
+          "math_instruction_surface",
+          2880349
+        ],
+        [
+          "candidate_equation_extraction",
+          2880349
+        ],
+        [
+          "geometry_diagram_or_coordinate_surface",
+          1254154
+        ],
+        [
+          "response_rendering",
+          410410
+        ],
+        [
+          "assistant_style",
+          410410
+        ],
+        [
+          "matrix_vector_surface",
+          376355
+        ]
+      ],
+      "unsupported_answer": 0,
+      "wrong_scope_proxy": 0
+    },
+    {
+      "current_activation": 16576512,
+      "direct_flow_write": 0,
+      "direct_runtime_candidate": false,
+      "display_name": "Fraction / Ratio / Probability Lens",
+      "examples": [
+        {
+          "family": "instruction_general",
+          "record_id": "e131:3723ee11f542ec0544fcf2fccc462423b669e6dc33e5ee0d5fd2612b0e16ae9c",
+          "selected_active": true,
+          "semantic_hits": [],
+          "source": "databricks/databricks-dolly-15k",
+          "tags": [
+            "general_instruction_style",
+            "math_text_surface",
+            "visible_math_surface"
+          ],
+          "text_head": "When did Virgin Australia start operating? Context: Virgin Australia, the trading name of Virgin Australia Airlines Pty Ltd, is an Australian-based airline. It is the largest airline by fleet size to use the Virgin br..."
+        },
+        {
+          "family": "instruction_general",
+          "record_id": "e131:5ec361454f2a5cdceec17933c5fccf8a9b0720dc1503a103220b7e5c01b86e83",
+          "selected_active": true,
+          "semantic_hits": [],
+          "source": "databricks/databricks-dolly-15k",
+          "tags": [
+            "general_instruction_style",
+            "math_text_surface"
+          ],
+          "text_head": "Which is a species of fish? Tope or Rope Tope databricks/databricks-dolly-15k"
+        },
+        {
+          "family": "instruction_general",
+          "record_id": "e131:7f465ff3719eddf3a786df9e9198510cf49decc33f0f614cb7ed6de0d120f580",
+          "selected_active": true,
+          "semantic_hits": [],
+          "source": "databricks/databricks-dolly-15k",
+          "tags": [
+            "general_instruction_style",
+            "math_text_surface"
+          ],
+          "text_head": "Why can camels survive for long without water? Camels use the fat in their humps to keep them filled with energy and hydration for long periods of time. databricks/databricks-dolly-15k"
+        },
+        {
+          "family": "instruction_general",
+          "record_id": "e131:8bc659007973d47a81098c5ee325596f60b6dbe1287ad65168e1980c56b536c7",
+          "selected_active": true,
+          "semantic_hits": [],
+          "source": "databricks/databricks-dolly-15k",
+          "tags": [
+            "general_instruction_style",
+            "math_text_surface"
+          ],
+          "text_head": "Alice's parents have three daughters: Amy, Jessy, and what’s the name of the third daughter? The name of the third daughter is Alice databricks/databricks-dolly-15k"
+        },
+        {
+          "family": "instruction_general",
+          "record_id": "e131:bfd94abec62c0809a30eeddec6d7761c0c291850104a6212d027d2977e409f5a",
+          "selected_active": true,
+          "semantic_hits": [],
+          "source": "databricks/databricks-dolly-15k",
+          "tags": [
+            "general_instruction_style",
+            "math_text_surface"
+          ],
+          "text_head": "When was Tomoaki Komorida born? Context: Komorida was born in Kumamoto Prefecture on July 10, 1981. After graduating from high school, he joined the J1 League club Avispa Fukuoka in 2000. Although he debuted as a midf..."
+        }
+      ],
+      "hard_negative": 0,
+      "lineage_required": true,
+      "next_gate": "lineage_name_and_counterfactual_supersession",
+      "operator_id": "fraction_ratio_probability_lens",
+      "readiness": "lineage_required_before_supersession",
+      "replacement_ready": false,
+      "rows_seen": 16576512,
+      "selected_activation": 16576512,
+      "selected_variant_id": "fraction_ratio_probability_lens::abstract_kernel_shadow_e136h_v1",
+      "selected_variant_type": "abstract_kernel_shadow",
+      "shadow_prune_ratio": 0.0,
+      "shadow_pruned_activation": 0,
+      "source": "E132",
+      "strict_activation": 4748410,
+      "strict_ratio": 0.286454,
+      "strict_recall_miss": 0,
+      "supersession_tier": "T3_ABSTRACT_KERNEL_LINEAGE_REQUIRED",
+      "tag_only_activation": 7656879,
+      "term_or_semantic_activation": 4748410,
+      "top_family": [
+        [
+          "math_instruction",
+          6162574
+        ],
+        [
+          "numina_math_tir",
+          5585580
+        ],
+        [
+          "assistant_dialogue",
+          2695000
+        ],
+        [
+          "instruction_general",
+          1170858
+        ],
+        [
+          "hendrycks_math_algebra",
+          225687
+        ],
+        [
+          "hendrycks_math_intermediate_algebra",
+          169246
+        ],
+        [
+          "hendrycks_math_prealgebra",
+          159852
+        ],
+        [
+          "hendrycks_math_number_theory",
+          108493
+        ],
+        [
+          "hendrycks_math_geometry",
+          103873
+        ],
+        [
+          "hendrycks_math_precalculus",
+          99484
+        ],
+        [
+          "hendrycks_math_counting_and_probability",
+          95865
+        ]
+      ],
+      "top_hits": [
+        [
+          "/",
+          3806759
+        ],
+        [
+          "\\frac{",
+          888609
+        ],
+        [
+          "ratio",
+          621783
+        ],
+        [
+          "probability",
+          473239
+        ],
+        [
+          "common fraction",
+          78696
+        ]
+      ],
+      "top_tags": [
+        [
+          "answer_boundary_surface",
+          10953673
+        ],
+        [
+          "word_problem_boundary_candidate",
+          9436371
+        ],
+        [
+          "latex_math_surface",
+          7744633
+        ],
+        [
+          "tir_program_or_output_surface",
+          7494721
+        ],
+        [
+          "visible_math_surface",
+          7072182
+        ],
+        [
+          "math_instruction_surface",
+          6162574
+        ],
+        [
+          "candidate_equation_extraction",
+          6162574
+        ],
+        [
+          "proof_step_surface",
+          3575109
+        ],
+        [
+          "math_text_surface",
+          3235338
+        ],
+        [
+          "response_rendering",
+          2695000
+        ],
+        [
+          "assistant_style",
+          2695000
+        ],
+        [
+          "geometry_diagram_or_coordinate_surface",
+          1416206
+        ]
+      ],
+      "unsupported_answer": 0,
+      "wrong_scope_proxy": 0
+    },
+    {
+      "current_activation": 10068721,
+      "direct_flow_write": 0,
+      "direct_runtime_candidate": false,
+      "display_name": "Variable Definition Binding Lens",
+      "examples": [
+        {
+          "family": "instruction_general",
+          "record_id": "e131:4d0c2311e35063b4720350e7227e7326a06deb3a5af14a099aa8c7f3a16a1ee0",
+          "selected_active": true,
+          "semantic_hits": [],
+          "source": "databricks/databricks-dolly-15k",
+          "tags": [
+            "general_instruction_style",
+            "math_text_surface",
+            "visible_math_surface"
+          ],
+          "text_head": "If I have more pieces at the time of stalemate, have I won? Context: Stalemate is a situation in chess where the player whose turn it is to move is not in check and has no legal move. Stalemate results in a draw. Duri..."
+        },
+        {
+          "family": "instruction_general",
+          "record_id": "e131:dd40f7765a915bba5289331b24de9caac27b714b889345055a031e9888e4d51a",
+          "selected_active": true,
+          "semantic_hits": [],
+          "source": "databricks/databricks-dolly-15k",
+          "tags": [
+            "general_instruction_style",
+            "visible_math_surface",
+            "word_problem_boundary_candidate"
+          ],
+          "text_head": "Given a reference text about Lollapalooza, where does it take place, who started it and what is it? Context: Lollapalooza /ˌlɒləpəˈluːzə/ (Lolla) is an annual American four-day music festival held in Grant Park in Chi..."
+        },
+        {
+          "family": "instruction_general",
+          "record_id": "e131:3e5fb26b5d686ffeb411f45083d1dcc1896ab65fc0412cc8a5ea7e857800355b",
+          "selected_active": true,
+          "semantic_hits": [],
+          "source": "databricks/databricks-dolly-15k",
+          "tags": [
+            "general_instruction_style",
+            "math_text_surface",
+            "visible_math_surface"
+          ],
+          "text_head": "Who was Kyle Van Zyl playing against when he scored 36 of hisa teams 61 points? Context: Van Zyl joined the Eastern Province Kings Academy, where he played for the Eastern Province U19 side in the 2010 Under-19 Provin..."
+        },
+        {
+          "family": "instruction_general",
+          "record_id": "e131:fbd63c3868e6b32071081c8963b1959bb5797bc844ab8a14afb2d61b118d6653",
+          "selected_active": true,
+          "semantic_hits": [],
+          "source": "databricks/databricks-dolly-15k",
+          "tags": [
+            "general_instruction_style",
+            "geometry_diagram_or_coordinate_surface",
+            "word_problem_boundary_candidate"
+          ],
+          "text_head": "What is a polygon? A polygon is a form in Geometry. It is a single dimensional plane made of connecting lines and any number of vertices. It is a closed chain of connected line segments or edges. The vertices of the p..."
+        },
+        {
+          "family": "instruction_general",
+          "record_id": "e131:b4a4175431603e5f30c77d2886987801176a72c53942c3be8a00e275679b56e7",
+          "selected_active": true,
+          "semantic_hits": [],
+          "source": "databricks/databricks-dolly-15k",
+          "tags": [
+            "general_instruction_style",
+            "math_text_surface",
+            "visible_math_surface"
+          ],
+          "text_head": "Extract the owner of Lamborghini and a listing of the different types of Huracan cars that Lamborghini has produced for its Motorsport division. Context: Automobili Lamborghini S.p.A. (Italian pronunciation: [autoˈmɔː..."
+        }
+      ],
+      "hard_negative": 0,
+      "lineage_required": true,
+      "next_gate": "lineage_name_and_counterfactual_supersession",
+      "operator_id": "variable_definition_binding_lens",
+      "readiness": "lineage_required_before_supersession",
+      "replacement_ready": false,
+      "rows_seen": 16576512,
+      "selected_activation": 10068721,
+      "selected_variant_id": "variable_definition_binding_lens::abstract_kernel_shadow_e136h_v1",
+      "selected_variant_type": "abstract_kernel_shadow",
+      "shadow_prune_ratio": 0.0,
+      "shadow_pruned_activation": 0,
+      "source": "E132",
+      "strict_activation": 3103218,
+      "strict_ratio": 0.308204,
+      "strict_recall_miss": 0,
+      "supersession_tier": "T3_ABSTRACT_KERNEL_LINEAGE_REQUIRED",
+      "tag_only_activation": 5678406,
+      "term_or_semantic_activation": 3103218,
+      "top_family": [
+        [
+          "numina_math_tir",
+          5585118
+        ],
+        [
+          "math_instruction",
+          3025517
+        ],
+        [
+          "assistant_dialogue",
+          302302
+        ],
+        [
+          "hendrycks_math_algebra",
+          225687
+        ],
+        [
+          "instruction_general",
+          193284
+        ],
+        [
+          "hendrycks_math_intermediate_algebra",
+          169246
+        ],
+        [
+          "hendrycks_math_prealgebra",
+          159852
+        ],
+        [
+          "hendrycks_math_number_theory",
+          108493
+        ],
+        [
+          "hendrycks_math_geometry",
+          103873
+        ],
+        [
+          "hendrycks_math_precalculus",
+          99484
+        ],
+        [
+          "hendrycks_math_counting_and_probability",
+          95865
+        ]
+      ],
+      "top_hits": [
+        [
+          "such that",
+          1471046
+        ],
+        [
+          "where ",
+          1326003
+        ],
+        [
+          "let ",
+          1025223
+        ],
+        [
+          "define ",
+          62142
+        ],
+        [
+          "denote ",
+          33881
+        ]
+      ],
+      "top_tags": [
+        [
+          "answer_boundary_surface",
+          8290691
+        ],
+        [
+          "latex_math_surface",
+          7744633
+        ],
+        [
+          "word_problem_boundary_candidate",
+          6732764
+        ],
+        [
+          "tir_program_or_output_surface",
+          6415828
+        ],
+        [
+          "proof_step_surface",
+          3575109
+        ],
+        [
+          "visible_math_surface",
+          3207324
+        ],
+        [
+          "math_instruction_surface",
+          3025517
+        ],
+        [
+          "candidate_equation_extraction",
+          3025517
+        ],
+        [
+          "geometry_diagram_or_coordinate_surface",
+          1298776
+        ],
+        [
+          "matrix_vector_surface",
+          404313
+        ],
+        [
+          "math_text_surface",
+          303420
+        ],
+        [
+          "response_rendering",
+          302302
+        ]
+      ],
+      "unsupported_answer": 0,
+      "wrong_scope_proxy": 0
+    },
+    {
+      "current_activation": 7990790,
+      "direct_flow_write": 0,
+      "direct_runtime_candidate": false,
+      "display_name": "Summation / Sequence / Series Lens",
+      "examples": [
+        {
+          "family": "instruction_general",
+          "record_id": "e131:7a7b95ae426fb29a3a780ea0d4910d99c43e24665b6a0882b496f874644b185b",
+          "selected_active": true,
+          "semantic_hits": [],
+          "source": "databricks/databricks-dolly-15k",
+          "tags": [
+            "general_instruction_style",
+            "latex_math_surface",
+            "visible_math_surface",
+            "word_problem_boundary_candidate"
+          ],
+          "text_head": "Using examples taken from the text give me a summary of the main arguments in favour of slavery reparations in the United States and the anticipated cost of enacting such reparations Context: Slavery ended in the Unit..."
+        },
+        {
+          "family": "instruction_general",
+          "record_id": "e131:2ccdda118dd2d3b80976d1e84e90e23dd5b7237b65700c2d1b8b016e3391c019",
+          "selected_active": true,
+          "semantic_hits": [
+            "series"
+          ],
+          "source": "databricks/databricks-dolly-15k",
+          "tags": [
+            "general_instruction_style",
+            "word_problem_boundary_candidate"
+          ],
+          "text_head": "What is the best tv series in the world Dexter- The Dexter is so exciting to watch that it should be the best TV series in the world databricks/databricks-dolly-15k"
+        },
+        {
+          "family": "instruction_general",
+          "record_id": "e131:7c9318cd5ed49064c0953f63ec4a8238135f772bfd3ad533eac1e5436b385eea",
+          "selected_active": true,
+          "semantic_hits": [],
+          "source": "databricks/databricks-dolly-15k",
+          "tags": [
+            "general_instruction_style",
+            "math_text_surface",
+            "visible_math_surface"
+          ],
+          "text_head": "Who was the first to record the Needles and Pins song? Context: \"Needles and Pins\" is a rock song credited to American writers Jack Nitzsche and Sonny Bono. Jackie DeShannon recorded it in 1963 and other versions foll..."
+        },
+        {
+          "family": "instruction_general",
+          "record_id": "e131:026e111481358d6684d69bd3594f9e1b7a05eef467eb39df9fec030f36224e6c",
+          "selected_active": true,
+          "semantic_hits": [
+            "series"
+          ],
+          "source": "databricks/databricks-dolly-15k",
+          "tags": [
+            "general_instruction_style",
+            "math_text_surface"
+          ],
+          "text_head": "In the series A Song of Ice and Fire, who is the founder of House Karstark? Karlon Stark databricks/databricks-dolly-15k"
+        },
+        {
+          "family": "instruction_general",
+          "record_id": "e131:9a4d8a1be6cbd14c6606be31dd2091b3e0c11522acf69827dff15f55cbd8564a",
+          "selected_active": true,
+          "semantic_hits": [
+            "series"
+          ],
+          "source": "databricks/databricks-dolly-15k",
+          "tags": [
+            "general_instruction_style",
+            "visible_math_surface",
+            "word_problem_boundary_candidate"
+          ],
+          "text_head": "What is HiFI? Context: High fidelity (often shortened to Hi-Fi or HiFi) is the high-quality reproduction of sound. It is popular with audiophiles and home audio enthusiasts. Ideally, high-fidelity equipment has inaudi..."
+        }
+      ],
+      "hard_negative": 0,
+      "lineage_required": true,
+      "next_gate": "lineage_name_and_counterfactual_supersession",
+      "operator_id": "summation_sequence_series_lens",
+      "readiness": "lineage_required_before_supersession",
+      "replacement_ready": false,
+      "rows_seen": 16576512,
+      "selected_activation": 7990790,
+      "selected_variant_id": "summation_sequence_series_lens::abstract_kernel_shadow_e136h_v1",
+      "selected_variant_type": "abstract_kernel_shadow",
+      "shadow_prune_ratio": 0.0,
+      "shadow_pruned_activation": 0,
+      "source": "E132",
+      "strict_activation": 1182130,
+      "strict_ratio": 0.147937,
+      "strict_recall_miss": 0,
+      "supersession_tier": "T3_ABSTRACT_KERNEL_LINEAGE_REQUIRED",
+      "tag_only_activation": 6778477,
+      "term_or_semantic_activation": 1182130,
+      "top_family": [
+        [
+          "numina_math_tir",
+          5580421
+        ],
+        [
+          "math_instruction",
+          1288749
+        ],
+        [
+          "hendrycks_math_algebra",
+          225687
+        ],
+        [
+          "hendrycks_math_intermediate_algebra",
+          169246
+        ],
+        [
+          "hendrycks_math_prealgebra",
+          159852
+        ],
+        [
+          "hendrycks_math_number_theory",
+          108493
+        ],
+        [
+          "hendrycks_math_geometry",
+          103873
+        ],
+        [
+          "hendrycks_math_precalculus",
+          99484
+        ],
+        [
+          "hendrycks_math_counting_and_probability",
+          95865
+        ],
+        [
+          "assistant_dialogue",
+          90090
+        ],
+        [
+          "instruction_general",
+          69030
+        ]
+      ],
+      "top_hits": [
+        [
+          "sequence",
+          574508
+        ],
+        [
+          "series",
+          283813
+        ],
+        [
+          "binomial",
+          266436
+        ],
+        [
+          "\\sum",
+          214142
+        ],
+        [
+          "progression",
+          39818
+        ],
+        [
+          "pascal",
+          12558
+        ]
+      ],
+      "top_tags": [
+        [
+          "latex_math_surface",
+          7744633
+        ],
+        [
+          "answer_boundary_surface",
+          7381828
+        ],
+        [
+          "tir_program_or_output_surface",
+          5899863
+        ],
+        [
+          "word_problem_boundary_candidate",
+          5397861
+        ],
+        [
+          "proof_step_surface",
+          2701792
+        ],
+        [
+          "visible_math_surface",
+          1363765
+        ],
+        [
+          "math_instruction_surface",
+          1288749
+        ],
+        [
+          "candidate_equation_extraction",
+          1288749
+        ],
+        [
+          "geometry_diagram_or_coordinate_surface",
+          1169926
+        ],
+        [
+          "matrix_vector_surface",
+          340840
+        ],
+        [
+          "response_rendering",
+          90090
+        ],
+        [
+          "assistant_style",
+          90090
+        ]
+      ],
+      "unsupported_answer": 0,
+      "wrong_scope_proxy": 0
+    },
+    {
+      "current_activation": 10519775,
+      "direct_flow_write": 0,
+      "direct_runtime_candidate": false,
+      "display_name": "Unit Quantity Binding Lens",
+      "examples": [
+        {
+          "family": "instruction_general",
+          "record_id": "e131:dd40f7765a915bba5289331b24de9caac27b714b889345055a031e9888e4d51a",
+          "selected_active": true,
+          "semantic_hits": [],
+          "source": "databricks/databricks-dolly-15k",
+          "tags": [
+            "general_instruction_style",
+            "visible_math_surface",
+            "word_problem_boundary_candidate"
+          ],
+          "text_head": "Given a reference text about Lollapalooza, where does it take place, who started it and what is it? Context: Lollapalooza /ˌlɒləpəˈluːzə/ (Lolla) is an annual American four-day music festival held in Grant Park in Chi..."
+        },
+        {
+          "family": "instruction_general",
+          "record_id": "e131:e1137730bf21f38f9d6b9f2d069acf89cb8109f939b4f78f094a664cb5f7303b",
+          "selected_active": true,
+          "semantic_hits": [],
+          "source": "databricks/databricks-dolly-15k",
+          "tags": [
+            "general_instruction_style",
+            "visible_math_surface",
+            "word_problem_boundary_candidate"
+          ],
+          "text_head": "Who was John Moses Browning? Context: John Moses Browning (January 23, 1855 – November 26, 1926) was an American firearm designer who developed many varieties of military and civilian firearms, cartridges, and gun mec..."
+        },
+        {
+          "family": "instruction_general",
+          "record_id": "e131:fbd63c3868e6b32071081c8963b1959bb5797bc844ab8a14afb2d61b118d6653",
+          "selected_active": true,
+          "semantic_hits": [],
+          "source": "databricks/databricks-dolly-15k",
+          "tags": [
+            "general_instruction_style",
+            "geometry_diagram_or_coordinate_surface",
+            "word_problem_boundary_candidate"
+          ],
+          "text_head": "What is a polygon? A polygon is a form in Geometry. It is a single dimensional plane made of connecting lines and any number of vertices. It is a closed chain of connected line segments or edges. The vertices of the p..."
+        },
+        {
+          "family": "instruction_general",
+          "record_id": "e131:0a0d3e489ec635a03b13f697ebd7c4c4ffb50383086029c33f23709b58c8f4d1",
+          "selected_active": true,
+          "semantic_hits": [],
+          "source": "databricks/databricks-dolly-15k",
+          "tags": [
+            "answer_boundary_surface",
+            "general_instruction_style",
+            "geometry_diagram_or_coordinate_surface",
+            "visible_math_surface",
+            "word_problem_boundary_candidate"
+          ],
+          "text_head": "What is process mining? Context: Process mining is a family of techniques relating the fields of data science and process management to support the analysis of operational processes based on event logs. The goal of pr..."
+        },
+        {
+          "family": "instruction_general",
+          "record_id": "e131:e1726d1e1b3ae15c545a7c8280aff7d6ecdfd65ba86f211cf32292a9187e8db6",
+          "selected_active": true,
+          "semantic_hits": [],
+          "source": "databricks/databricks-dolly-15k",
+          "tags": [
+            "general_instruction_style",
+            "word_problem_boundary_candidate"
+          ],
+          "text_head": "What is a dispersive prism? Context: In optics, a dispersive prism is an optical prism that is used to disperse light, that is, to separate light into its spectral components (the colors of the rainbow). Different wav..."
+        }
+      ],
+      "hard_negative": 0,
+      "lineage_required": true,
+      "next_gate": "lineage_name_and_counterfactual_supersession",
+      "operator_id": "unit_quantity_binding_lens",
+      "readiness": "lineage_required_before_supersession",
+      "replacement_ready": false,
+      "rows_seen": 16576512,
+      "selected_activation": 10519775,
+      "selected_variant_id": "unit_quantity_binding_lens::abstract_kernel_shadow_e136h_v1",
+      "selected_variant_type": "abstract_kernel_shadow",
+      "shadow_prune_ratio": 0.0,
+      "shadow_pruned_activation": 0,
+      "source": "E132",
+      "strict_activation": 1261837,
+      "strict_ratio": 0.119949,
+      "strict_recall_miss": 0,
+      "supersession_tier": "T3_ABSTRACT_KERNEL_LINEAGE_REQUIRED",
+      "tag_only_activation": 8535124,
+      "term_or_semantic_activation": 1261837,
+      "top_family": [
+        [
+          "math_instruction",
+          5187575
+        ],
+        [
+          "numina_math_tir",
+          3843686
+        ],
+        [
+          "instruction_general",
+          362466
+        ],
+        [
+          "assistant_dialogue",
+          286363
+        ],
+        [
+          "hendrycks_math_algebra",
+          182259
+        ],
+        [
+          "hendrycks_math_intermediate_algebra",
+          144683
+        ],
+        [
+          "hendrycks_math_prealgebra",
+          138292
+        ],
+        [
+          "hendrycks_math_number_theory",
+          98252
+        ],
+        [
+          "hendrycks_math_geometry",
+          97174
+        ],
+        [
+          "hendrycks_math_counting_and_probability",
+          93247
+        ],
+        [
+          "hendrycks_math_precalculus",
+          85778
+        ]
+      ],
+      "top_hits": [
+        [
+          "%",
+          900346
+        ],
+        [
+          " hours",
+          83477
+        ],
+        [
+          " units",
+          74619
+        ],
+        [
+          " cm",
+          72236
+        ],
+        [
+          " minutes",
+          63381
+        ],
+        [
+          " dollars",
+          62756
+        ],
+        [
+          " km",
+          48290
+        ],
+        [
+          " percent",
+          16102
+        ],
+        [
+          " cents",
+          10012
+        ]
+      ],
+      "top_tags": [
+        [
+          "word_problem_boundary_candidate",
+          9436371
+        ],
+        [
+          "answer_boundary_surface",
+          8339015
+        ],
+        [
+          "latex_math_surface",
+          5674043
+        ],
+        [
+          "tir_program_or_output_surface",
+          5451733
+        ],
+        [
+          "visible_math_surface",
+          5405630
+        ],
+        [
+          "math_instruction_surface",
+          5187575
+        ],
+        [
+          "candidate_equation_extraction",
+          5187575
+        ],
+        [
+          "proof_step_surface",
+          2511266
+        ],
+        [
+          "geometry_diagram_or_coordinate_surface",
+          1065057
+        ],
+        [
+          "general_instruction_style",
+          362466
+        ],
+        [
+          "matrix_vector_surface",
+          320324
+        ],
+        [
+          "response_rendering",
+          286363
+        ]
+      ],
+      "unsupported_answer": 0,
+      "wrong_scope_proxy": 0
+    },
+    {
+      "current_activation": 10965612,
+      "direct_flow_write": 0,
+      "direct_runtime_candidate": false,
+      "display_name": "Answer Format Instruction Lens",
+      "examples": [
+        {
+          "family": "instruction_general",
+          "record_id": "e131:0a0d3e489ec635a03b13f697ebd7c4c4ffb50383086029c33f23709b58c8f4d1",
+          "selected_active": true,
+          "semantic_hits": [],
+          "source": "databricks/databricks-dolly-15k",
+          "tags": [
+            "answer_boundary_surface",
+            "general_instruction_style",
+            "geometry_diagram_or_coordinate_surface",
+            "visible_math_surface",
+            "word_problem_boundary_candidate"
+          ],
+          "text_head": "What is process mining? Context: Process mining is a family of techniques relating the fields of data science and process management to support the analysis of operational processes based on event logs. The goal of pr..."
+        },
+        {
+          "family": "instruction_general",
+          "record_id": "e131:8011de7cc339a23bd9f18228c7cf8d230f56a87a1cf95e2c72a3eb2858323c74",
+          "selected_active": true,
+          "semantic_hits": [],
+          "source": "databricks/databricks-dolly-15k",
+          "tags": [
+            "answer_boundary_surface",
+            "general_instruction_style"
+          ],
+          "text_head": "How much music theory knowledge is required to compose music? Technically speaking, very little music theory knowledge is “required” to compose music. Music theory is, essentially, what musicians have learned over the..."
+        },
+        {
+          "family": "instruction_general",
+          "record_id": "e131:bf48e70038075b93effed2e24fe7b5369914a3b51ef4270c07d6fceb2f771e45",
+          "selected_active": true,
+          "semantic_hits": [],
+          "source": "databricks/databricks-dolly-15k",
+          "tags": [
+            "answer_boundary_surface",
+            "general_instruction_style",
+            "word_problem_boundary_candidate"
+          ],
+          "text_head": "What is the Maareech Advanced Torpedo Defence System (ATDS)? Context: Maareech Advanced Torpedo Defence System (ATDS) is a torpedo detection and countermeasure system used by the Indian Navy. The system offers a compl..."
+        },
+        {
+          "family": "instruction_general",
+          "record_id": "e131:a7b6ba289707880b8083a2d0af66f45d06f9f31e44d7072b6f863cadc5fddea0",
+          "selected_active": true,
+          "semantic_hits": [],
+          "source": "databricks/databricks-dolly-15k",
+          "tags": [
+            "answer_boundary_surface",
+            "general_instruction_style",
+            "word_problem_boundary_candidate"
+          ],
+          "text_head": "What is the meaning of life? Although it is a deep question that has challenged philosophers for all time, Douglas Adams in his book \"The Hitchhicker's Guide to the Universe\" humorously states that the answer is \"42\"...."
+        },
+        {
+          "family": "instruction_general",
+          "record_id": "e131:387f404e6b42b8d552c1579e9c0ea3010fafdc78ccddd35880c3989e22506083",
+          "selected_active": true,
+          "semantic_hits": [],
+          "source": "databricks/databricks-dolly-15k",
+          "tags": [
+            "answer_boundary_surface",
+            "general_instruction_style",
+            "word_problem_boundary_candidate"
+          ],
+          "text_head": "What types of problems in government could AI be used to solve Context: The potential uses of AI in government are wide and varied, with Deloitte considering that \"Cognitive technologies could eventually revolutionize..."
+        }
+      ],
+      "hard_negative": 0,
+      "lineage_required": true,
+      "next_gate": "lineage_name_and_counterfactual_supersession",
+      "operator_id": "answer_format_instruction_lens",
+      "readiness": "lineage_required_before_supersession",
+      "replacement_ready": false,
+      "rows_seen": 16576512,
+      "selected_activation": 10965612,
+      "selected_variant_id": "answer_format_instruction_lens::abstract_kernel_shadow_e136h_v1",
+      "selected_variant_type": "abstract_kernel_shadow",
+      "shadow_prune_ratio": 0.0,
+      "shadow_pruned_activation": 0,
+      "source": "E132",
+      "strict_activation": 156015,
+      "strict_ratio": 0.014228,
+      "strict_recall_miss": 0,
+      "supersession_tier": "T3_ABSTRACT_KERNEL_LINEAGE_REQUIRED",
+      "tag_only_activation": 10800047,
+      "term_or_semantic_activation": 156015,
+      "top_family": [
+        [
+          "numina_math_tir",
+          5585580
+        ],
+        [
+          "math_instruction",
+          4315174
+        ],
+        [
+          "hendrycks_math_algebra",
+          225610
+        ],
+        [
+          "hendrycks_math_intermediate_algebra",
+          169246
+        ],
+        [
+          "hendrycks_math_prealgebra",
+          159852
+        ],
+        [
+          "hendrycks_math_number_theory",
+          108493
+        ],
+        [
+          "hendrycks_math_geometry",
+          103873
+        ],
+        [
+          "hendrycks_math_precalculus",
+          99330
+        ],
+        [
+          "hendrycks_math_counting_and_probability",
+          95865
+        ],
+        [
+          "assistant_dialogue",
+          82621
+        ],
+        [
+          "instruction_general",
+          19968
+        ]
+      ],
+      "top_hits": [
+        [
+          "express your answer as",
+          106884
+        ],
+        [
+          "common fraction",
+          78696
+        ],
+        [
+          "ordered pair",
+          23335
+        ],
+        [
+          "enter your answer",
+          10934
+        ],
+        [
+          "give your answer",
+          7471
+        ]
+      ],
+      "top_tags": [
+        [
+          "answer_boundary_surface",
+          10953673
+        ],
+        [
+          "word_problem_boundary_candidate",
+          7510486
+        ],
+        [
+          "latex_math_surface",
+          7308473
+        ],
+        [
+          "tir_program_or_output_surface",
+          6465596
+        ],
+        [
+          "math_instruction_surface",
+          4315174
+        ],
+        [
+          "candidate_equation_extraction",
+          4315174
+        ],
+        [
+          "visible_math_surface",
+          4301767
+        ],
+        [
+          "proof_step_surface",
+          3033626
+        ],
+        [
+          "geometry_diagram_or_coordinate_surface",
+          1216686
+        ],
+        [
+          "matrix_vector_surface",
+          331518
+        ],
+        [
+          "assistant_style",
+          82621
+        ],
+        [
+          "response_rendering",
+          82621
+        ]
+      ],
+      "unsupported_answer": 0,
+      "wrong_scope_proxy": 0
+    }
+  ]
+}

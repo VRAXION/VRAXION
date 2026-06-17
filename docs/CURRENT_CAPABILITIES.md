@@ -1,6 +1,6 @@
 # VRAXION Current Capabilities
 
-_Last updated: 2026-06-16_
+_Last updated: 2026-06-17_
 
 This document describes what the current VRAXION mainline can and cannot claim
 as a single system.
@@ -354,7 +354,29 @@ unsupported-claim rejects = 6
 OutputTextField roundtrip/checksum/zero-fill = 70 / 70
 ```
 
-Current E136I operator supersession ledger evidence:
+Current E136J shadow-variant apply/residual-prune evidence:
+
+```text
+stop reason = deadline
+cycles completed = 8,094
+rows processed = 33,153,024
+elapsed seconds = 46,317.709
+operator count = 34
+replacement ready = 27
+direct runtime candidates = 16
+tightened challenger required = 11
+abstract lineage required = 7
+current activation total = 188,597,925
+selected activation total = 166,354,720
+shadow-pruned activation total = 22,243,205
+strict recall misses = 0
+wrong-scope proxy calls = 0
+hard negatives = 0
+unsupported answers = 0
+direct Flow writes = 0
+```
+
+Previous E136I operator supersession ledger evidence:
 
 ```text
 operator count = 34
@@ -581,6 +603,10 @@ assistant-text lenses/guards
 
 assistant-text route composition
   compose scoped assistant/text lenses and guards into bounded route stacks
+
+shadow operator apply / residual prune
+  replay selected variants non-destructively and measure recall, wrong-scope,
+  and prune impact before any runtime replacement
 ```
 
 ## What it cannot claim yet
