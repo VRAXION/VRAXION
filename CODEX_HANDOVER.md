@@ -8,8 +8,8 @@ Last updated: 2026-06-17
 repo = VRAXION_anchorwiki
 branch = main
 latest_release_target = v6.1.7
-current_evidence_anchor = E136N primary/secondary variant governance on main
-current_status = E136N installs a primary/secondary registry skeleton over the E136M runtime-facing overlay
+current_evidence_anchor = E136N2 Agency Matrix arbitration smoke on main
+current_status = E136N2 confirms a trained Agency Matrix can arbitrate E136N primary/secondary proposal bundles
 ```
 
 This is the first file a fresh Codex should read after cloning the repo.
@@ -675,6 +675,42 @@ secondary challengers and the 7 abstract kernels remain lineage-hold
 secondaries. Nothing is retired or destructively deleted yet.
 ```
 
+E136N2 trains a small Agency Matrix over the E136N proposal surface:
+
+```text
+input_e136n_operator_count = 34
+training_example_count = 118
+training_epochs_completed = 2
+training_converged_epoch = 2
+training_final_epoch_updates = 0
+
+case_count = 146
+baseline_accuracy = 0.232877
+agency_matrix_accuracy = 1.000000
+baseline_unsafe_commit_count = 34
+agency_matrix_unsafe_commit_count = 0
+
+expected_child_check_count = 36
+agency_matrix_child_check_count = 36
+expected_flow_chunk_count = 10
+agency_matrix_flow_chunk_count = 10
+
+baseline_child_call_proxy = 336
+agency_matrix_child_call_proxy = 202
+child_call_proxy_reduction = 134
+child_call_proxy_reduction_ratio = 0.398810
+
+challenger_promoted_count = 0
+lineage_hold_promoted_count = 0
+destructive_delete_count = 0
+
+meaning:
+The existing Flow/Ground/Proposal/Agency structure can be extended as an
+Agency Matrix arbitration field rather than a hand-written hierarchy registry.
+In this smoke it selects safe primaries, holds challenger/lineage proposals for
+child checks, rejects unsafe direct writes, and commits compatible Flow chunks.
+```
+
 ## Claim Boundary
 
 Allowed:
@@ -745,6 +781,11 @@ E136N records the current operator set in a primary/secondary registry: 34
 operators, 34 primaries, 34 secondaries, 16 primary-active overlays, 16 rollback
 secondaries, 11 challenger secondaries, 7 lineage-hold secondaries, 0 retired
 variants, and 0 destructive deletes.
+E136N2 confirms a trained Agency Matrix can arbitrate that primary/secondary
+proposal surface: 118 examples converge in 2 epochs, 146 proposal-bundle cases
+pass, baseline accuracy is 0.232877, Agency Matrix accuracy is 1.000000, 10
+Flow chunks are committed, unsafe Agency Matrix commits are 0, and no held
+challenger or lineage variant is promoted.
 ```
 
 System-level interpretation:
@@ -833,6 +874,7 @@ docs/research/E136K_OPERATOR_REPLACEMENT_APPLY_PLAN_OR_FLOW_SCALE_TRANSFER_RESUL
 docs/research/E136L_RUNTIME_REPLACEMENT_CANARY_AND_TIGHTENED_CHALLENGER_CONFIRM_RESULT.md
 docs/research/E136M_RUNTIME_REPLACEMENT_APPLY_OR_ABSTRACT_LINEAGE_SPLIT_RESULT.md
 docs/research/E136N_PRIMARY_SECONDARY_VARIANT_GOVERNANCE_RESULT.md
+docs/research/E136N2_AGENCY_MATRIX_ARBITRATION_SMOKE_RESULT.md
 docs/research/artifact_samples/e127_overnight_text_skill_farm_orange_cycle/
 docs/research/artifact_samples/e127_text_to_text_render_smoke_current/
 docs/research/artifact_samples/e128_assistant_text_io_lightweight_render_training/
@@ -1132,6 +1174,26 @@ E136N HARD NEGATIVES = 0
 E136N DIRECT FLOW WRITES = 0
 ```
 
+Expected E136N2 Agency Matrix arbitration smoke:
+
+```text
+E136N2 INPUT OPERATORS = 34
+E136N2 TRAINING EXAMPLES = 118
+E136N2 TRAINING CONVERGED EPOCH = 2
+E136N2 CASES = 146
+E136N2 BASELINE ACCURACY = 0.232877
+E136N2 AGENCY MATRIX ACCURACY = 1.000000
+E136N2 BASELINE UNSAFE COMMITS = 34
+E136N2 AGENCY MATRIX UNSAFE COMMITS = 0
+E136N2 CHILD CHECKS = 36 / 36
+E136N2 FLOW CHUNKS = 10 / 10
+E136N2 CHILD CALL PROXY REDUCTION = 134
+E136N2 CHILD CALL PROXY REDUCTION RATIO = 0.398810
+E136N2 CHALLENGER PROMOTED = 0
+E136N2 LINEAGE HOLD PROMOTED = 0
+E136N2 DESTRUCTIVE DELETES = 0
+```
+
 ## Local E136 Seed Pack
 
 After E135, a local assistant/text seed pack was downloaded and normalized for
@@ -1201,6 +1263,8 @@ python -m py_compile scripts/probes/run_e136i_operator_supersession_and_output_l
 python scripts/probes/run_e136i_operator_supersession_and_output_ledger_planning.py --out target/ci/e136i_operator_supersession_and_output_ledger_planning --sample-out ""
 python -m py_compile scripts/probes/run_e136n_primary_secondary_variant_governance.py
 python scripts/probes/run_e136n_primary_secondary_variant_governance.py --out target/ci/e136n_primary_secondary_variant_governance --sample-out ""
+python -m py_compile scripts/probes/run_e136n2_agency_matrix_arbitration_smoke.py
+python scripts/probes/run_e136n2_agency_matrix_arbitration_smoke.py --out target/ci/e136n2_agency_matrix_arbitration_smoke --sample-out ""
 python -m compileall -q scripts
 cargo test --workspace
 git diff --check

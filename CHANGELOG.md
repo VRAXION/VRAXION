@@ -1,6 +1,23 @@
 # Changelog
 
-This changelog is narrowed to the current v6 / E127-E136N evidence anchor. Full historical beta, probe, Python SDK, legacy Rust, and research-output history is preserved in git history and archive tags.
+This changelog is narrowed to the current v6 / E127-E136N2 evidence anchor. Full historical beta, probe, Python SDK, legacy Rust, and research-output history is preserved in git history and archive tags.
+
+## 2026-06-17 - E136N2 Agency Matrix Arbitration Smoke
+
+- Added `scripts/probes/run_e136n2_agency_matrix_arbitration_smoke.py`.
+- Tested a small trained Agency Matrix on top of the E136N primary/secondary
+  variant surface instead of adding a hand-written skill-pyramid registry.
+- Training converged in 2 epochs over 118 proposal-feature examples.
+- Evaluation covered 146 multi-proposal bundles: clean primary-first controls,
+  secondary-first arbitration, unsafe direct-write rejection, rollback-on-primary
+  regression, challenger hold checks, lineage hold checks, and compatible Flow
+  chunk commits.
+- Result: first-valid sequential baseline accuracy 0.232877 versus Agency
+  Matrix accuracy 1.000000.
+- Safety/shape: baseline unsafe commits 34, Agency Matrix unsafe commits 0,
+  expected child checks 36/36, Flow chunks 10/10, challenger promotions 0,
+  lineage-hold promotions 0, and destructive deletes 0.
+- Track decision: proceed to E136O challenger/OOD runtime replacement gauntlet.
 
 ## 2026-06-17 - E136N Primary/Secondary Variant Governance
 

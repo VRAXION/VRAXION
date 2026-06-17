@@ -354,7 +354,33 @@ unsupported-claim rejects = 6
 OutputTextField roundtrip/checksum/zero-fill = 70 / 70
 ```
 
-Current E136N primary/secondary variant governance evidence:
+Current E136N2 Agency Matrix arbitration smoke evidence:
+
+```text
+input E136N operators = 34
+training examples = 118
+training epochs completed = 2
+training converged epoch = 2
+training final epoch updates = 0
+case count = 146
+baseline accuracy = 0.232877
+Agency Matrix accuracy = 1.000000
+baseline unsafe commits = 34
+Agency Matrix unsafe commits = 0
+expected child checks = 36
+Agency Matrix child checks = 36
+expected Flow chunks = 10
+Agency Matrix Flow chunks = 10
+baseline child-call proxy = 336
+Agency Matrix child-call proxy = 202
+child-call proxy reduction = 134
+child-call proxy reduction ratio = 0.398810
+challenger promoted = 0
+lineage-hold promoted = 0
+destructive deletes = 0
+```
+
+Previous E136N primary/secondary variant governance evidence:
 
 ```text
 operator count = 34
@@ -734,6 +760,12 @@ runtime replacement overlay
 primary/secondary variant governance
   keep each operator on exactly one primary variant while retaining explicit
   rollback, challenger, and lineage-hold secondary variants
+
+Agency Matrix arbitration
+  train a small arbitration matrix over primary/secondary proposal features,
+  reject unsafe/direct-write proposals, hold challenger/lineage candidates for
+  child checks, and commit compatible Flow chunks without a hand-written
+  hierarchy registry
 ```
 
 ## What it cannot claim yet

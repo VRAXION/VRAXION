@@ -1,0 +1,6 @@
+{
+  "artifact_contract": "E136N2_AGENCY_MATRIX_ARBITRATION_SMOKE",
+  "decision": "e136n2_agency_matrix_arbitration_smoke_confirmed",
+  "next": "E136O_CHALLENGER_OOD_RUNTIME_REPLACEMENT_GAUNTLET",
+  "pass_gate": true
+}
