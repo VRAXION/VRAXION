@@ -102,6 +102,7 @@ jobs:
           python scripts/probes/run_e110_promote_or_drop_operator_grind_wave1_check.py --sample-only docs/research/artifact_samples/e110_promote_or_drop_operator_grind_wave1
           python scripts/probes/run_e111_bronze_mutation_prune_promote_or_drop_wave_check.py --sample-only docs/research/artifact_samples/e111_bronze_mutation_prune_promote_or_drop_wave
           python scripts/probes/run_e112_gold_to_core_prune_heavy_probation_wave_check.py --sample-only docs/research/artifact_samples/e112_gold_to_core_prune_heavy_probation_wave
+          python scripts/probes/run_e136i_operator_supersession_and_output_ledger_planning.py --out target/ci/e136i_operator_supersession_and_output_ledger_planning --sample-out ""
 
       - name: Operator rank dashboard smoke
         run: |
@@ -253,6 +254,10 @@ jobs:
               '"current_evidence_anchor": "E136G_ADAPTIVE_IDLE_TICK_BUDGET_CONFIRM"',
               "current_evidence_anchor = E136G adaptive idle tick budget confirm",
               "Current evidence anchor: E136G adaptive idle tick budget confirm",
+              "current_evidence_anchor = E136H_EXISTING_OPERATOR_REFINEMENT_MUTATION_PRUNE_NIGHT_CYCLE",
+              '"current_evidence_anchor": "E136H_EXISTING_OPERATOR_REFINEMENT_MUTATION_PRUNE_NIGHT_CYCLE"',
+              "current_evidence_anchor = E136H existing operator refinement mutation/prune night cycle",
+              "Current evidence anchor: E136H existing operator refinement mutation/prune night cycle",
           ]
           failures = []
           for path in files:

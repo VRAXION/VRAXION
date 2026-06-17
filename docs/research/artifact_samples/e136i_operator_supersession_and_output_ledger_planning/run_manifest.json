@@ -1,0 +1,6 @@
+{
+  "artifact_contract": "E136I_OPERATOR_SUPERSESSION_AND_OUTPUT_LEDGER_PLANNING",
+  "boundary": "supersession planning only; no runtime mutation and no destructive prune",
+  "created_at_ms": 1781667825331,
+  "input_e136h_artifact": "docs/research/artifact_samples/e136h_existing_operator_refinement_mutation_prune_night_cycle"
+}

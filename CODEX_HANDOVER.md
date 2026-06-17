@@ -1,6 +1,6 @@
 # VRAXION Codex Handover
 
-Last updated: 2026-06-16
+Last updated: 2026-06-17
 
 ## Start Here
 
@@ -8,8 +8,8 @@ Last updated: 2026-06-16
 repo = VRAXION_anchorwiki
 branch = main
 latest_release_target = v6.1.7
-current_evidence_anchor = E136H existing operator refinement mutation/prune night cycle on main
-current_status = E136H confirmed existing E132/E136A operators can be replayed, refined, tightened, or preserved as abstract kernels before new operator search
+current_evidence_anchor = E136I operator supersession and output ledger planning on main
+current_status = E136I confirmed E136H selected variants can be classified for replacement readiness, challenger replay, abstract lineage, and output/prune impact
 ```
 
 This is the first file a fresh Codex should read after cloning the repo.
@@ -474,6 +474,36 @@ Existing operators are refined first. Low human-label alignment is not an
 automatic drop if the kernel still carries useful signal.
 ```
 
+E136I adds a supersession and output-impact ledger for the E136H selected
+variants:
+
+```text
+operator_count = 34
+replacement_ready_count = 27
+direct_runtime_candidate_count = 16
+tightened_challenger_required_count = 11
+abstract_lineage_required_count = 7
+hold_for_more_evidence_count = 0
+destructive_drop_count = 0
+
+projected_current_activation_total = 3,373,788
+projected_selected_activation_total = 2,891,151
+projected_pruned_activation_total = 482,637
+projected_output_activation_delta_total = -482,637
+
+accepted_mutation_total = 96
+mutation_attempt_total = 43,720
+hard_negative_total = 0
+wrong_scope_call_total = 0
+unsupported_answer_total = 0
+direct_flow_write_total = 0
+
+meaning:
+E136I does not mutate the runtime. It classifies selected variants into direct
+replacement candidates, challenger-required replacements, abstract lineage
+kernels, and output/prune impact before any destructive apply.
+```
+
 ## Claim Boundary
 
 Allowed:
@@ -522,6 +552,10 @@ E136H confirms existing-operator-first refinement over the 16 E132 math-text
 and 18 E136A assistant-text operators: 16 labels verified, 11 triggers
 tightened, 7 useful abstract kernels preserved, and no operator held for more
 evidence.
+E136I confirms an explicit supersession/output ledger over the E136H selected
+variants: 27 replacement-ready variants, 16 direct runtime candidates, 11
+tightened challenger-required replacements, 7 abstract lineage-required
+kernels, 0 destructive drops, and projected output activation delta -482,637.
 ```
 
 System-level interpretation:
@@ -556,6 +590,9 @@ It can reproduce that idle improvement behavior on a 70-case heldout series,
 with no-pocket controls preserving safe output instead of inventing answers.
 It can adapt idle tick count through explicit proposal continuation fields and
 Agency-approved continuation/override decisions.
+It can plan non-destructive operator supersession from selected variants,
+including direct candidates, challenger-required candidates, abstract lineage
+kernels, and projected output/prune impact.
 It can promote prior scoped CoreMemoryCandidate operators to Orange/Legendary
 when the E121-style gate is satisfied.
 It is not an open-domain LLM/chatbot.
@@ -601,6 +638,7 @@ docs/research/E136E_IDLE_THINK_TICK_PROPOSAL_REFINEMENT_SMOKE_RESULT.md
 docs/research/E136F_IDLE_THINK_TICK_HELDOUT_SERIES_CONFIRM_RESULT.md
 docs/research/E136G_ADAPTIVE_IDLE_TICK_BUDGET_CONFIRM_RESULT.md
 docs/research/E136H_EXISTING_OPERATOR_REFINEMENT_MUTATION_PRUNE_NIGHT_CYCLE_RESULT.md
+docs/research/E136I_OPERATOR_SUPERSESSION_AND_OUTPUT_LEDGER_PLANNING_RESULT.md
 docs/research/artifact_samples/e127_overnight_text_skill_farm_orange_cycle/
 docs/research/artifact_samples/e127_text_to_text_render_smoke_current/
 docs/research/artifact_samples/e128_assistant_text_io_lightweight_render_training/
@@ -620,6 +658,7 @@ docs/research/artifact_samples/e136e_idle_think_tick_proposal_refinement_smoke/
 docs/research/artifact_samples/e136f_idle_think_tick_heldout_series_confirm/
 docs/research/artifact_samples/e136g_adaptive_idle_tick_budget_confirm/
 docs/research/artifact_samples/e136h_existing_operator_refinement_mutation_prune_night_cycle/
+docs/research/artifact_samples/e136i_operator_supersession_and_output_ledger_planning/
 ```
 
 ## Legal / License
@@ -767,6 +806,25 @@ E136H HARD NEGATIVES = 0
 E136H DIRECT FLOW WRITES = 0
 ```
 
+Expected E136I operator supersession and output ledger planning:
+
+```text
+E136I OPERATORS = 34
+E136I REPLACEMENT READY = 27
+E136I DIRECT RUNTIME CANDIDATES = 16
+E136I TIGHTENED CHALLENGER REQUIRED = 11
+E136I ABSTRACT LINEAGE REQUIRED = 7
+E136I HOLD FOR MORE EVIDENCE = 0
+E136I DESTRUCTIVE DROPS = 0
+E136I PROJECTED CURRENT ACTIVATIONS = 3,373,788
+E136I PROJECTED SELECTED ACTIVATIONS = 2,891,151
+E136I PROJECTED PRUNED ACTIVATIONS = 482,637
+E136I PROJECTED OUTPUT ACTIVATION DELTA = -482,637
+E136I ACCEPTED MUTATIONS = 96
+E136I HARD NEGATIVES = 0
+E136I DIRECT FLOW WRITES = 0
+```
+
 ## Local E136 Seed Pack
 
 After E135, a local assistant/text seed pack was downloaded and normalized for
@@ -830,6 +888,10 @@ python -m py_compile scripts/probes/run_e136f_idle_think_tick_heldout_series_con
 python scripts/probes/run_e136f_idle_think_tick_heldout_series_confirm.py --out target/ci/e136f_idle_think_tick_heldout_series_confirm --sample-out ""
 python -m py_compile scripts/probes/run_e136g_adaptive_idle_tick_budget_confirm.py
 python scripts/probes/run_e136g_adaptive_idle_tick_budget_confirm.py --out target/ci/e136g_adaptive_idle_tick_budget_confirm --sample-out ""
+python -m py_compile scripts/probes/run_e136h_existing_operator_refinement_mutation_prune_night_cycle.py
+python scripts/probes/run_e136h_existing_operator_refinement_mutation_prune_night_cycle.py --cycles 2 --e132-rows-per-cycle 200 --e136a-rows-per-cycle 400 --out target/ci/e136h_existing_operator_refinement_mutation_prune_night_cycle --sample-out ""
+python -m py_compile scripts/probes/run_e136i_operator_supersession_and_output_ledger_planning.py
+python scripts/probes/run_e136i_operator_supersession_and_output_ledger_planning.py --out target/ci/e136i_operator_supersession_and_output_ledger_planning --sample-out ""
 python -m compileall -q scripts
 cargo test --workspace
 git diff --check
@@ -871,7 +933,7 @@ Do not delete or commit them without an explicit cleanup decision.
 Recommended next steps:
 
 ```text
-1. Run E136I operator supersession and outdated-skill ledger planning before
+1. Run E136J shadow-variant apply and residual prune/OOD confirmation before
    destructive prune or broad new-operator farming.
 2. Run a later assistant/open-domain boundary probe before claiming broader
    assistant readiness.

@@ -1,6 +1,25 @@
 # Changelog
 
-This changelog is narrowed to the current v6 / E127-E136H evidence anchor. Full historical beta, probe, Python SDK, legacy Rust, and research-output history is preserved in git history and archive tags.
+This changelog is narrowed to the current v6 / E127-E136I evidence anchor. Full historical beta, probe, Python SDK, legacy Rust, and research-output history is preserved in git history and archive tags.
+
+## 2026-06-17 - E136I Operator Supersession And Output Ledger Planning
+
+- Added `scripts/probes/run_e136i_operator_supersession_and_output_ledger_planning.py`.
+- Converted the E136H selected variants into an explicit supersession,
+  challenger-replay, abstract-lineage, and output-impact ledger.
+- Result: 34 E136H selected variants classified, 27 replacement-ready variants,
+  16 direct runtime candidates, 11 tightened challenger-required replacements,
+  7 abstract lineage-required kernels, and 0 hold-for-more-evidence operators.
+- Projected impact: 3,373,788 current activations, 2,891,151 selected
+  activations, 482,637 pruned activations, and projected output activation
+  delta -482,637.
+- Mutation carry-forward: 43,720 mutation attempts and 96 accepted mutations
+  from E136H are mapped into the replacement ledger.
+- Governance: 0 destructive drops, 0 hard negatives, 0 wrong-scope calls, 0
+  unsupported answers, 0 direct Flow writes, and 0 checker failures.
+- Boundary: supersession planning only; not destructive runtime prune,
+  production operator replacement, open-domain assistant behavior, or new
+  neural weights.
 
 ## 2026-06-16 - E136H Existing Operator Refinement Mutation/Prune Night Cycle
 

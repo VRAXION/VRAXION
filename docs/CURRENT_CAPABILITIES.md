@@ -354,7 +354,27 @@ unsupported-claim rejects = 6
 OutputTextField roundtrip/checksum/zero-fill = 70 / 70
 ```
 
-Current E136H existing operator refinement evidence:
+Current E136I operator supersession ledger evidence:
+
+```text
+operator count = 34
+replacement ready = 27
+direct runtime candidates = 16
+tightened challenger required = 11
+abstract lineage required = 7
+destructive drops = 0
+projected current activations = 3,373,788
+projected selected activations = 2,891,151
+projected pruned activations = 482,637
+projected output activation delta = -482,637
+accepted mutations = 96 / 43,720
+hard negatives = 0
+wrong-scope calls = 0
+unsupported answers = 0
+direct Flow writes = 0
+```
+
+Previous E136H existing operator refinement evidence:
 
 ```text
 cycles completed = 40

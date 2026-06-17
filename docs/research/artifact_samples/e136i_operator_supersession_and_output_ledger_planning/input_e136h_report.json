@@ -1,0 +1,9 @@
+{
+  "input_artifact_contract": "E136H_EXISTING_OPERATOR_REFINEMENT_MUTATION_PRUNE_NIGHT_CYCLE",
+  "input_current_activation_total": 3373788,
+  "input_decision": "e136h_existing_operator_refinement_mutation_prune_confirmed",
+  "input_operator_count": 34,
+  "input_pass_gate": true,
+  "input_pruned_activation_total": 482637,
+  "input_selected_activation_total": 2891151
+}
