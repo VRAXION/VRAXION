@@ -354,7 +354,36 @@ unsupported-claim rejects = 6
 OutputTextField roundtrip/checksum/zero-fill = 70 / 70
 ```
 
-Current E136L runtime replacement canary evidence:
+Current E136M runtime replacement overlay evidence:
+
+```text
+operator count = 34
+runtime overlay active = 16
+runtime overlay apply = 16
+verified replacement applies = 7
+light-prune overlay applies = 9
+legacy triggers disabled in overlay = 16
+legacy triggers retained for rollback = 16
+challenger/OOD queue = 11
+challenger runtime overlay active = 0
+abstract lineage split = 7
+abstract runtime overlay active = 0
+rollback snapshots = 16
+rollback triggers = 0
+production destructive deletes = 0
+runtime mutation allowed now = 16
+runtime overlay activation total = 185,147,668
+runtime overlay removed activations = 3,450,257
+runtime overlay removed ratio = 0.018294
+challenger candidate removed not applied = 18,792,948
+strict recall misses = 0
+wrong-scope proxy calls = 0
+hard negatives = 0
+unsupported answers = 0
+direct Flow writes = 0
+```
+
+Previous E136L runtime replacement canary evidence:
 
 ```text
 operator count = 34
@@ -666,6 +695,10 @@ operator replacement apply planning
 runtime replacement canary
   remove legacy triggers in canary, activate selected variants, and audit
   rollback triggers before any production runtime replacement
+
+runtime replacement overlay
+  activate the direct canary-passed selected variants in a rollback-safe
+  runtime-facing overlay while holding challenger and abstract rows
 ```
 
 ## What it cannot claim yet

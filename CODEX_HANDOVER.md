@@ -8,8 +8,8 @@ Last updated: 2026-06-17
 repo = VRAXION_anchorwiki
 branch = main
 latest_release_target = v6.1.7
-current_evidence_anchor = E136L runtime replacement canary and tightened challenger confirm on main
-current_status = E136L confirmed 16/16 direct runtime canaries with old triggers removed in canary and 0 rollback triggers
+current_evidence_anchor = E136M runtime replacement apply or abstract lineage split on main
+current_status = E136M materialized 16 E136L direct canary winners as a rollback-safe runtime-facing overlay
 ```
 
 This is the first file a fresh Codex should read after cloning the repo.
@@ -595,6 +595,44 @@ active" canary replay. This is not a destructive production apply. The 11
 challenger rows and 7 abstract lineage rows stay held.
 ```
 
+E136M materializes the E136L direct canary wins as a runtime-facing overlay:
+
+```text
+operator_count = 34
+runtime_overlay_active_count = 16
+runtime_overlay_apply_count = 16
+verified_replacement_apply_count = 7
+light_prune_overlay_apply_count = 9
+legacy_trigger_disabled_in_overlay_count = 16
+legacy_trigger_retained_for_rollback_count = 16
+
+challenger_ood_queue_count = 11
+challenger_runtime_overlay_active_count = 0
+abstract_lineage_split_count = 7
+abstract_runtime_overlay_active_count = 0
+
+rollback_snapshot_count = 16
+rollback_trigger_count = 0
+production_destructive_delete_count = 0
+runtime_mutation_allowed_now_count = 16
+
+runtime_overlay_removed_activation_total = 3,450,257
+runtime_overlay_removed_activation_ratio = 0.018294
+challenger_candidate_removed_not_applied = 18,792,948
+
+strict_recall_miss_total = 0
+wrong_scope_proxy_total = 0
+hard_negative_total = 0
+unsupported_answer_total = 0
+direct_flow_write_total = 0
+
+meaning:
+The runtime-facing apply surface is now the 16 direct canary winners only. The
+larger challenger-prune opportunity is explicitly not applied until E136N
+challenger/OOD evidence exists. This is still rollback-safe overlay evidence,
+not destructive deletion of legacy operators.
+```
+
 ## Claim Boundary
 
 Allowed:
@@ -657,6 +695,10 @@ lineage holds, 0 destructive applies, and 0 runtime mutations allowed now.
 E136L confirms those 16 direct candidates pass runtime-canary
 removal/replacement replay with 0 rollback triggers while the 11 challenger
 rows and 7 abstract lineage rows remain held.
+E136M materializes those 16 direct candidates as a runtime-facing overlay with
+7 verified replacements, 9 light-prune overlays, 16 rollback snapshots, 0
+destructive deletes, and 18,792,948 challenger candidate pruned activations
+explicitly not applied.
 ```
 
 System-level interpretation:
@@ -743,6 +785,7 @@ docs/research/E136I_OPERATOR_SUPERSESSION_AND_OUTPUT_LEDGER_PLANNING_RESULT.md
 docs/research/E136J_SHADOW_VARIANT_APPLY_AND_RESIDUAL_PRUNE_CONFIRM_RESULT.md
 docs/research/E136K_OPERATOR_REPLACEMENT_APPLY_PLAN_OR_FLOW_SCALE_TRANSFER_RESULT.md
 docs/research/E136L_RUNTIME_REPLACEMENT_CANARY_AND_TIGHTENED_CHALLENGER_CONFIRM_RESULT.md
+docs/research/E136M_RUNTIME_REPLACEMENT_APPLY_OR_ABSTRACT_LINEAGE_SPLIT_RESULT.md
 docs/research/artifact_samples/e127_overnight_text_skill_farm_orange_cycle/
 docs/research/artifact_samples/e127_text_to_text_render_smoke_current/
 docs/research/artifact_samples/e128_assistant_text_io_lightweight_render_training/
@@ -990,6 +1033,29 @@ E136L HARD NEGATIVES = 0
 E136L DIRECT FLOW WRITES = 0
 ```
 
+Expected E136M runtime replacement overlay:
+
+```text
+E136M OPERATORS = 34
+E136M RUNTIME OVERLAY ACTIVE = 16
+E136M RUNTIME OVERLAY APPLY = 16
+E136M VERIFIED REPLACEMENTS = 7
+E136M LIGHT PRUNE OVERLAYS = 9
+E136M LEGACY TRIGGERS DISABLED IN OVERLAY = 16
+E136M LEGACY TRIGGERS RETAINED FOR ROLLBACK = 16
+E136M CHALLENGER/OOD QUEUE = 11
+E136M ABSTRACT LINEAGE SPLIT = 7
+E136M ROLLBACK SNAPSHOTS = 16
+E136M ROLLBACK TRIGGERS = 0
+E136M PRODUCTION DESTRUCTIVE DELETES = 0
+E136M RUNTIME OVERLAY REMOVED ACTIVATIONS = 3,450,257
+E136M CHALLENGER CANDIDATE REMOVED NOT APPLIED = 18,792,948
+E136M STRICT RECALL MISSES = 0
+E136M WRONG SCOPE PROXY = 0
+E136M HARD NEGATIVES = 0
+E136M DIRECT FLOW WRITES = 0
+```
+
 ## Local E136 Seed Pack
 
 After E135, a local assistant/text seed pack was downloaded and normalized for
@@ -1098,8 +1164,8 @@ Do not delete or commit them without an explicit cleanup decision.
 Recommended next steps:
 
 ```text
-1. Run E136M runtime replacement apply or abstract-lineage split before any
-   destructive prune or broad new-operator farming.
+1. Run E136N challenger/OOD runtime replacement gauntlet before applying the
+   11 tightened-trigger hold rows or doing broad new-operator farming.
 2. Run a later assistant/open-domain boundary probe before claiming broader
    assistant readiness.
 3. Decide whether to continue E127 with a fresh candidate pack or pause farming.

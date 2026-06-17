@@ -1,0 +1,88 @@
+{
+  "rows": [
+    {
+      "current_activation": 8675528,
+      "destructive_delete": false,
+      "display_name": "Equation System Alignment Lens",
+      "hold_reason": "abstract-but-useful kernel has value but insufficient human/operator lineage clarity for runtime replacement",
+      "lineage_action": "preserve_kernel_and_trace_activation_family_before_rename_or_prune",
+      "operator_id": "equation_system_alignment_lens",
+      "runtime_overlay_active": false,
+      "selected_variant_id": "equation_system_alignment_lens::abstract_kernel_shadow_e136h_v1",
+      "selected_variant_type": "abstract_kernel_shadow",
+      "split_state": "abstract_lineage_hold"
+    },
+    {
+      "current_activation": 9980958,
+      "destructive_delete": false,
+      "display_name": "Piecewise / Case Function Lens",
+      "hold_reason": "abstract-but-useful kernel has value but insufficient human/operator lineage clarity for runtime replacement",
+      "lineage_action": "preserve_kernel_and_trace_activation_family_before_rename_or_prune",
+      "operator_id": "piecewise_case_function_lens",
+      "runtime_overlay_active": false,
+      "selected_variant_id": "piecewise_case_function_lens::abstract_kernel_shadow_e136h_v1",
+      "selected_variant_type": "abstract_kernel_shadow",
+      "split_state": "abstract_lineage_hold"
+    },
+    {
+      "current_activation": 16576512,
+      "destructive_delete": false,
+      "display_name": "Fraction / Ratio / Probability Lens",
+      "hold_reason": "abstract-but-useful kernel has value but insufficient human/operator lineage clarity for runtime replacement",
+      "lineage_action": "preserve_kernel_and_trace_activation_family_before_rename_or_prune",
+      "operator_id": "fraction_ratio_probability_lens",
+      "runtime_overlay_active": false,
+      "selected_variant_id": "fraction_ratio_probability_lens::abstract_kernel_shadow_e136h_v1",
+      "selected_variant_type": "abstract_kernel_shadow",
+      "split_state": "abstract_lineage_hold"
+    },
+    {
+      "current_activation": 10068721,
+      "destructive_delete": false,
+      "display_name": "Variable Definition Binding Lens",
+      "hold_reason": "abstract-but-useful kernel has value but insufficient human/operator lineage clarity for runtime replacement",
+      "lineage_action": "preserve_kernel_and_trace_activation_family_before_rename_or_prune",
+      "operator_id": "variable_definition_binding_lens",
+      "runtime_overlay_active": false,
+      "selected_variant_id": "variable_definition_binding_lens::abstract_kernel_shadow_e136h_v1",
+      "selected_variant_type": "abstract_kernel_shadow",
+      "split_state": "abstract_lineage_hold"
+    },
+    {
+      "current_activation": 7990790,
+      "destructive_delete": false,
+      "display_name": "Summation / Sequence / Series Lens",
+      "hold_reason": "abstract-but-useful kernel has value but insufficient human/operator lineage clarity for runtime replacement",
+      "lineage_action": "preserve_kernel_and_trace_activation_family_before_rename_or_prune",
+      "operator_id": "summation_sequence_series_lens",
+      "runtime_overlay_active": false,
+      "selected_variant_id": "summation_sequence_series_lens::abstract_kernel_shadow_e136h_v1",
+      "selected_variant_type": "abstract_kernel_shadow",
+      "split_state": "abstract_lineage_hold"
+    },
+    {
+      "current_activation": 10519775,
+      "destructive_delete": false,
+      "display_name": "Unit Quantity Binding Lens",
+      "hold_reason": "abstract-but-useful kernel has value but insufficient human/operator lineage clarity for runtime replacement",
+      "lineage_action": "preserve_kernel_and_trace_activation_family_before_rename_or_prune",
+      "operator_id": "unit_quantity_binding_lens",
+      "runtime_overlay_active": false,
+      "selected_variant_id": "unit_quantity_binding_lens::abstract_kernel_shadow_e136h_v1",
+      "selected_variant_type": "abstract_kernel_shadow",
+      "split_state": "abstract_lineage_hold"
+    },
+    {
+      "current_activation": 10965612,
+      "destructive_delete": false,
+      "display_name": "Answer Format Instruction Lens",
+      "hold_reason": "abstract-but-useful kernel has value but insufficient human/operator lineage clarity for runtime replacement",
+      "lineage_action": "preserve_kernel_and_trace_activation_family_before_rename_or_prune",
+      "operator_id": "answer_format_instruction_lens",
+      "runtime_overlay_active": false,
+      "selected_variant_id": "answer_format_instruction_lens::abstract_kernel_shadow_e136h_v1",
+      "selected_variant_type": "abstract_kernel_shadow",
+      "split_state": "abstract_lineage_hold"
+    }
+  ]
+}

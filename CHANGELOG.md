@@ -1,6 +1,24 @@
 # Changelog
 
-This changelog is narrowed to the current v6 / E127-E136L evidence anchor. Full historical beta, probe, Python SDK, legacy Rust, and research-output history is preserved in git history and archive tags.
+This changelog is narrowed to the current v6 / E127-E136M evidence anchor. Full historical beta, probe, Python SDK, legacy Rust, and research-output history is preserved in git history and archive tags.
+
+## 2026-06-17 - E136M Runtime Replacement Apply Or Abstract Lineage Split
+
+- Added `scripts/probes/run_e136m_runtime_replacement_apply_or_abstract_lineage_split.py`.
+- Materialized the E136L direct canary wins into a runtime-facing replacement
+  overlay: 16 overlay applies, 7 verified replacements, 9 light-prune overlays,
+  and 16 rollback snapshots.
+- Preserved the safety split: 11 tightened challenger/OOD rows remain held and
+  7 abstract lineage rows remain held.
+- Effective runtime overlay impact is intentionally narrower than the full
+  E136J/E136K shadow-prune number: 3,450,257 direct canary activations removed,
+  while 18,792,948 challenger candidate removed activations are explicitly not
+  applied yet.
+- Rollback/apply audit passed: rollback triggers 0, production destructive
+  deletes 0, strict recall misses 0, wrong-scope proxy calls 0, hard negatives
+  0, unsupported answers 0, and direct Flow writes 0.
+- Track decision: proceed to E136N challenger/OOD runtime replacement gauntlet
+  for the 11 tightened-trigger hold rows.
 
 ## 2026-06-17 - E136L Runtime Replacement Canary And Tightened Challenger Confirm
 

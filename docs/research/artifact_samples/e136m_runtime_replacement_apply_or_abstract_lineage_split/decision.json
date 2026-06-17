@@ -1,0 +1,6 @@
+{
+  "artifact_contract": "E136M_RUNTIME_REPLACEMENT_APPLY_OR_ABSTRACT_LINEAGE_SPLIT",
+  "decision": "e136m_runtime_replacement_overlay_and_lineage_split_confirmed",
+  "next": "E136N_CHALLENGER_OOD_RUNTIME_REPLACEMENT_GAUNTLET",
+  "pass_gate": true
+}

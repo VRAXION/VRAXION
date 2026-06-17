@@ -1,0 +1,148 @@
+{
+  "rows": [
+    {
+      "destructive_delete": false,
+      "operator_id": "latex_inline_math_boundary_lens",
+      "overlay_action": "activate_selected_variant_light_prune_legacy_trigger",
+      "queue_state": "runtime_overlay_active",
+      "removed_activation": 81198,
+      "rollback_required": true,
+      "selected_variant_id": "latex_inline_math_boundary_lens::semantic_verified_pruned_e136h_v1"
+    },
+    {
+      "destructive_delete": false,
+      "operator_id": "boxed_answer_boundary_lens",
+      "overlay_action": "activate_selected_variant_replace_legacy_trigger",
+      "queue_state": "runtime_overlay_active",
+      "removed_activation": 1704478,
+      "rollback_required": true,
+      "selected_variant_id": "boxed_answer_boundary_lens::semantic_verified_pruned_e136h_v1"
+    },
+    {
+      "destructive_delete": false,
+      "operator_id": "proof_step_connector_lens",
+      "overlay_action": "activate_selected_variant_replace_legacy_trigger",
+      "queue_state": "runtime_overlay_active",
+      "removed_activation": 336129,
+      "rollback_required": true,
+      "selected_variant_id": "proof_step_connector_lens::semantic_verified_pruned_e136h_v1"
+    },
+    {
+      "destructive_delete": false,
+      "operator_id": "geometry_diagram_reference_guard",
+      "overlay_action": "activate_selected_variant_replace_legacy_trigger",
+      "queue_state": "runtime_overlay_active",
+      "removed_activation": 182698,
+      "rollback_required": true,
+      "selected_variant_id": "geometry_diagram_reference_guard::semantic_verified_pruned_e136h_v1"
+    },
+    {
+      "destructive_delete": false,
+      "operator_id": "matrix_vector_block_lens",
+      "overlay_action": "activate_selected_variant_replace_legacy_trigger",
+      "queue_state": "runtime_overlay_active",
+      "removed_activation": 36969,
+      "rollback_required": true,
+      "selected_variant_id": "matrix_vector_block_lens::semantic_verified_pruned_e136h_v1"
+    },
+    {
+      "destructive_delete": false,
+      "operator_id": "word_problem_no_solve_guard_v2",
+      "overlay_action": "activate_selected_variant_replace_legacy_trigger",
+      "queue_state": "runtime_overlay_active",
+      "removed_activation": 575595,
+      "rollback_required": true,
+      "selected_variant_id": "word_problem_no_solve_guard_v2::semantic_verified_pruned_e136h_v1"
+    },
+    {
+      "destructive_delete": false,
+      "operator_id": "instruction_task_decomposition_lens",
+      "overlay_action": "activate_selected_variant_replace_legacy_trigger",
+      "queue_state": "runtime_overlay_active",
+      "removed_activation": 418498,
+      "rollback_required": true,
+      "selected_variant_id": "instruction_task_decomposition_lens::semantic_verified_pruned_e136h_v1"
+    },
+    {
+      "destructive_delete": false,
+      "operator_id": "summarization_request_lens",
+      "overlay_action": "activate_selected_variant_light_prune_legacy_trigger",
+      "queue_state": "runtime_overlay_active",
+      "removed_activation": 21664,
+      "rollback_required": true,
+      "selected_variant_id": "summarization_request_lens::semantic_verified_pruned_e136h_v1"
+    },
+    {
+      "destructive_delete": false,
+      "operator_id": "refusal_boundary_guard",
+      "overlay_action": "activate_selected_variant_light_prune_legacy_trigger",
+      "queue_state": "runtime_overlay_active",
+      "removed_activation": 148,
+      "rollback_required": true,
+      "selected_variant_id": "refusal_boundary_guard::semantic_verified_pruned_e136h_v1"
+    },
+    {
+      "destructive_delete": false,
+      "operator_id": "helpful_harmless_preference_guard",
+      "overlay_action": "activate_selected_variant_light_prune_legacy_trigger",
+      "queue_state": "runtime_overlay_active",
+      "removed_activation": 0,
+      "rollback_required": true,
+      "selected_variant_id": "helpful_harmless_preference_guard::semantic_verified_pruned_e136h_v1"
+    },
+    {
+      "destructive_delete": false,
+      "operator_id": "rejected_response_contrast_lens",
+      "overlay_action": "activate_selected_variant_light_prune_legacy_trigger",
+      "queue_state": "runtime_overlay_active",
+      "removed_activation": 0,
+      "rollback_required": true,
+      "selected_variant_id": "rejected_response_contrast_lens::semantic_verified_pruned_e136h_v1"
+    },
+    {
+      "destructive_delete": false,
+      "operator_id": "source_absence_defer_guard",
+      "overlay_action": "activate_selected_variant_light_prune_legacy_trigger",
+      "queue_state": "runtime_overlay_active",
+      "removed_activation": 111,
+      "rollback_required": true,
+      "selected_variant_id": "source_absence_defer_guard::semantic_verified_pruned_e136h_v1"
+    },
+    {
+      "destructive_delete": false,
+      "operator_id": "human_written_instruction_style_lens",
+      "overlay_action": "activate_selected_variant_light_prune_legacy_trigger",
+      "queue_state": "runtime_overlay_active",
+      "removed_activation": 0,
+      "rollback_required": true,
+      "selected_variant_id": "human_written_instruction_style_lens::semantic_verified_pruned_e136h_v1"
+    },
+    {
+      "destructive_delete": false,
+      "operator_id": "synthetic_dialogue_noise_guard",
+      "overlay_action": "activate_selected_variant_light_prune_legacy_trigger",
+      "queue_state": "runtime_overlay_active",
+      "removed_activation": 0,
+      "rollback_required": true,
+      "selected_variant_id": "synthetic_dialogue_noise_guard::semantic_verified_pruned_e136h_v1"
+    },
+    {
+      "destructive_delete": false,
+      "operator_id": "reasoning_instruction_lens",
+      "overlay_action": "activate_selected_variant_light_prune_legacy_trigger",
+      "queue_state": "runtime_overlay_active",
+      "removed_activation": 0,
+      "rollback_required": true,
+      "selected_variant_id": "reasoning_instruction_lens::semantic_verified_pruned_e136h_v1"
+    },
+    {
+      "destructive_delete": false,
+      "operator_id": "assistant_translation_multilingual_lens",
+      "overlay_action": "activate_selected_variant_replace_legacy_trigger",
+      "queue_state": "runtime_overlay_active",
+      "removed_activation": 92769,
+      "rollback_required": true,
+      "selected_variant_id": "assistant_translation_multilingual_lens::semantic_verified_pruned_e136h_v1"
+    }
+  ]
+}
