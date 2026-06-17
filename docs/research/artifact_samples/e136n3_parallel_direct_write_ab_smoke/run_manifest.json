@@ -1,0 +1,6 @@
+{
+  "artifact_contract": "E136N3_PARALLEL_DIRECT_WRITE_AB_SMOKE",
+  "boundary": "parallel direct-write A/B smoke only; no runtime replacement; no held promotion",
+  "e136n2_artifact": "docs/research/artifact_samples/e136n2_agency_matrix_arbitration_smoke",
+  "e136n_artifact": "docs/research/artifact_samples/e136n_primary_secondary_variant_governance"
+}

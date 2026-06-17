@@ -7,8 +7,8 @@ _Last updated: 2026-06-17_
 ```text
 branch = main
 current_release = v6.1.7
-current_evidence_anchor = E136N2 Agency Matrix arbitration smoke
-current_evidence_subject = trained Agency Matrix arbitration over the E136N primary/secondary proposal surface
+current_evidence_anchor = E136N3 parallel direct-write A/B smoke
+current_evidence_subject = parallel proposal fanout versus parallel direct Flow write over the E136N/E136N2 proposal surface
 latest_released_runtime_slice = a908a838a1119540ed88bc91e10cfcb0bdae92a8
 latest_released_runtime_subject = Add training data curriculum readiness gate
 ```
@@ -22,8 +22,8 @@ latest_released_runtime_subject = Add training data curriculum readiness gate
 | `vraxion-runtime/` | Active Rust runtime and preflight/final-training binaries |
 | `docs/research/E79_TRAINING_DATA_CURRICULUM_READINESS_*.md` | Latest released training-data/curriculum readiness gate contract/result evidence |
 | `CODEX_HANDOVER.md` | First-read handover for fresh Codex sessions |
-| `docs/research/E80_*` through `docs/research/E136N2_*` | Current evidence layer |
-| `scripts/probes/run_e80_*` through `scripts/probes/run_e136n2_*` | Repro/check scripts for the current evidence layer |
+| `docs/research/E80_*` through `docs/research/E136N3_*` | Current evidence layer |
+| `scripts/probes/run_e80_*` through `scripts/probes/run_e136n3_*` | Repro/check scripts for the current evidence layer |
 | `docs/research/artifact_samples/` | Tracked sample artifacts used by evidence CI |
 | `scripts/tools/generate_operator_rank_dashboard.py` | Self-contained Operator rank dashboard generator |
 | `docs/` | Current public docs and GitHub Pages front door |
@@ -238,6 +238,13 @@ python -m py_compile scripts/probes/run_e136n2_agency_matrix_arbitration_smoke.p
 python scripts/probes/run_e136n2_agency_matrix_arbitration_smoke.py --out target/ci/e136n2_agency_matrix_arbitration_smoke --sample-out ""
 ```
 
+E136N3 parallel direct-write A/B smoke:
+
+```powershell
+python -m py_compile scripts/probes/run_e136n3_parallel_direct_write_ab_smoke.py
+python scripts/probes/run_e136n3_parallel_direct_write_ab_smoke.py --out target/ci/e136n3_parallel_direct_write_ab_smoke --sample-out ""
+```
+
 Dashboard smoke:
 
 ```powershell
@@ -252,17 +259,18 @@ python scripts/tools/generate_operator_rank_dashboard.py --out target/ci/operato
 | 2 | [`docs/CURRENT_STATUS.md`](CURRENT_STATUS.md) | Current status and claim boundary |
 | 3 | [`VALIDATED_FINDINGS.md`](../VALIDATED_FINDINGS.md) | Current validated chain |
 | 4 | [`CODEX_HANDOVER.md`](../CODEX_HANDOVER.md) | Fresh-session handover and next steps |
-| 5 | [`docs/research/E136N2_AGENCY_MATRIX_ARBITRATION_SMOKE_RESULT.md`](research/E136N2_AGENCY_MATRIX_ARBITRATION_SMOKE_RESULT.md) | Current Agency Matrix arbitration evidence |
-| 6 | [`docs/research/E136N_PRIMARY_SECONDARY_VARIANT_GOVERNANCE_RESULT.md`](research/E136N_PRIMARY_SECONDARY_VARIANT_GOVERNANCE_RESULT.md) | Primary/secondary variant governance evidence |
-| 7 | [`docs/research/E136M_RUNTIME_REPLACEMENT_APPLY_OR_ABSTRACT_LINEAGE_SPLIT_RESULT.md`](research/E136M_RUNTIME_REPLACEMENT_APPLY_OR_ABSTRACT_LINEAGE_SPLIT_RESULT.md) | Runtime replacement overlay evidence |
-| 8 | [`docs/research/E136L_RUNTIME_REPLACEMENT_CANARY_AND_TIGHTENED_CHALLENGER_CONFIRM_RESULT.md`](research/E136L_RUNTIME_REPLACEMENT_CANARY_AND_TIGHTENED_CHALLENGER_CONFIRM_RESULT.md) | Runtime replacement canary evidence |
-| 9 | [`docs/research/E136K_OPERATOR_REPLACEMENT_APPLY_PLAN_OR_FLOW_SCALE_TRANSFER_RESULT.md`](research/E136K_OPERATOR_REPLACEMENT_APPLY_PLAN_OR_FLOW_SCALE_TRANSFER_RESULT.md) | Operator replacement apply-plan evidence |
-| 10 | [`docs/research/E136J_SHADOW_VARIANT_APPLY_AND_RESIDUAL_PRUNE_CONFIRM_RESULT.md`](research/E136J_SHADOW_VARIANT_APPLY_AND_RESIDUAL_PRUNE_CONFIRM_RESULT.md) | Shadow-apply/residual-prune evidence |
-| 11 | [`docs/research/E136I_OPERATOR_SUPERSESSION_AND_OUTPUT_LEDGER_PLANNING_RESULT.md`](research/E136I_OPERATOR_SUPERSESSION_AND_OUTPUT_LEDGER_PLANNING_RESULT.md) | Supersession/output ledger evidence |
-| 12 | [`docs/research/E136H_EXISTING_OPERATOR_REFINEMENT_MUTATION_PRUNE_NIGHT_CYCLE_RESULT.md`](research/E136H_EXISTING_OPERATOR_REFINEMENT_MUTATION_PRUNE_NIGHT_CYCLE_RESULT.md) | Existing-operator refinement evidence |
-| 13 | [`docs/research/E136G_ADAPTIVE_IDLE_TICK_BUDGET_CONFIRM_RESULT.md`](research/E136G_ADAPTIVE_IDLE_TICK_BUDGET_CONFIRM_RESULT.md) | Adaptive idle tick-budget evidence |
-| 14 | [`docs/research/E136F_IDLE_THINK_TICK_HELDOUT_SERIES_CONFIRM_RESULT.md`](research/E136F_IDLE_THINK_TICK_HELDOUT_SERIES_CONFIRM_RESULT.md) | Idle think-tick heldout-series evidence |
-| 15 | [`docs/research/E136E_IDLE_THINK_TICK_PROPOSAL_REFINEMENT_SMOKE_RESULT.md`](research/E136E_IDLE_THINK_TICK_PROPOSAL_REFINEMENT_SMOKE_RESULT.md) | Idle think-tick proposal-refinement smoke |
+| 5 | [`docs/research/E136N3_PARALLEL_DIRECT_WRITE_AB_SMOKE_RESULT.md`](research/E136N3_PARALLEL_DIRECT_WRITE_AB_SMOKE_RESULT.md) | Current parallel fanout/direct-write A/B evidence |
+| 6 | [`docs/research/E136N2_AGENCY_MATRIX_ARBITRATION_SMOKE_RESULT.md`](research/E136N2_AGENCY_MATRIX_ARBITRATION_SMOKE_RESULT.md) | Agency Matrix arbitration evidence |
+| 7 | [`docs/research/E136N_PRIMARY_SECONDARY_VARIANT_GOVERNANCE_RESULT.md`](research/E136N_PRIMARY_SECONDARY_VARIANT_GOVERNANCE_RESULT.md) | Primary/secondary variant governance evidence |
+| 8 | [`docs/research/E136M_RUNTIME_REPLACEMENT_APPLY_OR_ABSTRACT_LINEAGE_SPLIT_RESULT.md`](research/E136M_RUNTIME_REPLACEMENT_APPLY_OR_ABSTRACT_LINEAGE_SPLIT_RESULT.md) | Runtime replacement overlay evidence |
+| 9 | [`docs/research/E136L_RUNTIME_REPLACEMENT_CANARY_AND_TIGHTENED_CHALLENGER_CONFIRM_RESULT.md`](research/E136L_RUNTIME_REPLACEMENT_CANARY_AND_TIGHTENED_CHALLENGER_CONFIRM_RESULT.md) | Runtime replacement canary evidence |
+| 10 | [`docs/research/E136K_OPERATOR_REPLACEMENT_APPLY_PLAN_OR_FLOW_SCALE_TRANSFER_RESULT.md`](research/E136K_OPERATOR_REPLACEMENT_APPLY_PLAN_OR_FLOW_SCALE_TRANSFER_RESULT.md) | Operator replacement apply-plan evidence |
+| 11 | [`docs/research/E136J_SHADOW_VARIANT_APPLY_AND_RESIDUAL_PRUNE_CONFIRM_RESULT.md`](research/E136J_SHADOW_VARIANT_APPLY_AND_RESIDUAL_PRUNE_CONFIRM_RESULT.md) | Shadow-apply/residual-prune evidence |
+| 12 | [`docs/research/E136I_OPERATOR_SUPERSESSION_AND_OUTPUT_LEDGER_PLANNING_RESULT.md`](research/E136I_OPERATOR_SUPERSESSION_AND_OUTPUT_LEDGER_PLANNING_RESULT.md) | Supersession/output ledger evidence |
+| 13 | [`docs/research/E136H_EXISTING_OPERATOR_REFINEMENT_MUTATION_PRUNE_NIGHT_CYCLE_RESULT.md`](research/E136H_EXISTING_OPERATOR_REFINEMENT_MUTATION_PRUNE_NIGHT_CYCLE_RESULT.md) | Existing-operator refinement evidence |
+| 14 | [`docs/research/E136G_ADAPTIVE_IDLE_TICK_BUDGET_CONFIRM_RESULT.md`](research/E136G_ADAPTIVE_IDLE_TICK_BUDGET_CONFIRM_RESULT.md) | Adaptive idle tick-budget evidence |
+| 15 | [`docs/research/E136F_IDLE_THINK_TICK_HELDOUT_SERIES_CONFIRM_RESULT.md`](research/E136F_IDLE_THINK_TICK_HELDOUT_SERIES_CONFIRM_RESULT.md) | Idle think-tick heldout-series evidence |
+| 16 | [`docs/research/E136E_IDLE_THINK_TICK_PROPOSAL_REFINEMENT_SMOKE_RESULT.md`](research/E136E_IDLE_THINK_TICK_PROPOSAL_REFINEMENT_SMOKE_RESULT.md) | Idle think-tick proposal-refinement smoke |
 | 16 | [`docs/research/E136D_OUTPUT_TEXT_FIELD_BINARY_MATRIX_SMOKE_RESULT.md`](research/E136D_OUTPUT_TEXT_FIELD_BINARY_MATRIX_SMOKE_RESULT.md) | OutputTextField binary matrix evidence |
 | 17 | [`docs/research/E136C_ASSISTANT_TEXT_POLISHED_RENDER_QUICK_TEST_RESULT.md`](research/E136C_ASSISTANT_TEXT_POLISHED_RENDER_QUICK_TEST_RESULT.md) | Polished assistant-text render quick evidence |
 | 18 | [`docs/research/E136B_ASSISTANT_TEXT_ROUTE_COMPOSITION_AND_BOUNDARY_CONFIRM_RESULT.md`](research/E136B_ASSISTANT_TEXT_ROUTE_COMPOSITION_AND_BOUNDARY_CONFIRM_RESULT.md) | Assistant-text route-composition/boundary evidence |

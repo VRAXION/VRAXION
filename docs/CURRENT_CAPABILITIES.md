@@ -354,7 +354,30 @@ unsupported-claim rejects = 6
 OutputTextField roundtrip/checksum/zero-fill = 70 / 70
 ```
 
-Current E136N2 Agency Matrix arbitration smoke evidence:
+Current E136N3 parallel direct-write A/B smoke evidence:
+
+```text
+case count = 123
+direct-write accuracy = 0.089431
+Agency-gated accuracy = 1.000000
+direct-write unsafe commits = 34
+Agency-gated unsafe commits = 0
+direct-write conflict cases = 102
+direct-write nondeterministic cases = 102
+direct-write missing chunk metadata = 10
+direct-write runtime writes = 602
+Agency-gated runtime direct writes = 0
+direct-write held variant promotions = 36
+Agency-gated held variant promotions = 0
+direct-write safe controls correct = 11
+expected child checks = 36
+Agency-gated child checks = 36
+expected Flow chunks = 10
+Agency-gated Flow chunks = 10
+destructive deletes = 0
+```
+
+Previous E136N2 Agency Matrix arbitration smoke evidence:
 
 ```text
 input E136N operators = 34
@@ -766,6 +789,11 @@ Agency Matrix arbitration
   reject unsafe/direct-write proposals, hold challenger/lineage candidates for
   child checks, and commit compatible Flow chunks without a hand-written
   hierarchy registry
+
+parallel proposal fanout with commit barrier
+  let multiple operators propose in the same tick, then require Agency-gated
+  commit for chunk/multi-write behavior; parallel direct Flow write is rejected
+  as a default after E136N3 A/B evidence
 ```
 
 ## What it cannot claim yet

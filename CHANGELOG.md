@@ -1,6 +1,26 @@
 # Changelog
 
-This changelog is narrowed to the current v6 / E127-E136N2 evidence anchor. Full historical beta, probe, Python SDK, legacy Rust, and research-output history is preserved in git history and archive tags.
+This changelog is narrowed to the current v6 / E127-E136N3 evidence anchor. Full historical beta, probe, Python SDK, legacy Rust, and research-output history is preserved in git history and archive tags.
+
+## 2026-06-17 - E136N3 Parallel Direct-Write A/B Smoke
+
+- Added `scripts/probes/run_e136n3_parallel_direct_write_ab_smoke.py`.
+- Compared parallel direct Flow writes against parallel proposal fanout plus the
+  E136N2 Agency Matrix commit barrier over the E136N primary/secondary variant
+  surface.
+- Evaluation covered 123 cases: same-operator primary/secondary races, unsafe
+  direct-write rejection, rollback-regression races, held challenger/lineage
+  appeals, compatible parallel chunks, and disjoint safe controls.
+- Result: parallel direct-write arm accuracy 0.089431 versus Agency-gated arm
+  accuracy 1.000000.
+- Safety/shape: direct-write unsafe commits 34, direct-write conflict cases 102,
+  direct-write nondeterministic cases 102, missing chunk metadata 10, held
+  variant promotions 36, while Agency-gated runtime direct writes 0, unsafe
+  commits 0, held variant promotions 0, child checks 36/36, and Flow chunks
+  10/10.
+- Control caveat: direct write passed 11 disjoint safe controls, so the result
+  rejects parallel direct write as a default, not parallel proposal fanout.
+- Track decision: proceed to E136O challenger/OOD runtime replacement gauntlet.
 
 ## 2026-06-17 - E136N2 Agency Matrix Arbitration Smoke
 

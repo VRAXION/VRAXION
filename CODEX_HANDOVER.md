@@ -8,8 +8,8 @@ Last updated: 2026-06-17
 repo = VRAXION_anchorwiki
 branch = main
 latest_release_target = v6.1.7
-current_evidence_anchor = E136N2 Agency Matrix arbitration smoke on main
-current_status = E136N2 confirms a trained Agency Matrix can arbitrate E136N primary/secondary proposal bundles
+current_evidence_anchor = E136N3 parallel direct-write A/B smoke on main
+current_status = E136N3 confirms parallel proposal fanout should keep an Agency Matrix commit barrier; parallel direct Flow write is rejected as default
 ```
 
 This is the first file a fresh Codex should read after cloning the repo.
@@ -711,6 +711,38 @@ In this smoke it selects safe primaries, holds challenger/lineage proposals for
 child checks, rejects unsafe direct writes, and commits compatible Flow chunks.
 ```
 
+E136N3 compares parallel direct write against parallel proposal fanout plus the
+E136N2 Agency Matrix commit barrier:
+
+```text
+case_count = 123
+direct_write_accuracy = 0.089431
+agency_gated_accuracy = 1.000000
+
+direct_write_unsafe_commit_count = 34
+agency_gated_unsafe_commit_count = 0
+
+direct_write_conflict_case_count = 102
+direct_write_nondeterministic_case_count = 102
+direct_write_missing_chunk_metadata_count = 10
+
+direct_write_runtime_write_count = 602
+agency_gated_runtime_direct_write_count = 0
+
+direct_write_held_variant_promoted_count = 36
+agency_gated_held_variant_promoted_count = 0
+
+direct_write_safe_control_correct_count = 11
+agency_gated_child_check_count = 36 / 36
+agency_gated_flow_chunk_count = 10 / 10
+
+meaning:
+Parallel proposal fanout is useful, but parallel direct Flow write is not a
+safe default. Keep a snapshot/proposal/Agency-commit barrier. The direct-write
+arm passed 11 disjoint safe controls, but failed conflict, unsafe, held,
+rollback, and chunk-metadata cases.
+```
+
 ## Claim Boundary
 
 Allowed:
@@ -786,6 +818,10 @@ proposal surface: 118 examples converge in 2 epochs, 146 proposal-bundle cases
 pass, baseline accuracy is 0.232877, Agency Matrix accuracy is 1.000000, 10
 Flow chunks are committed, unsafe Agency Matrix commits are 0, and no held
 challenger or lineage variant is promoted.
+E136N3 confirms the parallel execution boundary: parallel proposal fanout with
+an Agency commit barrier passes 123/123 A/B cases, while parallel direct Flow
+write reaches only 0.089431 accuracy with 34 unsafe commits and 102
+nondeterministic cases. Parallel direct Flow write is rejected as a default.
 ```
 
 System-level interpretation:
@@ -875,6 +911,7 @@ docs/research/E136L_RUNTIME_REPLACEMENT_CANARY_AND_TIGHTENED_CHALLENGER_CONFIRM_
 docs/research/E136M_RUNTIME_REPLACEMENT_APPLY_OR_ABSTRACT_LINEAGE_SPLIT_RESULT.md
 docs/research/E136N_PRIMARY_SECONDARY_VARIANT_GOVERNANCE_RESULT.md
 docs/research/E136N2_AGENCY_MATRIX_ARBITRATION_SMOKE_RESULT.md
+docs/research/E136N3_PARALLEL_DIRECT_WRITE_AB_SMOKE_RESULT.md
 docs/research/artifact_samples/e127_overnight_text_skill_farm_orange_cycle/
 docs/research/artifact_samples/e127_text_to_text_render_smoke_current/
 docs/research/artifact_samples/e128_assistant_text_io_lightweight_render_training/
@@ -1194,6 +1231,23 @@ E136N2 LINEAGE HOLD PROMOTED = 0
 E136N2 DESTRUCTIVE DELETES = 0
 ```
 
+Expected E136N3 parallel direct-write A/B smoke:
+
+```text
+E136N3 CASES = 123
+E136N3 DIRECT WRITE ACCURACY = 0.089431
+E136N3 AGENCY GATED ACCURACY = 1.000000
+E136N3 DIRECT WRITE UNSAFE COMMITS = 34
+E136N3 AGENCY GATED UNSAFE COMMITS = 0
+E136N3 DIRECT WRITE CONFLICT CASES = 102
+E136N3 DIRECT WRITE NONDETERMINISTIC CASES = 102
+E136N3 DIRECT WRITE MISSING CHUNK METADATA = 10
+E136N3 DIRECT WRITE SAFE CONTROLS CORRECT = 11
+E136N3 AGENCY GATED RUNTIME DIRECT WRITES = 0
+E136N3 AGENCY GATED CHILD CHECKS = 36 / 36
+E136N3 AGENCY GATED FLOW CHUNKS = 10 / 10
+```
+
 ## Local E136 Seed Pack
 
 After E135, a local assistant/text seed pack was downloaded and normalized for
@@ -1265,6 +1319,8 @@ python -m py_compile scripts/probes/run_e136n_primary_secondary_variant_governan
 python scripts/probes/run_e136n_primary_secondary_variant_governance.py --out target/ci/e136n_primary_secondary_variant_governance --sample-out ""
 python -m py_compile scripts/probes/run_e136n2_agency_matrix_arbitration_smoke.py
 python scripts/probes/run_e136n2_agency_matrix_arbitration_smoke.py --out target/ci/e136n2_agency_matrix_arbitration_smoke --sample-out ""
+python -m py_compile scripts/probes/run_e136n3_parallel_direct_write_ab_smoke.py
+python scripts/probes/run_e136n3_parallel_direct_write_ab_smoke.py --out target/ci/e136n3_parallel_direct_write_ab_smoke --sample-out ""
 python -m compileall -q scripts
 cargo test --workspace
 git diff --check
