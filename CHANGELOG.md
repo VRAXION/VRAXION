@@ -1,6 +1,27 @@
 # Changelog
 
-This changelog is narrowed to the current v6 / E127-E136J evidence anchor. Full historical beta, probe, Python SDK, legacy Rust, and research-output history is preserved in git history and archive tags.
+This changelog is narrowed to the current v6 / E127-E136K evidence anchor. Full historical beta, probe, Python SDK, legacy Rust, and research-output history is preserved in git history and archive tags.
+
+## 2026-06-17 - E136K Operator Replacement Apply Plan Or Flow-Scale Transfer
+
+- Added `scripts/probes/run_e136k_operator_replacement_apply_plan_or_flow_scale_transfer.py`.
+- Converted the E136I/E136J replacement evidence into an explicit non-destructive
+  runtime canary/apply plan.
+- Result: 34 operators planned, 16 direct canary-ready candidates, 11
+  challenger/OOD-required tightened replacements, 7 abstract lineage holds, and
+  16 rollback-manifest entries.
+- Shadow impact preserved from E136J: 188,597,925 current activations,
+  166,354,720 selected activations, 22,243,205 shadow-pruned activations, and
+  shadow prune ratio 0.117940.
+- Direct canary subset: 3,450,257 shadow-pruned activations, prune ratio
+  0.057159.
+- Challenger subset: 18,792,948 shadow-pruned activations, prune ratio
+  0.351548, so it remains gated before runtime replacement.
+- Governance: 0 strict recall misses, 0 wrong-scope proxy calls, 0 hard
+  negatives, 0 unsupported answers, 0 direct Flow writes, 0 destructive applies,
+  and 0 checker failures.
+- Track decision: proceed with operator replacement canary planning; defer
+  Flow-scale transfer until the canary plan lands.
 
 ## 2026-06-17 - E136J Shadow Variant Apply And Residual Prune Confirm
 

@@ -1,0 +1,6 @@
+{
+  "artifact_contract": "E136K_OPERATOR_REPLACEMENT_APPLY_PLAN_OR_FLOW_SCALE_TRANSFER",
+  "boundary": "apply plan only; no destructive runtime replacement or prune",
+  "e136i_artifact": "docs/research/artifact_samples/e136i_operator_supersession_and_output_ledger_planning",
+  "e136j_artifact": "docs/research/artifact_samples/e136j_shadow_variant_apply_and_residual_prune_confirm"
+}

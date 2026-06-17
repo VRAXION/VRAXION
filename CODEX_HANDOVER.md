@@ -8,8 +8,8 @@ Last updated: 2026-06-17
 repo = VRAXION_anchorwiki
 branch = main
 latest_release_target = v6.1.7
-current_evidence_anchor = E136J shadow variant apply and residual prune confirm on main
-current_status = E136J confirmed the E136I replacement ledger under long non-destructive shadow apply through the 19:00 deadline
+current_evidence_anchor = E136K operator replacement apply plan or Flow-scale transfer on main
+current_status = E136K converted E136I/E136J replacement evidence into a rollback-safe runtime canary apply plan
 ```
 
 This is the first file a fresh Codex should read after cloning the repo.
@@ -535,6 +535,33 @@ previous premature-finish failure mode, ran past six hours, and stopped only at
 the explicit 19:00 deadline.
 ```
 
+E136K converts that evidence into a non-destructive apply plan:
+
+```text
+operator_count = 34
+direct_canary_ready_count = 16
+challenger_ood_required_count = 11
+abstract_lineage_required_count = 7
+runtime_mutation_allowed_now_count = 0
+destructive_apply_count = 0
+rollback_manifest_count = 16
+
+shadow_pruned_activation_total = 22,243,205
+direct_canary_shadow_prune_ratio = 0.057159
+challenger_shadow_prune_ratio = 0.351548
+
+strict_recall_miss_total = 0
+wrong_scope_proxy_total = 0
+hard_negative_total = 0
+unsupported_answer_total = 0
+direct_flow_write_total = 0
+
+meaning:
+16 candidates can move to rollback-safe runtime canary planning. The 11
+tightened-trigger replacements are promising but must pass challenger/OOD
+canary before runtime replacement. The 7 abstract kernels remain lineage holds.
+```
+
 ## Claim Boundary
 
 Allowed:
@@ -591,6 +618,9 @@ E136J confirms those selected variants under non-destructive shadow apply over
 8,094 cycles and 33,153,024 replay rows: 22,243,205 shadow-pruned activations,
 0 strict recall misses, 0 wrong-scope proxy calls, 0 hard negatives, and 0
 direct Flow writes.
+E136K confirms a rollback-safe non-destructive apply plan: 16 direct
+canary-ready candidates, 11 challenger/OOD-required replacements, 7 abstract
+lineage holds, 0 destructive applies, and 0 runtime mutations allowed now.
 ```
 
 System-level interpretation:
@@ -675,6 +705,7 @@ docs/research/E136G_ADAPTIVE_IDLE_TICK_BUDGET_CONFIRM_RESULT.md
 docs/research/E136H_EXISTING_OPERATOR_REFINEMENT_MUTATION_PRUNE_NIGHT_CYCLE_RESULT.md
 docs/research/E136I_OPERATOR_SUPERSESSION_AND_OUTPUT_LEDGER_PLANNING_RESULT.md
 docs/research/E136J_SHADOW_VARIANT_APPLY_AND_RESIDUAL_PRUNE_CONFIRM_RESULT.md
+docs/research/E136K_OPERATOR_REPLACEMENT_APPLY_PLAN_OR_FLOW_SCALE_TRANSFER_RESULT.md
 docs/research/artifact_samples/e127_overnight_text_skill_farm_orange_cycle/
 docs/research/artifact_samples/e127_text_to_text_render_smoke_current/
 docs/research/artifact_samples/e128_assistant_text_io_lightweight_render_training/
@@ -882,6 +913,24 @@ E136J HARD NEGATIVES = 0
 E136J DIRECT FLOW WRITES = 0
 ```
 
+Expected E136K operator replacement apply plan:
+
+```text
+E136K OPERATORS = 34
+E136K DIRECT CANARY READY = 16
+E136K CHALLENGER/OOD REQUIRED = 11
+E136K ABSTRACT LINEAGE REQUIRED = 7
+E136K RUNTIME MUTATION ALLOWED NOW = 0
+E136K DESTRUCTIVE APPLIES = 0
+E136K ROLLBACK MANIFEST = 16
+E136K DIRECT CANARY PRUNE RATIO = 0.057159
+E136K CHALLENGER PRUNE RATIO = 0.351548
+E136K STRICT RECALL MISSES = 0
+E136K WRONG SCOPE PROXY = 0
+E136K HARD NEGATIVES = 0
+E136K DIRECT FLOW WRITES = 0
+```
+
 ## Local E136 Seed Pack
 
 After E135, a local assistant/text seed pack was downloaded and normalized for
@@ -990,8 +1039,8 @@ Do not delete or commit them without an explicit cleanup decision.
 Recommended next steps:
 
 ```text
-1. Plan E136K operator replacement apply or Flow-scale transfer using E136J
-   shadow evidence before destructive prune or broad new-operator farming.
+1. Run E136L runtime replacement canary and tightened challenger confirmation
+   before destructive prune or broad new-operator farming.
 2. Run a later assistant/open-domain boundary probe before claiming broader
    assistant readiness.
 3. Decide whether to continue E127 with a fresh candidate pack or pause farming.

@@ -354,7 +354,30 @@ unsupported-claim rejects = 6
 OutputTextField roundtrip/checksum/zero-fill = 70 / 70
 ```
 
-Current E136J shadow-variant apply/residual-prune evidence:
+Current E136K operator replacement apply-plan evidence:
+
+```text
+operator count = 34
+direct canary ready = 16
+challenger/OOD required = 11
+abstract lineage required = 7
+runtime mutation allowed now = 0
+destructive applies = 0
+rollback manifest entries = 16
+current activation total = 188,597,925
+selected activation total = 166,354,720
+shadow-pruned activation total = 22,243,205
+shadow prune ratio = 0.117940
+direct canary prune ratio = 0.057159
+challenger prune ratio = 0.351548
+strict recall misses = 0
+wrong-scope proxy calls = 0
+hard negatives = 0
+unsupported answers = 0
+direct Flow writes = 0
+```
+
+Previous E136J shadow-variant apply/residual-prune evidence:
 
 ```text
 stop reason = deadline
@@ -607,6 +630,10 @@ assistant-text route composition
 shadow operator apply / residual prune
   replay selected variants non-destructively and measure recall, wrong-scope,
   and prune impact before any runtime replacement
+
+operator replacement apply planning
+  split shadow-proven variants into rollback-safe direct canaries,
+  challenger/OOD-required replacements, and abstract lineage holds
 ```
 
 ## What it cannot claim yet
