@@ -1,0 +1,7 @@
+{
+  "artifact_contract": "E136S_ATOMIC_MULTIWRITE_DEFAULT_ROUTE_SWITCH_CANARY_GUARD",
+  "boundary": "default-route switch canary guard only; no production apply",
+  "generated_at_unix_ms": 1781751575187,
+  "default_rounds": 512,
+  "switch_rounds": 2048
+}

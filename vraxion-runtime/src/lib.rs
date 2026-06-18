@@ -40,10 +40,11 @@ pub use binary_ingress::{
 };
 pub use bit_codec::{bits_from_int, checksum, drop_bit, insert_bit, int_from_bits, safe_filler};
 pub use body::{
-    flow_cell_for, ground_cell_for, proposal_record_bits, AgencyView, AtomicOverlayCanaryConfig,
-    AtomicOverlayCanaryStep, AtomicRuntimeStep, BodyConfig, FieldKind, FieldMatrix,
-    LockedBodyRuntime, ProposalField, ProposalFieldError, RuntimeStep, DEFAULT_BODY, EXTENDED_BODY,
-    OVERCAPACITY_AVOID_DEFAULT, PROPOSAL_WIDTH_64_CONTROL, RESEARCH_CEILING_BODY,
+    flow_cell_for, ground_cell_for, proposal_record_bits, AgencyView,
+    AtomicDefaultRouteSwitchCanaryConfig, AtomicDefaultRouteSwitchCanaryStep,
+    AtomicOverlayCanaryConfig, AtomicOverlayCanaryStep, AtomicRuntimeStep, BodyConfig, FieldKind,
+    FieldMatrix, LockedBodyRuntime, ProposalField, ProposalFieldError, RuntimeStep, DEFAULT_BODY,
+    EXTENDED_BODY, OVERCAPACITY_AVOID_DEFAULT, PROPOSAL_WIDTH_64_CONTROL, RESEARCH_CEILING_BODY,
 };
 pub use curriculum::{
     audit_resume, CurriculumBlockReason, CurriculumCheckpoint, CurriculumLesson,
@@ -437,6 +438,74 @@ mod tests {
             AtomicCommitAction::CommitMulti
         );
         assert_eq!(step.overlay_step.committed.len(), 2);
+        assert_eq!(runtime.flow.active_count(), 0);
+        assert_eq!(runtime.ground.active_count(), 0);
+    }
+
+    #[test]
+    fn atomic_switch_canary_applies_guarded_commit_to_default_route() {
+        let mut runtime = LockedBodyRuntime::default_body();
+        let proposals = [atomic_primary(2, 1, 20, 1), atomic_primary(5, 1, 21, 2)];
+        let step = runtime.process_atomic_default_route_switch_canary(
+            AtomicDefaultRouteSwitchCanaryConfig::e136s_switch_canary(),
+            AtomicCommitPolicy::e136p_preview(),
+            &proposals,
+        );
+        assert!(step.switch_canary_active);
+        assert!(step.rollback_snapshot_taken);
+        assert!(step.preview_guard_passed);
+        assert!(step.preview_match);
+        assert!(step.default_route_applied);
+        assert!(!step.production_apply_allowed_now);
+        assert_eq!(
+            step.preview_step.decision.action,
+            AtomicCommitAction::CommitMulti
+        );
+        assert_eq!(step.applied_step.as_ref().unwrap().committed.len(), 2);
+        assert_eq!(runtime.flow.read(flow_cell_for(2, DEFAULT_BODY)), Some(1));
+        assert_eq!(
+            runtime.ground.read(ground_cell_for(5, DEFAULT_BODY)),
+            Some(1)
+        );
+    }
+
+    #[test]
+    fn atomic_switch_canary_blocks_stale_commit_without_mutation() {
+        let mut runtime = LockedBodyRuntime::default_body();
+        let mut stale = atomic_primary(2, 1, 20, 1);
+        stale.cycle_id = 0;
+        let step = runtime.process_atomic_default_route_switch_canary(
+            AtomicDefaultRouteSwitchCanaryConfig::e136s_switch_canary(),
+            AtomicCommitPolicy::e136p_preview(),
+            &[stale],
+        );
+        assert!(step.switch_canary_active);
+        assert!(step.rollback_snapshot_taken);
+        assert!(!step.preview_guard_passed);
+        assert!(!step.default_route_applied);
+        assert!(step.default_route_unchanged_on_block);
+        assert_eq!(step.preview_step.decision.action, AtomicCommitAction::Defer);
+        assert_eq!(runtime.flow.active_count(), 0);
+        assert_eq!(runtime.ground.active_count(), 0);
+    }
+
+    #[test]
+    fn atomic_switch_canary_blocks_production_apply_flag() {
+        let mut runtime = LockedBodyRuntime::default_body();
+        let proposals = [atomic_primary(2, 1, 20, 1), atomic_primary(5, 1, 21, 2)];
+        let mut config = AtomicDefaultRouteSwitchCanaryConfig::e136s_switch_canary();
+        config.production_apply_allowed_now = true;
+        let step = runtime.process_atomic_default_route_switch_canary(
+            config,
+            AtomicCommitPolicy::e136p_preview(),
+            &proposals,
+        );
+        assert!(step.switch_canary_active);
+        assert!(step.rollback_snapshot_taken);
+        assert!(!step.preview_guard_passed);
+        assert!(!step.default_route_applied);
+        assert!(step.default_route_unchanged_on_block);
+        assert!(step.production_apply_allowed_now);
         assert_eq!(runtime.flow.active_count(), 0);
         assert_eq!(runtime.ground.active_count(), 0);
     }

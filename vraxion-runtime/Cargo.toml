@@ -85,3 +85,7 @@ path = "src/bin/e136q_atomic_multiwrite_overlay_canary.rs"
 [[bin]]
 name = "e136r_atomic_multiwrite_preapply_decision"
 path = "src/bin/e136r_atomic_multiwrite_preapply_decision.rs"
+
+[[bin]]
+name = "e136s_atomic_multiwrite_switch_canary_guard"
+path = "src/bin/e136s_atomic_multiwrite_switch_canary_guard.rs"

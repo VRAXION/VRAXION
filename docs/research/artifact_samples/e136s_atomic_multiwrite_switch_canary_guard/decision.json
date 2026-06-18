@@ -1,0 +1,6 @@
+{
+  "artifact_contract": "E136S_ATOMIC_MULTIWRITE_DEFAULT_ROUTE_SWITCH_CANARY_GUARD",
+  "decision": "e136s_atomic_multiwrite_default_route_switch_canary_guard_confirmed",
+  "next": "E136T_ATOMIC_MULTIWRITE_DEFAULT_ROUTE_PROBATION_ROLLOUT_DECISION",
+  "pass_gate": true
+}

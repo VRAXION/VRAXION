@@ -265,6 +265,49 @@ pub struct AtomicOverlayCanaryStep {
     pub overlay_step: AtomicRuntimeStep,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct AtomicDefaultRouteSwitchCanaryConfig {
+    pub switch_canary_active: bool,
+    pub default_route_apply_allowed: bool,
+    pub rollback_snapshot_required: bool,
+    pub require_preview_match: bool,
+    pub production_apply_allowed_now: bool,
+}
+
+impl AtomicDefaultRouteSwitchCanaryConfig {
+    pub const fn e136s_switch_canary() -> Self {
+        Self {
+            switch_canary_active: true,
+            default_route_apply_allowed: true,
+            rollback_snapshot_required: true,
+            require_preview_match: true,
+            production_apply_allowed_now: false,
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct AtomicDefaultRouteSwitchCanaryStep {
+    pub switch_canary_active: bool,
+    pub default_route_apply_allowed: bool,
+    pub production_apply_allowed_now: bool,
+    pub rollback_snapshot_taken: bool,
+    pub rollback_ready: bool,
+    pub preview_checked: bool,
+    pub preview_guard_passed: bool,
+    pub preview_match: bool,
+    pub default_route_applied: bool,
+    pub default_route_rolled_back: bool,
+    pub default_route_unchanged_on_block: bool,
+    pub held_variant_promoted: bool,
+    pub default_flow_active_cells_before: usize,
+    pub default_flow_active_cells_after: usize,
+    pub default_ground_active_cells_before: usize,
+    pub default_ground_active_cells_after: usize,
+    pub preview_step: AtomicRuntimeStep,
+    pub applied_step: Option<AtomicRuntimeStep>,
+}
+
 #[derive(Debug, Clone)]
 pub struct LockedBodyRuntime {
     pub config: BodyConfig,
@@ -400,6 +443,108 @@ impl LockedBodyRuntime {
             default_ground_active_cells_before: default_ground_before,
             default_ground_active_cells_after: default_ground_after,
             overlay_step,
+        }
+    }
+
+    pub fn process_atomic_default_route_switch_canary(
+        &mut self,
+        config: AtomicDefaultRouteSwitchCanaryConfig,
+        policy: AtomicCommitPolicy,
+        proposals: &[AtomicCommitProposal],
+    ) -> AtomicDefaultRouteSwitchCanaryStep {
+        let snapshot = self.clone();
+        let default_flow_before = self.flow.active_count();
+        let default_ground_before = self.ground.active_count();
+        let rollback_snapshot_taken =
+            config.rollback_snapshot_required && config.switch_canary_active;
+
+        let mut preview_runtime = self.clone();
+        let preview_step = if config.switch_canary_active {
+            preview_runtime.process_atomic_proposals_preview(policy, proposals)
+        } else {
+            AtomicRuntimeStep {
+                decision: AtomicCommitDecision::rejected(AtomicRejectReason::NoValidProposal),
+                committed: Vec::new(),
+                proposal_slots_used: 0,
+                flow_active_cells: self.flow.active_count(),
+                ground_active_cells: self.ground.active_count(),
+            }
+        };
+
+        let held_ids: Vec<u32> = proposals
+            .iter()
+            .filter(|proposal| {
+                matches!(
+                    proposal.role,
+                    crate::agency::AtomicProposalRole::HeldChallenger
+                        | crate::agency::AtomicProposalRole::HeldLineage
+                )
+            })
+            .map(|proposal| proposal.source_pocket_id)
+            .collect();
+        let held_variant_promoted = preview_step
+            .decision
+            .records
+            .iter()
+            .any(|record| held_ids.contains(&record.source_pocket_id));
+        let preview_guard_passed = config.switch_canary_active
+            && config.default_route_apply_allowed
+            && !config.production_apply_allowed_now
+            && rollback_snapshot_taken
+            && preview_step.decision.committed()
+            && preview_step.committed.len() == preview_step.decision.records.len()
+            && preview_step.decision.records.len() <= policy.max_multi_write
+            && preview_step.decision.order_independent
+            && preview_step.decision.runtime_direct_write_count == 0
+            && preview_step.decision.oracle_plan_feature_use_count == 0
+            && !held_variant_promoted;
+
+        let mut applied_step = None;
+        let mut preview_match = !preview_guard_passed;
+        let mut default_route_applied = false;
+        let mut default_route_rolled_back = false;
+
+        if preview_guard_passed {
+            let applied = self.process_atomic_proposals_preview(policy, proposals);
+            preview_match = applied.decision == preview_step.decision
+                && applied.committed == preview_step.committed
+                && applied.flow_active_cells == preview_step.flow_active_cells
+                && applied.ground_active_cells == preview_step.ground_active_cells;
+            if config.require_preview_match && !preview_match {
+                *self = snapshot.clone();
+                default_route_rolled_back = true;
+            } else {
+                default_route_applied = true;
+            }
+            applied_step = Some(applied);
+        }
+
+        let unchanged_after_block = !default_route_applied
+            && self.flow == snapshot.flow
+            && self.ground == snapshot.ground
+            && self.cycle_id == snapshot.cycle_id;
+        let default_flow_after = self.flow.active_count();
+        let default_ground_after = self.ground.active_count();
+
+        AtomicDefaultRouteSwitchCanaryStep {
+            switch_canary_active: config.switch_canary_active,
+            default_route_apply_allowed: config.default_route_apply_allowed,
+            production_apply_allowed_now: config.production_apply_allowed_now,
+            rollback_snapshot_taken,
+            rollback_ready: rollback_snapshot_taken,
+            preview_checked: config.switch_canary_active,
+            preview_guard_passed,
+            preview_match,
+            default_route_applied,
+            default_route_rolled_back,
+            default_route_unchanged_on_block: unchanged_after_block,
+            held_variant_promoted,
+            default_flow_active_cells_before: default_flow_before,
+            default_flow_active_cells_after: default_flow_after,
+            default_ground_active_cells_before: default_ground_before,
+            default_ground_active_cells_after: default_ground_after,
+            preview_step,
+            applied_step,
         }
     }
 
