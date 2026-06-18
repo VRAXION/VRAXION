@@ -1,0 +1,6 @@
+{
+  "artifact_contract": "E136R_ATOMIC_MULTIWRITE_PREAPPLY_DECISION_GAUNTLET",
+  "decision": "e136r_atomic_multiwrite_default_route_candidate_confirmed",
+  "next": "E136S_ATOMIC_MULTIWRITE_DEFAULT_ROUTE_SWITCH_CANARY_GUARD",
+  "pass_gate": true
+}

@@ -1,0 +1,6 @@
+{
+  "rollback_snapshot_count": 2048,
+  "rollback_ready": true,
+  "rollback_action": "drop_canary_overlay_clone_keep_default_route",
+  "seeded_default_state_preserved_count": 2048
+}

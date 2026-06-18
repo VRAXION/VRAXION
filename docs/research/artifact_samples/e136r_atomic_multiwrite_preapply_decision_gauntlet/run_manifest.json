@@ -1,0 +1,7 @@
+{
+  "artifact_contract": "E136R_ATOMIC_MULTIWRITE_PREAPPLY_DECISION_GAUNTLET",
+  "boundary": "final pre-apply decision only; no production apply",
+  "generated_at_unix_ms": 1781750822768,
+  "default_rounds": 512,
+  "canary_rounds": 2048
+}
