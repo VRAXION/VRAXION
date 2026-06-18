@@ -1,13 +1,13 @@
 # VRAXION Current Status
 
-_Last updated: 2026-06-17_
+_Last updated: 2026-06-19_
 
 ## Official Status
 
 ```text
 Current source of truth: main
 Current GitHub release: v6.1.7
-Current evidence anchor: E136N3 parallel direct-write A/B smoke (post-v6.1.7 main)
+Current evidence anchor: E136S atomic multiwrite default-route switch canary guard (post-v6.1.7 main)
 Latest released runtime slice: a908a838a1119540ed88bc91e10cfcb0bdae92a8 E79 training data/curriculum readiness gate
 Active branch surface: main only
 Historical branch heads: archive/branches/2026-06-13/*
@@ -54,6 +54,12 @@ E69-E79 released Rust runtime and training-data readiness gate
 -> E136N primary/secondary variant governance
 -> E136N2 Agency Matrix arbitration smoke
 -> E136N3 parallel direct-write A/B smoke
+-> E136N4 Agency-gated atomic multi-write confirm
+-> E136O challenger/OOD runtime replacement gauntlet
+-> E136P runtime atomic multiwrite implementation preview
+-> E136Q runtime overlay canary atomic multiwrite confirm
+-> E136R atomic multiwrite pre-apply decision gauntlet
+-> E136S atomic multiwrite default-route switch canary guard
 ```
 
 ## Current Evidence
@@ -96,6 +102,12 @@ E69-E79 released Rust runtime and training-data readiness gate
 - E136N installs a primary/secondary variant governance skeleton over the E136M overlay: 34 operators, 68 variant registry rows, 34 primary variants, 34 secondary variants, 16 primary-active overlay variants, 16 rollback secondaries, 11 challenger secondaries, 7 lineage-hold secondaries, 0 retired variants, 0 destructive deletes, 0 ambiguous primaries, and 0 orphan secondaries.
 - E136N2 trains a tiny Agency Matrix over the E136N primary/secondary proposal surface: 118 training examples converged in 2 epochs, 146 proposal-bundle cases, baseline accuracy 0.232877, Agency Matrix accuracy 1.000000, 10 Agency-gated Flow chunks, 36 held challenger/lineage child checks, 0 Agency Matrix unsafe commits, 0 challenger promotions, and 0 destructive deletes.
 - E136N3 compares parallel direct Flow write against parallel proposal fanout plus an Agency Matrix commit barrier: 123 cases, direct-write accuracy 0.089431, Agency-gated accuracy 1.000000, 34 direct-write unsafe commits, 102 direct-write nondeterministic cases, 11 direct-write disjoint safe controls passed, 0 Agency-gated unsafe commits, 0 Agency-gated runtime direct writes, and 0 destructive deletes.
+- E136N4 confirms Agency-gated atomic multi-write over the E136N3 route: 225 cases, accuracy 1.000000, 191 atomic writes, 0 partial writes, 0 order-independence failures, 0 runtime direct writes, and 0 destructive deletes.
+- E136O runs an oracle-free challenger/OOD runtime replacement gauntlet: 7,146 full cases, train/heldout/OOD/full accuracy 1.000000, 3,667 atomic writes, 0 partial writes, 0 runtime direct writes, 0 oracle plan feature use, and 0 checker failures.
+- E136P moves the policy into a Rust runtime implementation preview: 10/10 cases, 9 atomic writes, 0 partial writes, 0 runtime direct writes, 0 held variant promotions, and production apply disabled.
+- E136Q exercises the runtime path behind an overlay canary: 10/10 canary cases, default route unchanged, 10 rollback snapshots, 0 partial writes, 0 runtime direct writes, and production apply disabled.
+- E136R confirms the atomic multiwrite path as a default-route candidate under pre-apply stress: 1,536/1,536 default-route regression cases and 2,048/2,048 canary stress cases succeeded, 0 false commits, 0 missed commits, 0 partial writes, 0 runtime direct writes, and production apply disabled.
+- E136S confirms the default-route switch canary guard: 1,536/1,536 default-route cases and 2,048/2,048 switch cases succeeded, 1,024 guarded default-route applies, 1,024 guarded blocked no-apply cases, 0 false applies, 0 missed applies, 0 preview mismatches, 0 partial writes, 0 runtime direct writes, and production apply still disabled.
 - Long-running work must emit continuous partial progress and checkpoint data.
 
 ## What Is Historical
@@ -106,7 +118,7 @@ The old bounded-service, open-vocab assistant, beta release, byte-pipeline, and 
 
 Allowed current claim:
 
-> VRAXION v6 has a Rust mainline for governed Pocket Library state, resumable curriculum execution, multi-lane final-training supervision, global Pocket Library merge/dedupe governance, a training-data/curriculum readiness gate, one canonical `final_train` campaign entrypoint, governed Operator evidence through E127, an E128 lightweight assistant text-IO render-training smoke, E129 scoped exact arithmetic trace Operators promoted through Orange/Legendary probation, an E130A CoreMemoryCandidate-to-Orange backfill, an E130B arithmetic text-IO transfer/no-call gauntlet, an E131 visible-equation assistant-render gauntlet, an E132 external math-text skill farm, E133 math-text route composition/no-solve assistant confirmation, E134 external math-text OOD route stress/counterexample confirmation, E135 controlled multi-route dialogue-state confirmation, E136A assistant-text skill-farm confirmation, E136B assistant-text route-composition/boundary confirmation, E136C assistant-text polished-render quick confirmation, E136D OutputTextField binary matrix confirmation, E136E idle think-tick proposal-refinement confirmation, E136F idle think-tick heldout-series confirmation, E136G adaptive idle tick-budget confirmation, E136H existing-operator refinement confirmation, E136I operator supersession/output-ledger planning confirmation, E136J shadow-variant apply/residual-prune confirmation, E136K operator replacement apply-plan confirmation, E136L runtime replacement canary confirmation, E136M runtime replacement overlay confirmation, E136N primary/secondary variant governance confirmation, E136N2 Agency Matrix arbitration smoke confirmation, and E136N3 parallel direct-write A/B smoke confirmation. E136N3 confirms parallel proposal fanout should keep an Agency commit barrier: the direct-write arm reached only 0.089431 accuracy with 34 unsafe commits and 102 nondeterministic cases, while the Agency-gated arm reached 1.000000 accuracy with 0 runtime direct writes.
+> VRAXION v6 has a Rust mainline for governed Pocket Library state, resumable curriculum execution, multi-lane final-training supervision, global Pocket Library merge/dedupe governance, a training-data/curriculum readiness gate, one canonical `final_train` campaign entrypoint, governed Operator evidence through E127, an E128 lightweight assistant text-IO render-training smoke, E129 scoped exact arithmetic trace Operators promoted through Orange/Legendary probation, an E130A CoreMemoryCandidate-to-Orange backfill, an E130B arithmetic text-IO transfer/no-call gauntlet, an E131 visible-equation assistant-render gauntlet, an E132 external math-text skill farm, E133 math-text route composition/no-solve assistant confirmation, E134 external math-text OOD route stress/counterexample confirmation, E135 controlled multi-route dialogue-state confirmation, E136A assistant-text skill-farm confirmation, E136B assistant-text route-composition/boundary confirmation, E136C assistant-text polished-render quick confirmation, E136D OutputTextField binary matrix confirmation, E136E idle think-tick proposal-refinement confirmation, E136F idle think-tick heldout-series confirmation, E136G adaptive idle tick-budget confirmation, E136H existing-operator refinement confirmation, E136I operator supersession/output-ledger planning confirmation, E136J shadow-variant apply/residual-prune confirmation, E136K operator replacement apply-plan confirmation, E136L runtime replacement canary confirmation, E136M runtime replacement overlay confirmation, E136N primary/secondary variant governance confirmation, E136N2 Agency Matrix arbitration smoke confirmation, E136N3 parallel direct-write A/B smoke confirmation, E136N4 Agency-gated atomic multi-write confirmation, E136O oracle-free challenger/OOD runtime replacement confirmation, E136P runtime atomic multiwrite implementation preview, E136Q runtime overlay canary confirmation, E136R atomic multiwrite pre-apply confirmation, and E136S guarded default-route switch canary confirmation. E136S confirms safe atomic cases can pass snapshot + preview guard + preview/apply match before writing to the default route, while rejected/deferred cases leave the default route unchanged. It still does not authorize unrestricted production apply.
 
 Short form:
 
@@ -138,6 +150,10 @@ runtime replacement overlay = yes
 primary/secondary variant governance = yes
 Agency Matrix arbitration smoke = yes
 parallel proposal fanout with Agency commit barrier = yes
+Agency-gated atomic multi-write = yes
+atomic multiwrite runtime preview = yes
+atomic multiwrite overlay canary = yes
+guarded default-route switch canary = yes
 parallel direct Flow write as default = rejected by A/B smoke
 CoreMemoryCandidate-to-Orange rank backfill = yes
 open-domain LLM/chatbot = no

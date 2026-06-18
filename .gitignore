@@ -42,6 +42,12 @@ venv/
 /reports/
 /results/
 /output/
+/outputs/
+/raw_data/
+/private_data/
+/full_traces/
+/redteam/
+/secrets/
 
 # OS cruft
 .DS_Store

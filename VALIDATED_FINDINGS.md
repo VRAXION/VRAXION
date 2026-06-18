@@ -1,6 +1,6 @@
 # VRAXION Validated Findings
 
-_Last updated: 2026-06-17_
+_Last updated: 2026-06-19_
 
 This is the active evidence summary for the current repo state. Historical findings remain in git history, archived wiki state, release notes, and the Timeline Archive.
 
@@ -9,8 +9,8 @@ This is the active evidence summary for the current repo state. Historical findi
 ```text
 branch = main
 current_release = v6.1.7
-current_evidence_anchor = E136N3_PARALLEL_DIRECT_WRITE_AB_SMOKE
-current_evidence_subject = parallel proposal fanout versus parallel direct Flow write over the E136N/E136N2 proposal surface
+current_evidence_anchor = E136S_ATOMIC_MULTIWRITE_DEFAULT_ROUTE_SWITCH_CANARY_GUARD
+current_evidence_subject = guarded atomic multiwrite switch canary with snapshot + preview/apply match before default-route writes
 latest_released_runtime_slice = a908a838a1119540ed88bc91e10cfcb0bdae92a8 E79 training data/curriculum readiness gate
 ```
 
@@ -51,15 +51,21 @@ latest_released_runtime_slice = a908a838a1119540ed88bc91e10cfcb0bdae92a8 E79 tra
 | E136M | tracked on `main` | Runtime replacement overlay: 16 active overlay applies, 7 verified replacements, 9 light-prune overlays, 11 challenger/OOD queue rows held, 7 abstract lineage split rows held, 0 destructive deletes. | v6 evidence |
 | E136N | tracked on `main` | Primary/secondary variant governance: 34 operators with one primary and one secondary each, 16 primary-active overlays, 16 rollback secondaries, 11 challenger secondaries, 7 lineage-hold secondaries, 0 retired variants. | v6 evidence |
 | E136N2 | tracked on `main` | Agency Matrix arbitration smoke: 118 training examples converged in 2 epochs, 146 proposal-bundle cases, baseline accuracy 0.232877, Agency Matrix accuracy 1.000000, 10 Flow chunks, 0 unsafe commits, 0 challenger promotions. | v6 evidence |
-| E136N3 | tracked on `main` | Parallel direct-write A/B smoke: 123 cases, direct-write accuracy 0.089431, Agency-gated accuracy 1.000000, 34 direct-write unsafe commits, 102 direct-write nondeterministic cases, 11 direct-write safe controls passed, 0 Agency-gated runtime direct writes. | Current evidence anchor |
+| E136N3 | tracked on `main` | Parallel direct-write A/B smoke: 123 cases, direct-write accuracy 0.089431, Agency-gated accuracy 1.000000, 34 direct-write unsafe commits, 102 direct-write nondeterministic cases, 11 direct-write safe controls passed, 0 Agency-gated runtime direct writes. | v6 evidence |
+| E136N4 | tracked on `main` | Agency-gated atomic multi-write confirm: 225 cases, accuracy 1.000000, 191 atomic writes, 0 partial writes, 0 runtime direct writes. | v6 evidence |
+| E136O | tracked on `main` | Oracle-free challenger/OOD runtime replacement gauntlet: 7,146 full cases, full accuracy 1.000000, 3,667 atomic writes, 0 partial writes, 0 runtime direct writes. | v6 evidence |
+| E136P | tracked on `main` | Runtime atomic multiwrite implementation preview: Rust atomic batch API and preview path, 10/10 cases, production apply disabled. | v6 evidence |
+| E136Q | tracked on `main` | Runtime overlay canary atomic multiwrite confirm: 10/10 canary cases, default route unchanged, rollback snapshots 10, production apply disabled. | v6 evidence |
+| E136R | tracked on `main` | Atomic multiwrite pre-apply decision gauntlet: 1,536/1,536 default-route regression cases and 2,048/2,048 canary stress cases succeeded, production apply disabled. | v6 evidence |
+| E136S | tracked on `main` | Atomic multiwrite default-route switch canary guard: 1,536/1,536 default-route cases and 2,048/2,048 switch cases succeeded, 1,024 guarded applies, 1,024 guarded blocked no-apply cases, 0 false applies, 0 runtime direct writes. | Current evidence anchor |
 
 ## Current Validated Claim
 
-> VRAXION v6 has a Rust mainline for governed Pocket Library state, resumable curriculum execution, multi-lane final-training supervision, global Pocket Library merge/dedupe governance, a training-data/curriculum readiness gate, one canonical `final_train` campaign entrypoint, governed Operator evidence through E136N2 Agency Matrix arbitration smoke, and E136N3 parallel direct-write A/B smoke confirmation. E136N2 confirms a trained Agency Matrix arbitration smoke over the E136N surface with 118 training examples, 146 proposal-bundle cases, Agency Matrix accuracy 1.000000, 10 Flow chunks, 0 unsafe commits, and 0 challenger promotions. E136N3 confirms parallel proposal fanout should keep an Agency commit barrier: the direct-write arm reached only 0.089431 accuracy with 34 unsafe commits and 102 nondeterministic cases, while the Agency-gated arm reached 1.000000 accuracy with 0 runtime direct writes.
+> VRAXION v6 has a Rust mainline for governed Pocket Library state, resumable curriculum execution, multi-lane final-training supervision, global Pocket Library merge/dedupe governance, a training-data/curriculum readiness gate, one canonical `final_train` campaign entrypoint, governed Operator evidence through E136S. E136N2 confirmed a trained Agency Matrix arbitration smoke over the E136N surface with 118 training examples, 146 proposal-bundle cases, Agency Matrix accuracy 1.000000, 10 Flow chunks, 0 unsafe commits, and 0 challenger promotions. E136N3 confirmed parallel proposal fanout should keep an Agency commit barrier: the direct-write arm reached only 0.089431 accuracy with 34 unsafe commits and 102 nondeterministic cases, while the Agency-gated arm reached 1.000000 accuracy with 0 runtime direct writes. E136S confirms safe atomic multiwrite cases can pass snapshot + preview guard + preview/apply match before guarded default-route application, while rejected/deferred cases leave the default route unchanged. It still does not authorize unrestricted production apply.
 
 ## Operational Finding
 
-Long-running work must write progress continuously and support resume. The Rust runtime layers prove checkpoint/progress/writeout behavior through the E72-E79 chain. The E80-E136N3 evidence layer is governed research/operator/text-IO/arithmetic-trace/rank-backfill/visible-expression/visible-equation assistant-render/math-text skill-farm/route-composition/OOD-route-stress/dialogue-state/assistant-text skill-farm/assistant-text route-composition/polished-render/output-field/idle-refinement/heldout-idle/adaptive-idle/existing-operator-refinement/supersession-ledger/shadow-apply/apply-plan/runtime-canary/runtime-overlay/variant-governance/Agency-Matrix-arbitration/parallel-fanout-direct-write-A-B evidence and must remain explicitly scoped until promoted into runtime-facing behavior.
+Long-running work must write progress continuously and support resume. The Rust runtime layers prove checkpoint/progress/writeout behavior through the E72-E79 chain. The E80-E136S evidence layer is governed research/operator/text-IO/arithmetic-trace/rank-backfill/visible-expression/visible-equation assistant-render/math-text skill-farm/route-composition/OOD-route-stress/dialogue-state/assistant-text skill-farm/assistant-text route-composition/polished-render/output-field/idle-refinement/heldout-idle/adaptive-idle/existing-operator-refinement/supersession-ledger/shadow-apply/apply-plan/runtime-canary/runtime-overlay/variant-governance/Agency-Matrix-arbitration/parallel-fanout-direct-write-A-B/atomic-multiwrite-preview/overlay-canary/pre-apply/default-route-switch-canary evidence and must remain explicitly scoped until promoted into runtime-facing behavior.
 
 ## Hard Boundary
 
