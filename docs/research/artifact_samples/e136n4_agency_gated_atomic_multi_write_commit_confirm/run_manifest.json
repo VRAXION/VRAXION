@@ -1,0 +1,7 @@
+{
+  "artifact_contract": "E136N4_AGENCY_GATED_ATOMIC_MULTI_WRITE_COMMIT_CONFIRM",
+  "boundary": "local atomic multi-write smoke only; no production scheduler; no online push",
+  "e136n2_artifact": "docs/research/artifact_samples/e136n2_agency_matrix_arbitration_smoke",
+  "e136n3_artifact": "docs/research/artifact_samples/e136n3_parallel_direct_write_ab_smoke",
+  "e136n_artifact": "docs/research/artifact_samples/e136n_primary_secondary_variant_governance"
+}

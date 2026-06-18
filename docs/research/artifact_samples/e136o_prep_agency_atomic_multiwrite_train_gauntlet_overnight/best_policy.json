@@ -1,0 +1,15 @@
+{
+  "chunk_min_support": 2,
+  "enable_chunk_commit": true,
+  "enable_multi_write": true,
+  "enable_rollback_audit_write": true,
+  "enable_rollback_fallback": true,
+  "hold_held_variants": false,
+  "max_multi_write": 3,
+  "policy_generation": 30,
+  "reject_ambiguous_same_region": false,
+  "reject_checksum_tamper": true,
+  "reject_direct_flow_write": true,
+  "reject_stale_snapshot": true,
+  "stable_write_order": false
+}
