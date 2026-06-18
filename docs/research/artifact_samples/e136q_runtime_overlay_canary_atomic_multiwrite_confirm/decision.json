@@ -1,0 +1,6 @@
+{
+  "artifact_contract": "E136Q_RUNTIME_OVERLAY_CANARY_ATOMIC_MULTIWRITE_CONFIRM",
+  "decision": "e136q_runtime_overlay_canary_atomic_multiwrite_confirmed",
+  "next": "E136R_ATOMIC_MULTIWRITE_DEFAULT_ROUTE_OR_PRODUCTION_APPLY_DECISION",
+  "pass_gate": true
+}

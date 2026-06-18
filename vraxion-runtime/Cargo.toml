@@ -77,3 +77,7 @@ path = "src/bin/global_library_supervisor.rs"
 [[bin]]
 name = "e136p_atomic_multiwrite_preview"
 path = "src/bin/e136p_atomic_multiwrite_preview.rs"
+
+[[bin]]
+name = "e136q_atomic_multiwrite_overlay_canary"
+path = "src/bin/e136q_atomic_multiwrite_overlay_canary.rs"

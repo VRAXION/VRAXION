@@ -1,0 +1,5 @@
+{
+  "rollback_snapshot_count": 10,
+  "rollback_ready": true,
+  "rollback_action": "drop_canary_overlay_clone_keep_default_route"
+}

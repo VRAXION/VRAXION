@@ -235,6 +235,36 @@ pub struct AtomicRuntimeStep {
     pub ground_active_cells: usize,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct AtomicOverlayCanaryConfig {
+    pub canary_overlay_active: bool,
+    pub rollback_snapshot_required: bool,
+    pub production_apply_allowed_now: bool,
+}
+
+impl AtomicOverlayCanaryConfig {
+    pub const fn e136q_canary() -> Self {
+        Self {
+            canary_overlay_active: true,
+            rollback_snapshot_required: true,
+            production_apply_allowed_now: false,
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct AtomicOverlayCanaryStep {
+    pub canary_overlay_active: bool,
+    pub production_apply_allowed_now: bool,
+    pub rollback_snapshot_taken: bool,
+    pub default_route_unchanged: bool,
+    pub default_flow_active_cells_before: usize,
+    pub default_flow_active_cells_after: usize,
+    pub default_ground_active_cells_before: usize,
+    pub default_ground_active_cells_after: usize,
+    pub overlay_step: AtomicRuntimeStep,
+}
+
 #[derive(Debug, Clone)]
 pub struct LockedBodyRuntime {
     pub config: BodyConfig,
@@ -333,6 +363,43 @@ impl LockedBodyRuntime {
             proposal_slots_used: proposals.len(),
             flow_active_cells: self.flow.active_count(),
             ground_active_cells: self.ground.active_count(),
+        }
+    }
+
+    pub fn process_atomic_overlay_canary(
+        &self,
+        config: AtomicOverlayCanaryConfig,
+        policy: AtomicCommitPolicy,
+        proposals: &[AtomicCommitProposal],
+    ) -> AtomicOverlayCanaryStep {
+        let default_flow_before = self.flow.active_count();
+        let default_ground_before = self.ground.active_count();
+        let mut overlay = self.clone();
+        let overlay_step = if config.canary_overlay_active {
+            overlay.process_atomic_proposals_preview(policy, proposals)
+        } else {
+            AtomicRuntimeStep {
+                decision: AtomicCommitDecision::rejected(AtomicRejectReason::NoValidProposal),
+                committed: Vec::new(),
+                proposal_slots_used: 0,
+                flow_active_cells: overlay.flow.active_count(),
+                ground_active_cells: overlay.ground.active_count(),
+            }
+        };
+        let default_flow_after = self.flow.active_count();
+        let default_ground_after = self.ground.active_count();
+        AtomicOverlayCanaryStep {
+            canary_overlay_active: config.canary_overlay_active,
+            production_apply_allowed_now: config.production_apply_allowed_now,
+            rollback_snapshot_taken: config.rollback_snapshot_required
+                && config.canary_overlay_active,
+            default_route_unchanged: default_flow_before == default_flow_after
+                && default_ground_before == default_ground_after,
+            default_flow_active_cells_before: default_flow_before,
+            default_flow_active_cells_after: default_flow_after,
+            default_ground_active_cells_before: default_ground_before,
+            default_ground_active_cells_after: default_ground_after,
+            overlay_step,
         }
     }
 

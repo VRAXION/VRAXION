@@ -1,0 +1,8 @@
+{
+  "canary_overlay_active": true,
+  "canary_api": "LockedBodyRuntime::process_atomic_overlay_canary",
+  "preview_api": "LockedBodyRuntime::process_atomic_proposals_preview",
+  "agency_api": "agency_decide_atomic_batch",
+  "rollback_snapshot_required": true,
+  "production_apply_allowed_now": false
+}

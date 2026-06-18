@@ -40,10 +40,10 @@ pub use binary_ingress::{
 };
 pub use bit_codec::{bits_from_int, checksum, drop_bit, insert_bit, int_from_bits, safe_filler};
 pub use body::{
-    flow_cell_for, ground_cell_for, proposal_record_bits, AgencyView, AtomicRuntimeStep,
-    BodyConfig, FieldKind, FieldMatrix, LockedBodyRuntime, ProposalField, ProposalFieldError,
-    RuntimeStep, DEFAULT_BODY, EXTENDED_BODY, OVERCAPACITY_AVOID_DEFAULT,
-    PROPOSAL_WIDTH_64_CONTROL, RESEARCH_CEILING_BODY,
+    flow_cell_for, ground_cell_for, proposal_record_bits, AgencyView, AtomicOverlayCanaryConfig,
+    AtomicOverlayCanaryStep, AtomicRuntimeStep, BodyConfig, FieldKind, FieldMatrix,
+    LockedBodyRuntime, ProposalField, ProposalFieldError, RuntimeStep, DEFAULT_BODY, EXTENDED_BODY,
+    OVERCAPACITY_AVOID_DEFAULT, PROPOSAL_WIDTH_64_CONTROL, RESEARCH_CEILING_BODY,
 };
 pub use curriculum::{
     audit_resume, CurriculumBlockReason, CurriculumCheckpoint, CurriculumLesson,
@@ -415,6 +415,28 @@ mod tests {
             step.decision.reject_reason,
             Some(AtomicRejectReason::AmbiguousSameRegion)
         );
+        assert_eq!(runtime.flow.active_count(), 0);
+        assert_eq!(runtime.ground.active_count(), 0);
+    }
+
+    #[test]
+    fn atomic_overlay_canary_commits_only_inside_overlay() {
+        let runtime = LockedBodyRuntime::default_body();
+        let proposals = [atomic_primary(2, 1, 20, 1), atomic_primary(5, 1, 21, 2)];
+        let step = runtime.process_atomic_overlay_canary(
+            AtomicOverlayCanaryConfig::e136q_canary(),
+            AtomicCommitPolicy::e136p_preview(),
+            &proposals,
+        );
+        assert!(step.canary_overlay_active);
+        assert!(step.rollback_snapshot_taken);
+        assert!(step.default_route_unchanged);
+        assert!(!step.production_apply_allowed_now);
+        assert_eq!(
+            step.overlay_step.decision.action,
+            AtomicCommitAction::CommitMulti
+        );
+        assert_eq!(step.overlay_step.committed.len(), 2);
         assert_eq!(runtime.flow.active_count(), 0);
         assert_eq!(runtime.ground.active_count(), 0);
     }
