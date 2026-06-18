@@ -1,0 +1,13 @@
+{
+  "artifact_contract": "E136O_CHALLENGER_OOD_RUNTIME_REPLACEMENT_GAUNTLET",
+  "base_case_count": 225,
+  "boundary": "implementation readiness only; no production apply",
+  "e136n4_script": "scripts/probes/run_e136n4_agency_gated_atomic_multi_write_commit_confirm.py",
+  "e136o_artifact": "docs/research/artifact_samples/e136o_prep_agency_atomic_multiwrite_train_gauntlet_overnight",
+  "e136o_script": "scripts/probes/run_e136o_prep_agency_atomic_multiwrite_train_gauntlet_overnight.py",
+  "heldout_case_count": 75,
+  "ood_case_count": 6921,
+  "ood_waves": 24,
+  "seed": 136041,
+  "train_case_count": 150
+}

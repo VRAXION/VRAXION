@@ -1,0 +1,6 @@
+{
+  "artifact_contract": "E136O_CHALLENGER_OOD_RUNTIME_REPLACEMENT_GAUNTLET",
+  "decision": "e136o_challenger_ood_runtime_replacement_gauntlet_confirmed",
+  "next": "E136P_RUNTIME_ATOMIC_MULTIWRITE_IMPLEMENTATION_PREVIEW",
+  "pass_gate": true
+}
