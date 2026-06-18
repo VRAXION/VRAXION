@@ -28,7 +28,11 @@ pub mod proposal;
 pub mod text_field;
 pub mod training_data;
 
-pub use agency::{agency_decide, Action, AgencyState, CommitRecord};
+pub use agency::{
+    agency_decide, agency_decide_atomic_batch, Action, AgencyState, AtomicCommitAction,
+    AtomicCommitDecision, AtomicCommitPolicy, AtomicCommitProposal, AtomicProposalRole,
+    AtomicRejectReason, AtomicRejectedProposal, CommitRecord,
+};
 pub use binary_ingress::{
     corrupt_crc, corrupt_length, demo_case_insert_before_frame, encode_frame,
     reassemble_requested_frame, DecodeReason, DecodeResult, END_SYNC, LENGTH_BITS, PAYLOAD_BITS,
@@ -36,9 +40,10 @@ pub use binary_ingress::{
 };
 pub use bit_codec::{bits_from_int, checksum, drop_bit, insert_bit, int_from_bits, safe_filler};
 pub use body::{
-    flow_cell_for, ground_cell_for, proposal_record_bits, AgencyView, BodyConfig, FieldKind,
-    FieldMatrix, LockedBodyRuntime, ProposalField, ProposalFieldError, RuntimeStep, DEFAULT_BODY,
-    EXTENDED_BODY, OVERCAPACITY_AVOID_DEFAULT, PROPOSAL_WIDTH_64_CONTROL, RESEARCH_CEILING_BODY,
+    flow_cell_for, ground_cell_for, proposal_record_bits, AgencyView, AtomicRuntimeStep,
+    BodyConfig, FieldKind, FieldMatrix, LockedBodyRuntime, ProposalField, ProposalFieldError,
+    RuntimeStep, DEFAULT_BODY, EXTENDED_BODY, OVERCAPACITY_AVOID_DEFAULT,
+    PROPOSAL_WIDTH_64_CONTROL, RESEARCH_CEILING_BODY,
 };
 pub use curriculum::{
     audit_resume, CurriculumBlockReason, CurriculumCheckpoint, CurriculumLesson,
@@ -351,5 +356,66 @@ mod tests {
             assert_eq!(field.push(proposal), Ok(()));
         }
         assert_eq!(field.push(proposal), Err(ProposalFieldError::SlotOverflow));
+    }
+
+    fn atomic_primary(feature: u8, value: u8, source: u32, group: u8) -> AtomicCommitProposal {
+        AtomicCommitProposal {
+            cycle_id: 1,
+            source_pocket_id: source,
+            role: AtomicProposalRole::Primary,
+            relation_group: group,
+            trace_valid: true,
+            ground_compatible: true,
+            checksum_valid: true,
+            direct_flow_write: false,
+            unsupported_answer: false,
+            hard_negative: false,
+            primary_regression_signal: false,
+            target_feature: Some(feature),
+            value: Some(value),
+            confidence: 200,
+        }
+    }
+
+    #[test]
+    fn atomic_preview_commits_multiwrite_into_flow_and_ground() {
+        let mut runtime = LockedBodyRuntime::default_body();
+        let proposals = [
+            atomic_primary(2, 1, 20, 1),
+            atomic_primary(5, 1, 21, 2),
+            atomic_primary(8, 0, 22, 3),
+        ];
+        let step = runtime
+            .process_atomic_proposals_preview(AtomicCommitPolicy::e136p_preview(), &proposals);
+        assert_eq!(step.decision.action, AtomicCommitAction::CommitMulti);
+        assert_eq!(step.committed.len(), 3);
+        for proposal in proposals {
+            let feature = proposal.target_feature.unwrap();
+            let value = proposal.value.unwrap();
+            assert_eq!(
+                runtime.flow.read(flow_cell_for(feature, DEFAULT_BODY)),
+                Some(value)
+            );
+            assert_eq!(
+                runtime.ground.read(ground_cell_for(feature, DEFAULT_BODY)),
+                Some(value)
+            );
+        }
+        assert_eq!(step.decision.oracle_plan_feature_use_count, 0);
+    }
+
+    #[test]
+    fn atomic_preview_rejects_ambiguous_batch_without_mutation() {
+        let mut runtime = LockedBodyRuntime::default_body();
+        let proposals = [atomic_primary(2, 0, 20, 1), atomic_primary(2, 1, 21, 1)];
+        let step = runtime
+            .process_atomic_proposals_preview(AtomicCommitPolicy::e136p_preview(), &proposals);
+        assert_eq!(step.decision.action, AtomicCommitAction::Reject);
+        assert_eq!(
+            step.decision.reject_reason,
+            Some(AtomicRejectReason::AmbiguousSameRegion)
+        );
+        assert_eq!(runtime.flow.active_count(), 0);
+        assert_eq!(runtime.ground.active_count(), 0);
     }
 }

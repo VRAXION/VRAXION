@@ -5,7 +5,10 @@
 //! state containers, pockets still emit proposals, and only Agency commits can
 //! change Flow/Ground state.
 
-use crate::agency::{agency_decide, Action, AgencyState, CommitRecord};
+use crate::agency::{
+    agency_decide, agency_decide_atomic_batch, Action, AgencyState, AtomicCommitDecision,
+    AtomicCommitPolicy, AtomicCommitProposal, AtomicRejectReason, CommitRecord,
+};
 use crate::egress::{render_output, EgressMode, RenderedOutput};
 use crate::proposal::{ingress_to_proposal, Proposal};
 
@@ -223,6 +226,15 @@ pub struct RuntimeStep {
     pub ground_active_cells: usize,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct AtomicRuntimeStep {
+    pub decision: AtomicCommitDecision,
+    pub committed: Vec<CommitRecord>,
+    pub proposal_slots_used: usize,
+    pub flow_active_cells: usize,
+    pub ground_active_cells: usize,
+}
+
 #[derive(Debug, Clone)]
 pub struct LockedBodyRuntime {
     pub config: BodyConfig,
@@ -277,6 +289,48 @@ impl LockedBodyRuntime {
             committed,
             rendered,
             proposal_slots_used: self.proposal_field.len(),
+            flow_active_cells: self.flow.active_count(),
+            ground_active_cells: self.ground.active_count(),
+        }
+    }
+
+    pub fn process_atomic_proposals_preview(
+        &mut self,
+        policy: AtomicCommitPolicy,
+        proposals: &[AtomicCommitProposal],
+    ) -> AtomicRuntimeStep {
+        self.proposal_field.clear_cycle();
+        if proposals.len() > self.config.proposal_slots {
+            let decision =
+                AtomicCommitDecision::rejected(AtomicRejectReason::ProposalCapacityExceeded);
+            return AtomicRuntimeStep {
+                decision,
+                committed: Vec::new(),
+                proposal_slots_used: 0,
+                flow_active_cells: self.flow.active_count(),
+                ground_active_cells: self.ground.active_count(),
+            };
+        }
+
+        let decision = agency_decide_atomic_batch(
+            AgencyState {
+                cycle_id: self.cycle_id,
+            },
+            policy,
+            proposals,
+        );
+        let committed = if decision.committed() {
+            decision.records.clone()
+        } else {
+            Vec::new()
+        };
+        for record in &committed {
+            self.commit_record(*record);
+        }
+        AtomicRuntimeStep {
+            decision,
+            committed,
+            proposal_slots_used: proposals.len(),
             flow_active_cells: self.flow.active_count(),
             ground_active_cells: self.ground.active_count(),
         }

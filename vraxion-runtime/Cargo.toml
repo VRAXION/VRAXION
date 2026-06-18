@@ -73,3 +73,7 @@ path = "src/bin/final_training_supervisor.rs"
 [[bin]]
 name = "global_library_supervisor"
 path = "src/bin/global_library_supervisor.rs"
+
+[[bin]]
+name = "e136p_atomic_multiwrite_preview"
+path = "src/bin/e136p_atomic_multiwrite_preview.rs"

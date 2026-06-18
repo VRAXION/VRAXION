@@ -1,0 +1,6 @@
+{
+  "artifact_contract": "E136P_RUNTIME_ATOMIC_MULTIWRITE_IMPLEMENTATION_PREVIEW",
+  "boundary": "runtime implementation preview only; no production apply",
+  "generated_at_unix_ms": 1781749225918,
+  "case_count": 10
+}
