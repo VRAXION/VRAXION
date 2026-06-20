@@ -11,30 +11,30 @@ schema_version = AlphaWeavePressureCell-v1
 E115 locks the first alpha-Weave pressure-cell format:
 
 ```text
-public_input
+candidate_visible_input
   visible to candidate/runtime
 
-hidden_oracle
-  checker/trainer only
+checker_only_expectations
+  checker/trainer only; private
 
-training_metadata
-  target_skill / target_operators / budget
+private_training_metadata
+  route pressure and budget metadata
   hidden from candidate
 
-adversarial_variants
+private_adversarial_variants
   counterfactual pack for shortcut attacks
 ```
 
-The candidate-visible path is `public_input` only. Target skill names,
-target operator names, expected answers, oracle traces, and forbidden behavior
-must not appear in `public_input`.
+The candidate-visible path contains only input text and source structure.
+Route labels, expected answers, checker traces, and forbidden-behavior metadata
+must not appear in the candidate-visible input.
 
 ## Main Metrics
 
 ```text
 schema_validity = true
-oracle_leak_rate = 0.000000
-target_operator_leak_rate = 0.000000
+checker_metadata_leak_rate = 0.000000
+route_label_leak_rate = 0.000000
 variant_count = 12
 primary_success_rate = 1.000000
 action_accuracy = 1.000000
@@ -93,7 +93,7 @@ negative_scope_overcall_control
 The alpha-Weave v1 schema is ready as a stable pressure-cell unit for the next
 targeted data generation step. E115 does not train the runtime on these cells;
 it only proves that the cell format can carry targeted pressure without leaking
-the target/operator/oracle information into the visible input.
+checker-only route or answer metadata into the visible input.
 
 Boundary: schema/curriculum-unit validation only. No final-training,
 PermaCore, TrueGolden, or open-domain reasoning claim.
