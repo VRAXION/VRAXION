@@ -8,31 +8,33 @@ curriculum generation starts.
 Core question:
 
 ```text
-Can we define a stable pressure-cell unit that targets rare Operators without
-leaking oracle answers, target operator names, or task labels into the candidate
-visible input?
+Can we define a stable pressure-cell unit that pressures rare Operator routes
+without leaking checker-only answers, route labels, or task labels into the
+candidate-visible input?
 ```
 
 ## Schema Boundary
 
-Every cell is split into:
+Every private cell is split into candidate-visible input and checker/trainer
+only metadata. The public repository intentionally does not publish the full
+private field layout.
 
 ```text
-public_input
+candidate_visible_input
   visible to runtime/candidate
 
-hidden_oracle
-  checker/trainer only
+checker_only_expectations
+  checker/trainer only; private
 
-training_metadata
-  target_skill / target_operators / budgets
+private_training_metadata
+  route pressure and budget metadata
   hidden from candidate
 
-adversarial_variants
+private_adversarial_variants
   counterfactual pack for shortcut attacks
 ```
 
-The candidate-visible path is `public_input` only.
+The candidate-visible path is the only candidate/runtime input path.
 
 ## Required Public Fields
 
@@ -92,8 +94,8 @@ negative_scope_overcall_control
 
 ```text
 schema_validity = true
-oracle_leak_rate = 0
-target_operator_leak_rate = 0
+checker_metadata_leak_rate = 0
+route_label_leak_rate = 0
 primary_success_rate = 1
 false_commit_rate = 0
 wrong_scope_call_rate = 0

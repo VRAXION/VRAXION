@@ -1,182 +1,80 @@
 # VRAXION Current Status
 
-_Last updated: 2026-06-19_
+_Last updated: 2026-06-21_
 
 ## Official Status
 
-```text
-Current source of truth: main
-Current GitHub release: v6.1.7
-Current evidence anchor: E136S atomic multiwrite default-route switch canary guard (post-v6.1.7 main)
-Latest released runtime slice: a908a838a1119540ed88bc91e10cfcb0bdae92a8 E79 training data/curriculum readiness gate
-Active branch surface: main only
-Historical branch heads: archive/branches/2026-06-13/*
-```
+Public release: `v6.1.7`.
 
-## Current Mainline
+Public source of truth: `main`.
 
-```text
-E69-E79 released Rust runtime and training-data readiness gate
--> E80-E85 CALC-SCRIBE visible calculation-trace evidence
--> E86-E89 LocalGolden curriculum / selector / survival / naming lock
--> E90-E106 Operator curriculum expansions
--> E107 Operator survival role and regression gauntlet
--> E108 external transfer and negative-scope no-harm gauntlet
--> E109 rank ladder and GoldenWatch probation policy
--> E110 Silver-to-Gold scoped probation wave
--> E111 Bronze mutation/prune scoped Gold conversion wave
--> E112 Gold-to-CoreMemoryCandidate prune-heavy probation wave
--> E113 FineWeb-Edu light stress hard mutation/recycle probe
--> E119-E126 FineWeb/text-understanding skill farming and Orange probation
--> E127 overnight cyclic Orange/Legendary text-operator farm
--> E128 assistant text-IO lightweight render training
--> E129 arithmetic trace Orange/Legendary probation
--> E130A CoreMemoryCandidate-to-Orange backfill gauntlet
--> E130B arithmetic text-IO transfer and word-problem no-call gauntlet
--> E131 visible equation extraction and assistant arithmetic render gauntlet
--> E132 external math text skill farm mutation/prune Orange cycle
--> E133 math text route composition and no-solve assistant confirm
--> E134 external math text OOD route stress and counterexample gauntlet
--> E135 math text multi-route assistant dialogue-state gauntlet
--> E136A assistant text skill farm mutation/prune Orange cycle
--> E136B assistant text route composition and boundary confirm
--> E136C assistant text polished render quick test
--> E136D OutputTextField binary matrix smoke
--> E136E idle think-tick proposal refinement smoke
--> E136F idle think-tick heldout series confirm
--> E136G adaptive idle tick budget confirm
--> E136H existing operator refinement mutation/prune night cycle
--> E136I operator supersession and output ledger planning
--> E136J shadow variant apply and residual prune confirm
--> E136K operator replacement apply plan or Flow-scale transfer
--> E136L runtime replacement canary and tightened challenger confirm
--> E136M runtime replacement apply or abstract lineage split
--> E136N primary/secondary variant governance
--> E136N2 Agency Matrix arbitration smoke
--> E136N3 parallel direct-write A/B smoke
--> E136N4 Agency-gated atomic multi-write confirm
--> E136O challenger/OOD runtime replacement gauntlet
--> E136P runtime atomic multiwrite implementation preview
--> E136Q runtime overlay canary atomic multiwrite confirm
--> E136R atomic multiwrite pre-apply decision gauntlet
--> E136S atomic multiwrite default-route switch canary guard
-```
+Current public role: sanitized evidence and release surface.
 
-## Current Evidence
+Current evidence anchor: `E136S atomic multiwrite default-route switch canary guard`.
 
-- `vraxion-runtime/` is the active released Rust runtime surface.
-- The current capability boundary is summarized in `docs/CURRENT_CAPABILITIES.md`.
-- The current GitHub release is `v6.1.7`; it anchors the E127 cycle-40 governed text-operator library checkpoint.
-- E109 established scoped rank policy: 14 Gold, 35 Silver, 87 Bronze, 0 DiamondCandidate, 0 RedFlag.
-- E110 applied Silver-to-Gold pressure: 35 candidates, 35 scoped Gold promotions, 0 hard negatives.
-- E111 applied Bronze mutation/prune pressure: 87 candidates, 87 scoped Gold variant promotions, 0 hard negatives.
-- E111 post-wave rank summary: 136 Gold, 0 Silver, 0 Bronze, 0 DiamondCandidate, 0 RedFlag, 3 Deprecated.
-- E112 applied prune-heavy CoreMemoryCandidate probation: 136 candidates, 136 CoreMemoryCandidate qualifications, 0 hard negatives, mean selected prune ratio 69.4118%.
-- E112 post-wave rank summary: 136 CoreMemoryCandidate, 0 Gold, 0 Silver, 0 Bronze, 0 DiamondCandidate, 0 RedFlag, 3 Deprecated.
-- E113 applied a FineWeb-Edu 100k light stress/recycle probe: baseline 2,624 hard negatives across 88 operators, selected recycled variants 0 hard negatives, 0 neutral waste, 3,461,003 selected calls/positives, 136 recycled operators.
-- E127 completed 40 checkpointed overnight cycles: 382 scoped Orange/Legendary text operators, 1,849,625 mutation attempts, 12,123 accepted mutations, 1,837,502 rollbacks, 0 hard negatives, 0 false commits, 0 wrong-scope calls, and 0 unsupported answers.
-- E127 also includes a deterministic text-to-text render smoke over 8 prompts. It is operator selection plus guarded template rendering, not LLM/freeform generation.
-- E128 builds a no-download lightweight assistant-text corpus from local E127 artifacts, repo docs, adversarial boundary prompts, and FineWeb-derived local samples: 320 prompts split into 160 train, 64 validation, and 96 heldout rows; train/validation/heldout action accuracy 1.000, operator trace validity 1.000, unsupported answers 0, wrong refusals 0, and boundary-claim violations 0.
-- E129 promotes 9 scoped exact arithmetic trace operators to Orange/LegendaryCandidate under stress/prune pressure: 2,700,000 total qualified activations, 300,000 minimum per operator, 9,000 negative-scope no-call cases, 0 hard negatives, 0 false commits, 0 wrong-scope calls, and 0 unsupported answers.
-- E130A backfills the 136 E112 CoreMemoryCandidate operators through an E121-style Orange/Legendary gate: 136/136 reached OrangeLegendaryCandidate, 41,036,433 total qualified activations, 300,623 minimum per operator, mean selected prune ratio 0.746176, 0 hard negatives, 0 false commits, 0 wrong-scope calls, 0 unsupported answers, 0 negative transfers, and 0 direct flow writes.
-- E130A dashboard summary: 530 operators, 527 Orange/LegendaryCandidate scoped operators, 0 CoreMemoryCandidate operators, and 3 Deprecated operators.
-- E130B transfers the 9 E129 arithmetic trace operators into visible-expression text IO: 9/9 passed, 270,000 visible-transfer cases, 135,000 hidden word-problem no-call cases, visible transfer accuracy minimum 1.000, word-problem no-call accuracy minimum 1.000, 0 hard negatives, 0 false commits, 0 wrong-scope calls, 0 unsupported answers, and 0 direct flow writes.
-- E131 routes those 9 E129/E130B arithmetic operators from assistant-style visible equation surfaces seeded by the 130,000-row external E131 text pack: 9/9 passed, 108,000 visible-equation cases, 54,000 hidden word-problem no-call cases, visible equation extraction accuracy minimum 1.000, word-problem no-call accuracy minimum 1.000, 0 hard negatives, 0 false commits, 0 wrong-scope calls, 0 unsupported answers, 0 boundary-claim violations, and 0 direct flow writes.
-- E132 farms 16 scoped math-text lenses/guards from a 215,051-row external math-text seed pack: 16/16 reached OrangeLegendaryCandidate, 5,953 minimum external support per operator, 4,883,030 total qualified activations, 302,510 minimum qualified activations per operator, 78,859 negative-scope cases, 146,005 mutation attempts, 650 accepted mutations, 145,355 rollbacks, mean selected prune ratio 0.736875, 0 hard negatives, 0 false commits, 0 wrong-scope calls, 0 unsupported answers, 0 boundary-claim violations, and 0 direct flow writes.
-- E133 composes those 16 E132 math-text lenses/guards into assistant route decisions: 16/16 composition pass, 176,000 route cases, 10,000 visible arithmetic route cases, 118,000 structural guard cases, 48,000 hidden word-problem no-solve cases, all route accuracy minima 1.000, 0 hard negatives, 0 false commits, 0 wrong-scope calls, 0 unsupported answers, 0 boundary-claim violations, and 0 direct flow writes.
-- E134 stresses those 16 E133 route operators under OOD wrappers and counterexample lures: 16/16 OOD pass, 208,000 OOD route cases, 11,875 visible arithmetic OOD cases, 153,125 structural guard OOD cases, 43,000 hidden word-problem OOD no-solve cases, 48,000 counterexample cases, all OOD/counterexample accuracy minima 1.000, 36,275 E133-baseline OOD misses covered, 0 hard negatives, 0 false commits, 0 wrong-scope calls, 0 unsupported answers, 0 boundary-claim violations, and 0 direct flow writes.
-- E135 runs the 16 E134 route operators through controlled multi-turn assistant dialogue-state pressure: 16/16 dialogue pass, 136,000 dialogue cases, 367,400 turns, 29,500 hidden word-problem dialogue no-solve cases, 10,500 visible reentry cases, 22,400 stale route rejection cases, 11,200 cross-thread rejection cases, 76,500 counterexample dialogue cases, all dialogue/state accuracy minima 1.000, 0 stale route reuse, 0 cross-thread contamination, 0 hard negatives, 0 false commits, 0 wrong-scope calls, and 0 direct flow writes.
-- E136A farms 18 scoped assistant/text lenses and guards from the 447,766-row local E136 assistant-text seed pack: 18/18 reached OrangeLegendaryCandidate, 5 external sources, 12 external families, 1,435,199 total external support, 4,746 minimum external support per operator, 5,521,276 total qualified activations, 302,123 minimum qualified activations per operator, 119,868 negative-scope cases, 179,840 mutation attempts, 827 accepted mutations, 179,013 rollbacks, mean selected prune ratio 0.758889, 0 hard negatives, 0 false commits, 0 wrong-scope calls, 0 unsupported answers, 0 boundary-claim violations, and 0 direct flow writes.
-- E136B composes the 18 E136A assistant/text operators into bounded assistant/text route stacks: 18/18 route pass, 144,000 route cases, 53,000 multi-route composition cases, 72,000 boundary cases, 18,000 negative-scope cases, 144,000 qualified route activations, all route/stack/primary/boundary/multi-route/negative-scope accuracy minima 1.000, 0 hard negatives, 0 false commits, 0 wrong-scope calls, 0 unsupported answers, 0 boundary-claim violations, and 0 direct flow writes.
-- E136C renders the E136B route layer into short polished deterministic assistant text over 12 quick inference samples: 12/12 pass, mode accuracy 1.000, polished render pass rate 1.000, 2/2 JSON outputs valid, 0 raw action leaks, 0 forbidden claims, and 0 direct-write claims.
-- E136D adds an explicit output-side text field representation: `OutputTextField` is an N x 8 binary matrix where each row is one UTF-8 byte. The smoke confirms 10/10 cases, 7/7 committed text roundtrips, 3/3 guarded rejects, 10/10 zero-fill checks, and 1/1 tamper detection.
-- E136E confirms fixed-observation idle ticks can improve or preserve responses through checked proposals only: 8/8 cases passed, 10 idle proposals, 10 Agency checks, 0 new input, 4 response improvements, 8/8 non-degradation, 1 direct-write reject, and 8/8 OutputTextField roundtrips/checksums/zero-fill checks.
-- E136F confirms the idle mechanism on a heldout series: 70/70 cases passed, 36/36 arithmetic heldout cases improved, 6/6 no-pocket controls preserved safe output, 90 proposals checked, 0 new input, 48 total improvements, 70/70 non-degradation, 4 direct-write rejects, 6 unsupported-claim rejects, and 70/70 OutputTextField roundtrips/checksums/zero-fill checks.
-- E136G confirms adaptive idle tick budgeting: 24/24 cases passed, proposal continuation fields present in 33/33 proposals, adaptive execution used 33 ticks versus a 120-tick fixed baseline, average adaptive ticks 1.375, Agency allowed 9 continuations and overrode 2 over-eager continuation requests, 8 immediate answers stopped at t+1, 3/3 chained cases completed, 3/3 direct-write repairs completed at t+2, and 4/4 no-pocket controls stopped at t+1.
-- E136H replays and refines the existing 16 E132 math-text and 18 E136A assistant-text operators before new operator search: 40 cycles, 12,480,000 operator-row replays, 3,373,788 current activations, 2,891,151 selected activations, 482,637 pruned activations, 16 verified labels, 11 tightened triggers, 7 abstract-but-useful kernels, 0 hold-for-more-evidence operators, 0 hard negatives, 0 wrong-scope calls, 0 unsupported answers, and 0 direct Flow writes.
-- E136I turns the E136H selected variants into a supersession/output ledger: 27 replacement-ready variants, 16 direct runtime candidates, 11 tightened challenger-required replacements, 7 abstract lineage-required kernels, projected output activation delta -482,637, 0 destructive drops, 0 hard negatives, 0 wrong-scope calls, 0 unsupported answers, and 0 direct Flow writes.
-- E136J shadow-applies the E136I replacement ledger under long residual-prune replay: stop reason deadline, 8,094 cycles, 33,153,024 replay rows, 46,317.709 elapsed seconds, 188,597,925 current activations, 166,354,720 selected activations, 22,243,205 shadow-pruned activations, 0 strict recall misses, 0 wrong-scope proxy calls, 0 hard negatives, 0 unsupported answers, 0 direct Flow writes, and 0 checker failures.
-- E136K converts the E136I/E136J evidence into a non-destructive apply plan: 16 direct canary-ready candidates, 11 challenger/OOD-required tightened replacements, 7 abstract lineage holds, 16 rollback-manifest entries, 0 runtime mutations allowed now, 0 destructive applies, 0 strict recall misses, 0 wrong-scope proxy calls, 0 hard negatives, 0 unsupported answers, and 0 direct Flow writes.
-- E136L tests the E136K apply plan under rollback-safe runtime canary simulation: 16/16 direct canaries passed with old trigger removed in canary, 11 challenger/OOD rows held, 7 abstract lineage rows held, 16 rollback-manifest entries, 0 rollback triggers, 0 production runtime applies, 0 destructive applies, 0 strict recall misses, 0 wrong-scope proxy calls, 0 hard negatives, 0 unsupported answers, and 0 direct Flow writes.
-- E136M materializes the E136L direct canary wins as a runtime-facing overlay: 16 overlay applies, 7 verified replacements, 9 light-prune overlays, 16 rollback snapshots, 11 challenger/OOD rows held, 7 abstract lineage rows held, 3,450,257 runtime-overlay removed activations, 18,792,948 challenger candidate removed activations explicitly not applied, 0 rollback triggers, 0 destructive deletes, 0 hard negatives, and 0 direct Flow writes.
-- E136N installs a primary/secondary variant governance skeleton over the E136M overlay: 34 operators, 68 variant registry rows, 34 primary variants, 34 secondary variants, 16 primary-active overlay variants, 16 rollback secondaries, 11 challenger secondaries, 7 lineage-hold secondaries, 0 retired variants, 0 destructive deletes, 0 ambiguous primaries, and 0 orphan secondaries.
-- E136N2 trains a tiny Agency Matrix over the E136N primary/secondary proposal surface: 118 training examples converged in 2 epochs, 146 proposal-bundle cases, baseline accuracy 0.232877, Agency Matrix accuracy 1.000000, 10 Agency-gated Flow chunks, 36 held challenger/lineage child checks, 0 Agency Matrix unsafe commits, 0 challenger promotions, and 0 destructive deletes.
-- E136N3 compares parallel direct Flow write against parallel proposal fanout plus an Agency Matrix commit barrier: 123 cases, direct-write accuracy 0.089431, Agency-gated accuracy 1.000000, 34 direct-write unsafe commits, 102 direct-write nondeterministic cases, 11 direct-write disjoint safe controls passed, 0 Agency-gated unsafe commits, 0 Agency-gated runtime direct writes, and 0 destructive deletes.
-- E136N4 confirms Agency-gated atomic multi-write over the E136N3 route: 225 cases, accuracy 1.000000, 191 atomic writes, 0 partial writes, 0 order-independence failures, 0 runtime direct writes, and 0 destructive deletes.
-- E136O runs an oracle-free challenger/OOD runtime replacement gauntlet: 7,146 full cases, train/heldout/OOD/full accuracy 1.000000, 3,667 atomic writes, 0 partial writes, 0 runtime direct writes, 0 oracle plan feature use, and 0 checker failures.
-- E136P moves the policy into a Rust runtime implementation preview: 10/10 cases, 9 atomic writes, 0 partial writes, 0 runtime direct writes, 0 held variant promotions, and production apply disabled.
-- E136Q exercises the runtime path behind an overlay canary: 10/10 canary cases, default route unchanged, 10 rollback snapshots, 0 partial writes, 0 runtime direct writes, and production apply disabled.
-- E136R confirms the atomic multiwrite path as a default-route candidate under pre-apply stress: 1,536/1,536 default-route regression cases and 2,048/2,048 canary stress cases succeeded, 0 false commits, 0 missed commits, 0 partial writes, 0 runtime direct writes, and production apply disabled.
-- E136S confirms the default-route switch canary guard: 1,536/1,536 default-route cases and 2,048/2,048 switch cases succeeded, 1,024 guarded default-route applies, 1,024 guarded blocked no-apply cases, 0 false applies, 0 missed applies, 0 preview mismatches, 0 partial writes, 0 runtime direct writes, and production apply still disabled.
-- Long-running work must emit continuous partial progress and checkpoint data.
+The public repository is intentionally not the frontier workspace. New private
+experiments, raw datasets, full traces, and training recipes stay outside this
+repository until a separate public-export review approves them.
 
-## What Is Historical
+## Mainline Summary
 
-The old bounded-service, open-vocab assistant, beta release, byte-pipeline, and grower-era materials are historical evidence unless explicitly promoted into the E79+ mainline.
-
-## Claim Boundary
-
-Allowed current claim:
-
-> VRAXION v6 has a Rust mainline for governed Pocket Library state, resumable curriculum execution, multi-lane final-training supervision, global Pocket Library merge/dedupe governance, a training-data/curriculum readiness gate, one canonical `final_train` campaign entrypoint, governed Operator evidence through E127, an E128 lightweight assistant text-IO render-training smoke, E129 scoped exact arithmetic trace Operators promoted through Orange/Legendary probation, an E130A CoreMemoryCandidate-to-Orange backfill, an E130B arithmetic text-IO transfer/no-call gauntlet, an E131 visible-equation assistant-render gauntlet, an E132 external math-text skill farm, E133 math-text route composition/no-solve assistant confirmation, E134 external math-text OOD route stress/counterexample confirmation, E135 controlled multi-route dialogue-state confirmation, E136A assistant-text skill-farm confirmation, E136B assistant-text route-composition/boundary confirmation, E136C assistant-text polished-render quick confirmation, E136D OutputTextField binary matrix confirmation, E136E idle think-tick proposal-refinement confirmation, E136F idle think-tick heldout-series confirmation, E136G adaptive idle tick-budget confirmation, E136H existing-operator refinement confirmation, E136I operator supersession/output-ledger planning confirmation, E136J shadow-variant apply/residual-prune confirmation, E136K operator replacement apply-plan confirmation, E136L runtime replacement canary confirmation, E136M runtime replacement overlay confirmation, E136N primary/secondary variant governance confirmation, E136N2 Agency Matrix arbitration smoke confirmation, E136N3 parallel direct-write A/B smoke confirmation, E136N4 Agency-gated atomic multi-write confirmation, E136O oracle-free challenger/OOD runtime replacement confirmation, E136P runtime atomic multiwrite implementation preview, E136Q runtime overlay canary confirmation, E136R atomic multiwrite pre-apply confirmation, and E136S guarded default-route switch canary confirmation. E136S confirms safe atomic cases can pass snapshot + preview guard + preview/apply match before writing to the default route, while rejected/deferred cases leave the default route unchanged. It still does not authorize unrestricted production apply.
-
-Short form:
+The public mainline records a progression from:
 
 ```text
-governed scoped Operator/Pocket runtime = yes
-evidence-first proposal/Agency commit behavior = yes
-deterministic scoped text-to-text smoke = yes
-lightweight assistant text-IO corpus/render smoke = yes
-exact arithmetic expression/trace compute = yes
-visible-expression arithmetic text IO = yes
-visible-equation assistant arithmetic render = yes
-math-text lens/guard skill farming = yes
-math-text assistant route composition = yes
-math-text OOD route stress/counterexample rejection = yes
-controlled math-text multi-route dialogue-state = yes
-assistant-text skill farming = yes
-assistant-text route composition = yes
-assistant-text polished deterministic render = yes
-OutputTextField N x 8 binary representation = yes
-fixed-observation idle proposal refinement = yes
-heldout idle proposal refinement = yes
-adaptive idle tick budget = yes
-existing operator refinement = yes
-operator supersession ledger = yes
-shadow variant apply/residual prune = yes
-operator replacement apply plan = yes
-runtime replacement canary = yes
-runtime replacement overlay = yes
-primary/secondary variant governance = yes
-Agency Matrix arbitration smoke = yes
-parallel proposal fanout with Agency commit barrier = yes
-Agency-gated atomic multi-write = yes
-atomic multiwrite runtime preview = yes
-atomic multiwrite overlay canary = yes
-guarded default-route switch canary = yes
-parallel direct Flow write as default = rejected by A/B smoke
-CoreMemoryCandidate-to-Orange rank backfill = yes
-open-domain LLM/chatbot = no
-Gemma/GPT-like generation = no
+Rust runtime readiness
+-> governed Operator library
+-> scoped calculator and text-route skills
+-> rank / survival / no-harm gates
+-> output-field and idle-tick mechanics
+-> guarded atomic multiwrite canary
 ```
 
-Not claimed:
+The current public runtime surface is `vraxion-runtime/`. It remains available
+for provenance and auditability while the private α-Sync Rust package is being
+hardened for a cleaner future public candidate.
 
-- hosted production service
-- public API readiness
-- GPT-like/open-domain assistant readiness
-- Gemma-level/freeform text generation
-- GSM8K/MATH solving
-- natural-language word-problem solving
-- final production dataset completion
-- trained model/weights readiness
-- PermaCore or TrueGolden promotion
-- safety-aligned production deployment
-- consciousness or sentience
+## Evidence Boundary
 
-## Next Work
+The current public evidence supports only scoped runtime-mechanic claims:
 
-1. Use `CODEX_HANDOVER.md` as the first read for fresh Codex sessions.
-2. Run E136O challenger/OOD runtime replacement gauntlet before applying the 11 tightened-trigger hold rows.
-3. Run a later assistant-text render training set and heldout confirmation before claiming robust text generation beyond deterministic scoped renders.
-4. Keep evidence CI checking tracked sample artifacts so front-door docs cannot drift back to stale current-main claims.
+```text
+proposal generation
+agency-gated commit flow
+guarded runtime writes
+bounded Operator routing
+scoped no-call / defer behavior
+deterministic smoke and canary checks
+```
+
+It does not support claims of:
+
+```text
+open-domain language understanding
+production-ready assistant behavior
+general intelligence
+trained neural model weights
+PermaCore / TrueGolden memory
+unrestricted autonomous self-improvement
+```
+
+## Public Cleanup State
+
+Cleanup pass 001 removed public artifact samples, JSONL traces, probe scripts,
+operator dashboards, and direct local dataset paths from the current tree.
+
+Cleanup pass 002 further removes or compacts public material that looked like
+dataset rebuild instructions, hidden-oracle training cells, or oversized
+internal handover/state dumps.
+
+Before public release work, run:
+
+```powershell
+python scripts/audit_public_surface.py
+```
+
+The expected hard gate is:
+
+The expected hard gate is `failure_count` equal to zero.
+
+Warnings may remain for historical result documents, but warnings should trend
+down as old research contracts are compacted into release summaries.
