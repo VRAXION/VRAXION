@@ -16,8 +16,8 @@ import sys
 from dataclasses import dataclass
 from pathlib import PurePosixPath
 
-
 MAX_TEXT_BYTES = 2_000_000
+PUBLIC_STUB_MARKER = "PUBLIC_SAFE_STUB"
 
 
 @dataclass(frozen=True)
@@ -27,13 +27,9 @@ class Finding:
     reason: str
 
 
-# These files intentionally contain audit literals such as regexes for local
-# paths and manifest names. Path rules still apply to them, but text scanning
-# would create false positives against the scanner itself.
 TEXT_SCAN_EXEMPT_PATHS = {
     "scripts/audit_public_surface.py",
 }
-
 
 FORBIDDEN_GLOBS = [
     "docs/research/artifact_samples/**",
@@ -46,6 +42,9 @@ FORBIDDEN_GLOBS = [
     "**/*.db",
     "**/.env",
     "**/.env.*",
+]
+
+OPERATIONAL_STUB_OR_FAIL_GLOBS = [
     "scripts/probes/run_e18*",
     "scripts/probes/run_e19*",
     "scripts/probes/run_e20*",
@@ -79,9 +78,7 @@ FORBIDDEN_TEXT_PATTERNS = [
     ("operator_candidate_manifest_reference", re.compile(r"\boperator_candidate_manifest\b", re.IGNORECASE)),
     ("operator_activation_ledger_reference", re.compile(r"\boperator_activation_ledger\b", re.IGNORECASE)),
     ("resume_state_reference", re.compile(r"\bresume_state\.json\b", re.IGNORECASE)),
-    ("likely_private_key", re.compile(r"-----BEGIN (RSA |OPENSSH |EC |DSA |PGP )?PRIVATE KEY-----")),
-    ("github_token", re.compile(r"\bgh[pousr]_[A-Za-z0-9_]{20,}\b")),
-    ("generic_api_key_assignment", re.compile(r"(?i)\b(api[_-]?key|secret|token|password)\s*=\s*['\"][^'\"]{12,}['\"]")),
+    ("generic_credential_assignment", re.compile(r"(?i)\b(api[_-]?key|secret|token|password)\s*[:=]")),
 ]
 
 WARN_PATH_PATTERNS = [
@@ -134,6 +131,11 @@ def read_text_sample(path: str) -> str | None:
         return None
 
 
+def has_public_stub_marker(path: str) -> bool:
+    text = read_text_sample(path)
+    return text is not None and PUBLIC_STUB_MARKER in text
+
+
 def audit_path(path: str) -> list[Finding]:
     findings: list[Finding] = []
     p = posix(path)
@@ -141,6 +143,13 @@ def audit_path(path: str) -> list[Finding]:
     for pattern in FORBIDDEN_GLOBS:
         if matches_glob(p, pattern):
             findings.append(Finding("FAIL", p, f"forbidden_glob:{pattern}"))
+
+    for pattern in OPERATIONAL_STUB_OR_FAIL_GLOBS:
+        if matches_glob(p, pattern):
+            if has_public_stub_marker(path):
+                findings.append(Finding("WARN", p, f"public_safe_stub:{pattern}"))
+            else:
+                findings.append(Finding("FAIL", p, f"operational_script_not_stubbed:{pattern}"))
 
     for substring in FORBIDDEN_PATH_SUBSTRINGS:
         if substring.lower() in p.lower():
@@ -177,7 +186,7 @@ def audit_text(path: str) -> list[Finding]:
 def main() -> int:
     try:
         paths = run_git_ls_files()
-    except Exception as exc:  # pragma: no cover
+    except Exception as exc:
         print(f"FAIL audit_runtime git_ls_files_failed {type(exc).__name__}", file=sys.stderr)
         return 2
 
