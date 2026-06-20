@@ -27,6 +27,14 @@ class Finding:
     reason: str
 
 
+# These files intentionally contain audit literals such as regexes for local
+# paths and manifest names. Path rules still apply to them, but text scanning
+# would create false positives against the scanner itself.
+TEXT_SCAN_EXEMPT_PATHS = {
+    "scripts/audit_public_surface.py",
+}
+
+
 FORBIDDEN_GLOBS = [
     "docs/research/artifact_samples/**",
     "frontier_runs/**",
@@ -38,6 +46,18 @@ FORBIDDEN_GLOBS = [
     "**/*.db",
     "**/.env",
     "**/.env.*",
+    "scripts/probes/run_e18*",
+    "scripts/probes/run_e19*",
+    "scripts/probes/run_e20*",
+    "scripts/probes/run_e21*",
+    "scripts/probes/run_e22*",
+    "scripts/probes/run_e23*",
+    "scripts/probes/run_e113_fineweb*",
+    "scripts/probes/run_e114_fineweb*",
+    "scripts/probes/run_e119_fineweb*",
+    "scripts/probes/run_e120_fineweb*",
+    "scripts/probes/run_e123_orange_baseline_fineweb*",
+    "scripts/tools/prepare_fineweb*",
 ]
 
 FORBIDDEN_PATH_SUBSTRINGS = [
@@ -136,6 +156,9 @@ def audit_path(path: str) -> list[Finding]:
 def audit_text(path: str) -> list[Finding]:
     findings: list[Finding] = []
     p = posix(path)
+    if p in TEXT_SCAN_EXEMPT_PATHS:
+        return findings
+
     text = read_text_sample(path)
     if text is None:
         return findings
