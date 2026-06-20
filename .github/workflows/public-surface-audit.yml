@@ -1,0 +1,17 @@
+name: Public surface audit
+
+on:
+  pull_request:
+  push:
+
+permissions:
+  contents: read
+
+jobs:
+  audit-public-surface:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Run public surface audit
+        run: python scripts/audit_public_surface.py
