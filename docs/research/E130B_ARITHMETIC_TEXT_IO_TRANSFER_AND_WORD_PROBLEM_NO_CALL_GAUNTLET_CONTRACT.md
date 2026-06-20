@@ -22,7 +22,7 @@ target/pilot_wave/e129_arithmetic_trace_orange_legendary_probation/
 Sample fallback:
 
 ```text
-docs/research/artifact_samples/e129_arithmetic_trace_orange_legendary_probation/
+archived_public_artifact_sample_removed
 ```
 
 Required source state:
@@ -98,7 +98,7 @@ e130b_arithmetic_text_io_transfer_word_problem_no_call_rejected
 ## Reproduce
 
 ```powershell
-python scripts/probes/run_e130b_arithmetic_text_io_transfer_and_word_problem_no_call_gauntlet.py --out target/pilot_wave/e130b_arithmetic_text_io_transfer_and_word_problem_no_call_gauntlet --sample-out docs/research/artifact_samples/e130b_arithmetic_text_io_transfer_and_word_problem_no_call_gauntlet
+python private_probe_runner_removed --out target/pilot_wave/e130b_arithmetic_text_io_transfer_and_word_problem_no_call_gauntlet --sample-out archived_public_artifact_sample_removed
 ```
 
 ## Boundary

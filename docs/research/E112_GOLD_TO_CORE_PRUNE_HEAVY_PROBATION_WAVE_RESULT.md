@@ -99,5 +99,5 @@ activation target and longer no-harm/adversarial replay window.
 
 ```text
 target/pilot_wave/e112_gold_to_core_prune_heavy_probation_wave/
-docs/research/artifact_samples/e112_gold_to_core_prune_heavy_probation_wave/
+archived_public_artifact_sample_removed
 ```

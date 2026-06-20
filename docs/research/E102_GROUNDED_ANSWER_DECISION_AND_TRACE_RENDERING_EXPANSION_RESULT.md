@@ -84,5 +84,5 @@ from already resolved evidence.
 
 ```text
 target/pilot_wave/e102_grounded_answer_decision_and_trace_rendering_expansion/
-docs/research/artifact_samples/e102_grounded_answer_decision_and_trace_rendering_expansion/
+archived_public_artifact_sample_removed
 ```

@@ -1,6 +1,0 @@
-{
-  "artifact_contract": "E136N2_AGENCY_MATRIX_ARBITRATION_SMOKE",
-  "boundary": "Agency Matrix arbitration/chunk smoke only; no challenger promotion; no destructive delete",
-  "e136n_artifact": "docs/research/artifact_samples/e136n_primary_secondary_variant_governance",
-  "input_assignment_count": 34
-}

@@ -72,5 +72,5 @@ a more explicit request/search skill layer.
 
 ```text
 target/pilot_wave/e95_active_evidence_request_search_expansion/
-docs/research/artifact_samples/e95_active_evidence_request_search_expansion/
+archived_public_artifact_sample_removed
 ```

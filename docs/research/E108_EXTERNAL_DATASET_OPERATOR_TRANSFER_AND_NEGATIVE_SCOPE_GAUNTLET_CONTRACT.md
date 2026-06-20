@@ -22,7 +22,7 @@ not open-domain reasoning claim
 ## Input
 
 ```text
-docs/research/artifact_samples/e107_operator_library_e90_e106_survival_role_and_regression_gauntlet/operator_lifecycle_report.json
+archived_public_artifact_sample_removed
 ```
 
 E107 roles are frozen for Phase 1.

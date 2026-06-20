@@ -17,7 +17,7 @@ aligned:
 - `CITATION.cff`;
 - `CODEX_HANDOVER.md`;
 - relevant result documents under `docs/research/`;
-- relevant artifact sample pack under `docs/research/artifact_samples/`;
+- relevant sanitized artifact sample pack when explicitly included in a release;
 - deterministic checker command and result;
 - timestamped dashboard or report artifact, if applicable.
 

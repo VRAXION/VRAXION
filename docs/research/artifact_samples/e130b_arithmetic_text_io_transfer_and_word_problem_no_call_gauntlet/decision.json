@@ -1,9 +1,0 @@
-{
-  "artifact_contract": "E130B_ARITHMETIC_TEXT_IO_TRANSFER_AND_WORD_PROBLEM_NO_CALL_GAUNTLET",
-  "boundary": "arithmetic text-IO transfer only; not natural-language word-problem solving",
-  "decision": "e130b_arithmetic_text_io_transfer_word_problem_no_call_confirmed",
-  "failure_count": 0,
-  "failures": [],
-  "next": "E131_VISIBLE_EQUATION_EXTRACTION_AND_ASSISTANT_ARITHMETIC_RENDER_GAUNTLET",
-  "pass_gate": true
-}

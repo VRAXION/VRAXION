@@ -20,7 +20,7 @@ target/pilot_wave/e112_gold_to_core_prune_heavy_probation_wave/wave_results.json
 Sample fallback:
 
 ```text
-docs/research/artifact_samples/e112_gold_to_core_prune_heavy_probation_wave/wave_results.json
+archived_public_artifact_sample_removed
 ```
 
 Required input population:
@@ -107,7 +107,7 @@ e130a_insufficient_orange_backfill_evidence
 ## Reproduce
 
 ```powershell
-python scripts/probes/run_e130a_corememory_to_orange_backfill_gauntlet.py --out target/pilot_wave/e130a_corememory_to_orange_backfill_gauntlet --sample-out docs/research/artifact_samples/e130a_corememory_to_orange_backfill_gauntlet
+python private_probe_runner_removed --out target/pilot_wave/e130a_corememory_to_orange_backfill_gauntlet --sample-out archived_public_artifact_sample_removed
 ```
 
 ## Boundary

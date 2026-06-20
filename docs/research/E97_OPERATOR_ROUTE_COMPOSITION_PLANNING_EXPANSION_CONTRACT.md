@@ -71,7 +71,7 @@ operator_evolution_history.jsonl
 Sample pack:
 
 ```text
-docs/research/artifact_samples/e97_operator_route_composition_planning_expansion/
+archived_public_artifact_sample_removed
 ```
 
 ## Metrics

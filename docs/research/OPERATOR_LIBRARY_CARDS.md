@@ -1919,7 +1919,7 @@ Source:
 
 ```text
 target/pilot_wave/e97_operator_route_composition_planning_expansion/
-docs/research/artifact_samples/e97_operator_route_composition_planning_expansion/
+archived_public_artifact_sample_removed
 ```
 
 Boundary:
@@ -2116,7 +2116,7 @@ Source:
 
 ```text
 target/pilot_wave/e98_multi_skill_execution_curriculum_expansion/
-docs/research/artifact_samples/e98_multi_skill_execution_curriculum_expansion/
+archived_public_artifact_sample_removed
 ```
 
 Boundary:
@@ -2314,7 +2314,7 @@ Source:
 
 ```text
 target/pilot_wave/e99_curriculum_scheduler_and_regression_replay_expansion/
-docs/research/artifact_samples/e99_curriculum_scheduler_and_regression_replay_expansion/
+archived_public_artifact_sample_removed
 ```
 
 Boundary:
@@ -2512,7 +2512,7 @@ Source:
 
 ```text
 target/pilot_wave/e100_text_evidence_span_ingress_and_proposal_expansion/
-docs/research/artifact_samples/e100_text_evidence_span_ingress_and_proposal_expansion/
+archived_public_artifact_sample_removed
 ```
 
 Boundary:
@@ -2710,7 +2710,7 @@ Source:
 
 ```text
 target/pilot_wave/e101_text_evidence_conflict_resolution_expansion/
-docs/research/artifact_samples/e101_text_evidence_conflict_resolution_expansion/
+archived_public_artifact_sample_removed
 ```
 
 Boundary:
@@ -2908,7 +2908,7 @@ Source:
 
 ```text
 target/pilot_wave/e102_grounded_answer_decision_and_trace_rendering_expansion/
-docs/research/artifact_samples/e102_grounded_answer_decision_and_trace_rendering_expansion/
+archived_public_artifact_sample_removed
 ```
 
 Boundary:
@@ -3106,7 +3106,7 @@ Source:
 
 ```text
 target/pilot_wave/e103_clarification_response_ingress_and_state_repair_expansion/
-docs/research/artifact_samples/e103_clarification_response_ingress_and_state_repair_expansion/
+archived_public_artifact_sample_removed
 ```
 
 Boundary:
@@ -3304,7 +3304,7 @@ Source:
 
 ```text
 target/pilot_wave/e104_multi_turn_evidence_state_continuity_expansion/
-docs/research/artifact_samples/e104_multi_turn_evidence_state_continuity_expansion/
+archived_public_artifact_sample_removed
 ```
 
 Boundary:
@@ -3502,7 +3502,7 @@ Source:
 
 ```text
 target/pilot_wave/e105_conversation_memory_summary_and_context_compression_expansion/
-docs/research/artifact_samples/e105_conversation_memory_summary_and_context_compression_expansion/
+archived_public_artifact_sample_removed
 ```
 
 Boundary:

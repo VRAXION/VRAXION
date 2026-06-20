@@ -1,6 +1,0 @@
-{
-  "artifact_contract": "E136G_ADAPTIVE_IDLE_TICK_BUDGET_CONFIRM",
-  "decision": "e136g_adaptive_idle_tick_budget_confirmed",
-  "next": "E136H_CHAINED_ASSISTANT_RENDER_AND_ADAPTIVE_IDLE_ROUTE_CONFIRM",
-  "pass_gate": true
-}

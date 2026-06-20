@@ -1,6 +1,0 @@
-{
-  "artifact_contract": "E136Q_RUNTIME_OVERLAY_CANARY_ATOMIC_MULTIWRITE_CONFIRM",
-  "boundary": "runtime overlay canary only; no production apply",
-  "generated_at_unix_ms": 1781750016047,
-  "canary_case_count": 10
-}

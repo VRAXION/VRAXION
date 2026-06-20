@@ -76,5 +76,5 @@ evidence-span ingress proxy.
 
 ```text
 target/pilot_wave/e100_text_evidence_span_ingress_and_proposal_expansion/
-docs/research/artifact_samples/e100_text_evidence_span_ingress_and_proposal_expansion/
+archived_public_artifact_sample_removed
 ```

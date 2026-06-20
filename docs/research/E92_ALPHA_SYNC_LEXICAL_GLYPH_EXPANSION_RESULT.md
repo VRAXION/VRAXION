@@ -75,5 +75,5 @@ criteria.
 
 ```text
 target/pilot_wave/e92_alpha_sync_lexical_glyph_expansion/
-docs/research/artifact_samples/e92_alpha_sync_lexical_glyph_expansion/
+archived_public_artifact_sample_removed
 ```

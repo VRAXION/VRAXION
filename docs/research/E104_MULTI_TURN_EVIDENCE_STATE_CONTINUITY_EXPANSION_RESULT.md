@@ -83,5 +83,5 @@ evidence-state traces across multiple ASK/clarification turns.
 
 ```text
 target/pilot_wave/e104_multi_turn_evidence_state_continuity_expansion/
-docs/research/artifact_samples/e104_multi_turn_evidence_state_continuity_expansion/
+archived_public_artifact_sample_removed
 ```

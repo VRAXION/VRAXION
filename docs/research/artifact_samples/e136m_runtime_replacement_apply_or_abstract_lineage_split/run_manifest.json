@@ -1,5 +1,0 @@
-{
-  "artifact_contract": "E136M_RUNTIME_REPLACEMENT_APPLY_OR_ABSTRACT_LINEAGE_SPLIT",
-  "boundary": "runtime-facing overlay only; no destructive runtime replacement or prune",
-  "e136l_artifact": "docs/research/artifact_samples/e136l_runtime_replacement_canary_and_tightened_challenger_confirm"
-}

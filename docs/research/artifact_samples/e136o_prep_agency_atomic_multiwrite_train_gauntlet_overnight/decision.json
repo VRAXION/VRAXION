@@ -1,6 +1,0 @@
-{
-  "artifact_contract": "E136O_PREP_AGENCY_ATOMIC_MULTIWRITE_TRAIN_GAUNTLET_OVERNIGHT",
-  "decision": "e136o_prep_agency_atomic_multiwrite_train_gauntlet_confirmed",
-  "next": "E136O_CHALLENGER_OOD_RUNTIME_REPLACEMENT_GAUNTLET",
-  "pass_gate": true
-}

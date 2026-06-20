@@ -71,7 +71,7 @@ operator_evolution_history.jsonl
 Sample pack:
 
 ```text
-docs/research/artifact_samples/e100_text_evidence_span_ingress_and_proposal_expansion/
+archived_public_artifact_sample_removed
 ```
 
 ## Metrics

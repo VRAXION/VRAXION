@@ -1,6 +1,0 @@
-{
-  "artifact_contract": "E128_ASSISTANT_TEXT_IO_LIGHTWEIGHT_RENDER_TRAINING",
-  "corpus_sha256": "e02e3acb32b9a6ff12e1f6caa276fc5abdd585fb92f69d30ab817d2bf6a2c5af",
-  "deterministic_replay_pass": true,
-  "metrics_sha256": "75906137123737355fafbbf7e18c28e063435c2c9989a85fd7530baa18d0ebbd"
-}

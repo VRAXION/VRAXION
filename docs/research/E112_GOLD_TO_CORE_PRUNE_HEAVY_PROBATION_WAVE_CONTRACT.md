@@ -84,7 +84,7 @@ row_level_samples.jsonl
 Sample pack:
 
 ```text
-docs/research/artifact_samples/e112_gold_to_core_prune_heavy_probation_wave/
+archived_public_artifact_sample_removed
 ```
 
 ## Decision Labels

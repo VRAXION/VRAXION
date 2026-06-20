@@ -70,7 +70,7 @@ operator_evolution_history.jsonl
 Sample pack:
 
 ```text
-docs/research/artifact_samples/e104_multi_turn_evidence_state_continuity_expansion/
+archived_public_artifact_sample_removed
 ```
 
 ## Metrics

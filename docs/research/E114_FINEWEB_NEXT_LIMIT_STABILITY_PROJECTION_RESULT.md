@@ -17,7 +17,7 @@ not final training
 ## Inputs
 
 ```text
-source = S:\AI\MESSY TRAINING DATA - INPUT ONLY\Fineweb edu 10B
+source_alias = private_fineweb_edu_local
 rows_kept = 1,000,000
 source_rows_seen = 2,586,922
 source_total_rows = 8,758,000

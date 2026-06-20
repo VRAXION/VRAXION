@@ -1,9 +1,0 @@
-{
-  "accepted_mutations_total": 827,
-  "artifact_contract": "E136A_ASSISTANT_TEXT_SKILL_FARM_MUTATION_PRUNE_ORANGE_CYCLE",
-  "challenger_attempts_total": 679,
-  "mutation_attempts_total": 179840,
-  "prune_attempts_total": 1347,
-  "rejected_mutations_total": 179013,
-  "rollback_count_total": 179013
-}

@@ -1,7 +1,0 @@
-{
-  "duration_per_candidate_ms": 0.138,
-  "estimated_seconds_per_1000_candidates": 0.138,
-  "measured_wall_seconds": 0.012,
-  "mutation_attempts_per_second": 4341916.667,
-  "note": "Synthetic deterministic probe runtime; use as relative CI/runtime envelope, not hardware-bound final training estimate."
-}

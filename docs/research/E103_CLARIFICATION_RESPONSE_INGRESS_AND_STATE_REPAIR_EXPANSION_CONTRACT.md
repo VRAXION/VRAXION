@@ -70,7 +70,7 @@ operator_evolution_history.jsonl
 Sample pack:
 
 ```text
-docs/research/artifact_samples/e103_clarification_response_ingress_and_state_repair_expansion/
+archived_public_artifact_sample_removed
 ```
 
 ## Metrics

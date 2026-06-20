@@ -912,26 +912,26 @@ docs/research/E136M_RUNTIME_REPLACEMENT_APPLY_OR_ABSTRACT_LINEAGE_SPLIT_RESULT.m
 docs/research/E136N_PRIMARY_SECONDARY_VARIANT_GOVERNANCE_RESULT.md
 docs/research/E136N2_AGENCY_MATRIX_ARBITRATION_SMOKE_RESULT.md
 docs/research/E136N3_PARALLEL_DIRECT_WRITE_AB_SMOKE_RESULT.md
-docs/research/artifact_samples/e127_overnight_text_skill_farm_orange_cycle/
-docs/research/artifact_samples/e127_text_to_text_render_smoke_current/
-docs/research/artifact_samples/e128_assistant_text_io_lightweight_render_training/
-docs/research/artifact_samples/e129_arithmetic_trace_orange_legendary_probation/
-docs/research/artifact_samples/e130a_corememory_to_orange_backfill_gauntlet/
-docs/research/artifact_samples/e130b_arithmetic_text_io_transfer_and_word_problem_no_call_gauntlet/
-docs/research/artifact_samples/e131_visible_equation_extraction_and_assistant_arithmetic_render_gauntlet/
-docs/research/artifact_samples/e132_external_math_text_skill_farm_mutation_prune_orange_cycle/
-docs/research/artifact_samples/e133_math_text_route_composition_and_no_solve_assistant_confirm/
-docs/research/artifact_samples/e134_external_math_text_ood_route_stress_and_counterexample_gauntlet/
-docs/research/artifact_samples/e135_math_text_multi_route_assistant_dialogue_state_gauntlet/
-docs/research/artifact_samples/e136a_assistant_text_skill_farm_mutation_prune_orange_cycle/
-docs/research/artifact_samples/e136b_assistant_text_route_composition_and_boundary_confirm/
-docs/research/artifact_samples/e136c_assistant_text_polished_render_quick_test/
-docs/research/artifact_samples/e136d_output_text_field_binary_matrix_smoke/
-docs/research/artifact_samples/e136e_idle_think_tick_proposal_refinement_smoke/
-docs/research/artifact_samples/e136f_idle_think_tick_heldout_series_confirm/
-docs/research/artifact_samples/e136g_adaptive_idle_tick_budget_confirm/
-docs/research/artifact_samples/e136h_existing_operator_refinement_mutation_prune_night_cycle/
-docs/research/artifact_samples/e136i_operator_supersession_and_output_ledger_planning/
+archived_public_artifact_sample_removed
+archived_public_artifact_sample_removed
+archived_public_artifact_sample_removed
+archived_public_artifact_sample_removed
+archived_public_artifact_sample_removed
+archived_public_artifact_sample_removed
+archived_public_artifact_sample_removed
+archived_public_artifact_sample_removed
+archived_public_artifact_sample_removed
+archived_public_artifact_sample_removed
+archived_public_artifact_sample_removed
+archived_public_artifact_sample_removed
+archived_public_artifact_sample_removed
+archived_public_artifact_sample_removed
+archived_public_artifact_sample_removed
+archived_public_artifact_sample_removed
+archived_public_artifact_sample_removed
+archived_public_artifact_sample_removed
+archived_public_artifact_sample_removed
+archived_public_artifact_sample_removed
 ```
 
 ## Legal / License
@@ -964,7 +964,7 @@ docs/legal/PRIOR_ART_AND_PROVENANCE_CHECKLIST.md
 Generate the local operator dashboard:
 
 ```powershell
-python scripts/tools/generate_operator_rank_dashboard.py --e127 docs/research/artifact_samples/e127_overnight_text_skill_farm_orange_cycle --e129 docs/research/artifact_samples/e129_arithmetic_trace_orange_legendary_probation --e130a docs/research/artifact_samples/e130a_corememory_to_orange_backfill_gauntlet --e130b docs/research/artifact_samples/e130b_arithmetic_text_io_transfer_and_word_problem_no_call_gauntlet --e131 docs/research/artifact_samples/e131_visible_equation_extraction_and_assistant_arithmetic_render_gauntlet --e132 docs/research/artifact_samples/e132_external_math_text_skill_farm_mutation_prune_orange_cycle --e133 docs/research/artifact_samples/e133_math_text_route_composition_and_no_solve_assistant_confirm --e134 docs/research/artifact_samples/e134_external_math_text_ood_route_stress_and_counterexample_gauntlet --e135 docs/research/artifact_samples/e135_math_text_multi_route_assistant_dialogue_state_gauntlet --e136a docs/research/artifact_samples/e136a_assistant_text_skill_farm_mutation_prune_orange_cycle --e136b docs/research/artifact_samples/e136b_assistant_text_route_composition_and_boundary_confirm --out target/pilot_wave/operator_rank_dashboard/index.html
+python private_dashboard_generator_removed --e127 archived_public_artifact_sample_removed --e129 archived_public_artifact_sample_removed --e130a archived_public_artifact_sample_removed --e130b archived_public_artifact_sample_removed --e131 archived_public_artifact_sample_removed --e132 archived_public_artifact_sample_removed --e133 archived_public_artifact_sample_removed --e134 archived_public_artifact_sample_removed --e135 archived_public_artifact_sample_removed --e136a archived_public_artifact_sample_removed --e136b archived_public_artifact_sample_removed --out target/pilot_wave/operator_rank_dashboard/index.html
 ```
 
 Expected current dashboard cards:
@@ -1285,42 +1285,42 @@ Run these after clone or before continuing:
 ```powershell
 git status --short --branch
 python -m py_compile scripts/tools/prepare_e136_assistant_text_seed_pack.py
-python -m py_compile scripts/probes/run_e127_overnight_text_skill_farm_orange_cycle.py scripts/tools/generate_operator_rank_dashboard.py
-python -m py_compile scripts/probes/run_e128_assistant_text_io_lightweight_render_training.py
-python scripts/probes/run_e128_assistant_text_io_lightweight_render_training.py --out target/ci/e128_assistant_text_io_lightweight_render_training
-python -m py_compile scripts/probes/run_e129_arithmetic_trace_orange_legendary_probation.py
-python -m py_compile scripts/probes/run_e130a_corememory_to_orange_backfill_gauntlet.py
-python -m py_compile scripts/probes/run_e130b_arithmetic_text_io_transfer_and_word_problem_no_call_gauntlet.py
-python -m py_compile scripts/probes/run_e131_visible_equation_extraction_and_assistant_arithmetic_render_gauntlet.py
-python -m py_compile scripts/probes/run_e132_external_math_text_skill_farm_mutation_prune_orange_cycle.py
-python -m py_compile scripts/probes/run_e133_math_text_route_composition_and_no_solve_assistant_confirm.py
-python -m py_compile scripts/probes/run_e134_external_math_text_ood_route_stress_and_counterexample_gauntlet.py
-python -m py_compile scripts/probes/run_e135_math_text_multi_route_assistant_dialogue_state_gauntlet.py
-python -m py_compile scripts/probes/run_e136a_assistant_text_skill_farm_mutation_prune_orange_cycle.py
-python scripts/probes/run_e136a_assistant_text_skill_farm_mutation_prune_orange_cycle.py --dataset target/datasets/missing_e136a_smoke.jsonl --dataset-manifest target/datasets/missing_e136a_manifest.json --download-manifest target/datasets/missing_e136a_download.json --allow-builtin-dataset --dataset-row-limit 120 --min-assistant-support 1 --min-dataset-rows 1 --out target/ci/e136a_assistant_text_skill_farm_mutation_prune_orange_cycle --sample-out ""
-python -m py_compile scripts/probes/run_e136b_assistant_text_route_composition_and_boundary_confirm.py
-python scripts/probes/run_e136b_assistant_text_route_composition_and_boundary_confirm.py --dataset target/datasets/missing_e136b_smoke.jsonl --dataset-manifest target/datasets/missing_e136b_manifest.json --download-manifest target/datasets/missing_e136b_download.json --allow-builtin-dataset --dataset-row-limit 120 --min-dataset-rows 1 --route-cases-per-operator 40 --boundary-cases-per-operator 12 --control-cases-per-operator 8 --out target/ci/e136b_assistant_text_route_composition_and_boundary_confirm --sample-out ""
-python -m py_compile scripts/probes/run_e136c_assistant_text_polished_render_quick_test.py
-python scripts/probes/run_e136c_assistant_text_polished_render_quick_test.py --out target/ci/e136c_assistant_text_polished_render_quick_test --sample-out ""
-python -m py_compile scripts/probes/run_e136d_output_text_field_binary_matrix_smoke.py
-python scripts/probes/run_e136d_output_text_field_binary_matrix_smoke.py --out target/ci/e136d_output_text_field_binary_matrix_smoke --sample-out ""
+python -m py_compile private_probe_runner_removed private_dashboard_generator_removed
+python -m py_compile private_probe_runner_removed
+python private_probe_runner_removed --out target/ci/e128_assistant_text_io_lightweight_render_training
+python -m py_compile private_probe_runner_removed
+python -m py_compile private_probe_runner_removed
+python -m py_compile private_probe_runner_removed
+python -m py_compile private_probe_runner_removed
+python -m py_compile private_probe_runner_removed
+python -m py_compile private_probe_runner_removed
+python -m py_compile private_probe_runner_removed
+python -m py_compile private_probe_runner_removed
+python -m py_compile private_probe_runner_removed
+python private_probe_runner_removed --dataset target/datasets/missing_e136a_smoke.jsonl --dataset-manifest target/datasets/missing_e136a_manifest.json --download-manifest target/datasets/missing_e136a_download.json --allow-builtin-dataset --dataset-row-limit 120 --min-assistant-support 1 --min-dataset-rows 1 --out target/ci/e136a_assistant_text_skill_farm_mutation_prune_orange_cycle --sample-out ""
+python -m py_compile private_probe_runner_removed
+python private_probe_runner_removed --dataset target/datasets/missing_e136b_smoke.jsonl --dataset-manifest target/datasets/missing_e136b_manifest.json --download-manifest target/datasets/missing_e136b_download.json --allow-builtin-dataset --dataset-row-limit 120 --min-dataset-rows 1 --route-cases-per-operator 40 --boundary-cases-per-operator 12 --control-cases-per-operator 8 --out target/ci/e136b_assistant_text_route_composition_and_boundary_confirm --sample-out ""
+python -m py_compile private_probe_runner_removed
+python private_probe_runner_removed --out target/ci/e136c_assistant_text_polished_render_quick_test --sample-out ""
+python -m py_compile private_probe_runner_removed
+python private_probe_runner_removed --out target/ci/e136d_output_text_field_binary_matrix_smoke --sample-out ""
 cargo test -p vraxion-runtime output_text_field
-python -m py_compile scripts/probes/run_e136e_idle_think_tick_proposal_refinement_smoke.py
-python scripts/probes/run_e136e_idle_think_tick_proposal_refinement_smoke.py --out target/ci/e136e_idle_think_tick_proposal_refinement_smoke --sample-out ""
-python -m py_compile scripts/probes/run_e136f_idle_think_tick_heldout_series_confirm.py
-python scripts/probes/run_e136f_idle_think_tick_heldout_series_confirm.py --out target/ci/e136f_idle_think_tick_heldout_series_confirm --sample-out ""
-python -m py_compile scripts/probes/run_e136g_adaptive_idle_tick_budget_confirm.py
-python scripts/probes/run_e136g_adaptive_idle_tick_budget_confirm.py --out target/ci/e136g_adaptive_idle_tick_budget_confirm --sample-out ""
-python -m py_compile scripts/probes/run_e136h_existing_operator_refinement_mutation_prune_night_cycle.py
-python scripts/probes/run_e136h_existing_operator_refinement_mutation_prune_night_cycle.py --cycles 2 --e132-rows-per-cycle 200 --e136a-rows-per-cycle 400 --out target/ci/e136h_existing_operator_refinement_mutation_prune_night_cycle --sample-out ""
-python -m py_compile scripts/probes/run_e136i_operator_supersession_and_output_ledger_planning.py
-python scripts/probes/run_e136i_operator_supersession_and_output_ledger_planning.py --out target/ci/e136i_operator_supersession_and_output_ledger_planning --sample-out ""
-python -m py_compile scripts/probes/run_e136n_primary_secondary_variant_governance.py
-python scripts/probes/run_e136n_primary_secondary_variant_governance.py --out target/ci/e136n_primary_secondary_variant_governance --sample-out ""
-python -m py_compile scripts/probes/run_e136n2_agency_matrix_arbitration_smoke.py
-python scripts/probes/run_e136n2_agency_matrix_arbitration_smoke.py --out target/ci/e136n2_agency_matrix_arbitration_smoke --sample-out ""
-python -m py_compile scripts/probes/run_e136n3_parallel_direct_write_ab_smoke.py
-python scripts/probes/run_e136n3_parallel_direct_write_ab_smoke.py --out target/ci/e136n3_parallel_direct_write_ab_smoke --sample-out ""
+python -m py_compile private_probe_runner_removed
+python private_probe_runner_removed --out target/ci/e136e_idle_think_tick_proposal_refinement_smoke --sample-out ""
+python -m py_compile private_probe_runner_removed
+python private_probe_runner_removed --out target/ci/e136f_idle_think_tick_heldout_series_confirm --sample-out ""
+python -m py_compile private_probe_runner_removed
+python private_probe_runner_removed --out target/ci/e136g_adaptive_idle_tick_budget_confirm --sample-out ""
+python -m py_compile private_probe_runner_removed
+python private_probe_runner_removed --cycles 2 --e132-rows-per-cycle 200 --e136a-rows-per-cycle 400 --out target/ci/e136h_existing_operator_refinement_mutation_prune_night_cycle --sample-out ""
+python -m py_compile private_probe_runner_removed
+python private_probe_runner_removed --out target/ci/e136i_operator_supersession_and_output_ledger_planning --sample-out ""
+python -m py_compile private_probe_runner_removed
+python private_probe_runner_removed --out target/ci/e136n_primary_secondary_variant_governance --sample-out ""
+python -m py_compile private_probe_runner_removed
+python private_probe_runner_removed --out target/ci/e136n2_agency_matrix_arbitration_smoke --sample-out ""
+python -m py_compile private_probe_runner_removed
+python private_probe_runner_removed --out target/ci/e136n3_parallel_direct_write_ab_smoke --sample-out ""
 python -m compileall -q scripts
 cargo test --workspace
 git diff --check
@@ -1345,14 +1345,14 @@ At the time of this handover, these old sample artifact directories may exist
 locally as untracked files. They were intentionally left untouched:
 
 ```text
-docs/research/artifact_samples/e31_breakpoint_ladder_and_bottleneck_localization/
-docs/research/artifact_samples/e32_flow_field_capacity_and_trace_ledger_repair_confirm/
-docs/research/artifact_samples/e44_abstract_payload_wire_capacity_smoke/
-docs/research/artifact_samples/e44b_parallel_abstract_wire_stream_field_smoke/
-docs/research/artifact_samples/e44c_reserve_wire_mask_and_noise_stress/
-docs/research/artifact_samples/e63_pocket_observatory_visual_debug_dashboard/
-docs/research/artifact_samples/e64_field_size_and_agency_view_sweep/
-docs/research/artifact_samples/e65_locked_body_runtime_integration_preflight/
+archived_public_artifact_sample_removed
+archived_public_artifact_sample_removed
+archived_public_artifact_sample_removed
+archived_public_artifact_sample_removed
+archived_public_artifact_sample_removed
+archived_public_artifact_sample_removed
+archived_public_artifact_sample_removed
+archived_public_artifact_sample_removed
 ```
 
 Do not delete or commit them without an explicit cleanup decision.

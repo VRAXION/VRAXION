@@ -76,5 +76,5 @@ governance proxy for Operator-library growth.
 
 ```text
 target/pilot_wave/e99_curriculum_scheduler_and_regression_replay_expansion/
-docs/research/artifact_samples/e99_curriculum_scheduler_and_regression_replay_expansion/
+archived_public_artifact_sample_removed
 ```

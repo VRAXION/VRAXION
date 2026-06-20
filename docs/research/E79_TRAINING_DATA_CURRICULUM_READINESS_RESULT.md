@@ -117,7 +117,7 @@ contract before they can feed the final-training supervisor.
 Committed sample pack:
 
 ```text
-docs/research/artifact_samples/e79_training_data_curriculum_readiness/
+archived_public_artifact_sample_removed
 ```
 
 Files:

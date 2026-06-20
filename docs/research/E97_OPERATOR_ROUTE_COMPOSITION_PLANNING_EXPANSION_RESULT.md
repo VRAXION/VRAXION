@@ -72,5 +72,5 @@ proxy for the current Flow/Agency/Proposal architecture.
 
 ```text
 target/pilot_wave/e97_operator_route_composition_planning_expansion/
-docs/research/artifact_samples/e97_operator_route_composition_planning_expansion/
+archived_public_artifact_sample_removed
 ```

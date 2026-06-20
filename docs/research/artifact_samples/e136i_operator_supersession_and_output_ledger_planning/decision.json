@@ -1,6 +1,0 @@
-{
-  "artifact_contract": "E136I_OPERATOR_SUPERSESSION_AND_OUTPUT_LEDGER_PLANNING",
-  "decision": "e136i_operator_supersession_and_output_ledger_confirmed",
-  "next": "E136J_SHADOW_VARIANT_APPLY_AND_RESIDUAL_PRUNE_CONFIRM",
-  "pass_gate": true
-}

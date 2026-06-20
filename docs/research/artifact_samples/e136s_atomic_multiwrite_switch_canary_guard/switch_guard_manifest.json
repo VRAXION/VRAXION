@@ -1,9 +1,0 @@
-{
-  "default_route_switch_candidate": true,
-  "production_apply_allowed_now": false,
-  "guarded_default_route_apply_count": 1024,
-  "guarded_blocked_no_apply_count": 1024,
-  "rollback_snapshot_count": 2048,
-  "preview_match_count": 2048,
-  "recommended_next": "E136T_ATOMIC_MULTIWRITE_DEFAULT_ROUTE_PROBATION_ROLLOUT_DECISION"
-}

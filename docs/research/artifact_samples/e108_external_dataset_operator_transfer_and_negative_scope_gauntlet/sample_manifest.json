@@ -1,8 +1,0 @@
-{
-  "artifact_contract": "E108_EXTERNAL_DATASET_OPERATOR_TRANSFER_AND_NEGATIVE_SCOPE_GAUNTLET",
-  "sample_only": true,
-  "sample_policy_eval_count": 512,
-  "sample_policy_strategy": "deterministic_first_512_from_previous_sample_pack",
-  "source": "target\\pilot_wave\\e108_external_dataset_operator_transfer_and_negative_scope_gauntlet",
-  "source_policy_eval_count": 80640
-}

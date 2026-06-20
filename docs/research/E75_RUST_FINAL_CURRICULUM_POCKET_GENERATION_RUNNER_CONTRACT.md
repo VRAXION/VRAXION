@@ -101,7 +101,7 @@ preflight_gate/
 Sample pack:
 
 ```text
-docs/research/artifact_samples/e75_rust_final_curriculum_pocket_generation_runner/
+archived_public_artifact_sample_removed
 ```
 
 ## Boundary

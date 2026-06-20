@@ -89,5 +89,5 @@ hygiene layer for already structured evidence/progress traces.
 
 ```text
 target/pilot_wave/e106_task_plan_decomposition_and_progress_tracking_expansion/
-docs/research/artifact_samples/e106_task_plan_decomposition_and_progress_tracking_expansion/
+archived_public_artifact_sample_removed
 ```

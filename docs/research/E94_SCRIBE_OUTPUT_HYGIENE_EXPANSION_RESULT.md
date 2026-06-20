@@ -72,5 +72,5 @@ mechanical rendering hygiene after Agency has already selected an action.
 
 ```text
 target/pilot_wave/e94_scribe_output_hygiene_expansion/
-docs/research/artifact_samples/e94_scribe_output_hygiene_expansion/
+archived_public_artifact_sample_removed
 ```

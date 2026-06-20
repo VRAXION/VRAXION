@@ -1,7 +1,0 @@
-{
-  "artifact_contract": "E100_TEXT_EVIDENCE_SPAN_INGRESS_AND_PROPOSAL_EXPANSION",
-  "decision": "e100_text_evidence_span_ingress_expansion_confirmed",
-  "sample_pack": "docs\\research\\artifact_samples\\e100_text_evidence_span_ingress_and_proposal_expansion",
-  "stable_operator_candidate_count": 8,
-  "unsafe_final_selected": 0
-}

@@ -100,7 +100,7 @@ impl PocketLibraryStore {
     pub fn insert_pocket(
         &mut self,
         entry: PocketRegistryEntry,
-        token: PocketToken,
+        pocket_descriptor: PocketToken,
         artifact: StoredPocketArtifact,
     ) {
         if let Some(position) = self
@@ -109,11 +109,11 @@ impl PocketLibraryStore {
             .position(|existing| existing.pocket_uid == entry.pocket_uid)
         {
             self.registry[position] = entry;
-            self.tokens[position] = token;
+            self.tokens[position] = pocket_descriptor;
             self.artifacts[position] = artifact;
         } else {
             self.registry.push(entry);
-            self.tokens.push(token);
+            self.tokens.push(pocket_descriptor);
             self.artifacts.push(artifact);
         }
         self.generation += 1;
@@ -135,13 +135,13 @@ impl PocketLibraryStore {
         true
     }
 
-    pub fn guarded_load(&mut self, token: PocketToken) -> StoreDecision {
+    pub fn guarded_load(&mut self, pocket_descriptor: PocketToken) -> StoreDecision {
         self.ledgers.access_rows += 1;
-        let load = resolve_pocket_call(token, &self.registry);
+        let load = resolve_pocket_call(pocket_descriptor, &self.registry);
         if !load.allowed {
             return StoreDecision {
                 allowed: false,
-                pocket_uid: token.pocket_uid,
+                pocket_uid: pocket_descriptor.pocket_uid,
                 reason: StoreGuardReason::LoadBlocked(
                     load.reason.unwrap_or(LoadBlockReason::UidMissing),
                 ),
@@ -150,38 +150,38 @@ impl PocketLibraryStore {
         let Some(entry) = self
             .registry
             .iter()
-            .find(|entry| entry.pocket_uid == token.pocket_uid)
+            .find(|entry| entry.pocket_uid == pocket_descriptor.pocket_uid)
         else {
             return StoreDecision {
                 allowed: false,
-                pocket_uid: token.pocket_uid,
+                pocket_uid: pocket_descriptor.pocket_uid,
                 reason: StoreGuardReason::LoadBlocked(LoadBlockReason::UidMissing),
             };
         };
         let Some(artifact) = self
             .artifacts
             .iter()
-            .find(|artifact| artifact.pocket_uid == token.pocket_uid)
+            .find(|artifact| artifact.pocket_uid == pocket_descriptor.pocket_uid)
         else {
             return StoreDecision {
                 allowed: false,
-                pocket_uid: token.pocket_uid,
+                pocket_uid: pocket_descriptor.pocket_uid,
                 reason: StoreGuardReason::ArtifactMissing,
             };
         };
         if artifact.content_digest != entry.content_digest
-            || artifact.content_digest != token.content_digest
+            || artifact.content_digest != pocket_descriptor.content_digest
             || artifact.token_hash != entry.token_hash
         {
             return StoreDecision {
                 allowed: false,
-                pocket_uid: token.pocket_uid,
+                pocket_uid: pocket_descriptor.pocket_uid,
                 reason: StoreGuardReason::DirectArtifactTamper,
             };
         }
         StoreDecision {
             allowed: true,
-            pocket_uid: token.pocket_uid,
+            pocket_uid: pocket_descriptor.pocket_uid,
             reason: StoreGuardReason::None,
         }
     }
@@ -246,7 +246,7 @@ impl PocketLibraryStore {
             capability_signature: candidate.capability_signature,
             lifecycle,
         };
-        let token = PocketToken {
+        let pocket_descriptor = PocketToken {
             pocket_uid: candidate.pocket_uid,
             token_version: 4,
             min_token_version: 3,
@@ -267,7 +267,7 @@ impl PocketLibraryStore {
             quality_delta: candidate.quality_delta,
             generation: self.generation + 1,
         };
-        self.insert_pocket(entry, token, artifact);
+        self.insert_pocket(entry, pocket_descriptor, artifact);
         StoreDecision {
             allowed: true,
             pocket_uid: candidate.pocket_uid,

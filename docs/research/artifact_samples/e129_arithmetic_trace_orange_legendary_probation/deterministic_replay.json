@@ -1,6 +1,0 @@
-{
-  "artifact_contract": "E129_ARITHMETIC_TRACE_ORANGE_LEGENDARY_PROBATION",
-  "deterministic_replay_pass": true,
-  "operator_count": 9,
-  "replay_sha256": "322c87b963185b5167bbb3161c8355d3ab15beb9e9ffc49755084f5aa893fcfc"
-}

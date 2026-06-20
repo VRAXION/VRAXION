@@ -109,5 +109,5 @@ This is still scoped Gold only. No Diamond/Core/PermaCore claim is made.
 
 ```text
 target/pilot_wave/e111_bronze_mutation_prune_promote_or_drop_wave/
-docs/research/artifact_samples/e111_bronze_mutation_prune_promote_or_drop_wave/
+archived_public_artifact_sample_removed
 ```

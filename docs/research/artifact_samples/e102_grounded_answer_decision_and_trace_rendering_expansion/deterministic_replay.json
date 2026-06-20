@@ -1,9 +1,0 @@
-{
-  "hash": "0b9e3f5c670830ea421d1f41a3bee8914906483ac69a281d93bfc87227ea59e6",
-  "payload_keys": [
-    "aggregate",
-    "counterfactual_summary",
-    "lifecycle",
-    "selection_frequency"
-  ]
-}

@@ -100,7 +100,7 @@ lane_supervisor/
 Sample pack:
 
 ```text
-docs/research/artifact_samples/e77_global_pocket_library_merge_supervisor/
+archived_public_artifact_sample_removed
 ```
 
 ## Boundary

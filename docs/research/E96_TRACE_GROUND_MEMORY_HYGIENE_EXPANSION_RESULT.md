@@ -72,5 +72,5 @@ memory hygiene proxy for Operator-library development.
 
 ```text
 target/pilot_wave/e96_trace_ground_memory_hygiene_expansion/
-docs/research/artifact_samples/e96_trace_ground_memory_hygiene_expansion/
+archived_public_artifact_sample_removed
 ```

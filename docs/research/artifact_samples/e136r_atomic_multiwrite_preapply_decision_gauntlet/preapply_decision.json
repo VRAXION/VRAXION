@@ -1,6 +1,0 @@
-{
-  "default_route_candidate": true,
-  "production_apply_allowed_now": false,
-  "recommended_next": "E136S_ATOMIC_MULTIWRITE_DEFAULT_ROUTE_SWITCH_CANARY_GUARD",
-  "decision_basis": "default regression plus seeded overlay canary stress passed"
-}

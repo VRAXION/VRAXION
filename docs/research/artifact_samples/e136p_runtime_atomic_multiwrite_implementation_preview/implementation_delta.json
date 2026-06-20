@@ -1,7 +1,0 @@
-{
-  "rust_runtime_api_added": true,
-  "agency_atomic_batch_api": "agency_decide_atomic_batch",
-  "locked_body_preview_api": "LockedBodyRuntime::process_atomic_proposals_preview",
-  "implementation_preview_ready": true,
-  "production_apply_allowed_now": false
-}

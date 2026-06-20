@@ -87,5 +87,5 @@ an earlier E102 ASK/DEFER decision.
 
 ```text
 target/pilot_wave/e103_clarification_response_ingress_and_state_repair_expansion/
-docs/research/artifact_samples/e103_clarification_response_ingress_and_state_repair_expansion/
+archived_public_artifact_sample_removed
 ```

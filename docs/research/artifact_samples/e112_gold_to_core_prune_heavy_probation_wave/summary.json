@@ -1,9 +1,0 @@
-{
-  "artifact_contract": "E112_GOLD_TO_CORE_PRUNE_HEAVY_PROBATION_WAVE",
-  "boundary": "CoreMemoryCandidate only; not PermaCore/TrueGolden",
-  "candidate_count": 136,
-  "core_memory_candidate_count": 136,
-  "decision": "e112_gold_to_core_prune_heavy_probation_confirmed",
-  "prune_heavy_selected_ratio": 1.0,
-  "sample_pack": "docs\\research\\artifact_samples\\e112_gold_to_core_prune_heavy_probation_wave"
-}

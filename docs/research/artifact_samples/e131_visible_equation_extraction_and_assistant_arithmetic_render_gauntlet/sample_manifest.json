@@ -1,6 +1,0 @@
-{
-  "artifact_contract": "E131_VISIBLE_EQUATION_EXTRACTION_AND_ASSISTANT_ARITHMETIC_RENDER_GAUNTLET",
-  "sample_only": true,
-  "sample_row_count": 324,
-  "source": "target/pilot_wave/e131_visible_equation_extraction_and_assistant_arithmetic_render_gauntlet"
-}

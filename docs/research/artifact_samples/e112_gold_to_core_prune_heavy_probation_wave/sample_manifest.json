@@ -1,6 +1,0 @@
-{
-  "artifact_contract": "E112_GOLD_TO_CORE_PRUNE_HEAVY_PROBATION_WAVE",
-  "sample_only": true,
-  "sample_row_count": 512,
-  "source": "target\\pilot_wave\\e112_gold_to_core_prune_heavy_probation_wave"
-}

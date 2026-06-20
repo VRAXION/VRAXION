@@ -678,7 +678,10 @@ cargo test --workspace
 python -m compileall -q scripts
 ```
 
-Evidence checkers live under [`scripts/probes/`](scripts/probes/). Current front-door CI also checks tracked JSON/JSONL syntax, E89 naming/schema, E107-E112 sample artifacts, and the Operator rank dashboard smoke path. E113 has a full-artifact checker for local FineWeb stress runs.
+The current public tree is a sanitized release/prior-art surface. Operational
+probe runners, tracked JSONL ledgers, local artifact samples, and private
+training traces are intentionally excluded. Current front-door CI checks the
+Rust runtime slice, tracked JSON syntax, and the public-surface audit.
 
 Long or expensive runs must write partial outcomes continuously. End-only reporting is not acceptable for the current operating model.
 

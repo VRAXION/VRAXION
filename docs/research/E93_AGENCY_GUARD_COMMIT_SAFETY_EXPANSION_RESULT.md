@@ -70,5 +70,5 @@ Agency can call or audit before a proposal becomes stable state.
 
 ```text
 target/pilot_wave/e93_agency_guard_commit_safety_expansion/
-docs/research/artifact_samples/e93_agency_guard_commit_safety_expansion/
+archived_public_artifact_sample_removed
 ```

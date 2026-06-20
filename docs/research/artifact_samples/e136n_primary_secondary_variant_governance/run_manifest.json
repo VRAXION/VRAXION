@@ -1,5 +1,0 @@
-{
-  "artifact_contract": "E136N_PRIMARY_SECONDARY_VARIANT_GOVERNANCE",
-  "boundary": "variant governance only; no destructive delete; no challenger apply",
-  "e136m_artifact": "docs/research/artifact_samples/e136m_runtime_replacement_apply_or_abstract_lineage_split"
-}

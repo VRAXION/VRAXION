@@ -100,16 +100,16 @@ consciousness / sentience = no
 ## Artifacts
 
 ```text
-docs/research/artifact_samples/e128_assistant_text_io_lightweight_render_training/report.md
-docs/research/artifact_samples/e128_assistant_text_io_lightweight_render_training/summary.json
-docs/research/artifact_samples/e128_assistant_text_io_lightweight_render_training/decision.json
-docs/research/artifact_samples/e128_assistant_text_io_lightweight_render_training/deterministic_replay.json
-docs/research/artifact_samples/e128_assistant_text_io_lightweight_render_training/prompt_corpus.jsonl
-docs/research/artifact_samples/e128_assistant_text_io_lightweight_render_training/evaluated_render_rows.jsonl
+archived_public_artifact_sample_removed
+archived_public_artifact_sample_removed
+archived_public_artifact_sample_removed
+archived_public_artifact_sample_removed
+archived_public_artifact_sample_removed
+archived_public_artifact_sample_removed
 ```
 
 ## Reproduce
 
 ```powershell
-python scripts/probes/run_e128_assistant_text_io_lightweight_render_training.py --out target/pilot_wave/e128_assistant_text_io_lightweight_render_training --sample-out docs/research/artifact_samples/e128_assistant_text_io_lightweight_render_training
+python private_probe_runner_removed --out target/pilot_wave/e128_assistant_text_io_lightweight_render_training --sample-out archived_public_artifact_sample_removed
 ```

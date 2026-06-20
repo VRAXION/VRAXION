@@ -76,6 +76,6 @@ safe response policy over short prompts, not open-ended language generation.
 ## Artifacts
 
 ```text
-docs/research/artifact_samples/e127_text_to_text_render_smoke_current/report.md
-docs/research/artifact_samples/e127_text_to_text_render_smoke_current/text_to_text_render_smoke.json
+archived_public_artifact_sample_removed
+archived_public_artifact_sample_removed
 ```

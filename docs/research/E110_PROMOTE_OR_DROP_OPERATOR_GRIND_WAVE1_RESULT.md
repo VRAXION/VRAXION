@@ -106,5 +106,5 @@ final-training evidence.
 
 ```text
 target/pilot_wave/e110_promote_or_drop_operator_grind_wave1/
-docs/research/artifact_samples/e110_promote_or_drop_operator_grind_wave1/
+archived_public_artifact_sample_removed
 ```

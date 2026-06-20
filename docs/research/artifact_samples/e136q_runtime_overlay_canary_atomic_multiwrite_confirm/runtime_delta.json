@@ -1,8 +1,0 @@
-{
-  "rust_runtime_canary_api_added": true,
-  "locked_body_canary_api": "LockedBodyRuntime::process_atomic_overlay_canary",
-  "default_route_unchanged": true,
-  "canary_overlay_active": true,
-  "rollback_ready": true,
-  "production_apply_allowed_now": false
-}
