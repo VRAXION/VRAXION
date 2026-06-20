@@ -1,6 +1,6 @@
 # Public Repo Cleanup Report
 
-Status: initial guardrail pass on `public-surface-cleanup-001`.
+Status: guardrail + scanner-hardening pass on `public-surface-cleanup-001`.
 
 This report is path-only. It does not copy artifact contents, row samples, secrets, or private data.
 
@@ -47,6 +47,7 @@ scripts/probes/run_e114_fineweb*
 scripts/probes/run_e119_fineweb*
 scripts/probes/run_e120_fineweb*
 scripts/probes/run_e123_orange_baseline_fineweb*
+scripts/tools/prepare_fineweb*
 ```
 
 Reason codes:
@@ -106,7 +107,18 @@ scripts/audit_public_surface.py added
 .github/workflows/public-surface-audit.yml added
 .gitignore hardened
 SECURITY.md hardened
+scanner self-scan false positive fixed
+E18-E23 operational runner paths promoted from WARN to FAIL
+FineWeb operational runner/tool paths promoted to FAIL
 ```
+
+## Reverted mistake
+
+```text
+A temporary tombstone file was accidentally created under docs/research/artifact_samples/ and then deleted on the same cleanup branch.
+```
+
+No force push or history rewrite was performed.
 
 ## Next cleanup pass
 
