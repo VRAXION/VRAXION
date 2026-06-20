@@ -1,6 +1,16 @@
 # Local datasets and private inputs
 /data/
 /local_data/
+/private/
+/local/
+/private_data/
+/raw_data/
+
+# Private frontier work and run outputs
+frontier_runs/
+frontier_experiments/
+run_outputs/
+artifacts/private/
 
 # Python caches from local tooling
 __pycache__/
@@ -24,6 +34,19 @@ _probe_bins/
 *.h5
 *.ckpt
 
+# Dataset and ledger formats that must not be public by default
+*.parquet
+*.arrow
+*.jsonl
+*.sqlite
+*.db
+
+# Env and secret material
+.env
+.env.*
+/secrets/
+**/.influx_token
+
 # Virtual envs
 .venv/
 venv/
@@ -43,11 +66,8 @@ venv/
 /results/
 /output/
 /outputs/
-/raw_data/
-/private_data/
 /full_traces/
 /redteam/
-/secrets/
 
 # OS cruft
 .DS_Store
@@ -73,9 +93,6 @@ nul
 *.mask
 *.drawio.bkp
 *.o
-
-# Local telemetry credentials
-**/.influx_token
 
 # Rust build artifacts
 target/
