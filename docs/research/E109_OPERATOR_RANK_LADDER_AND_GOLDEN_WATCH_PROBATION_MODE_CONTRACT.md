@@ -31,8 +31,8 @@ not open-domain reasoning claim
 ## Inputs
 
 ```text
-docs/research/artifact_samples/e107_operator_library_e90_e106_survival_role_and_regression_gauntlet/operator_lifecycle_report.json
-docs/research/artifact_samples/e108_external_dataset_operator_transfer_and_negative_scope_gauntlet/
+archived_public_artifact_sample_removed
+archived_public_artifact_sample_removed
 ```
 
 ## Rank Policy

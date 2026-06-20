@@ -1,9 +1,0 @@
-{
-  "false_commit_total": 0,
-  "hard_negative_total": 0,
-  "negative_scope_case_count_total": 78859,
-  "negative_scope_pass_rate_min": 1.0,
-  "overbroad_solver_control_wrong_scope_call_total": 16703,
-  "pass": true,
-  "wrong_scope_call_total": 0
-}

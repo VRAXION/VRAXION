@@ -182,7 +182,7 @@ target/pilot_wave/e88_local_golden_and_support_component_survival_gauntlet/
   seed_progress/
   row_level_samples.jsonl
 
-docs/research/artifact_samples/e88_local_golden_and_support_component_survival_gauntlet/
+archived_public_artifact_sample_removed
 ```
 
 ## Boundary

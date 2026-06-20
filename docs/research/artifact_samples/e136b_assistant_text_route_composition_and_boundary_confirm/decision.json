@@ -1,9 +1,0 @@
-{
-  "artifact_contract": "E136B_ASSISTANT_TEXT_ROUTE_COMPOSITION_AND_BOUNDARY_CONFIRM",
-  "boundary": "controlled assistant/text route composition only; not neural training, open-domain assistant evidence, production assistant behavior, Core/PermaCore/TrueGolden",
-  "decision": "e136b_assistant_text_route_composition_boundary_confirmed",
-  "failure_count": 0,
-  "failures": [],
-  "next": "E136C_ASSISTANT_TEXT_MULTI_TURN_ROUTE_STATE_AND_LATENCY_COMPARE",
-  "pass_gate": true
-}

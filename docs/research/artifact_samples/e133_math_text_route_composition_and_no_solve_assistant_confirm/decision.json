@@ -1,9 +1,0 @@
-{
-  "artifact_contract": "E133_MATH_TEXT_ROUTE_COMPOSITION_AND_NO_SOLVE_ASSISTANT_CONFIRM",
-  "boundary": "route composition only; not benchmark solving, not natural-language word-problem solving",
-  "decision": "e133_math_text_route_composition_no_solve_assistant_confirmed",
-  "failure_count": 0,
-  "failures": [],
-  "next": "E134_EXTERNAL_MATH_TEXT_OOD_ROUTE_STRESS_AND_COUNTEREXAMPLE_GAUNTLET",
-  "pass_gate": true
-}

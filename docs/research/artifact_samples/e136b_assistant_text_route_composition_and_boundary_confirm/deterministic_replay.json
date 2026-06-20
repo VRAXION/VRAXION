@@ -1,6 +1,0 @@
-{
-  "artifact_contract": "E136B_ASSISTANT_TEXT_ROUTE_COMPOSITION_AND_BOUNDARY_CONFIRM",
-  "deterministic_replay_pass": true,
-  "operator_count": 18,
-  "replay_sha256": "e1931ef2a080618d527ca3d872f90cab601db5a72865d76d64ae776eb10d0aa7"
-}

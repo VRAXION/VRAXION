@@ -90,5 +90,5 @@ layer for already structured evidence-state traces.
 
 ```text
 target/pilot_wave/e105_conversation_memory_summary_and_context_compression_expansion/
-docs/research/artifact_samples/e105_conversation_memory_summary_and_context_compression_expansion/
+archived_public_artifact_sample_removed
 ```

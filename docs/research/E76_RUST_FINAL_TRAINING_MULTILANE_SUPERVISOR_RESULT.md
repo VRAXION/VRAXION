@@ -99,7 +99,7 @@ length final-training campaign.
 Committed sample pack:
 
 ```text
-docs/research/artifact_samples/e76_rust_final_training_multilane_supervisor/
+archived_public_artifact_sample_removed
 ```
 
 Files:

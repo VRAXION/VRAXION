@@ -1,7 +1,0 @@
-{
-  "artifact_contract": "E103_CLARIFICATION_RESPONSE_INGRESS_AND_STATE_REPAIR_EXPANSION",
-  "decision": "e103_clarification_response_state_repair_expansion_confirmed",
-  "sample_pack": "docs\\research\\artifact_samples\\e103_clarification_response_ingress_and_state_repair_expansion",
-  "stable_operator_candidate_count": 8,
-  "unsafe_final_selected": 0
-}

@@ -1,7 +1,0 @@
-{
-  "artifact_contract": "E96_TRACE_GROUND_MEMORY_HYGIENE_EXPANSION",
-  "decision": "e96_trace_ground_memory_hygiene_expansion_confirmed",
-  "sample_pack": "docs\\research\\artifact_samples\\e96_trace_ground_memory_hygiene_expansion",
-  "stable_operator_candidate_count": 8,
-  "unsafe_final_selected": 0
-}

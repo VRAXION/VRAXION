@@ -101,7 +101,7 @@ global_supervisor/lane_supervisor/supervisor_results.json
 Sample pack:
 
 ```text
-docs/research/artifact_samples/e78_final_train_campaign_entrypoint/
+archived_public_artifact_sample_removed
 ```
 
 ## Boundary

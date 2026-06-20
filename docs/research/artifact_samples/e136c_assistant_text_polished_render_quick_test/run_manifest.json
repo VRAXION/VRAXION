@@ -1,5 +1,0 @@
-{
-  "artifact_contract": "E136C_ASSISTANT_TEXT_POLISHED_RENDER_QUICK_TEST",
-  "boundary": "deterministic polished render quick test; not neural LLM/freeform generation",
-  "case_count": 12
-}

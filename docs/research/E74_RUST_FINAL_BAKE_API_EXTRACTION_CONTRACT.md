@@ -81,7 +81,7 @@ report.md
 Sample pack:
 
 ```text
-docs/research/artifact_samples/e74_rust_final_bake_api_extraction/
+archived_public_artifact_sample_removed
 ```
 
 ## Boundary

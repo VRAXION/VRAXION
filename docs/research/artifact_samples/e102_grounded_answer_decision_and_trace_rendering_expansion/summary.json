@@ -1,7 +1,0 @@
-{
-  "artifact_contract": "E102_GROUNDED_ANSWER_DECISION_AND_TRACE_RENDERING_EXPANSION",
-  "decision": "e102_grounded_answer_decision_expansion_confirmed",
-  "sample_pack": "docs\\research\\artifact_samples\\e102_grounded_answer_decision_and_trace_rendering_expansion",
-  "stable_operator_candidate_count": 8,
-  "unsafe_final_selected": 0
-}

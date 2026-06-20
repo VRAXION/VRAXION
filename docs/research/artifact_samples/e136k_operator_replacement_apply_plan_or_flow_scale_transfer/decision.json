@@ -1,6 +1,0 @@
-{
-  "artifact_contract": "E136K_OPERATOR_REPLACEMENT_APPLY_PLAN_OR_FLOW_SCALE_TRANSFER",
-  "decision": "e136k_operator_replacement_apply_plan_confirmed",
-  "next": "E136L_RUNTIME_REPLACEMENT_CANARY_AND_TIGHTENED_CHALLENGER_CONFIRM",
-  "pass_gate": true
-}

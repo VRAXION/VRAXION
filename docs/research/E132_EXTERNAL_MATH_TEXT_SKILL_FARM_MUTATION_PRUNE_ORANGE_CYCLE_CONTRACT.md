@@ -93,11 +93,11 @@ operator_registry/*.json
 ## Reproduce
 
 ```powershell
-python scripts/probes/run_e132_external_math_text_skill_farm_mutation_prune_orange_cycle.py
+python private_probe_runner_removed
 ```
 
 Smoke mode without the external dataset:
 
 ```powershell
-python scripts/probes/run_e132_external_math_text_skill_farm_mutation_prune_orange_cycle.py --dataset target/datasets/missing_e132_smoke.jsonl --allow-builtin-dataset --out target/ci/e132_smoke --sample-out "" --min-dataset-rows 1 --min-external-support 1 --min-orange 16 --dataset-row-limit 80
+python private_probe_runner_removed --dataset target/datasets/missing_e132_smoke.jsonl --allow-builtin-dataset --out target/ci/e132_smoke --sample-out "" --min-dataset-rows 1 --min-external-support 1 --min-orange 16 --dataset-row-limit 80
 ```

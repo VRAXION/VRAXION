@@ -101,7 +101,7 @@ campaign can use without manually choosing lower-level runners.
 Committed sample pack:
 
 ```text
-docs/research/artifact_samples/e78_final_train_campaign_entrypoint/
+archived_public_artifact_sample_removed
 ```
 
 Files:

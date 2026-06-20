@@ -1,8 +1,0 @@
-{
-  "abstract_lineage_required_count": 7,
-  "challenger_ood_required_count": 11,
-  "flow_scale_transfer_decision": "defer_until_replacement_canary_plan_lands",
-  "operator_replacement_ready_count": 16,
-  "reason": "E136J produced enough zero-failure evidence to plan direct canaries for the verified replacement subset. Flow-scale transfer remains useful, but it should not replace the immediate operator replacement canary step.",
-  "recommended_track": "operator_replacement_apply_plan"
-}

@@ -64,7 +64,7 @@ sample-only checker failure_count = 0
 ## Commands
 
 ```text
-python scripts/probes/run_e96_trace_ground_memory_hygiene_expansion.py
-python scripts/probes/run_e96_trace_ground_memory_hygiene_expansion_check.py --out target/pilot_wave/e96_trace_ground_memory_hygiene_expansion --write-summary
-python scripts/probes/run_e96_trace_ground_memory_hygiene_expansion_check.py --sample-only docs/research/artifact_samples/e96_trace_ground_memory_hygiene_expansion --write-summary
+python private_probe_runner_removed
+python private_probe_runner_removed --out target/pilot_wave/e96_trace_ground_memory_hygiene_expansion --write-summary
+python private_probe_runner_removed --sample-only archived_public_artifact_sample_removed --write-summary
 ```

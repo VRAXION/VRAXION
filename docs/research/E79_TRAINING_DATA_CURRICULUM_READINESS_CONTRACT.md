@@ -105,7 +105,7 @@ training_data_readiness_report.md
 Sample pack:
 
 ```text
-docs/research/artifact_samples/e79_training_data_curriculum_readiness/
+archived_public_artifact_sample_removed
 ```
 
 ## Boundary

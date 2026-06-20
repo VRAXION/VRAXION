@@ -5,7 +5,8 @@ _Last updated: 2026-06-19_
 This repository is the public VRAXION prior-art, release, and sanitized
 evidence surface.
 
-The private frontier workspace is `VRAXION/VRAXION-frontier`.
+The private frontier workspace is referenced publicly only as
+`private_frontier_repo`.
 
 ## Public Repository Role
 
@@ -49,10 +50,10 @@ gone through explicit export review.
 Raw or sensitive data stays outside GitHub unless explicitly encrypted and
 approved for storage.
 
-Current local private data root:
+Current local private data root alias:
 
 ```text
-S:\AI\VRAXION_private_data
+local_private_data
 ```
 
 Every dataset used for frontier work should have a small manifest recording:

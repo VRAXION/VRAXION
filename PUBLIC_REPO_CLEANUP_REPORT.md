@@ -22,7 +22,7 @@ Recent public work appears to have committed operational research sample packs a
 ## High-priority remove candidates
 
 ```text
-docs/research/artifact_samples/
+removed current-tree artifact sample directory
 ```
 
 Reason codes:
@@ -36,18 +36,18 @@ row_level_or_trace_like_artifact_surface
 ## High-priority sanitize or remove candidates
 
 ```text
-scripts/probes/run_e18*
-scripts/probes/run_e19*
-scripts/probes/run_e20*
-scripts/probes/run_e21*
-scripts/probes/run_e22*
-scripts/probes/run_e23*
-scripts/probes/run_e113_fineweb*
-scripts/probes/run_e114_fineweb*
-scripts/probes/run_e119_fineweb*
-scripts/probes/run_e120_fineweb*
-scripts/probes/run_e123_orange_baseline_fineweb*
-scripts/tools/prepare_fineweb*
+private_probe_runner_removed*
+private_probe_runner_removed*
+private_probe_runner_removed*
+private_probe_runner_removed*
+private_probe_runner_removed*
+private_probe_runner_removed*
+private_probe_runner_removed*
+private_probe_runner_removed*
+private_probe_runner_removed*
+private_probe_runner_removed*
+private_probe_runner_removed*
+private_dataset_preparation_tool_removed*
 ```
 
 Reason codes:
@@ -115,14 +115,15 @@ FineWeb operational runner/tool paths promoted to FAIL
 ## Reverted mistake
 
 ```text
-A temporary tombstone file was accidentally created under docs/research/artifact_samples/ and then deleted on the same cleanup branch.
+A temporary tombstone file was accidentally created under the removed artifact
+sample directory and then deleted on the same cleanup branch.
 ```
 
 No force push or history rewrite was performed.
 
 ## Next cleanup pass
 
-1. Remove `docs/research/artifact_samples/` from current public tree.
+1. Remove tracked artifact sample files from current public tree.
 2. Remove or stub operational E18-E23 and FineWeb probe/checker scripts.
 3. Sanitize exact result and contract docs into public summaries.
 4. Run `python scripts/audit_public_surface.py`.
@@ -131,7 +132,7 @@ No force push or history rewrite was performed.
 ## Acceptance target for next pass
 
 ```text
-git ls-files contains no docs/research/artifact_samples path
+git ls-files contains no tracked artifact sample path
 git ls-files contains no *.jsonl
 public audit script passes
 no operational FineWeb runner remains public

@@ -1,6 +1,0 @@
-{
-  "artifact_contract": "E136F_IDLE_THINK_TICK_HELDOUT_SERIES_CONFIRM",
-  "decision": "e136f_idle_think_tick_heldout_series_confirmed",
-  "next": "E136G_IDLE_THINK_TICK_CHAINED_PROPOSAL_AND_LONGER_HORIZON_CONFIRM",
-  "pass_gate": true
-}

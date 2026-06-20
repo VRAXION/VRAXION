@@ -186,7 +186,7 @@ target/pilot_wave/e90_operator_curriculum_expansion/
   row_level_samples.jsonl
   operator_evolution_history.jsonl
 
-docs/research/artifact_samples/e90_operator_curriculum_expansion/
+archived_public_artifact_sample_removed
 ```
 
 ## Next

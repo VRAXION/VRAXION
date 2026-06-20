@@ -70,7 +70,7 @@ operator_evolution_history.jsonl
 Sample pack:
 
 ```text
-docs/research/artifact_samples/e106_task_plan_decomposition_and_progress_tracking_expansion/
+archived_public_artifact_sample_removed
 ```
 
 ## Metrics

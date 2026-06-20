@@ -76,5 +76,5 @@ proxy for the current Operator Library.
 
 ```text
 target/pilot_wave/e98_multi_skill_execution_curriculum_expansion/
-docs/research/artifact_samples/e98_multi_skill_execution_curriculum_expansion/
+archived_public_artifact_sample_removed
 ```

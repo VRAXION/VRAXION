@@ -1,7 +1,0 @@
-{
-  "artifact_contract": "E105_CONVERSATION_MEMORY_SUMMARY_AND_CONTEXT_COMPRESSION_EXPANSION",
-  "decision": "e105_context_compression_summary_expansion_confirmed",
-  "sample_pack": "docs\\research\\artifact_samples\\e105_conversation_memory_summary_and_context_compression_expansion",
-  "stable_operator_candidate_count": 8,
-  "unsafe_final_selected": 0
-}

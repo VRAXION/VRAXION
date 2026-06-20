@@ -62,7 +62,7 @@ jobs:
           test -f target/ci/e79_final_train_smoke/global_supervisor/global_library_summary.json
           test -f target/ci/e79_final_train_smoke/global_supervisor/lane_supervisor/supervisor_results.json
 
-  evidence-sample-ci:
+  public-surface-ci:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -71,7 +71,7 @@ jobs:
       - name: Python compile
         run: python -m compileall -q scripts
 
-      - name: Tracked JSON and JSONL parse
+      - name: Tracked JSON parse
         run: |
           python - <<'PY'
           import json
@@ -84,78 +84,12 @@ jobs:
               if path.suffix == ".json":
                   json.loads(path.read_text(encoding="utf-8"))
               elif path.suffix == ".jsonl":
-                  for line_no, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
-                      if line.strip():
-                          try:
-                              json.loads(line)
-                          except json.JSONDecodeError as exc:
-                              raise SystemExit(f"{path}:{line_no}: {exc}") from exc
-          print("tracked_json_and_jsonl_parse_ok")
+                  raise SystemExit(f"tracked JSONL is not part of the public surface: {path}")
+          print("tracked_json_parse_ok")
           PY
 
-      - name: Evidence sample checkers
-        run: |
-          python scripts/probes/run_e89_operator_naming_canonicalization_check.py
-          python scripts/probes/run_e107_operator_library_e90_e106_survival_role_and_regression_gauntlet_check.py --sample-only docs/research/artifact_samples/e107_operator_library_e90_e106_survival_role_and_regression_gauntlet
-          python scripts/probes/run_e108_external_dataset_operator_transfer_and_negative_scope_gauntlet_check.py --sample-only docs/research/artifact_samples/e108_external_dataset_operator_transfer_and_negative_scope_gauntlet
-          python scripts/probes/run_e109_operator_rank_ladder_and_golden_watch_probation_mode_check.py --sample-only docs/research/artifact_samples/e109_operator_rank_ladder_and_golden_watch_probation_mode
-          python scripts/probes/run_e110_promote_or_drop_operator_grind_wave1_check.py --sample-only docs/research/artifact_samples/e110_promote_or_drop_operator_grind_wave1
-          python scripts/probes/run_e111_bronze_mutation_prune_promote_or_drop_wave_check.py --sample-only docs/research/artifact_samples/e111_bronze_mutation_prune_promote_or_drop_wave
-          python scripts/probes/run_e112_gold_to_core_prune_heavy_probation_wave_check.py --sample-only docs/research/artifact_samples/e112_gold_to_core_prune_heavy_probation_wave
-          python scripts/probes/run_e136i_operator_supersession_and_output_ledger_planning.py --out target/ci/e136i_operator_supersession_and_output_ledger_planning --sample-out ""
-
-      - name: Operator rank dashboard smoke
-        run: |
-          python scripts/tools/generate_operator_rank_dashboard.py --out target/ci/operator_rank_dashboard/index.html
-          python - <<'PY'
-          import pathlib
-          import re
-          import subprocess
-
-          html = pathlib.Path("target/ci/operator_rank_dashboard/index.html").read_text(encoding="utf-8")
-          match = re.search(r"<script>\s*(.*?)\s*</script>", html, re.S)
-          if not match:
-              raise SystemExit("dashboard script block missing")
-          js_path = pathlib.Path("target/ci/operator_rank_dashboard/dashboard.js")
-          js_path.write_text(match.group(1), encoding="utf-8")
-          subprocess.run(["node", "--check", str(js_path)], check=True)
-          if "E136B assistant text route composition and boundary confirm" not in html:
-              raise SystemExit("dashboard did not load E136B assistant-text route-composition evidence")
-          if "E136B route comp" not in html:
-              raise SystemExit("dashboard did not render E136B route composition card")
-          if "E136B stack" not in html:
-              raise SystemExit("dashboard did not render E136B stack card")
-          if "E136B boundary" not in html:
-              raise SystemExit("dashboard did not render E136B boundary card")
-          if "E136A assistant text" not in html:
-              raise SystemExit("dashboard did not render E136A assistant text card")
-          if "E136A support min" not in html:
-              raise SystemExit("dashboard did not render E136A support card")
-          if "E136A direct writes" not in html:
-              raise SystemExit("dashboard did not render E136A direct-write card")
-          if "E135 dialogue state" not in html:
-              raise SystemExit("dashboard did not load E135 dialogue-state evidence")
-          if "E135 dialogue" not in html:
-              raise SystemExit("dashboard did not render E135 dialogue card")
-          if "E135 state integrity" not in html:
-              raise SystemExit("dashboard did not render E135 state integrity card")
-          if "E134 OOD pass" not in html:
-              raise SystemExit("dashboard did not load E134 OOD route-stress evidence")
-          if "E134 counterexamples" not in html:
-              raise SystemExit("dashboard did not render E134 counterexample card")
-          if "E133 route comp" not in html:
-              raise SystemExit("dashboard did not load E133 math-text route-composition evidence")
-          if "E132 math-text" not in html:
-              raise SystemExit("dashboard did not retain E132 external math-text skill evidence")
-          if "E131 visible eq" not in html:
-              raise SystemExit("dashboard did not retain E131 visible equation evidence")
-          if "E130B transfer" not in html:
-              raise SystemExit("dashboard did not load E130B arithmetic text-IO transfer evidence")
-          if "E130A backfill" not in html:
-              raise SystemExit("dashboard did not retain E130A Orange backfill evidence")
-          if "E129 arithmetic trace" not in html:
-              raise SystemExit("dashboard did not retain E129 arithmetic trace evidence")
-          PY
+      - name: Public surface audit
+        run: python scripts/audit_public_surface.py
 
       - name: Front-door stale current-claim guard
         run: |

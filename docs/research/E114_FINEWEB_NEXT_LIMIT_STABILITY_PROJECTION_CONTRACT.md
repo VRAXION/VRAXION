@@ -19,7 +19,7 @@ Core questions:
 ## Inputs
 
 ```text
-source = S:\AI\MESSY TRAINING DATA - INPUT ONLY\Fineweb edu 10B
+source_alias = private_fineweb_edu_local
 e112_root = target/pilot_wave/e112_gold_to_core_prune_heavy_probation_wave/
 e113_root = target/pilot_wave/e113_fineweb_light_stress_hard_mutation_recycle/
 ```

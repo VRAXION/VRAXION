@@ -145,5 +145,5 @@ probation gate, not a Core/TrueGolden promotion.
 
 ```text
 target/pilot_wave/e109_operator_rank_ladder_and_golden_watch_probation_mode/
-docs/research/artifact_samples/e109_operator_rank_ladder_and_golden_watch_probation_mode/
+archived_public_artifact_sample_removed
 ```

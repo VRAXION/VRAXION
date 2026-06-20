@@ -1,7 +1,0 @@
-{
-  "artifact_contract": "E129_ARITHMETIC_TRACE_ORANGE_LEGENDARY_PROBATION",
-  "boundary": "exact arithmetic trace/operator behavior only; not word-problem solving or neural LLM training",
-  "decision": "e129_arithmetic_trace_orange_legendary_probation_confirmed",
-  "next": "E130_ARITHMETIC_TEXT_IO_TRANSFER_AND_WORD_PROBLEM_NO_CALL_GAUNTLET",
-  "pass_gate": true
-}

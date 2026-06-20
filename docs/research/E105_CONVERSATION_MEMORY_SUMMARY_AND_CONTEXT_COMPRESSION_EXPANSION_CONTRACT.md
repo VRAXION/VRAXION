@@ -70,7 +70,7 @@ operator_evolution_history.jsonl
 Sample pack:
 
 ```text
-docs/research/artifact_samples/e105_conversation_memory_summary_and_context_compression_expansion/
+archived_public_artifact_sample_removed
 ```
 
 ## Metrics

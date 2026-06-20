@@ -1,6 +1,0 @@
-{
-  "artifact_contract": "E136N4_AGENCY_GATED_ATOMIC_MULTI_WRITE_COMMIT_CONFIRM",
-  "decision": "e136n4_agency_gated_atomic_multi_write_confirmed",
-  "next": "E136O_CHALLENGER_OOD_RUNTIME_REPLACEMENT_GAUNTLET",
-  "pass_gate": true
-}

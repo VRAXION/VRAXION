@@ -20,7 +20,7 @@ architecture, library cards, and schema docs must use Operator-first language.
 docs/research/OPERATOR_NAMING_AND_LIBRARY_SCHEMA_LOCK.md
 docs/research/OPERATOR_LIBRARY_CARDS.md
 docs/research/POCKET_LIBRARY_CARDS.md
-scripts/probes/run_e89_operator_naming_canonicalization_check.py
+private_probe_runner_removed
 docs/research/E89_OPERATOR_NAMING_CANONICALIZATION_AND_LIBRARY_SCHEMA_ALIAS_RESULT.md
 ```
 

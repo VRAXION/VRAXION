@@ -85,26 +85,29 @@ pub struct ActivePocket {
     pub routing_score: f32,
 }
 
-pub fn resolve_pocket_call(token: PocketToken, registry: &[PocketRegistryEntry]) -> LoadDecision {
+pub fn resolve_pocket_call(
+    pocket_descriptor: PocketToken,
+    registry: &[PocketRegistryEntry],
+) -> LoadDecision {
     let Some(entry) = registry
         .iter()
-        .find(|entry| entry.pocket_uid == token.pocket_uid)
+        .find(|entry| entry.pocket_uid == pocket_descriptor.pocket_uid)
     else {
         return LoadDecision {
             allowed: false,
-            pocket_uid: token.pocket_uid,
+            pocket_uid: pocket_descriptor.pocket_uid,
             reason: Some(LoadBlockReason::UidMissing),
         };
     };
-    let reason = if token.content_digest != entry.content_digest {
+    let reason = if pocket_descriptor.content_digest != entry.content_digest {
         Some(LoadBlockReason::ContentDigestMismatch)
-    } else if token.token_hash != entry.token_hash {
+    } else if pocket_descriptor.token_hash != entry.token_hash {
         Some(LoadBlockReason::TokenBindingMismatch)
-    } else if token.abi_version != entry.abi_version {
+    } else if pocket_descriptor.abi_version != entry.abi_version {
         Some(LoadBlockReason::AbiMismatch)
-    } else if token.capability_signature != entry.capability_signature {
+    } else if pocket_descriptor.capability_signature != entry.capability_signature {
         Some(LoadBlockReason::CapabilityMismatch)
-    } else if token.token_version < token.min_token_version {
+    } else if pocket_descriptor.token_version < pocket_descriptor.min_token_version {
         Some(LoadBlockReason::StaleToken)
     } else if !entry.lifecycle.load_allowed() {
         Some(LoadBlockReason::LifecycleBlocked)
@@ -113,7 +116,7 @@ pub fn resolve_pocket_call(token: PocketToken, registry: &[PocketRegistryEntry])
     };
     LoadDecision {
         allowed: reason.is_none(),
-        pocket_uid: token.pocket_uid,
+        pocket_uid: pocket_descriptor.pocket_uid,
         reason,
     }
 }
@@ -181,7 +184,7 @@ mod tests {
 
     #[test]
     fn alias_rename_does_not_break_uid_resolution() {
-        let token = token("pkt_0101");
+        let descriptor = token("pkt_0101");
         let old = [entry(
             "pkt_0101",
             "binary_frame_codec",
@@ -192,28 +195,28 @@ mod tests {
             "protocol_framing_ingress",
             PocketLifecycle::Stable,
         )];
-        assert!(resolve_pocket_call(token, &old).allowed);
-        assert!(resolve_pocket_call(token, &renamed).allowed);
+        assert!(resolve_pocket_call(descriptor, &old).allowed);
+        assert!(resolve_pocket_call(descriptor, &renamed).allowed);
     }
 
     #[test]
     fn digest_mismatch_is_blocked() {
-        let token = token("pkt_0101");
+        let descriptor = token("pkt_0101");
         let mut bad = entry("pkt_0101", "binary_frame_codec", PocketLifecycle::Stable);
         bad.content_digest = "digest_b";
         assert_eq!(
-            resolve_pocket_call(token, &[bad]).reason,
+            resolve_pocket_call(descriptor, &[bad]).reason,
             Some(LoadBlockReason::ContentDigestMismatch)
         );
     }
 
     #[test]
     fn token_swap_is_blocked() {
-        let token = token("pkt_0101");
+        let descriptor = token("pkt_0101");
         let mut swapped = entry("pkt_0101", "binary_frame_codec", PocketLifecycle::Stable);
         swapped.token_hash = "tok_hash_b";
         assert_eq!(
-            resolve_pocket_call(token, &[swapped]).reason,
+            resolve_pocket_call(descriptor, &[swapped]).reason,
             Some(LoadBlockReason::TokenBindingMismatch)
         );
     }

@@ -82,7 +82,7 @@ row_level_samples.jsonl
 Sample pack:
 
 ```text
-docs/research/artifact_samples/e111_bronze_mutation_prune_promote_or_drop_wave/
+archived_public_artifact_sample_removed
 ```
 
 ## Decision Labels

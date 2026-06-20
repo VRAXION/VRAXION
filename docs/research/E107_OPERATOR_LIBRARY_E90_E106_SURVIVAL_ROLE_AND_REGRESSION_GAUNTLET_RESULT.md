@@ -131,5 +131,5 @@ promotion.
 
 ```text
 target/pilot_wave/e107_operator_library_e90_e106_survival_role_and_regression_gauntlet/
-docs/research/artifact_samples/e107_operator_library_e90_e106_survival_role_and_regression_gauntlet/
+archived_public_artifact_sample_removed
 ```

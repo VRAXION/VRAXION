@@ -1,6 +1,0 @@
-{
-  "artifact_contract": "E136C_ASSISTANT_TEXT_POLISHED_RENDER_QUICK_TEST",
-  "decision": "e136c_assistant_text_polished_render_quick_test_confirmed",
-  "next": "E136D_ASSISTANT_TEXT_RENDER_TRAINING_SET_AND_HELDOUT_CONFIRM",
-  "pass_gate": true
-}

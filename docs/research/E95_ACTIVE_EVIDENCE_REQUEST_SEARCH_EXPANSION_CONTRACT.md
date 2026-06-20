@@ -62,7 +62,7 @@ sample-only checker failure_count = 0
 ## Commands
 
 ```text
-python scripts/probes/run_e95_active_evidence_request_search_expansion.py
-python scripts/probes/run_e95_active_evidence_request_search_expansion_check.py --out target/pilot_wave/e95_active_evidence_request_search_expansion --write-summary
-python scripts/probes/run_e95_active_evidence_request_search_expansion_check.py --sample-only docs/research/artifact_samples/e95_active_evidence_request_search_expansion --write-summary
+python private_probe_runner_removed
+python private_probe_runner_removed --out target/pilot_wave/e95_active_evidence_request_search_expansion --write-summary
+python private_probe_runner_removed --sample-only archived_public_artifact_sample_removed --write-summary
 ```

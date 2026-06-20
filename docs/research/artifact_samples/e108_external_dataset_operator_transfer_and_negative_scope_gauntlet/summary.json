@@ -1,8 +1,0 @@
-{
-  "artifact_contract": "E108_EXTERNAL_DATASET_OPERATOR_TRANSFER_AND_NEGATIVE_SCOPE_GAUNTLET",
-  "decision": "e108_external_transfer_no_harm_positive",
-  "external_transfer_candidate_count": 14,
-  "quarantine_count": 0,
-  "sample_pack": "docs\\research\\artifact_samples\\e108_external_dataset_operator_transfer_and_negative_scope_gauntlet",
-  "scoped_transfer_candidate_count": 35
-}

@@ -4,7 +4,7 @@ This changelog is narrowed to the current v6 / E127-E136N3 evidence anchor. Full
 
 ## 2026-06-17 - E136N3 Parallel Direct-Write A/B Smoke
 
-- Added `scripts/probes/run_e136n3_parallel_direct_write_ab_smoke.py`.
+- Added `private_probe_runner_removed`.
 - Compared parallel direct Flow writes against parallel proposal fanout plus the
   E136N2 Agency Matrix commit barrier over the E136N primary/secondary variant
   surface.
@@ -24,7 +24,7 @@ This changelog is narrowed to the current v6 / E127-E136N3 evidence anchor. Full
 
 ## 2026-06-17 - E136N2 Agency Matrix Arbitration Smoke
 
-- Added `scripts/probes/run_e136n2_agency_matrix_arbitration_smoke.py`.
+- Added `private_probe_runner_removed`.
 - Tested a small trained Agency Matrix on top of the E136N primary/secondary
   variant surface instead of adding a hand-written skill-pyramid registry.
 - Training converged in 2 epochs over 118 proposal-feature examples.
@@ -41,7 +41,7 @@ This changelog is narrowed to the current v6 / E127-E136N3 evidence anchor. Full
 
 ## 2026-06-17 - E136N Primary/Secondary Variant Governance
 
-- Added `scripts/probes/run_e136n_primary_secondary_variant_governance.py`.
+- Added `private_probe_runner_removed`.
 - Converted the E136M runtime-facing overlay into a primary/secondary variant
   governance skeleton: 34 operators, 68 registry rows, 34 primary variants,
   and 34 secondary variants.
@@ -58,7 +58,7 @@ This changelog is narrowed to the current v6 / E127-E136N3 evidence anchor. Full
 
 ## 2026-06-17 - E136M Runtime Replacement Apply Or Abstract Lineage Split
 
-- Added `scripts/probes/run_e136m_runtime_replacement_apply_or_abstract_lineage_split.py`.
+- Added `private_probe_runner_removed`.
 - Materialized the E136L direct canary wins into a runtime-facing replacement
   overlay: 16 overlay applies, 7 verified replacements, 9 light-prune overlays,
   and 16 rollback snapshots.
@@ -76,7 +76,7 @@ This changelog is narrowed to the current v6 / E127-E136N3 evidence anchor. Full
 
 ## 2026-06-17 - E136L Runtime Replacement Canary And Tightened Challenger Confirm
 
-- Added `scripts/probes/run_e136l_runtime_replacement_canary_and_tightened_challenger_confirm.py`.
+- Added `private_probe_runner_removed`.
 - Tested the E136K apply plan as a rollback-safe runtime canary simulation:
   16/16 direct canaries passed with the old trigger removed in canary and the
   selected variant active.
@@ -94,7 +94,7 @@ This changelog is narrowed to the current v6 / E127-E136N3 evidence anchor. Full
 
 ## 2026-06-17 - E136K Operator Replacement Apply Plan Or Flow-Scale Transfer
 
-- Added `scripts/probes/run_e136k_operator_replacement_apply_plan_or_flow_scale_transfer.py`.
+- Added `private_probe_runner_removed`.
 - Converted the E136I/E136J replacement evidence into an explicit non-destructive
   runtime canary/apply plan.
 - Result: 34 operators planned, 16 direct canary-ready candidates, 11
@@ -115,7 +115,7 @@ This changelog is narrowed to the current v6 / E127-E136N3 evidence anchor. Full
 
 ## 2026-06-17 - E136J Shadow Variant Apply And Residual Prune Confirm
 
-- Added `scripts/probes/run_e136j_shadow_variant_apply_and_residual_prune_confirm.py`.
+- Added `private_probe_runner_removed`.
 - Shadow-applied the E136I replacement ledger without destructive runtime
   mutation or prune.
 - Ran the long guard to the explicit 19:00 local deadline instead of stopping
@@ -135,7 +135,7 @@ This changelog is narrowed to the current v6 / E127-E136N3 evidence anchor. Full
 
 ## 2026-06-17 - E136I Operator Supersession And Output Ledger Planning
 
-- Added `scripts/probes/run_e136i_operator_supersession_and_output_ledger_planning.py`.
+- Added `private_probe_runner_removed`.
 - Converted the E136H selected variants into an explicit supersession,
   challenger-replay, abstract-lineage, and output-impact ledger.
 - Result: 34 E136H selected variants classified, 27 replacement-ready variants,
@@ -154,7 +154,7 @@ This changelog is narrowed to the current v6 / E127-E136N3 evidence anchor. Full
 
 ## 2026-06-16 - E136H Existing Operator Refinement Mutation/Prune Night Cycle
 
-- Added `scripts/probes/run_e136h_existing_operator_refinement_mutation_prune_night_cycle.py`.
+- Added `private_probe_runner_removed`.
 - Ran the existing-operator-first refinement path over the 16 E132 math-text
   and 18 E136A assistant-text operators before new operator discovery.
 - Result: 40 cycles completed, 34 operators checked, 12,480,000 operator-row
@@ -169,7 +169,7 @@ This changelog is narrowed to the current v6 / E127-E136N3 evidence anchor. Full
 
 ## 2026-06-16 - E136G Adaptive Idle Tick Budget Confirm
 
-- Added `scripts/probes/run_e136g_adaptive_idle_tick_budget_confirm.py`.
+- Added `private_probe_runner_removed`.
 - Tested the explicit adaptive idle-tick policy: each idle proposal carries a
   one-more-tick recommendation, progress marker, reason, and expected next-tick
   gain, while Agency makes the final continuation decision.
@@ -187,7 +187,7 @@ This changelog is narrowed to the current v6 / E127-E136N3 evidence anchor. Full
 
 ## 2026-06-16 - E136F Idle Think-Tick Heldout Series Confirm
 
-- Added `scripts/probes/run_e136f_idle_think_tick_heldout_series_confirm.py`.
+- Added `private_probe_runner_removed`.
 - Tested the idle/empty tick idea on a 70-case heldout series: fixed
   observation, 0 new input, `t` advances, idle proposals are checked by
   Agency, then final text commits through `OutputTextField`.
@@ -206,7 +206,7 @@ This changelog is narrowed to the current v6 / E127-E136N3 evidence anchor. Full
 
 ## 2026-06-16 - E136E Idle Think-Tick Proposal Refinement Smoke
 
-- Added `scripts/probes/run_e136e_idle_think_tick_proposal_refinement_smoke.py`.
+- Added `private_probe_runner_removed`.
 - Tested fixed-observation idle ticks: no new input arrives, `t` advances,
   idle operators emit proposals, Agency checks them, and final text commits
   through `OutputTextField`.
@@ -224,13 +224,13 @@ This changelog is narrowed to the current v6 / E127-E136N3 evidence anchor. Full
 - Added a runtime `OutputTextField` representation in `vraxion-runtime/src/text_field.rs`.
 - Locked the output-side text field name: `OutputTextField`; `TextRender` is a process/operator, not the field.
 - Represented committed output text as an `N x 8` bit matrix where each row is one UTF-8 byte.
-- Added `scripts/probes/run_e136d_output_text_field_binary_matrix_smoke.py`.
+- Added `private_probe_runner_removed`.
 - Result: 10/10 cases passed, 7/7 committed text roundtrips, 3/3 guarded rejects, 10/10 zero-fill checks, and 1/1 tamper detection.
 - Boundary: output-field representation and Agency-gated commit semantics only; not text generation, next-token prediction, open-domain assistant behavior, Core, PermaCore, or TrueGolden.
 
 ## 2026-06-16 - E136C Assistant Text Polished Render Quick Test
 
-- Added `scripts/probes/run_e136c_assistant_text_polished_render_quick_test.py`.
+- Added `private_probe_runner_removed`.
 - Tested whether E136B assistant/text route stacks can render short polished
   deterministic text instead of raw route/action labels.
 - Result: 12/12 quick inference samples passed.
@@ -246,7 +246,7 @@ This changelog is narrowed to the current v6 / E127-E136N3 evidence anchor. Full
 
 ## 2026-06-16 - E136B Assistant Text Route Composition And Boundary Confirm
 
-- Added `scripts/probes/run_e136b_assistant_text_route_composition_and_boundary_confirm.py`.
+- Added `private_probe_runner_removed`.
 - Composed the 18 E136A scoped assistant/text lenses and guards into bounded
   assistant/text route stacks.
 - Result: 18/18 route pass operators with 144,000 route cases, 53,000
@@ -268,7 +268,7 @@ This changelog is narrowed to the current v6 / E127-E136N3 evidence anchor. Full
 
 ## 2026-06-16 - E136A Assistant Text Skill Farm Mutation/Prune Orange Cycle
 
-- Added `scripts/probes/run_e136a_assistant_text_skill_farm_mutation_prune_orange_cycle.py`.
+- Added `private_probe_runner_removed`.
 - Farmed scoped assistant/text lenses and guards from the local E136
   assistant-text seed pack.
 - Result: 447,766 rows loaded across 5 external sources and 12 external
@@ -292,7 +292,7 @@ This changelog is narrowed to the current v6 / E127-E136N3 evidence anchor. Full
 
 ## 2026-06-16 - E135 Math Text Multi-Route Assistant Dialogue-State Gauntlet
 
-- Added `scripts/probes/run_e135_math_text_multi_route_assistant_dialogue_state_gauntlet.py`.
+- Added `private_probe_runner_removed`.
 - Stressed the 16 E134 math-text route operators under controlled multi-turn
   assistant dialogue state.
 - Result: 16/16 E134 route operators passed the E135 dialogue-state gate.
@@ -315,7 +315,7 @@ This changelog is narrowed to the current v6 / E127-E136N3 evidence anchor. Full
 
 ## 2026-06-16 - E134 External Math Text OOD Route Stress And Counterexample Gauntlet
 
-- Added `scripts/probes/run_e134_external_math_text_ood_route_stress_and_counterexample_gauntlet.py`.
+- Added `private_probe_runner_removed`.
 - Stressed the 16 E133 math-text route-composition operators under OOD
   wrappers, noisy assistant-style math surfaces, and counterexample lures.
 - Result: 16/16 E133 route operators passed the E134 OOD route-stress gate.
@@ -337,7 +337,7 @@ This changelog is narrowed to the current v6 / E127-E136N3 evidence anchor. Full
 
 ## 2026-06-16 - E133 Math Text Route Composition And No-Solve Assistant Confirm
 
-- Added `scripts/probes/run_e133_math_text_route_composition_and_no_solve_assistant_confirm.py`.
+- Added `private_probe_runner_removed`.
 - Composed the 16 E132 scoped math-text lenses/guards into assistant route
   decisions on top of the E131/E129 visible arithmetic route.
 - Result: 16/16 E132 math-text operators passed the E133 route-composition gate.
@@ -357,7 +357,7 @@ This changelog is narrowed to the current v6 / E127-E136N3 evidence anchor. Full
 
 ## 2026-06-16 - E132 External Math Text Skill Farm Mutation/Prune Orange Cycle
 
-- Added `scripts/probes/run_e132_external_math_text_skill_farm_mutation_prune_orange_cycle.py`.
+- Added `private_probe_runner_removed`.
 - Downloaded and normalized an E132 external math-text seed pack under ignored
   `target/`: MathInstruct, NuminaMath-TIR, OpenAssistant/oasst1, Dolly 15k,
   and EleutherAI Hendrycks MATH.
@@ -380,7 +380,7 @@ This changelog is narrowed to the current v6 / E127-E136N3 evidence anchor. Full
 
 ## 2026-06-16 - E131 Visible Equation Extraction And Assistant Arithmetic Render
 
-- Added `scripts/probes/run_e131_visible_equation_extraction_and_assistant_arithmetic_render_gauntlet.py`.
+- Added `private_probe_runner_removed`.
 - Routed the 9 E129/E130B scoped arithmetic trace Operators from
   assistant-style visible equation surfaces seeded by the external E131 text
   pack.
@@ -403,7 +403,7 @@ This changelog is narrowed to the current v6 / E127-E136N3 evidence anchor. Full
 
 ## 2026-06-15 - E130B Arithmetic Text-IO Transfer And Word-Problem No-Call
 
-- Added `scripts/probes/run_e130b_arithmetic_text_io_transfer_and_word_problem_no_call_gauntlet.py`.
+- Added `private_probe_runner_removed`.
 - Transferred the 9 E129 scoped arithmetic trace Operators into longer
   visible-expression text-IO wrappers.
 - Result: 9/9 arithmetic Operators passed the E130B transfer gate.
@@ -421,7 +421,7 @@ This changelog is narrowed to the current v6 / E127-E136N3 evidence anchor. Full
 
 ## 2026-06-15 - E130A CoreMemoryCandidate To Orange Backfill Gauntlet
 
-- Added `scripts/probes/run_e130a_corememory_to_orange_backfill_gauntlet.py`.
+- Added `private_probe_runner_removed`.
 - Backfilled the 136 E112 CoreMemoryCandidate Operators through an E121-style
   Orange/Legendary probation gate.
 - Result: 136/136 reached OrangeLegendaryCandidate.
@@ -440,7 +440,7 @@ This changelog is narrowed to the current v6 / E127-E136N3 evidence anchor. Full
 
 ## 2026-06-15 - E129 Arithmetic Trace Orange/Legendary Probation
 
-- Added `scripts/probes/run_e129_arithmetic_trace_orange_legendary_probation.py`.
+- Added `private_probe_runner_removed`.
 - Added exact arithmetic trace training/probation evidence for scoped direct
   arithmetic operators.
 - Result: 9/9 arithmetic operators reached Orange/LegendaryCandidate with
@@ -458,7 +458,7 @@ This changelog is narrowed to the current v6 / E127-E136N3 evidence anchor. Full
 
 ## 2026-06-15 - E128 Assistant Text-IO Lightweight Render Training
 
-- Added `scripts/probes/run_e128_assistant_text_io_lightweight_render_training.py`.
+- Added `private_probe_runner_removed`.
 - Added a no-download assistant-style corpus/action-policy/template smoke on top
   of the E127 operator-library checkpoint.
 - Result: 320 local prompts split into 160 train, 64 validation, and 96 heldout

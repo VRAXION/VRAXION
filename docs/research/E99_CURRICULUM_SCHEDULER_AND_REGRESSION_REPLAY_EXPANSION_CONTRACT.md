@@ -71,7 +71,7 @@ operator_evolution_history.jsonl
 Sample pack:
 
 ```text
-docs/research/artifact_samples/e99_curriculum_scheduler_and_regression_replay_expansion/
+archived_public_artifact_sample_removed
 ```
 
 ## Metrics

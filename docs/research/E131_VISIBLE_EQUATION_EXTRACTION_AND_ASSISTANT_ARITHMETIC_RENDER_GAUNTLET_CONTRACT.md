@@ -22,7 +22,7 @@ target/pilot_wave/e130b_arithmetic_text_io_transfer_and_word_problem_no_call_gau
 Sample fallback:
 
 ```text
-docs/research/artifact_samples/e130b_arithmetic_text_io_transfer_and_word_problem_no_call_gauntlet/
+archived_public_artifact_sample_removed
 ```
 
 External normalized seed pack:
@@ -108,7 +108,7 @@ e131_visible_equation_extraction_assistant_arithmetic_render_rejected
 ## Reproduce
 
 ```powershell
-python scripts/probes/run_e131_visible_equation_extraction_and_assistant_arithmetic_render_gauntlet.py
+python private_probe_runner_removed
 ```
 
 ## Boundary

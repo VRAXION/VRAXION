@@ -123,7 +123,7 @@ row_level_samples.jsonl
 Artifact sample pack:
 
 ```text
-docs/research/artifact_samples/e88_local_golden_and_support_component_survival_gauntlet/
+archived_public_artifact_sample_removed
 ```
 
 ## Pass Rules

@@ -1,9 +1,0 @@
-{
-  "activation_before_max": 102495,
-  "activation_before_min": 101601,
-  "artifact_contract": "E130A_COREMEMORY_TO_ORANGE_BACKFILL_GAUNTLET",
-  "candidate_count": 136,
-  "source_candidate_rank": "CoreMemoryCandidate",
-  "source_e112_decision": "e112_gold_to_core_prune_heavy_probation_confirmed",
-  "source_e112_root": "docs/research/artifact_samples/e112_gold_to_core_prune_heavy_probation_wave"
-}

@@ -1,6 +1,0 @@
-{
-  "artifact_contract": "E130B_ARITHMETIC_TEXT_IO_TRANSFER_AND_WORD_PROBLEM_NO_CALL_GAUNTLET",
-  "deterministic_replay_pass": true,
-  "operator_count": 9,
-  "replay_sha256": "253999b308600d90a260c4eec7a8ac4b0ddd406066775c285c289ab67c4891d6"
-}

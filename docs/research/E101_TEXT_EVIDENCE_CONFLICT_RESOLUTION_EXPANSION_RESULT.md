@@ -75,5 +75,5 @@ This is not natural-language reasoning or open-domain fact checking.
 
 ```text
 target/pilot_wave/e101_text_evidence_conflict_resolution_expansion/
-docs/research/artifact_samples/e101_text_evidence_conflict_resolution_expansion/
+archived_public_artifact_sample_removed
 ```

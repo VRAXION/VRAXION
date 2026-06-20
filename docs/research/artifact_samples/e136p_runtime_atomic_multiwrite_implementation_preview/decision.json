@@ -1,6 +1,0 @@
-{
-  "artifact_contract": "E136P_RUNTIME_ATOMIC_MULTIWRITE_IMPLEMENTATION_PREVIEW",
-  "decision": "e136p_runtime_atomic_multiwrite_implementation_preview_confirmed",
-  "next": "E136Q_RUNTIME_OVERLAY_CANARY_ATOMIC_MULTIWRITE_CONFIRM",
-  "pass_gate": true
-}

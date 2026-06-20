@@ -1,6 +1,0 @@
-{
-  "artifact_contract": "E130A_COREMEMORY_TO_ORANGE_BACKFILL_GAUNTLET",
-  "deterministic_replay_pass": true,
-  "operator_count": 136,
-  "replay_sha256": "6c20ba99105c89a15b16a32f41e6097ec2759b43ab1890301050fd490830058c"
-}

@@ -37,13 +37,13 @@ rejection.
 ## Run
 
 ```text
-python scripts/probes/run_e80_dataset_backed_pocket_capability_scoring.py \
+python private_probe_runner_removed \
   --out target/pilot_wave/e80_dataset_backed_pocket_capability_scoring \
   --seeds 8001,8002,8003,8004,8005,8006,8007,8008 \
   --workers 8 \
   --heartbeat-seconds 5
 
-python scripts/probes/run_e80_dataset_backed_pocket_capability_scoring_check.py \
+python private_probe_runner_removed \
   --out target/pilot_wave/e80_dataset_backed_pocket_capability_scoring \
   --write-summary
 ```

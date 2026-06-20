@@ -139,11 +139,11 @@ fn base_entry(alias: &'static str, lifecycle: PocketLifecycle) -> PocketRegistry
 }
 
 fn block_reason_ok(
-    token: PocketToken,
+    pocket_descriptor: PocketToken,
     registry: &[PocketRegistryEntry],
     reason: LoadBlockReason,
 ) -> bool {
-    let decision = resolve_pocket_call(token, registry);
+    let decision = resolve_pocket_call(pocket_descriptor, registry);
     !decision.allowed && decision.reason == Some(reason)
 }
 

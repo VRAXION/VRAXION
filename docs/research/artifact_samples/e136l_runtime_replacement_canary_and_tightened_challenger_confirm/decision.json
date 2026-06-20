@@ -1,6 +1,0 @@
-{
-  "artifact_contract": "E136L_RUNTIME_REPLACEMENT_CANARY_AND_TIGHTENED_CHALLENGER_CONFIRM",
-  "decision": "e136l_runtime_replacement_canary_and_tightened_challenger_confirmed",
-  "next": "E136M_RUNTIME_REPLACEMENT_APPLY_OR_ABSTRACT_LINEAGE_SPLIT",
-  "pass_gate": true
-}

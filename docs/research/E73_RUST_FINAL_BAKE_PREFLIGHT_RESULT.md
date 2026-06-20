@@ -84,7 +84,7 @@ Rust runtime API and CLI entrypoint for the current final-bake preflight.
 Committed sample pack:
 
 ```text
-docs/research/artifact_samples/e73_rust_final_bake_preflight/
+archived_public_artifact_sample_removed
 ```
 
 Files:
