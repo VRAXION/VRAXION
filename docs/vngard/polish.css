@@ -70,7 +70,7 @@ a:focus-visible {
 }
 
 .hero-content {
-  width: min(740px, 55vw);
+  width: min(760px, 56vw);
 }
 
 .hero-content::before {
@@ -78,6 +78,82 @@ a:focus-visible {
   background:
     radial-gradient(ellipse at 22% 48%, rgba(3, 5, 6, 0.78), rgba(3, 5, 6, 0.38) 48%, rgba(3, 5, 6, 0) 74%),
     linear-gradient(135deg, rgba(var(--ivy-rgb), 0.045), rgba(var(--seal-rgb), 0.025));
+}
+
+.architecture-statement {
+  max-width: 745px;
+  margin: 0 0 26px;
+  color: var(--stone-100);
+  font-size: clamp(1.2rem, 1.52vw, 1.48rem);
+  font-weight: 620;
+  line-height: 1.2;
+  letter-spacing: -0.032em;
+  text-wrap: balance;
+  text-shadow:
+    0 1px 0 rgba(var(--cyan-white-rgb), 0.05),
+    0 2px 24px rgba(3, 5, 6, 0.9);
+}
+
+.architecture-statement strong {
+  color: var(--stone-100);
+  font-weight: 860;
+}
+
+.architecture-statement em {
+  color: var(--stone-100);
+  font-style: italic;
+  font-weight: 740;
+  text-shadow:
+    0 0 16px rgba(var(--cyan-white-rgb), 0.16),
+    0 2px 24px rgba(3, 5, 6, 0.86);
+}
+
+.statement-opening {
+  display: inline;
+  letter-spacing: -0.038em;
+}
+
+.statement-product {
+  color: var(--ivy-500);
+  font-weight: 920;
+  letter-spacing: -0.02em;
+  text-shadow:
+    0 0 18px rgba(var(--ivy-rgb), 0.46),
+    0 0 34px rgba(var(--ivy-rgb), 0.18),
+    0 2px 24px rgba(3, 5, 6, 0.9);
+}
+
+.statement-primary {
+  color: var(--ivy-500);
+  font-weight: 850;
+  text-shadow:
+    0 0 16px rgba(var(--ivy-rgb), 0.38),
+    0 2px 24px rgba(3, 5, 6, 0.9);
+}
+
+.statement-technical {
+  color: var(--cyan-400);
+  font-weight: 790;
+  text-shadow:
+    0 0 16px rgba(var(--cyan-rgb), 0.28),
+    0 2px 24px rgba(3, 5, 6, 0.9);
+}
+
+.statement-contrast {
+  color: var(--seal-500);
+  font-weight: 850;
+  text-shadow:
+    0 0 16px rgba(var(--seal-rgb), 0.42),
+    0 0 32px rgba(var(--seal-rgb), 0.16),
+    0 2px 24px rgba(3, 5, 6, 0.9);
+}
+
+.statement-boundary {
+  color: var(--stone-100);
+  font-weight: 900;
+  text-shadow:
+    0 0 16px rgba(var(--cyan-white-rgb), 0.2),
+    0 2px 24px rgba(3, 5, 6, 0.9);
 }
 
 .evidence-section {
@@ -222,6 +298,19 @@ a:focus-visible {
     width: auto;
     border-radius: 12px;
     font-size: 0.68rem;
+  }
+
+  .architecture-statement {
+    max-width: 100%;
+    margin-bottom: 22px;
+    font-size: 1.04rem;
+    line-height: 1.31;
+    letter-spacing: -0.018em;
+    text-wrap: pretty;
+  }
+
+  .statement-opening {
+    letter-spacing: -0.02em;
   }
 
   .evidence-section {
