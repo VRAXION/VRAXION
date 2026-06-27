@@ -755,6 +755,7 @@ h1 {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  gap: 10px;
   min-height: 46px;
   padding: 0 18px;
   border-radius: 6px;
@@ -769,6 +770,12 @@ h1 {
 
 .primary-action:hover {
   background: var(--ivy-300);
+}
+
+.github-mark {
+  width: 19px;
+  height: 19px;
+  flex: 0 0 auto;
 }
 
 .secondary-action {
