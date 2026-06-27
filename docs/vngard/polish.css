@@ -306,7 +306,7 @@ a:focus-visible {
     font-size: 1.04rem;
     line-height: 1.31;
     letter-spacing: -0.018em;
-    text-wrap: pretty;
+    text-wrap: balance;
   }
 
   .statement-opening {
