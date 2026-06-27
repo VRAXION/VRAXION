@@ -42,6 +42,30 @@ a:focus-visible {
   line-height: 1.35;
 }
 
+.creator-credit .identity-chip {
+  display: inline;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  color: rgb(var(--chip-rgb));
+  font-weight: 820;
+  background: none;
+  box-shadow: none;
+  line-height: inherit;
+  text-shadow:
+    0 0 16px rgba(var(--chip-rgb), 0.28),
+    0 2px 16px rgba(3, 5, 6, 0.82);
+}
+
+.creator-credit .chip-daniel {
+  --chip-rgb: var(--ivy-rgb);
+}
+
+.creator-credit .chip-vraxion {
+  --chip-rgb: var(--seal-rgb);
+}
+
 .hero-content {
   width: min(740px, 55vw);
 }
