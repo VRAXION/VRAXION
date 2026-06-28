@@ -414,9 +414,11 @@ h1 {
 }
 
 .wordmark {
+  position: relative;
   display: inline-flex;
   align-items: baseline;
   gap: 0;
+  isolation: isolate;
 }
 
 .armor-letter {
@@ -432,51 +434,66 @@ h1 {
 }
 
 .seal-letter {
-  --glare-rgb: var(--wordmark-fuchsia-rgb);
+  --horizon-rgb: var(--wordmark-fuchsia-rgb);
   position: relative;
   display: inline-block;
   color: #020405;
   background: none;
   -webkit-text-fill-color: #020405;
   -webkit-text-stroke: 0;
+  z-index: 0;
   text-shadow:
-    0 0 8px rgba(var(--glare-rgb), 0.32),
-    0 0 24px rgba(var(--glare-rgb), 0.18),
-    0 8px 24px rgba(0, 0, 0, 0.92);
+    0 -1px 0 rgba(var(--horizon-rgb), 0.07),
+    0 1px 0 rgba(var(--cyan-white-rgb), 0.045),
+    0 8px 24px rgba(0, 0, 0, 0.96);
 }
 
 .ivy-letter {
-  --glare-rgb: var(--wordmark-teal-rgb);
+  --horizon-rgb: var(--wordmark-teal-rgb);
   position: relative;
   display: inline-block;
   color: #020405;
   background: none;
   -webkit-text-fill-color: #020405;
   -webkit-text-stroke: 0;
+  z-index: 0;
   text-shadow:
-    0 0 8px rgba(var(--glare-rgb), 0.34),
-    0 0 24px rgba(var(--glare-rgb), 0.18),
-    0 8px 24px rgba(0, 0, 0, 0.92);
+    0 -1px 0 rgba(var(--horizon-rgb), 0.08),
+    0 1px 0 rgba(var(--cyan-white-rgb), 0.045),
+    0 8px 24px rgba(0, 0, 0, 0.96);
+}
+
+.ivy-letter::before,
+.seal-letter::before {
+  content: attr(data-horizon);
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  color: rgba(var(--horizon-rgb), 0.78);
+  -webkit-text-fill-color: rgba(var(--horizon-rgb), 0.78);
+  filter: blur(10px);
+  opacity: 0.9;
+  transform: scale(1.035);
+  text-shadow:
+    0 0 12px rgba(var(--horizon-rgb), 0.7),
+    0 0 32px rgba(var(--horizon-rgb), 0.46),
+    0 0 68px rgba(var(--horizon-rgb), 0.24);
 }
 
 .ivy-letter::after,
 .seal-letter::after {
-  content: attr(data-glare);
+  content: attr(data-horizon);
   position: absolute;
   inset: 0;
   pointer-events: none;
   color: transparent;
-  background:
-    radial-gradient(circle at 42% 24%, rgba(var(--cyan-white-rgb), 0.34) 0%, rgba(var(--glare-rgb), 0.5) 18%, rgba(var(--glare-rgb), 0.22) 42%, transparent 68%),
-    linear-gradient(180deg, rgba(var(--glare-rgb), 0.48), rgba(var(--glare-rgb), 0.34) 38%, rgba(var(--glare-rgb), 0.1) 68%, transparent 100%);
+  background: linear-gradient(145deg, transparent 0 18%, rgba(var(--cyan-white-rgb), 0.18) 27%, transparent 39%, rgba(255, 255, 255, 0.055) 58%, transparent 74%);
   background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   -webkit-text-stroke: 0;
-  opacity: 0.52;
-  text-shadow:
-    0 0 10px rgba(var(--glare-rgb), 0.24),
-    0 0 28px rgba(var(--glare-rgb), 0.12);
+  opacity: 0.32;
 }
 
 .alpha-letter {
