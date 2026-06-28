@@ -1,14 +1,23 @@
 [workspace]
-members = ["vraxion-runtime"]
-resolver = "2"
+resolver = "3"
+members = [
+    "crates/alphasync-core",
+    "crates/alphasync-runtime",
+]
 
 [workspace.package]
-version = "6.1.7"
-edition = "2021"
+edition = "2024"
 license = "LicenseRef-VRAXION-Community-Source-1.0"
-authors = ["VRAXION"]
-description = "VRAXION Rust runtime release surface with E127 governed Operator evidence"
 repository = "https://github.com/VRAXION/VRAXION"
-homepage = "https://github.com/VRAXION/VRAXION"
-documentation = "https://github.com/VRAXION/VRAXION"
-rust-version = "1.94"
+rust-version = "1.96"
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+missing_docs = "warn"
+
+[workspace.lints.clippy]
+all = "warn"
+pedantic = "warn"
+
+[patch.crates-io]
+alphasync-core = { path = "crates/alphasync-core" }

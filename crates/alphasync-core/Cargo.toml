@@ -1,0 +1,22 @@
+[package]
+name = "alphasync-core"
+version = "0.1.0"
+description = "AlphaSync fabric primitives for matrix, proposal, consensus, evaluation, and progress gates."
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+publish = false
+include = [
+    "Cargo.toml",
+    "LICENSE",
+    "README.md",
+    "src/*.rs",
+    "src/**/*.rs",
+]
+
+[lib]
+path = "src/lib.rs"
+
+[lints]
+workspace = true
