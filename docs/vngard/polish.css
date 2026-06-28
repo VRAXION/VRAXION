@@ -1,3 +1,11 @@
+@font-face {
+  font-family: "Geist";
+  src: url("./assets/fonts/geist-sans-variable.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
 .skip-link {
   position: fixed;
   left: 16px;
@@ -142,19 +150,20 @@ a:focus-visible {
 
 .architecture-statement {
   position: relative;
-  max-width: 735px;
+  max-width: 720px;
   margin: 0 0 28px;
   padding: 2px 0 2px 18px;
-  color: rgba(var(--cyan-white-rgb), 0.94);
-  font-family: "Aptos", "Segoe UI Variable", "Segoe UI", Inter, ui-sans-serif, system-ui, sans-serif;
-  font-size: clamp(1.05rem, 1.24vw, 1.22rem);
-  font-weight: 560;
-  line-height: 1.42;
+  color: rgba(var(--cyan-white-rgb), 0.9);
+  font-family: "Geist", "Aptos", "Segoe UI Variable", "Segoe UI", ui-sans-serif, system-ui, sans-serif;
+  font-size: clamp(1.05rem, 1.18vw, 1.17rem);
+  font-weight: 520;
+  line-height: 1.48;
   letter-spacing: 0;
+  font-feature-settings: "kern" 1, "liga" 1, "calt" 1;
   text-wrap: pretty;
   text-shadow:
-    0 1px 0 rgba(var(--cyan-white-rgb), 0.028),
-    0 2px 22px rgba(3, 5, 6, 0.92);
+    0 1px 0 rgba(var(--cyan-white-rgb), 0.022),
+    0 2px 20px rgba(3, 5, 6, 0.88);
 }
 
 .architecture-statement::before {
@@ -165,10 +174,8 @@ a:focus-visible {
   bottom: 0.22em;
   width: 2px;
   border-radius: 999px;
-  background: linear-gradient(180deg, var(--ivy-500), rgba(var(--seal-rgb), 0.72));
-  box-shadow:
-    0 0 18px rgba(var(--ivy-rgb), 0.34),
-    0 0 26px rgba(var(--seal-rgb), 0.12);
+  background: var(--seal-500);
+  box-shadow: 0 0 20px rgba(var(--seal-rgb), 0.34);
 }
 
 .statement-line {
@@ -180,25 +187,20 @@ a:focus-visible {
 }
 
 .statement-line-secondary {
-  color: rgba(var(--cyan-white-rgb), 0.78);
+  color: inherit;
 }
 
 .statement-product {
-  color: var(--ivy-500);
-  font-weight: 820;
+  color: inherit;
+  font-weight: inherit;
   letter-spacing: 0;
-  text-shadow:
-    0 0 14px rgba(var(--ivy-rgb), 0.34),
-    0 0 28px rgba(var(--ivy-rgb), 0.12),
-    0 2px 24px rgba(3, 5, 6, 0.9);
+  text-shadow: inherit;
 }
 
 .statement-boundary {
-  color: var(--seal-300);
-  font-weight: 760;
-  text-shadow:
-    0 0 14px rgba(var(--seal-rgb), 0.28),
-    0 2px 24px rgba(3, 5, 6, 0.9);
+  color: inherit;
+  font-weight: inherit;
+  text-shadow: inherit;
 }
 
 .evidence-section {
