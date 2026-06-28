@@ -7,6 +7,7 @@ Allowed:
 - public SDK crates
 - public docs
 - CI and audit scripts for this source boundary
+- public delivery, license, and mark boundary summaries
 
 Not allowed:
 
@@ -16,5 +17,6 @@ Not allowed:
 - skill persistence
 - diagnostic tools
 - stale research status pages
+- private engine binary internals
 
 The audit script is a hard gate for this boundary.

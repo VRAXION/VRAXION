@@ -24,15 +24,19 @@ python scripts/audit_public_surface.py
 ## Boundary
 
 The public boundary is documented in `PUBLIC_BOUNDARY.md` and
-`PACKAGE_BOUNDARY.md`. This repo does not include internal engine source,
-private data adapters, operational run logs, skill persistence, or diagnostic
-tools.
+`PACKAGE_BOUNDARY.md`. The public delivery direction is documented in
+`PUBLIC_DELIVERY_MODEL.md`, with license and mark boundaries in
+`LICENSE_BOUNDARY.md` and `TRADEMARK_POLICY.md`.
+
+This repo does not include internal engine source, private data adapters,
+operational run logs, skill persistence, or diagnostic tools.
 
 ## Status
 
-Current status is a zero-state public SDK reset. A future product delivery model
-may use an API, binary package, or wrapper crate, but that decision is separate
-from this repository cleanup.
+Current status is a public SDK boundary with a P11 delivery decision:
+controlled early-access signed binary first, hosted API/SaaS later, and thin
+public SDK/docs/wrappers where useful. The private engine source is not
+published here.
 
 ## License
 

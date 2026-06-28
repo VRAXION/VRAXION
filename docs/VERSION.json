@@ -1,8 +1,9 @@
 {
   "schema": "vraxion.public.version.v1",
-  "status": "zero_state",
-  "date": "2026-06-28",
+  "status": "p11_public_delivery_boundary",
+  "date": "2026-06-29",
   "public_surface": "sdk_boundary",
+  "delivery_direction": "controlled_binary_first_api_later",
   "crates": [
     "alphasync-core",
     "alphasync-runtime"

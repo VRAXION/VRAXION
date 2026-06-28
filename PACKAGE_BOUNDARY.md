@@ -18,6 +18,7 @@ Excluded surfaces:
 - diagnostic tools
 - old research pages
 - hosted product code
+- private engine binaries or internals
 
 The public source tree is expected to pass:
 
@@ -27,4 +28,6 @@ python scripts/audit_public_surface.py
 ```
 
 Any future delivery model that exposes a binary package, hosted API, or wrapper
-crate must go through a separate release review.
+crate must go through a separate release review. The current P11 direction is
+controlled early-access signed binary first, hosted API/SaaS later, and thin
+public SDK/docs/wrappers where useful.
