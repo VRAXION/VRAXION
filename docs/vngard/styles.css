@@ -432,17 +432,52 @@ h1 {
 }
 
 .seal-letter {
-  color: var(--wordmark-fuchsia);
-  text-shadow: 0 0 22px rgba(var(--wordmark-fuchsia-rgb), 0.36), 0 2px 28px rgba(3, 5, 6, 0.82);
+  --glare-rgb: var(--wordmark-fuchsia-rgb);
+  position: relative;
+  display: inline-block;
+  color: #020405;
+  background: none;
+  -webkit-text-fill-color: #020405;
+  -webkit-text-stroke: 0;
+  text-shadow:
+    0 0 10px rgba(var(--glare-rgb), 0.54),
+    0 0 28px rgba(var(--glare-rgb), 0.28),
+    0 8px 24px rgba(0, 0, 0, 0.92);
 }
 
 .ivy-letter {
-  color: var(--wordmark-teal);
+  --glare-rgb: var(--wordmark-teal-rgb);
+  position: relative;
+  display: inline-block;
+  color: #020405;
   background: none;
-  -webkit-text-fill-color: var(--wordmark-teal);
-  text-shadow: 0 0 22px rgba(var(--wordmark-teal-rgb), 0.32), 0 2px 28px rgba(3, 5, 6, 0.82);
+  -webkit-text-fill-color: #020405;
+  -webkit-text-stroke: 0;
+  text-shadow:
+    0 0 10px rgba(var(--glare-rgb), 0.56),
+    0 0 28px rgba(var(--glare-rgb), 0.3),
+    0 8px 24px rgba(0, 0, 0, 0.92);
 }
 
+.ivy-letter::after,
+.seal-letter::after {
+  content: attr(data-glare);
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  color: transparent;
+  background:
+    radial-gradient(circle at 42% 24%, rgba(var(--cyan-white-rgb), 0.74) 0%, rgba(var(--glare-rgb), 0.86) 18%, rgba(var(--glare-rgb), 0.48) 42%, transparent 68%),
+    linear-gradient(180deg, rgba(var(--glare-rgb), 0.92), rgba(var(--glare-rgb), 0.66) 38%, rgba(var(--glare-rgb), 0.2) 68%, transparent 100%);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  -webkit-text-stroke: 0;
+  opacity: 0.78;
+  text-shadow:
+    0 0 14px rgba(var(--glare-rgb), 0.4),
+    0 0 34px rgba(var(--glare-rgb), 0.2);
+}
 
 .alpha-letter {
   display: inline-block;
