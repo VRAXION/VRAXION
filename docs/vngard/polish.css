@@ -35,7 +35,7 @@ a:focus-visible {
   max-width: 690px;
   display: grid;
   gap: 8px;
-  margin: -4px 0 24px;
+  margin: 2px 0 24px;
   font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
 }
 
@@ -345,7 +345,7 @@ a:focus-visible {
 @media (max-width: 640px) {
   .claim-shards {
     gap: 8px;
-    margin: -2px 0 22px;
+    margin: 10px 0 22px;
   }
 
   .claim-shard-row {
