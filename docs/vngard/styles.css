@@ -805,10 +805,23 @@ h1 {
     inset 0 -10px 20px rgba(0, 55, 64, 0.1);
 }
 
+.action-icon,
 .github-mark {
   width: 19px;
   height: 19px;
   flex: 0 0 auto;
+}
+
+.action-icon {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.hero-architecture-action .action-icon {
+  stroke-width: 2.15;
 }
 
 .secondary-action {
