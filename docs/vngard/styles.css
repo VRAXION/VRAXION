@@ -933,7 +933,7 @@ h1 {
     0 12px 26px rgba(0, 0, 0, 0.2);
 }
 
-.hero-evidence-action {
+.hero-support-action {
   --action-rgb: var(--seal-rgb);
   color: #fff3f7;
   border-color: rgba(var(--action-rgb), 0.48);
@@ -949,7 +949,7 @@ h1 {
     0 1px 12px rgba(25, 0, 8, 0.72);
 }
 
-.hero-evidence-action:hover {
+.hero-support-action:hover {
   color: #ffffff;
   border-color: rgba(var(--action-rgb), 0.78);
   box-shadow:
