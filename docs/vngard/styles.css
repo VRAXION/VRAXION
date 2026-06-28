@@ -464,15 +464,35 @@ h1 {
 .armor-letter,
 .seal-letter,
 .ivy-letter {
+  --outline-rgb: var(--wordmark-teal-rgb);
+  --outline-opacity: 0.42;
   position: relative;
   display: inline-block;
   color: #020405;
   background: none;
   -webkit-text-fill-color: #020405;
-  -webkit-text-stroke: 0;
+  -webkit-text-stroke: 1px rgba(var(--outline-rgb), var(--outline-opacity));
   text-shadow:
+    0 0 3px rgba(var(--outline-rgb), 0.18),
     0 0 2px rgba(3, 5, 6, 0.92),
     0 8px 24px rgba(0, 0, 0, 0.96);
+}
+
+.armor-left {
+  --outline-opacity: 0.32;
+}
+
+.seal-letter,
+.armor-right {
+  --outline-rgb: var(--wordmark-fuchsia-rgb);
+}
+
+.seal-letter {
+  --outline-opacity: 0.4;
+}
+
+.armor-right {
+  --outline-opacity: 0.3;
 }
 
 .alpha-letter {
