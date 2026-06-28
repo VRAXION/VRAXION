@@ -419,6 +419,21 @@ h1 {
   gap: 0;
 }
 
+.armor-letter {
+  color: #d8f6fb;
+  background:
+    linear-gradient(180deg, #f7ffff 0%, #789099 11%, #2a3840 28%, #081014 50%, #1a262d 66%, #4b626c 82%, #d8fbff 100%),
+    radial-gradient(circle at 50% 0%, rgba(var(--cyan-rgb), 0.6), transparent 42%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  -webkit-text-stroke: 1.45px rgba(var(--cyan-white-rgb), 0.48);
+  text-shadow:
+    0 0 18px rgba(var(--cyan-rgb), 0.24),
+    0 0 34px rgba(var(--cyan-rgb), 0.1),
+    0 4px 24px rgba(0, 0, 0, 0.82);
+}
+
 .seal-letter {
   color: var(--wordmark-fuchsia);
   text-shadow: 0 0 22px rgba(var(--wordmark-fuchsia-rgb), 0.36), 0 2px 28px rgba(3, 5, 6, 0.82);
