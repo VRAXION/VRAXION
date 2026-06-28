@@ -117,137 +117,9 @@ img {
 .brand-lockup {
   display: inline-flex;
   align-items: center;
-  gap: 10px;
-  min-width: 148px;
+  min-width: 116px;
   font-weight: 720;
   letter-spacing: 0;
-}
-
-.guardian-mark {
-  --mark-size: 30px;
-  position: relative;
-  display: inline-block;
-  width: var(--mark-size);
-  height: var(--mark-size);
-  flex: 0 0 auto;
-  color: var(--ivy-500);
-}
-
-.nav-mark {
-  --mark-size: 26px;
-}
-
-.mark-orbit,
-.mark-core,
-.mark-lambda,
-.mark-dots,
-.mark-dots span {
-  position: absolute;
-  display: block;
-}
-
-.mark-orbit {
-  inset: 13%;
-  border: 1px solid rgba(var(--ivy-rgb), 0.62);
-  border-radius: 50%;
-  box-shadow: 0 0 calc(var(--mark-size) * 0.32) rgba(var(--ivy-rgb), 0.18);
-}
-
-.mark-orbit-main {
-  clip-path: polygon(0 0, 100% 0, 100% 76%, 72% 76%, 72% 100%, 0 100%);
-  animation: mark-breathe 4.8s ease-in-out infinite;
-}
-
-.mark-orbit-tilt {
-  inset: 25% 4%;
-  transform: rotate(-32deg);
-  border-color: rgba(var(--cyan-white-rgb), 0.28);
-  opacity: 0.76;
-}
-
-.mark-core {
-  left: 50%;
-  top: 50%;
-  width: 18%;
-  height: 18%;
-  border-radius: 50%;
-  background: var(--stone-100);
-  box-shadow:
-    0 0 calc(var(--mark-size) * 0.22) rgba(var(--cyan-white-rgb), 0.72),
-    0 0 calc(var(--mark-size) * 0.46) rgba(var(--ivy-rgb), 0.38);
-  transform: translate(-50%, -50%);
-  animation: core-pulse 2.9s ease-in-out infinite;
-}
-
-.mark-lambda {
-  left: 50%;
-  top: 50%;
-  color: var(--seal-500);
-  font-size: calc(var(--mark-size) * 0.38);
-  font-weight: 840;
-  line-height: 1;
-  text-shadow: 0 0 calc(var(--mark-size) * 0.28) rgba(var(--seal-rgb), 0.42);
-  transform: translate(-50%, -44%);
-}
-
-.mark-dots {
-  inset: 0;
-  animation: mark-spin 7.2s linear infinite;
-}
-
-.mark-dots span {
-  width: 8%;
-  height: 8%;
-  border-radius: 50%;
-  background: var(--ivy-300);
-  box-shadow: 0 0 calc(var(--mark-size) * 0.2) rgba(var(--ivy-rgb), 0.54);
-}
-
-.mark-dots span:nth-child(1) {
-  left: 48%;
-  top: 1%;
-}
-
-.mark-dots span:nth-child(2) {
-  right: 5%;
-  top: 61%;
-  background: var(--seal-300);
-  box-shadow: 0 0 calc(var(--mark-size) * 0.18) rgba(var(--seal-rgb), 0.48);
-}
-
-.mark-dots span:nth-child(3) {
-  left: 8%;
-  bottom: 18%;
-}
-
-@keyframes mark-spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-@keyframes core-pulse {
-  0%,
-  100% {
-    transform: translate(-50%, -50%) scale(0.86);
-    opacity: 0.8;
-  }
-  50% {
-    transform: translate(-50%, -50%) scale(1.1);
-    opacity: 1;
-  }
-}
-
-@keyframes mark-breathe {
-  0%,
-  100% {
-    transform: scale(0.96);
-    opacity: 0.64;
-  }
-  50% {
-    transform: scale(1.04);
-    opacity: 1;
-  }
 }
 
 .site-nav {
@@ -406,11 +278,6 @@ h1 {
 
 .hero-brand-row h1 {
   margin-bottom: 0;
-}
-
-.hero-mark {
-  --mark-size: 78px;
-  transform: translateY(0.03em);
 }
 
 .wordmark {
@@ -1207,10 +1074,6 @@ h1 {
     font-size: 4.6rem;
   }
 
-  .hero-mark {
-    --mark-size: 76px;
-  }
-
   .motto {
     font-size: 1.55rem;
   }
@@ -1290,10 +1153,6 @@ h1 {
   .wordmark-rendered {
     width: min(72vw, 278px);
     margin: -2px 0 -2px;
-  }
-
-  .hero-mark {
-    --mark-size: 48px;
   }
 
   .motto {
