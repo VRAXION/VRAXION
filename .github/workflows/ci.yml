@@ -15,6 +15,9 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt, clippy
+      - name: Public export guard
+        shell: pwsh
+        run: ./scripts/check_public_export.ps1
       - name: Format
         run: cargo fmt --all -- --check
       - name: Test
@@ -25,6 +28,3 @@ jobs:
         run: cargo clippy --workspace --all-targets --all-features -- -D warnings
       - name: Docs
         run: cargo doc --workspace --no-deps
-      - name: Public export guard
-        shell: pwsh
-        run: ./scripts/check_public_export.ps1
