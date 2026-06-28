@@ -58,9 +58,38 @@ a:focus-visible {
   text-transform: uppercase;
 }
 
-.claim-boundary-text strong {
-  color: var(--stone-100);
-  font-weight: 760;
+.claim-boundary-lines {
+  display: grid;
+  gap: 3px;
+}
+
+.claim-boundary-line {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.claim-boundary-line strong {
+  flex: 0 0 auto;
+  min-width: 42px;
+  font-size: 0.62rem;
+  font-weight: 820;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.claim-boundary-line span {
+  color: rgba(var(--cyan-white-rgb), 0.86);
+}
+
+.claim-boundary-means strong {
+  color: var(--cyan-400);
+  text-shadow: 0 0 12px rgba(var(--cyan-rgb), 0.22);
+}
+
+.claim-boundary-not strong {
+  color: var(--seal-300);
+  text-shadow: 0 0 12px rgba(var(--seal-rgb), 0.22);
 }
 
 .creator-credit .credit-highlight,
@@ -311,6 +340,16 @@ a:focus-visible {
   }
 
   .claim-boundary-label {
+    font-size: 0.58rem;
+  }
+
+  .claim-boundary-line {
+    gap: 7px;
+    line-height: 1.28;
+  }
+
+  .claim-boundary-line strong {
+    min-width: 38px;
     font-size: 0.58rem;
   }
 
