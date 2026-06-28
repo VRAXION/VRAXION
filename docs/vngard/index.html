@@ -20,8 +20,8 @@
   <meta name='twitter:description' content='Guardian intelligence architecture and design target by VRAXION, with explicit governance and claim boundaries.'>
   <meta name='twitter:image' content='https://vraxion.github.io/VRAXION/vngard/assets/vngard-guardian-hero-bg.png'>
   <link rel='icon' href='../assets/favicon.svg' type='image/svg+xml'>
-  <link rel='stylesheet' href='./styles.css?v=adversarial-polish-2'>
-  <link rel='stylesheet' href='./polish.css?v=adversarial-polish-2'>
+  <link rel='stylesheet' href='./styles.css?v=architecture-surface-1'>
+  <link rel='stylesheet' href='./polish.css?v=architecture-surface-1'>
 </head>
 <body>
   <a class='skip-link' href='#main-content'>Skip to content</a>
@@ -33,7 +33,7 @@
     </a>
     <nav class='site-nav' aria-label='Primary'>
       <a href='#triad'>Triad</a>
-      <a href='#architecture'>Protocol</a>
+      <a href='#architecture'>Architecture</a>
       <a href='#evidence'>Evidence</a>
       <a href='#boundary'>Boundary</a>
     </nav>
@@ -188,30 +188,130 @@
     </section>
 
     <section class='architecture-section' id='architecture' aria-labelledby='architecture-title'>
-      <div class='section-head'>
-        <p class='system-label'>vNGARD protocol</p>
-        <h2 id='architecture-title'>A guardian must be governed before it can act.</h2>
+      <div class='architecture-shell'>
+        <div class='architecture-intro'>
+          <p class='system-label'>Public architecture surface</p>
+          <h2 id='architecture-title'>How VNGARD is allowed to think before it is allowed to act.</h2>
+          <p class='architecture-lede'>
+            This section describes the public layer of the VNGARD architecture: the design constraints, coordination path, and governance surfaces that can be inspected without exposing private mutation recipes or security-sensitive implementation details.
+          </p>
+          <div class='architecture-tags' aria-label='Architecture status tags'>
+            <span>public layer</span>
+            <span>design target</span>
+            <span>evidence-bound</span>
+          </div>
+        </div>
+
+        <div class='architecture-map' aria-label='VNGARD public architecture map'>
+          <span class='map-ring map-ring-outer' aria-hidden='true'></span>
+          <span class='map-ring map-ring-middle' aria-hidden='true'></span>
+          <span class='map-ring map-ring-inner' aria-hidden='true'></span>
+          <div class='map-node map-node-core'>
+            <span>agency gate</span>
+            <strong>commit / reject / defer / ask</strong>
+          </div>
+          <div class='map-node map-node-fabric'>
+            <span>&alpha;-Sync</span>
+            <strong>state fabric</strong>
+          </div>
+          <div class='map-node map-node-prismion'>
+            <span>Prismion</span>
+            <strong>signal refraction</strong>
+          </div>
+          <div class='map-node map-node-mutation'>
+            <span>Mutation</span>
+            <strong>bounded adaptation</strong>
+          </div>
+        </div>
       </div>
-      <div class='flow' aria-label='Governed action flow'>
-        <div class='flow-node'>
-          <span>Observation</span>
-          <strong>Risk enters the field</strong>
+
+      <div class='architecture-layer-grid' aria-label='Public architecture layers'>
+        <article class='architecture-layer-card layer-fabric'>
+          <span class='layer-index'>01</span>
+          <span class='layer-kicker'>&alpha;-Sync Fabric</span>
+          <h3>Binary coordination fabric.</h3>
+          <p>A realtime state fabric for coordination, edge-compatible execution, mutation transport, and low-overhead scaling.</p>
+        </article>
+        <article class='architecture-layer-card layer-prismion'>
+          <span class='layer-index'>02</span>
+          <span class='layer-kicker'>Prismion signal units</span>
+          <h3>Data refracts before it resolves.</h3>
+          <p>A prism-plus-neuron abstraction that turns incoming data into adaptive signal traces instead of one rigid inference path.</p>
+        </article>
+        <article class='architecture-layer-card layer-mutation'>
+          <span class='layer-index'>03</span>
+          <span class='layer-kicker'>Adaptive mutation core</span>
+          <h3>Changes must pass pressure.</h3>
+          <p>A bounded self-adjustment loop where changes are proposed, observed, scored, and gated before they affect continuity.</p>
+        </article>
+      </div>
+
+      <div class='governed-flow-panel'>
+        <div class='flow-heading'>
+          <span class='oath-mark'>vngard.governed_action</span>
+          <h3>Action is staged before it can become state.</h3>
         </div>
-        <div class='flow-link' aria-hidden='true'></div>
-        <div class='flow-node'>
-          <span>Proposal</span>
-          <strong>Bounded action is formed</strong>
+        <div class='architecture-flow' aria-label='Governed action flow'>
+          <article class='architecture-flow-node'>
+            <span class='flow-step'>01</span>
+            <strong>Observe</strong>
+            <p>Risk enters the field as evidence, not as an automatic command.</p>
+          </article>
+          <article class='architecture-flow-node'>
+            <span class='flow-step'>02</span>
+            <strong>Form proposal</strong>
+            <p>A bounded response is generated with visible constraints.</p>
+          </article>
+          <article class='architecture-flow-node'>
+            <span class='flow-step'>03</span>
+            <strong>Score / simulate</strong>
+            <p>The response is checked against task fit, reversibility, and governance pressure.</p>
+          </article>
+          <article class='architecture-flow-node'>
+            <span class='flow-step'>04</span>
+            <strong>Agency gate</strong>
+            <p>The system can commit, reject, defer, or ask before state changes.</p>
+          </article>
+          <article class='architecture-flow-node'>
+            <span class='flow-step'>05</span>
+            <strong>Continuity trace</strong>
+            <p>Accepted changes remain tied to readable evidence and status surfaces.</p>
+          </article>
         </div>
-        <div class='flow-link' aria-hidden='true'></div>
-        <div class='flow-node'>
-          <span>Agency gate</span>
-          <strong>Commit, reject, defer, ask</strong>
-        </div>
-        <div class='flow-link' aria-hidden='true'></div>
-        <div class='flow-node'>
-          <span>Continuity</span>
-          <strong>State changes with evidence</strong>
-        </div>
+      </div>
+
+      <div class='disclosure-grid' aria-label='Public and sealed architecture surfaces'>
+        <article class='disclosure-panel public-panel'>
+          <span class='disclosure-kicker'>Public surface</span>
+          <h3>What we can say clearly.</h3>
+          <ul>
+            <li>Architecture vocabulary</li>
+            <li>Layer roles and constraints</li>
+            <li>Governance path</li>
+            <li>Claim boundary</li>
+            <li>Current status and capabilities</li>
+            <li>Reproducible repository artifacts</li>
+          </ul>
+        </article>
+        <article class='disclosure-panel sealed-panel'>
+          <span class='disclosure-kicker'>Sealed surface</span>
+          <h3>What stays private for now.</h3>
+          <ul>
+            <li>Exact mutation recipes</li>
+            <li>Internal scoring thresholds</li>
+            <li>Operator-selection details</li>
+            <li>Unpublished experimental traces</li>
+            <li>Security-sensitive coordination logic</li>
+            <li>Implementation details that would weaken the boundary</li>
+          </ul>
+        </article>
+      </div>
+
+      <div class='architecture-audit-strip' aria-label='Architecture evidence trail'>
+        <span>Evidence trail</span>
+        <a href='https://github.com/VRAXION/VRAXION/blob/main/docs/CURRENT_STATUS.md' target='_blank' rel='noopener noreferrer'>Current status</a>
+        <a href='https://github.com/VRAXION/VRAXION/blob/main/docs/CURRENT_CAPABILITIES.md' target='_blank' rel='noopener noreferrer'>Capabilities</a>
+        <a href='https://github.com/VRAXION/VRAXION' target='_blank' rel='noopener noreferrer'>Open GitHub repo</a>
       </div>
     </section>
 
