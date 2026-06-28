@@ -850,14 +850,25 @@ h1 {
     inset 0 -10px 20px rgba(64, 0, 20, 0.16);
 }
 
-.hero-boundary-action {
-  color: rgba(var(--cyan-white-rgb), 0.92);
-  border-color: rgba(var(--cyan-white-rgb), 0.2);
+.hero-github-action {
+  color: #f0f6fc;
+  border-color: rgba(139, 92, 246, 0.42);
+  background:
+    radial-gradient(circle at 18% 0%, rgba(139, 92, 246, 0.28), transparent 46px),
+    linear-gradient(180deg, rgba(48, 54, 61, 0.98), rgba(13, 17, 23, 0.96));
+  box-shadow:
+    0 0 26px rgba(139, 92, 246, 0.16),
+    inset 0 1px 0 rgba(240, 246, 252, 0.11),
+    inset 0 -12px 24px rgba(1, 4, 9, 0.32);
 }
 
-.hero-boundary-action:hover {
-  border-color: rgba(var(--cyan-white-rgb), 0.38);
-  color: var(--stone-100);
+.hero-github-action:hover {
+  color: #ffffff;
+  border-color: rgba(163, 113, 247, 0.74);
+  box-shadow:
+    0 0 34px rgba(139, 92, 246, 0.27),
+    inset 0 1px 0 rgba(240, 246, 252, 0.14),
+    inset 0 -10px 22px rgba(1, 4, 9, 0.22);
 }
 
 .primary-action:focus-visible,
