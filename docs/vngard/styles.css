@@ -421,6 +421,32 @@ h1 {
   isolation: isolate;
 }
 
+.wordmark-rendered {
+  display: block;
+  flex: 0 1 auto;
+  width: clamp(320px, 42vw, 600px);
+  min-width: 0;
+  max-width: 100%;
+  margin: -5px 0 -4px;
+  line-height: 0;
+  isolation: auto;
+}
+
+.wordmark-rendered::before,
+.wordmark-rendered::after {
+  content: none;
+}
+
+.wordmark-image {
+  width: 100%;
+  height: auto;
+  display: block;
+  border-radius: 2px;
+  filter:
+    drop-shadow(0 0 10px rgba(var(--wordmark-teal-rgb), 0.14))
+    drop-shadow(0 0 14px rgba(var(--wordmark-fuchsia-rgb), 0.14));
+}
+
 .wordmark::before {
   content: attr(data-wordmark);
   position: absolute;
@@ -1259,6 +1285,11 @@ h1 {
   .hero-brand-row {
     gap: 12px;
     margin-bottom: 18px;
+  }
+
+  .wordmark-rendered {
+    width: min(72vw, 278px);
+    margin: -2px 0 -2px;
   }
 
   .hero-mark {
