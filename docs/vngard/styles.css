@@ -787,21 +787,29 @@ h1 {
 }
 
 .primary-action {
-  color: #001f17;
-  border-color: rgba(var(--ivy-rgb), 0.76);
+  --action-rgb: var(--cyan-rgb);
+  color: #e8fbff;
+  border-color: rgba(var(--action-rgb), 0.44);
   background:
-    linear-gradient(135deg, var(--ivy-500), var(--ivy-400) 52%, var(--ivy-300));
+    radial-gradient(circle at 18% 0%, rgba(var(--action-rgb), 0.3), transparent 46px),
+    linear-gradient(180deg, rgba(45, 56, 60, 0.96), rgba(6, 10, 13, 0.97));
   box-shadow:
-    0 0 30px rgba(var(--ivy-rgb), 0.26),
-    inset 0 -10px 20px rgba(0, 55, 64, 0.16);
+    0 0 28px rgba(var(--action-rgb), 0.18),
+    inset 0 1px 0 rgba(var(--cyan-white-rgb), 0.12),
+    inset 0 -12px 24px rgba(1, 4, 9, 0.34);
+  text-shadow:
+    0 0 14px rgba(var(--action-rgb), 0.24),
+    0 1px 12px rgba(3, 5, 6, 0.72);
 }
 
 .primary-action:hover {
   transform: translateY(-1px);
-  border-color: rgba(var(--ivy-rgb), 0.96);
+  color: #ffffff;
+  border-color: rgba(var(--action-rgb), 0.78);
   box-shadow:
-    0 0 38px rgba(var(--ivy-rgb), 0.36),
-    inset 0 -10px 20px rgba(0, 55, 64, 0.1);
+    0 0 36px rgba(var(--action-rgb), 0.3),
+    inset 0 1px 0 rgba(var(--cyan-white-rgb), 0.15),
+    inset 0 -10px 22px rgba(1, 4, 9, 0.24);
 }
 
 .action-icon,
@@ -821,6 +829,10 @@ h1 {
 
 .hero-architecture-action .action-icon {
   stroke-width: 2.15;
+}
+
+.hero-architecture-action {
+  --action-rgb: var(--cyan-rgb);
 }
 
 .secondary-action {
@@ -844,22 +856,28 @@ h1 {
 }
 
 .hero-evidence-action {
-  color: #fff5f8;
-  border-color: rgba(var(--seal-rgb), 0.68);
+  --action-rgb: var(--seal-rgb);
+  color: #fff3f7;
+  border-color: rgba(var(--action-rgb), 0.48);
   background:
-    radial-gradient(circle at 22% 0%, rgba(255, 190, 205, 0.34), transparent 34px),
-    linear-gradient(135deg, var(--seal-500), #e60042 54%, var(--seal-650));
+    radial-gradient(circle at 18% 0%, rgba(var(--action-rgb), 0.32), transparent 46px),
+    linear-gradient(180deg, rgba(54, 46, 54, 0.96), rgba(10, 6, 10, 0.97));
   box-shadow:
-    0 0 30px rgba(var(--seal-rgb), 0.28),
-    inset 0 -12px 22px rgba(64, 0, 20, 0.22);
-  text-shadow: 0 1px 10px rgba(25, 0, 8, 0.32);
+    0 0 28px rgba(var(--action-rgb), 0.2),
+    inset 0 1px 0 rgba(255, 240, 246, 0.12),
+    inset 0 -12px 24px rgba(12, 1, 5, 0.34);
+  text-shadow:
+    0 0 14px rgba(var(--action-rgb), 0.28),
+    0 1px 12px rgba(25, 0, 8, 0.72);
 }
 
 .hero-evidence-action:hover {
-  border-color: rgba(var(--seal-rgb), 0.95);
+  color: #ffffff;
+  border-color: rgba(var(--action-rgb), 0.78);
   box-shadow:
-    0 0 40px rgba(var(--seal-rgb), 0.4),
-    inset 0 -10px 20px rgba(64, 0, 20, 0.16);
+    0 0 36px rgba(var(--action-rgb), 0.32),
+    inset 0 1px 0 rgba(255, 240, 246, 0.15),
+    inset 0 -10px 22px rgba(12, 1, 5, 0.24);
 }
 
 .hero-github-action {
