@@ -144,6 +144,12 @@ a:focus-visible {
     linear-gradient(135deg, rgba(var(--ivy-rgb), 0.045), rgba(var(--seal-rgb), 0.025));
 }
 
+@media (min-width: 981px) and (max-width: 1180px) {
+  .hero-content {
+    width: min(740px, 72vw);
+  }
+}
+
 .architecture-statement {
   position: relative;
   max-width: 720px;

@@ -117,6 +117,7 @@ img {
 .brand-lockup {
   display: inline-flex;
   align-items: center;
+  min-height: 44px;
   min-width: 116px;
   font-weight: 720;
   letter-spacing: 0;
@@ -134,7 +135,7 @@ img {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 36px;
+  min-height: 44px;
   padding: 0 14px;
   border-radius: 6px;
   color: var(--stone-300);
@@ -215,6 +216,12 @@ img {
 
   .hero-media::before {
     background: linear-gradient(90deg, var(--void-950) 0%, rgba(3, 5, 6, 0.98) 15%, rgba(3, 5, 6, 0.74) 30%, rgba(3, 5, 6, 0) 48%);
+  }
+}
+
+@media (min-width: 981px) and (max-width: 1180px) {
+  .hero-content {
+    width: min(740px, 72vw);
   }
 }
 
@@ -696,7 +703,6 @@ h1 {
 }
 
 .architecture-card-media,
-.architecture-card-placeholder,
 .architecture-card-tint {
   position: absolute;
   inset: 0;
@@ -710,43 +716,6 @@ h1 {
   object-position: 50% 50%;
   filter: saturate(1.12) contrast(1.06) brightness(0.84);
   transform: scale(1.04);
-}
-
-.architecture-card-placeholder {
-  z-index: 1;
-  overflow: hidden;
-  background:
-    radial-gradient(circle at 24% 22%, rgba(var(--pill-rgb), 0.26), transparent 52px),
-    radial-gradient(circle at 76% 72%, rgba(var(--seal-rgb), 0.12), transparent 58px),
-    linear-gradient(135deg, rgba(var(--pill-rgb), 0.12), rgba(3, 5, 6, 0.92) 58%, rgba(var(--seal-rgb), 0.08));
-}
-
-.architecture-card-placeholder::before {
-  content: "TBD";
-  position: absolute;
-  right: 10px;
-  top: 10px;
-  color: rgba(var(--pill-rgb), 0.78);
-  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
-  font-size: 0.58rem;
-  font-weight: 780;
-  letter-spacing: 0.08em;
-  text-shadow: 0 0 14px rgba(var(--pill-rgb), 0.28);
-}
-
-.architecture-card-placeholder::after {
-  content: "";
-  position: absolute;
-  inset: 22px;
-  opacity: 0.48;
-  border: 1px solid rgba(var(--pill-rgb), 0.18);
-  border-radius: 8px;
-  background:
-    linear-gradient(90deg, transparent 49%, rgba(var(--pill-rgb), 0.18) 50%, transparent 51%),
-    linear-gradient(0deg, transparent 49%, rgba(var(--pill-rgb), 0.16) 50%, transparent 51%);
-  background-size: 22px 22px;
-  transform: perspective(180px) rotateX(58deg);
-  transform-origin: center bottom;
 }
 
 .architecture-card-tint {
@@ -893,8 +862,6 @@ h1 {
 .primary-action span,
 .secondary-action span {
   min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .action-icon {
@@ -1182,6 +1149,12 @@ h1 {
     padding: 78px 0 168px;
   }
 
+  .architecture-pills,
+  .hero-actions {
+    grid-template-columns: 1fr;
+    max-width: 690px;
+  }
+
   .hero-shade {
     background: linear-gradient(180deg, rgba(3, 5, 6, 0.08) 0%, rgba(3, 5, 6, 0.28) 100%);
   }
@@ -1265,6 +1238,12 @@ h1 {
     padding: 16px 18px 18px;
   }
 
+  .console-title {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
   .objective-body p {
     font-size: 0.98rem;
     line-height: 1.38;
@@ -1329,5 +1308,11 @@ h1 {
 
   .oath-panel p {
     font-size: 1.45rem;
+  }
+}
+
+@media (max-width: 360px) {
+  .console-actions {
+    display: none;
   }
 }
