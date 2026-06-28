@@ -23,73 +23,91 @@ a:focus-visible {
   border-radius: 6px;
 }
 
-.claim-boundary-chip {
+.claim-shards {
   max-width: 690px;
-  margin: 0 0 18px;
-  display: inline-flex;
+  display: grid;
+  gap: 7px;
+  margin: -6px 0 24px;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+}
+
+.claim-shard-row {
+  --claim-rgb: var(--cyan-rgb);
+  position: relative;
+  overflow: hidden;
+  display: grid;
+  grid-template-columns: 104px minmax(0, 1fr);
   align-items: center;
   gap: 10px;
-  padding: 8px 12px 8px 8px;
-  border: 1px solid rgba(var(--cyan-rgb), 0.24);
-  border-radius: 8px;
-  color: rgba(var(--cyan-white-rgb), 0.88);
+  padding: 8px 10px;
+  border: 1px solid rgba(var(--claim-rgb), 0.18);
+  border-radius: 9px;
   background:
-    linear-gradient(135deg, rgba(var(--cyan-rgb), 0.11), rgba(3, 5, 6, 0.7) 44%, rgba(var(--seal-rgb), 0.08)),
-    rgba(3, 5, 6, 0.66);
+    radial-gradient(circle at 6% 0%, rgba(var(--claim-rgb), 0.14), transparent 90px),
+    linear-gradient(135deg, rgba(var(--cyan-white-rgb), 0.04), rgba(3, 5, 6, 0.68) 56%, rgba(var(--claim-rgb), 0.05)),
+    rgba(3, 5, 6, 0.64);
   box-shadow:
-    0 0 28px rgba(var(--cyan-rgb), 0.08),
-    inset 0 1px 0 rgba(var(--cyan-white-rgb), 0.1),
-    inset 0 -1px 0 rgba(var(--seal-rgb), 0.09);
-  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
-  font-size: 0.7rem;
-  line-height: 1.32;
+    inset 0 1px 0 rgba(var(--cyan-white-rgb), 0.08),
+    inset 0 -1px 0 rgba(var(--claim-rgb), 0.05),
+    0 14px 34px rgba(0, 0, 0, 0.18);
+  backdrop-filter: blur(12px);
 }
 
-.claim-boundary-label {
-  flex: 0 0 auto;
-  padding: 5px 8px;
-  border: 1px solid rgba(var(--seal-rgb), 0.4);
-  border-radius: 6px;
-  color: var(--seal-300);
-  background: rgba(var(--seal-rgb), 0.09);
-  font-size: 0.62rem;
+.claim-shard-row::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.54;
+  background: linear-gradient(112deg, transparent 0 16%, rgba(var(--claim-rgb), 0.09) 18%, transparent 34% 100%);
+}
+
+.claim-shard-nonclaims {
+  --claim-rgb: var(--seal-rgb);
+}
+
+.claim-shard-heading,
+.claim-shard-list {
+  position: relative;
+  z-index: 1;
+}
+
+.claim-shard-heading {
+  color: rgba(var(--claim-rgb), 0.98);
+  font-size: 0.68rem;
+  font-weight: 840;
+  line-height: 1;
+  text-transform: uppercase;
+  text-shadow:
+    0 0 14px rgba(var(--claim-rgb), 0.36),
+    0 2px 14px rgba(3, 5, 6, 0.86);
+}
+
+.claim-shard-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.claim-shard {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 0 10px;
+  clip-path: polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%);
+  color: rgba(var(--claim-rgb), 0.96);
+  border: 1px solid rgba(var(--claim-rgb), 0.24);
+  background:
+    linear-gradient(135deg, rgba(var(--claim-rgb), 0.12), rgba(3, 5, 6, 0.72) 46%, rgba(var(--claim-rgb), 0.07)),
+    rgba(3, 5, 6, 0.6);
+  box-shadow:
+    inset 0 1px 0 rgba(var(--cyan-white-rgb), 0.08),
+    0 0 16px rgba(var(--claim-rgb), 0.11);
+  font-size: 0.66rem;
   font-weight: 760;
   line-height: 1;
-  text-transform: uppercase;
-}
-
-.claim-boundary-lines {
-  display: grid;
-  gap: 3px;
-}
-
-.claim-boundary-line {
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
-}
-
-.claim-boundary-line strong {
-  flex: 0 0 auto;
-  min-width: 42px;
-  font-size: 0.62rem;
-  font-weight: 820;
-  line-height: 1;
-  text-transform: uppercase;
-}
-
-.claim-boundary-line span {
-  color: rgba(var(--cyan-white-rgb), 0.86);
-}
-
-.claim-boundary-means strong {
-  color: var(--cyan-400);
-  text-shadow: 0 0 12px rgba(var(--cyan-rgb), 0.22);
-}
-
-.claim-boundary-not strong {
-  color: var(--seal-300);
-  text-shadow: 0 0 12px rgba(var(--seal-rgb), 0.22);
+  white-space: nowrap;
+  text-shadow: 0 0 12px rgba(var(--claim-rgb), 0.24);
 }
 
 .creator-credit .credit-highlight,
@@ -329,28 +347,29 @@ a:focus-visible {
 }
 
 @media (max-width: 640px) {
-  .claim-boundary-chip {
-    width: auto;
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 7px;
-    border-radius: 10px;
-    font-size: 0.68rem;
+  .claim-shards {
+    gap: 8px;
+    margin: -2px 0 22px;
   }
 
-  .claim-boundary-label {
-    font-size: 0.58rem;
+  .claim-shard-row {
+    grid-template-columns: 1fr;
+    gap: 8px;
+    padding: 9px;
   }
 
-  .claim-boundary-line {
-    gap: 7px;
-    line-height: 1.28;
+  .claim-shard-heading {
+    font-size: 0.62rem;
   }
 
-  .claim-boundary-line strong {
-    min-width: 38px;
-    font-size: 0.58rem;
+  .claim-shard-list {
+    gap: 6px;
+  }
+
+  .claim-shard {
+    min-height: 23px;
+    padding: 0 9px;
+    font-size: 0.6rem;
   }
 
   .architecture-statement {
