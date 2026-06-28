@@ -112,29 +112,25 @@ a:focus-visible {
 
 .creator-credit .credit-highlight,
 .creator-credit .identity-chip {
-  display: inline;
+  display: inline-block;
   min-height: 0;
   padding: 0;
   border: 0;
   border-radius: 0;
   color: rgb(var(--credit-rgb));
-  font-weight: 820;
+  font-weight: 720;
   background: none;
   box-shadow: none;
   line-height: inherit;
+  white-space: nowrap;
   text-shadow:
-    0 0 16px rgba(var(--credit-rgb), 0.28),
+    0 0 14px rgba(var(--credit-rgb), 0.24),
     0 2px 16px rgba(3, 5, 6, 0.82);
 }
 
 .creator-credit .credit-daniel,
 .creator-credit .chip-daniel {
   --credit-rgb: var(--ivy-rgb);
-}
-
-.creator-credit .credit-vraxion,
-.creator-credit .chip-vraxion {
-  --credit-rgb: var(--seal-rgb);
 }
 
 .hero-content {
