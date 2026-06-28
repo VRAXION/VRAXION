@@ -76,6 +76,49 @@ function Assert-TextFileIsBounded {
     }
 }
 
+function Assert-NoTextPattern {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string] $Root,
+        [Parameter(Mandatory = $true)]
+        [string] $Pattern,
+        [Parameter(Mandatory = $true)]
+        [string] $Label,
+        [string[]] $ExcludeRelative = @()
+    )
+
+    $scanRoot = Resolve-Path -LiteralPath $Root
+    $scanRootFullName = $scanRoot.Path.TrimEnd("\", "/")
+    $excludeSet = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::Ordinal)
+    foreach ($entry in $ExcludeRelative) {
+        if (-not $excludeSet.Add($entry)) {
+            throw "duplicate text-scan exclude entry: $entry"
+        }
+    }
+
+    Get-ChildItem -LiteralPath $scanRoot -Recurse -Force -File | ForEach-Object {
+        $fileFullName = $_.FullName
+        if (-not $fileFullName.StartsWith($scanRootFullName, [System.StringComparison]::OrdinalIgnoreCase)) {
+            throw "text scan file escapes scan root: $fileFullName"
+        }
+
+        $relative = $fileFullName.Substring($scanRootFullName.Length).TrimStart("\", "/") -replace "\\", "/"
+        if (
+            $relative.StartsWith(".git/", [System.StringComparison]::Ordinal) -or
+            $relative.StartsWith("target/", [System.StringComparison]::Ordinal) -or
+            $excludeSet.Contains($relative)
+        ) {
+            return
+        }
+
+        Assert-TextFileIsBounded -File $_
+        $content = [System.IO.File]::ReadAllText($fileFullName)
+        if ($content -match $Pattern) {
+            throw "$Label found in public export file: $relative"
+        }
+    }
+}
+
 function Assert-NoForbiddenPublicPath {
     param([Parameter(Mandatory = $true)] [string] $RelativePath)
 
@@ -308,37 +351,23 @@ try {
         ("BEGIN .*PRIVATE" + " KEY")
     )
     $privateTextPattern = $privateTextFragments -join "|"
-    rg --glob $generatedCargoGlob $privateTextPattern .
-    if ($LASTEXITCODE -eq 0) {
-        throw "private text pattern found in public export"
-    }
-    if ($LASTEXITCODE -gt 1) {
-        throw "private text scan failed with exit code $LASTEXITCODE"
-    }
+    Assert-NoTextPattern `
+        -Root $exportPath `
+        -Pattern $privateTextPattern `
+        -Label "private text pattern"
 
     Write-Host "==> public export private dependency text scan"
-    rg `
-        --glob $generatedCargoGlob `
-        --glob "!PACKAGE_BOUNDARY.md" `
-        --glob "!scripts/check_public_export.ps1" `
-        $privateDependencyPattern .
-    if ($LASTEXITCODE -eq 0) {
-        throw "private dependency reference found in public export"
-    }
-    if ($LASTEXITCODE -gt 1) {
-        throw "private dependency scan failed with exit code $LASTEXITCODE"
-    }
+    Assert-NoTextPattern `
+        -Root $exportPath `
+        -Pattern $privateDependencyPattern `
+        -Label "private dependency reference" `
+        -ExcludeRelative @("PACKAGE_BOUNDARY.md", "scripts/check_public_export.ps1")
 
     Write-Host "==> public export training surface scan"
-    rg `
-        --glob $generatedCargoGlob `
-        $trainingSurfacePattern crates
-    if ($LASTEXITCODE -eq 0) {
-        throw "private Logic-IQ training surface found in public export"
-    }
-    if ($LASTEXITCODE -gt 1) {
-        throw "private Logic-IQ training surface scan failed with exit code $LASTEXITCODE"
-    }
+    Assert-NoTextPattern `
+        -Root (Join-Path $exportPath "crates") `
+        -Pattern $trainingSurfacePattern `
+        -Label "private Logic-IQ training surface"
 
     Invoke-Checked "cargo metadata locked" { cargo metadata --locked --format-version 1 | Out-Null }
     Invoke-Checked "cargo fmt locked all features" {
