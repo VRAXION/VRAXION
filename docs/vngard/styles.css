@@ -421,79 +421,43 @@ h1 {
   isolation: isolate;
 }
 
-.armor-letter {
-  color: #020405;
-  background: none;
-  -webkit-text-fill-color: #020405;
-  -webkit-text-stroke: 0;
-  text-shadow:
-    0 0 10px rgba(var(--cyan-rgb), 0.68),
-    0 0 26px rgba(var(--cyan-rgb), 0.4),
-    0 0 54px rgba(var(--cyan-rgb), 0.2),
-    0 8px 24px rgba(0, 0, 0, 0.92);
-}
-
-.seal-letter {
-  --horizon-rgb: var(--wordmark-fuchsia-rgb);
-  position: relative;
-  display: inline-block;
-  color: #020405;
-  background: none;
-  -webkit-text-fill-color: #020405;
-  -webkit-text-stroke: 0;
-  z-index: 0;
-  text-shadow:
-    0 -1px 0 rgba(var(--horizon-rgb), 0.07),
-    0 1px 0 rgba(var(--cyan-white-rgb), 0.045),
-    0 8px 24px rgba(0, 0, 0, 0.96);
-}
-
-.ivy-letter {
-  --horizon-rgb: var(--wordmark-teal-rgb);
-  position: relative;
-  display: inline-block;
-  color: #020405;
-  background: none;
-  -webkit-text-fill-color: #020405;
-  -webkit-text-stroke: 0;
-  z-index: 0;
-  text-shadow:
-    0 -1px 0 rgba(var(--horizon-rgb), 0.08),
-    0 1px 0 rgba(var(--cyan-white-rgb), 0.045),
-    0 8px 24px rgba(0, 0, 0, 0.96);
-}
-
-.ivy-letter::before,
-.seal-letter::before {
-  content: attr(data-horizon);
+.wordmark::before {
+  content: "";
   position: absolute;
-  inset: 0;
+  inset: 0.03em -0.08em -0.07em -0.1em;
   z-index: -1;
   pointer-events: none;
-  color: rgba(var(--horizon-rgb), 0.78);
-  -webkit-text-fill-color: rgba(var(--horizon-rgb), 0.78);
-  filter: blur(10px);
-  opacity: 0.9;
-  transform: scale(1.035);
-  text-shadow:
-    0 0 12px rgba(var(--horizon-rgb), 0.7),
-    0 0 32px rgba(var(--horizon-rgb), 0.46),
-    0 0 68px rgba(var(--horizon-rgb), 0.24);
+  background:
+    linear-gradient(36deg, rgba(var(--wordmark-teal-rgb), 0.98) 0%, rgba(var(--wordmark-teal-rgb), 0.9) 34%, rgba(var(--wordmark-fuchsia-rgb), 0.72) 66%, rgba(var(--wordmark-fuchsia-rgb), 0.96) 100%);
+  filter: blur(15px);
+  opacity: 0.86;
+  transform: translateY(0.035em) scaleX(1.02);
 }
 
-.ivy-letter::after,
-.seal-letter::after {
-  content: attr(data-horizon);
+.wordmark::after {
+  content: "";
   position: absolute;
-  inset: 0;
+  inset: 0.08em -0.04em -0.02em -0.05em;
+  z-index: -1;
   pointer-events: none;
-  color: transparent;
-  background: linear-gradient(145deg, transparent 0 18%, rgba(var(--cyan-white-rgb), 0.18) 27%, transparent 39%, rgba(255, 255, 255, 0.055) 58%, transparent 74%);
-  background-clip: text;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  background:
+    linear-gradient(36deg, rgba(var(--wordmark-teal-rgb), 0.58) 0%, transparent 44%, rgba(var(--wordmark-fuchsia-rgb), 0.52) 100%);
+  filter: blur(34px);
+  opacity: 0.7;
+}
+
+.armor-letter,
+.seal-letter,
+.ivy-letter {
+  position: relative;
+  display: inline-block;
+  color: #020405;
+  background: none;
+  -webkit-text-fill-color: #020405;
   -webkit-text-stroke: 0;
-  opacity: 0.32;
+  text-shadow:
+    0 0 2px rgba(3, 5, 6, 0.92),
+    0 8px 24px rgba(0, 0, 0, 0.96);
 }
 
 .alpha-letter {
