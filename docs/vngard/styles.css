@@ -715,7 +715,6 @@ h1 {
   object-fit: cover;
   object-position: 50% 50%;
   filter: saturate(1.12) contrast(1.06) brightness(0.84);
-  transform: scale(1.04);
 }
 
 .architecture-card-tint {
