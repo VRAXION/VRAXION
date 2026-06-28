@@ -7,17 +7,17 @@
   --stone-300: #a7f4ff;
   --stone-500: #5baab6;
   --stone-700: #163f47;
-  --ivy-300: #7dffd9;
-  --ivy-400: #35ffc5;
-  --ivy-500: #00ffb7;
-  --ivy-650: #00a87d;
-  --ivy-rgb: 0, 255, 183;
+  --ivy-300: #8ffbff;
+  --ivy-400: #36f3ff;
+  --ivy-500: #00e5ff;
+  --ivy-650: #0098a8;
+  --ivy-rgb: 0, 229, 255;
   --seal-300: #ff6e8e;
   --seal-500: #ff0048;
   --seal-650: #b90035;
   --seal-rgb: 255, 0, 72;
-  --wordmark-teal: #00ffb7;
-  --wordmark-teal-rgb: 0, 255, 183;
+  --wordmark-teal: #00e5ff;
+  --wordmark-teal-rgb: 0, 229, 255;
   --wordmark-fuchsia: #ff0048;
   --wordmark-fuchsia-rgb: 255, 0, 72;
   --cyan-white-rgb: 226, 251, 255;
@@ -679,7 +679,7 @@ h1 {
 }
 
 .architecture-pill {
-  --pill-rgb: 0, 255, 183;
+  --pill-rgb: var(--ivy-rgb);
   position: relative;
   overflow: hidden;
   min-height: 76px;

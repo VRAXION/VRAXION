@@ -63,7 +63,7 @@
 
         if (d < 150) {
           const alpha = (1 - d / 150) * 0.16;
-          ctx.strokeStyle = `rgba(0, 255, 183, ${alpha})`;
+          ctx.strokeStyle = `rgba(0, 229, 255, ${alpha})`;
           ctx.beginPath();
           ctx.moveTo(a.x, a.y);
           ctx.lineTo(b.x, b.y);
@@ -78,7 +78,7 @@
       const pulse = 0.55 + Math.sin(p.phase) * 0.25;
       ctx.fillStyle = p.seal
         ? `rgba(255, 0, 72, ${0.18 + pulse * 0.12})`
-        : `rgba(0, 255, 183, ${0.18 + pulse * 0.16})`;
+        : `rgba(0, 229, 255, ${0.18 + pulse * 0.16})`;
 
       ctx.beginPath();
       ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
