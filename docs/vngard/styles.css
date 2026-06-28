@@ -422,28 +422,43 @@ h1 {
 }
 
 .wordmark::before {
-  content: "";
+  content: attr(data-wordmark);
   position: absolute;
-  inset: 0.03em -0.08em -0.07em -0.1em;
+  inset: 0;
   z-index: -1;
+  display: block;
   pointer-events: none;
+  white-space: nowrap;
+  color: transparent;
   background:
-    linear-gradient(36deg, rgba(var(--wordmark-teal-rgb), 0.98) 0%, rgba(var(--wordmark-teal-rgb), 0.9) 34%, rgba(var(--wordmark-fuchsia-rgb), 0.72) 66%, rgba(var(--wordmark-fuchsia-rgb), 0.96) 100%);
-  filter: blur(15px);
-  opacity: 0.86;
-  transform: translateY(0.035em) scaleX(1.02);
+    linear-gradient(34deg, rgba(var(--wordmark-teal-rgb), 1) 0%, rgba(var(--wordmark-teal-rgb), 0.92) 38%, rgba(var(--wordmark-fuchsia-rgb), 0.8) 66%, rgba(var(--wordmark-fuchsia-rgb), 0.96) 100%);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  -webkit-text-stroke: 0;
+  filter: blur(8px);
+  opacity: 0.96;
+  transform: translateY(0.018em) scale(1.025);
 }
 
 .wordmark::after {
-  content: "";
+  content: attr(data-wordmark);
   position: absolute;
-  inset: 0.08em -0.04em -0.02em -0.05em;
-  z-index: -1;
+  inset: 0;
+  z-index: -2;
+  display: block;
   pointer-events: none;
+  white-space: nowrap;
+  color: transparent;
   background:
-    linear-gradient(36deg, rgba(var(--wordmark-teal-rgb), 0.58) 0%, transparent 44%, rgba(var(--wordmark-fuchsia-rgb), 0.52) 100%);
-  filter: blur(34px);
-  opacity: 0.7;
+    linear-gradient(34deg, rgba(var(--wordmark-teal-rgb), 0.78) 0%, rgba(var(--wordmark-teal-rgb), 0.56) 42%, rgba(var(--wordmark-fuchsia-rgb), 0.46) 66%, rgba(var(--wordmark-fuchsia-rgb), 0.7) 100%);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  -webkit-text-stroke: 0;
+  filter: blur(20px);
+  opacity: 0.62;
+  transform: translateY(0.035em) scale(1.05);
 }
 
 .armor-letter,
