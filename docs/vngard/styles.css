@@ -651,45 +651,36 @@ h1 {
   max-width: 690px;
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0;
+  gap: 12px;
   margin: 0 0 24px;
-  padding: 6px;
-  border: 1px solid rgba(var(--cyan-rgb), 0.2);
-  border-radius: 12px;
-  background:
-    linear-gradient(90deg, rgba(var(--cyan-rgb), 0.12), rgba(3, 5, 6, 0.68) 40%, rgba(var(--seal-rgb), 0.08)),
-    rgba(3, 5, 6, 0.58);
-  box-shadow:
-    0 18px 38px rgba(0, 0, 0, 0.26),
-    inset 0 1px 0 rgba(var(--cyan-white-rgb), 0.12),
-    inset 0 -1px 0 rgba(var(--seal-rgb), 0.08);
-  backdrop-filter: blur(16px) saturate(1.16);
 }
 
 .architecture-pill {
   --pill-rgb: var(--ivy-rgb);
   position: relative;
+  isolation: isolate;
   overflow: hidden;
-  min-height: 72px;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 4px;
-  padding: 10px 12px 10px 42px;
-  border: 0;
+  min-height: 136px;
+  display: block;
+  padding: 0;
+  border: 1px solid rgba(var(--pill-rgb), 0.32);
   border-radius: 8px;
   color: var(--stone-300);
   background:
-    radial-gradient(circle at 18% 22%, rgba(var(--pill-rgb), 0.18), transparent 44px),
-    linear-gradient(180deg, rgba(var(--cyan-white-rgb), 0.038), rgba(3, 5, 6, 0.1));
+    radial-gradient(circle at 26% 12%, rgba(var(--pill-rgb), 0.18), transparent 62px),
+    linear-gradient(180deg, rgba(18, 26, 30, 0.94), rgba(3, 5, 6, 0.98));
+  box-shadow:
+    0 18px 42px rgba(0, 0, 0, 0.3),
+    0 0 28px rgba(var(--pill-rgb), 0.08),
+    inset 0 1px 0 rgba(var(--cyan-white-rgb), 0.12);
 }
 
 .architecture-pill::before {
   content: attr(data-step);
   position: absolute;
-  left: 12px;
-  top: 13px;
-  z-index: 1;
+  left: 10px;
+  top: 10px;
+  z-index: 5;
   width: 20px;
   height: 20px;
   display: grid;
@@ -702,24 +693,21 @@ h1 {
   font-size: 0.58rem;
   font-weight: 760;
   line-height: 1;
-  box-shadow: 0 0 14px rgba(var(--pill-rgb), 0.16);
+  box-shadow:
+    0 0 14px rgba(var(--pill-rgb), 0.24),
+    0 8px 18px rgba(0, 0, 0, 0.32);
   pointer-events: none;
 }
 
-.architecture-pill + .architecture-pill::after {
+.architecture-pill::after {
   content: "";
   position: absolute;
-  left: 0;
-  top: 12px;
-  bottom: 12px;
-  width: 1px;
-  background: linear-gradient(180deg, transparent, rgba(var(--cyan-rgb), 0.24), rgba(var(--seal-rgb), 0.18), transparent);
+  inset: 0;
+  z-index: 3;
+  background:
+    linear-gradient(180deg, rgba(3, 5, 6, 0.08), rgba(3, 5, 6, 0.28) 34%, rgba(3, 5, 6, 0.92)),
+    radial-gradient(circle at 30% 12%, rgba(var(--pill-rgb), 0.14), transparent 48%);
   pointer-events: none;
-}
-
-.architecture-pill > * {
-  position: relative;
-  z-index: 2;
 }
 
 .pill-cyan {
@@ -730,18 +718,109 @@ h1 {
   --pill-rgb: var(--seal-rgb);
 }
 
-.architecture-pill strong {
-  color: var(--stone-100);
-  font-size: 0.78rem;
-  line-height: 1.1;
-  text-shadow: 0 0 12px rgba(var(--pill-rgb), 0.16);
+.architecture-card-media,
+.architecture-card-placeholder,
+.architecture-card-tint {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
 }
 
-.architecture-pill > span:last-child {
-  max-width: 18ch;
+.architecture-card-media {
+  z-index: 1;
+  object-fit: cover;
+  object-position: 50% 50%;
+  filter: saturate(1.08) contrast(1.04) brightness(0.78);
+  transform: scale(1.04);
+}
+
+.architecture-card-placeholder {
+  z-index: 1;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 24% 22%, rgba(var(--pill-rgb), 0.26), transparent 52px),
+    radial-gradient(circle at 76% 72%, rgba(var(--seal-rgb), 0.12), transparent 58px),
+    linear-gradient(135deg, rgba(var(--pill-rgb), 0.12), rgba(3, 5, 6, 0.92) 58%, rgba(var(--seal-rgb), 0.08));
+}
+
+.architecture-card-placeholder::before {
+  content: "TBD";
+  position: absolute;
+  right: 10px;
+  top: 10px;
+  color: rgba(var(--pill-rgb), 0.78);
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 0.58rem;
+  font-weight: 780;
+  letter-spacing: 0.08em;
+  text-shadow: 0 0 14px rgba(var(--pill-rgb), 0.28);
+}
+
+.architecture-card-placeholder::after {
+  content: "";
+  position: absolute;
+  inset: 22px;
+  opacity: 0.48;
+  border: 1px solid rgba(var(--pill-rgb), 0.18);
+  border-radius: 8px;
+  background:
+    linear-gradient(90deg, transparent 49%, rgba(var(--pill-rgb), 0.18) 50%, transparent 51%),
+    linear-gradient(0deg, transparent 49%, rgba(var(--pill-rgb), 0.16) 50%, transparent 51%);
+  background-size: 22px 22px;
+  transform: perspective(180px) rotateX(58deg);
+  transform-origin: center bottom;
+}
+
+.architecture-card-tint {
+  z-index: 2;
+  background:
+    radial-gradient(circle at 18% 12%, rgba(var(--pill-rgb), 0.22), transparent 74px),
+    linear-gradient(90deg, rgba(var(--pill-rgb), 0.12), transparent 46%, rgba(var(--seal-rgb), 0.08));
+  opacity: 0.8;
+  mix-blend-mode: screen;
+  pointer-events: none;
+}
+
+.architecture-card-content {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 12px;
+  z-index: 4;
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.architecture-card-kicker {
+  color: rgba(var(--pill-rgb), 0.95);
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 0.58rem;
+  font-weight: 800;
+  line-height: 1;
+  text-transform: uppercase;
+  text-shadow:
+    0 0 14px rgba(var(--pill-rgb), 0.32),
+    0 2px 12px rgba(3, 5, 6, 0.86);
+}
+
+.architecture-pill strong {
+  color: var(--stone-100);
+  font-size: 0.86rem;
+  line-height: 1.05;
+  text-shadow:
+    0 0 16px rgba(var(--pill-rgb), 0.2),
+    0 2px 14px rgba(3, 5, 6, 0.92);
+}
+
+.architecture-card-content > span:last-child {
+  max-width: 21ch;
   color: rgba(var(--cyan-white-rgb), 0.78);
-  font-size: 0.68rem;
+  font-size: 0.69rem;
   line-height: 1.18;
+  text-shadow: 0 2px 12px rgba(3, 5, 6, 0.92);
 }
 
 .hero-actions {
@@ -1197,28 +1276,22 @@ h1 {
   .architecture-pills {
     grid-template-columns: 1fr;
     margin-bottom: 24px;
-    gap: 0;
-    padding: 5px;
+    gap: 10px;
   }
 
   .architecture-pill {
-    min-height: 58px;
-    padding: 10px 12px 10px 42px;
+    min-height: 118px;
   }
 
-  .architecture-pill + .architecture-pill::after {
-    top: 0;
-    left: 12px;
-    right: 12px;
-    bottom: auto;
-    width: auto;
-    height: 1px;
-    background: linear-gradient(90deg, transparent, rgba(var(--cyan-rgb), 0.2), rgba(var(--seal-rgb), 0.16), transparent);
+  .architecture-card-content {
+    left: 48px;
+    right: 14px;
+    bottom: 14px;
   }
 
-  .architecture-pill > span:last-child {
+  .architecture-card-content > span:last-child {
     max-width: none;
-    font-size: 0.69rem;
+    font-size: 0.7rem;
   }
 
   .hero-copy,
