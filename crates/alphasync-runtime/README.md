@@ -10,7 +10,8 @@ training, mutation, skill registry, artifact writer internals, or diagnostic
 parity binaries.
 
 This crate remains a compatibility public-candidate source crate. Future
-golden-backed releases should use a separate reviewed delivery model such as an
-API, compiled binary, or open-core wrapper.
+golden-backed releases should use the P11 delivery boundary: controlled signed
+binary first, hosted API/SaaS later, and thin public SDK/docs/wrappers where
+useful. This crate is not the private engine source.
 
 See the workspace `LICENSE` notice copied into this package.
