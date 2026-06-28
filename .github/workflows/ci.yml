@@ -1,205 +1,30 @@
-name: CI
+name: Public SDK CI
 
 on:
+  pull_request:
   push:
     branches:
       - main
-  pull_request:
   workflow_dispatch:
 
 jobs:
-  rust-runtime-ci:
-    runs-on: ubuntu-latest
+  rust:
+    runs-on: windows-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt, clippy
-
-      - name: Cache cargo artifacts
-        uses: Swatinem/rust-cache@v2
-
-      - name: Rust format
-        run: cargo fmt --check -p vraxion-runtime
-
-      - name: Rust clippy
-        run: cargo clippy -p vraxion-runtime --all-targets -- -D warnings
-
-      - name: Rust runtime tests
-        run: cargo test -p vraxion-runtime
-
-      - name: Final bake smoke with progress artifacts
-        run: |
-          cargo run --release -p vraxion-runtime --bin final_bake_preflight -- 1000 target/ci/e78_final_bake_smoke
-          test -f target/ci/e78_final_bake_smoke/progress.jsonl
-          test -f target/ci/e78_final_bake_smoke/final_bake_results.json
-          test -f target/ci/e78_final_bake_smoke/report.md
-
-      - name: Training data readiness smoke with progress artifacts
-        run: |
-          cargo run --release -p vraxion-runtime --bin training_data_readiness -- 3 8 target/ci/e79_training_data_readiness_smoke
-          test -f target/ci/e79_training_data_readiness_smoke/training_data_readiness_progress.jsonl
-          test -f target/ci/e79_training_data_readiness_smoke/training_data_readiness_results.json
-          test -f target/ci/e79_training_data_readiness_smoke/training_data_readiness_manifest.json
-          test -f target/ci/e79_training_data_readiness_smoke/training_curriculum_manifest.jsonl
-          test -f target/ci/e79_training_data_readiness_smoke/training_data_readiness_report.md
-
-      - name: Canonical final train smoke with progress artifacts
-        run: |
-          cargo run --release -p vraxion-runtime --bin final_train -- 3 8 target/ci/e79_final_train_smoke --preflight-rounds 4 --checkpoint-interval 4
-          test -f target/ci/e79_final_train_smoke/final_train_progress.jsonl
-          test -f target/ci/e79_final_train_smoke/final_train_results.json
-          test -f target/ci/e79_final_train_smoke/final_train_manifest.json
-          test -f target/ci/e79_final_train_smoke/final_train_report.md
-          test -f target/ci/e79_final_train_smoke/training_data_readiness/training_data_readiness_results.json
-          test -f target/ci/e79_final_train_smoke/training_data_readiness/training_data_readiness_manifest.json
-          test -f target/ci/e79_final_train_smoke/training_data_readiness/training_data_readiness_progress.jsonl
-          test -f target/ci/e79_final_train_smoke/training_data_readiness/training_curriculum_manifest.jsonl
-          test -f target/ci/e79_final_train_smoke/global_supervisor/global_merge_results.json
-          test -f target/ci/e79_final_train_smoke/global_supervisor/global_library_summary.json
-          test -f target/ci/e79_final_train_smoke/global_supervisor/lane_supervisor/supervisor_results.json
-
-  public-surface-ci:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Python compile
-        run: python -m compileall -q scripts
-
-      - name: Tracked JSON parse
-        run: |
-          python - <<'PY'
-          import json
-          import pathlib
-          import subprocess
-
-          files = subprocess.check_output(["git", "ls-files"], text=True).splitlines()
-          for name in files:
-              path = pathlib.Path(name)
-              if path.suffix == ".json":
-                  json.loads(path.read_text(encoding="utf-8"))
-              elif path.suffix == ".jsonl":
-                  raise SystemExit(f"tracked JSONL is not part of the public surface: {path}")
-          print("tracked_json_parse_ok")
-          PY
-
-      - name: Public surface audit
-        run: python scripts/audit_public_surface.py
-
-      - name: Front-door stale current-claim guard
-        run: |
-          python - <<'PY'
-          import pathlib
-
-          files = [
-              pathlib.Path("README.md"),
-              pathlib.Path("VALIDATED_FINDINGS.md"),
-              pathlib.Path("CHANGELOG.md"),
-              pathlib.Path("BETA.md"),
-              pathlib.Path("docs/CURRENT_STATUS.md"),
-              pathlib.Path("docs/GETTING_STARTED.md"),
-              pathlib.Path("docs/VERSION.json"),
-              pathlib.Path("docs/index.html"),
-          ]
-          stale = [
-              "E85 MAIN",
-              "current_main_head = 56a9cf",
-              '"current_main_head": "56a9cf',
-              "Current main head: 56a9cf",
-              "current_main_subject = Add E85",
-              '"current_main_head_subject": "Add E85',
-              "Current E85 extension",
-              "E80-E85 are tracked post-release evidence",
-              "current E85 mainline",
-              "E111 MAIN",
-              "current_main_head = d71e3657",
-              '"current_main_head": "d71e3657',
-              "current_main_subject = Add E111",
-              '"current_main_head_subject": "Add E111',
-              "E80-E111 are tracked post-release evidence",
-              "current E111 mainline",
-              "E112 EVIDENCE",
-              "current_evidence_subject = Add E112",
-              '"current_evidence_subject": "Add E112',
-              "E80-E112 are tracked post-release evidence",
-              "current E112 evidence anchor",
-              "current_evidence_anchor = E129_ARITHMETIC_TRACE_ORANGE_LEGENDARY_PROBATION",
-              '"current_evidence_anchor": "E129_ARITHMETIC_TRACE_ORANGE_LEGENDARY_PROBATION"',
-              "current_evidence_anchor = E129 arithmetic trace Orange/Legendary probation",
-              "Current evidence anchor: E129 arithmetic trace Orange/Legendary probation",
-              "current_evidence_anchor = E130A_COREMEMORY_TO_ORANGE_BACKFILL_GAUNTLET",
-              '"current_evidence_anchor": "E130A_COREMEMORY_TO_ORANGE_BACKFILL_GAUNTLET"',
-              "current_evidence_anchor = E130A CoreMemoryCandidate-to-Orange backfill gauntlet",
-              "Current evidence anchor: E130A CoreMemoryCandidate-to-Orange backfill gauntlet",
-              "current_evidence_anchor = E130B_ARITHMETIC_TEXT_IO_TRANSFER_AND_WORD_PROBLEM_NO_CALL_GAUNTLET",
-              '"current_evidence_anchor": "E130B_ARITHMETIC_TEXT_IO_TRANSFER_AND_WORD_PROBLEM_NO_CALL_GAUNTLET"',
-              "current_evidence_anchor = E130B arithmetic text-IO transfer and word-problem no-call gauntlet",
-              "current_evidence_anchor = E132_EXTERNAL_MATH_TEXT_SKILL_FARM_MUTATION_PRUNE_ORANGE_CYCLE",
-              '"current_evidence_anchor": "E132_EXTERNAL_MATH_TEXT_SKILL_FARM_MUTATION_PRUNE_ORANGE_CYCLE"',
-              "current_evidence_anchor = E132 external math text skill farm mutation/prune Orange cycle",
-              "Current evidence anchor: E132 external math text skill farm mutation/prune Orange cycle",
-              "Current evidence anchor: E130B arithmetic text-IO transfer and word-problem no-call gauntlet",
-              "current_evidence_anchor = E131_VISIBLE_EQUATION_EXTRACTION_AND_ASSISTANT_ARITHMETIC_RENDER_GAUNTLET",
-              '"current_evidence_anchor": "E131_VISIBLE_EQUATION_EXTRACTION_AND_ASSISTANT_ARITHMETIC_RENDER_GAUNTLET"',
-              "current_evidence_anchor = E131 visible equation extraction and assistant arithmetic render gauntlet",
-              "Current evidence anchor: E131 visible equation extraction and assistant arithmetic render gauntlet",
-              "current_evidence_anchor = E133_MATH_TEXT_ROUTE_COMPOSITION_AND_NO_SOLVE_ASSISTANT_CONFIRM",
-              '"current_evidence_anchor": "E133_MATH_TEXT_ROUTE_COMPOSITION_AND_NO_SOLVE_ASSISTANT_CONFIRM"',
-              "current_evidence_anchor = E133 math text route composition and no-solve assistant confirm",
-              "Current evidence anchor: E133 math text route composition and no-solve assistant confirm",
-              "current_evidence_anchor = E134_EXTERNAL_MATH_TEXT_OOD_ROUTE_STRESS_AND_COUNTEREXAMPLE_GAUNTLET",
-              '"current_evidence_anchor": "E134_EXTERNAL_MATH_TEXT_OOD_ROUTE_STRESS_AND_COUNTEREXAMPLE_GAUNTLET"',
-              "current_evidence_anchor = E134 external math-text OOD route stress and counterexample gauntlet",
-              "Current evidence anchor: E134 external math-text OOD route stress and counterexample gauntlet",
-              "current_evidence_anchor = E135_MATH_TEXT_MULTI_ROUTE_ASSISTANT_DIALOGUE_STATE_GAUNTLET",
-              '"current_evidence_anchor": "E135_MATH_TEXT_MULTI_ROUTE_ASSISTANT_DIALOGUE_STATE_GAUNTLET"',
-              "current_evidence_anchor = E135 math-text multi-route assistant dialogue-state gauntlet",
-              "Current evidence anchor: E135 math-text multi-route assistant dialogue-state gauntlet",
-              "current_evidence_anchor = E136A_ASSISTANT_TEXT_SKILL_FARM_MUTATION_PRUNE_ORANGE_CYCLE",
-              '"current_evidence_anchor": "E136A_ASSISTANT_TEXT_SKILL_FARM_MUTATION_PRUNE_ORANGE_CYCLE"',
-              "current_evidence_anchor = E136A assistant-text skill farm mutation/prune Orange cycle",
-              "Current evidence anchor: E136A assistant-text skill farm mutation/prune Orange cycle",
-              "current_evidence_anchor = E136B_ASSISTANT_TEXT_ROUTE_COMPOSITION_AND_BOUNDARY_CONFIRM",
-              '"current_evidence_anchor": "E136B_ASSISTANT_TEXT_ROUTE_COMPOSITION_AND_BOUNDARY_CONFIRM"',
-              "current_evidence_anchor = E136B assistant-text route composition and boundary confirm",
-              "Current evidence anchor: E136B assistant-text route composition and boundary confirm",
-              "current_evidence_anchor = E136C_ASSISTANT_TEXT_POLISHED_RENDER_QUICK_TEST",
-              '"current_evidence_anchor": "E136C_ASSISTANT_TEXT_POLISHED_RENDER_QUICK_TEST"',
-              "current_evidence_anchor = E136C assistant-text polished render quick test",
-              "Current evidence anchor: E136C assistant-text polished render quick test",
-              "current_evidence_anchor = E136D_OUTPUT_TEXT_FIELD_BINARY_MATRIX_SMOKE",
-              '"current_evidence_anchor": "E136D_OUTPUT_TEXT_FIELD_BINARY_MATRIX_SMOKE"',
-              "current_evidence_anchor = E136D OutputTextField binary matrix smoke",
-              "Current evidence anchor: E136D OutputTextField binary matrix smoke",
-              "current_evidence_anchor = E136E_IDLE_THINK_TICK_PROPOSAL_REFINEMENT_SMOKE",
-              '"current_evidence_anchor": "E136E_IDLE_THINK_TICK_PROPOSAL_REFINEMENT_SMOKE"',
-              "current_evidence_anchor = E136E idle think-tick proposal refinement smoke",
-              "Current evidence anchor: E136E idle think-tick proposal refinement smoke",
-              "current_evidence_anchor = E136F_IDLE_THINK_TICK_HELDOUT_SERIES_CONFIRM",
-              '"current_evidence_anchor": "E136F_IDLE_THINK_TICK_HELDOUT_SERIES_CONFIRM"',
-              "current_evidence_anchor = E136F idle think-tick heldout series confirm",
-              "Current evidence anchor: E136F idle think-tick heldout series confirm",
-              "current_evidence_anchor = E136G_ADAPTIVE_IDLE_TICK_BUDGET_CONFIRM",
-              '"current_evidence_anchor": "E136G_ADAPTIVE_IDLE_TICK_BUDGET_CONFIRM"',
-              "current_evidence_anchor = E136G adaptive idle tick budget confirm",
-              "Current evidence anchor: E136G adaptive idle tick budget confirm",
-              "current_evidence_anchor = E136H_EXISTING_OPERATOR_REFINEMENT_MUTATION_PRUNE_NIGHT_CYCLE",
-              '"current_evidence_anchor": "E136H_EXISTING_OPERATOR_REFINEMENT_MUTATION_PRUNE_NIGHT_CYCLE"',
-              "current_evidence_anchor = E136H existing operator refinement mutation/prune night cycle",
-              "Current evidence anchor: E136H existing operator refinement mutation/prune night cycle",
-          ]
-          failures = []
-          for path in files:
-              text = path.read_text(encoding="utf-8")
-              for pattern in stale:
-                  if pattern in text:
-                      failures.append(f"{path}: stale current pattern {pattern!r}")
-          if failures:
-              raise SystemExit("\n".join(failures))
-          print("frontdoor_stale_current_claim_guard_ok")
-          PY
+      - name: Public export guard
+        shell: pwsh
+        run: ./scripts/check_public_export.ps1
+      - name: Format
+        run: cargo fmt --all -- --check
+      - name: Test
+        run: cargo test --workspace --all-features
+      - name: Doc tests
+        run: cargo test --doc --workspace --all-features
+      - name: Clippy
+        run: cargo clippy --workspace --all-targets --all-features -- -D warnings
+      - name: Docs
+        run: cargo doc --workspace --no-deps

@@ -1,22 +1,9 @@
 cff-version: 1.2.0
-message: "If you use this software, please cite it as below."
-title: "VRAXION INSTNCT Runtime and E127 Operator Evidence"
-version: "v6.1.7"
-date-released: "2026-06-15"
-type: software
+message: "If you use this public SDK boundary, cite VRAXION."
+title: "VRAXION Public SDK"
 authors:
-  - family-names: Kenessy
-    given-names: Daniel
+  - family-names: "VRAXION"
+    given-names: "Project"
 repository-code: "https://github.com/VRAXION/VRAXION"
-keywords:
-  - ai
-  - self-wiring-graph
-  - pocket-library
-  - runtime-governance
-  - checkpoint-resume
-  - training-data-readiness
-  - final-train
-  - calc-scribe
-  - visible-trace-validation
-  - operator-library
-  - text-operator-farming
+license: "LicenseRef-VRAXION-Community-Source-1.0"
+date-released: "2026-06-28"

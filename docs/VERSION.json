@@ -1,30 +1,10 @@
 {
-  "current_release": "v6.1.7",
-  "current_channel": "mainline-release",
-  "public_source_of_truth": "main",
-  "public_role": "sanitized evidence and release surface",
-  "active_public_runtime_surface": "vraxion-runtime/",
-  "current_evidence_anchor": "E136S_ATOMIC_MULTIWRITE_DEFAULT_ROUTE_SWITCH_CANARY_GUARD",
-  "current_evidence_subject": "guarded atomic multiwrite switch canary with snapshot and preview/apply match before default-route writes",
-  "latest_released_runtime_head": "a908a838a1119540ed88bc91e10cfcb0bdae92a8",
-  "latest_release_scope": "E69-E79 Rust runtime readiness line with later public evidence summaries",
-  "public_claim_boundary": {
-    "allowed": [
-      "governed Operator runtime",
-      "scoped proposal generation",
-      "Agency-gated commit flow",
-      "bounded runtime canary evidence"
-    ],
-    "forbidden": [
-      "open-domain LLM",
-      "production assistant",
-      "general autonomous intelligence",
-      "PermaCore or TrueGolden memory",
-      "trained neural model weights"
-    ]
-  },
-  "public_cleanup": {
-    "pass_001": "removed artifact samples, JSONL traces, probe scripts, dashboards, and local dataset paths from current tree",
-    "pass_002": "compacted public state docs and removed dataset/training recipe surface"
-  }
+  "schema": "vraxion.public.version.v1",
+  "status": "zero_state",
+  "date": "2026-06-28",
+  "public_surface": "sdk_boundary",
+  "crates": [
+    "alphasync-core",
+    "alphasync-runtime"
+  ]
 }
