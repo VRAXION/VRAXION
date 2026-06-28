@@ -24,22 +24,43 @@ a:focus-visible {
 }
 
 .claim-boundary-chip {
-  width: fit-content;
   max-width: 690px;
   margin: 0 0 18px;
-  padding: 9px 12px;
-  border: 1px solid rgba(var(--ivy-rgb), 0.32);
-  border-radius: 999px;
-  color: var(--stone-100);
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px 8px 8px;
+  border: 1px solid rgba(var(--cyan-rgb), 0.24);
+  border-radius: 8px;
+  color: rgba(var(--cyan-white-rgb), 0.88);
   background:
-    linear-gradient(135deg, rgba(var(--ivy-rgb), 0.14), rgba(var(--seal-rgb), 0.07)),
-    rgba(3, 5, 6, 0.54);
+    linear-gradient(135deg, rgba(var(--cyan-rgb), 0.11), rgba(3, 5, 6, 0.7) 44%, rgba(var(--seal-rgb), 0.08)),
+    rgba(3, 5, 6, 0.66);
   box-shadow:
-    0 0 24px rgba(var(--ivy-rgb), 0.09),
-    inset 0 1px 0 rgba(var(--cyan-white-rgb), 0.1);
+    0 0 28px rgba(var(--cyan-rgb), 0.08),
+    inset 0 1px 0 rgba(var(--cyan-white-rgb), 0.1),
+    inset 0 -1px 0 rgba(var(--seal-rgb), 0.09);
   font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
-  font-size: 0.72rem;
-  line-height: 1.35;
+  font-size: 0.7rem;
+  line-height: 1.32;
+}
+
+.claim-boundary-label {
+  flex: 0 0 auto;
+  padding: 5px 8px;
+  border: 1px solid rgba(var(--seal-rgb), 0.4);
+  border-radius: 6px;
+  color: var(--seal-300);
+  background: rgba(var(--seal-rgb), 0.09);
+  font-size: 0.62rem;
+  font-weight: 760;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.claim-boundary-text strong {
+  color: var(--stone-100);
+  font-weight: 760;
 }
 
 .creator-credit .credit-highlight,
@@ -281,8 +302,16 @@ a:focus-visible {
 @media (max-width: 640px) {
   .claim-boundary-chip {
     width: auto;
-    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 7px;
+    border-radius: 10px;
     font-size: 0.68rem;
+  }
+
+  .claim-boundary-label {
+    font-size: 0.58rem;
   }
 
   .architecture-statement {
