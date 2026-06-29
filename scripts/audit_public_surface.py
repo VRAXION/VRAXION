@@ -45,6 +45,18 @@ FORBIDDEN_TEXT = [
 
 EXPECTED_CRATES = {"alphasync-core", "alphasync-runtime"}
 
+PUBLIC_BINARY_ASSETS = {
+    "docs/assets/vraxion-home-hero.jpg",
+    "docs/vngard/assets/alpha-sync-fabric-card.jpg",
+    "docs/vngard/assets/mutation-core-card.jpg",
+    "docs/vngard/assets/prismion-atom-card.jpg",
+    "docs/vngard/assets/vngard-guardian-hero-bg.png",
+    "docs/vngard/assets/vngard-wordmark-logo.png",
+    "docs/vngard/assets/fonts/geist-sans-variable.woff2",
+}
+
+MAX_PUBLIC_BINARY_ASSET_BYTES = 4 * 1024 * 1024
+
 
 def tracked_files() -> list[str]:
     result = subprocess.run(
@@ -86,6 +98,10 @@ def main() -> int:
 
         path = ROOT / relative
         if path.is_file():
+            if normalized in PUBLIC_BINARY_ASSETS:
+                if path.stat().st_size > MAX_PUBLIC_BINARY_ASSET_BYTES:
+                    failures.append(f"public binary asset too large: {relative}")
+                continue
             text = read_text(path)
             for needle in FORBIDDEN_TEXT:
                 if needle in text:

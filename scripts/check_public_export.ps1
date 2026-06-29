@@ -76,6 +76,28 @@ function Assert-TextFileIsBounded {
     }
 }
 
+function Test-PublicBinaryAssetRelative {
+    param([Parameter(Mandatory = $true)] [string] $RelativePath)
+
+    return $publicBinaryAssetSet.Contains($RelativePath)
+}
+
+function Assert-PublicFileIsBounded {
+    param(
+        [Parameter(Mandatory = $true)] [System.IO.FileInfo] $File,
+        [Parameter(Mandatory = $true)] [string] $RelativePath
+    )
+
+    if (Test-PublicBinaryAssetRelative -RelativePath $RelativePath) {
+        if ($File.Length -gt $maxPublicBinaryAssetBytes) {
+            throw "public binary asset too large: $RelativePath"
+        }
+        return
+    }
+
+    Assert-TextFileIsBounded -File $File
+}
+
 function Assert-NoTextPattern {
     param(
         [Parameter(Mandatory = $true)]
@@ -106,7 +128,8 @@ function Assert-NoTextPattern {
         if (
             $relative.StartsWith(".git/", [System.StringComparison]::Ordinal) -or
             $relative.StartsWith("target/", [System.StringComparison]::Ordinal) -or
-            $excludeSet.Contains($relative)
+            $excludeSet.Contains($relative) -or
+            (Test-PublicBinaryAssetRelative -RelativePath $relative)
         ) {
             return
         }
@@ -179,6 +202,17 @@ $forbiddenPublicPathFragments = @(
     ("alphasync-" + "selftrain"),
     ("alphasync-" + "skillstore")
 )
+$maxPublicBinaryAssetBytes = 4MB
+$publicBinaryAssets = @(
+    "docs/assets/vraxion-home-hero.jpg",
+    "docs/vngard/assets/alpha-sync-fabric-card.jpg",
+    "docs/vngard/assets/mutation-core-card.jpg",
+    "docs/vngard/assets/prismion-atom-card.jpg",
+    "docs/vngard/assets/vngard-guardian-hero-bg.png",
+    "docs/vngard/assets/vngard-wordmark-logo.png",
+    "docs/vngard/assets/fonts/geist-sans-variable.woff2"
+)
+$publicBinaryAssetSet = New-OrdinalSet -Items $publicBinaryAssets
 $privatePersistenceCrate = "alphasync-" + "skillstore"
 $privateSelfTrainCrate = "alphasync-" + "selftrain"
 $privateGoldenCrate = "golden-" + "refactor"
@@ -234,10 +268,23 @@ try {
         "SECURITY.md",
         "TRADEMARK_POLICY.md",
         "docs\.nojekyll",
+        "docs\assets\favicon.svg",
+        "docs\assets\vraxion-home-hero.jpg",
         "docs\CURRENT_STATUS.md",
         "docs\PUBLIC_SURFACE_POLICY.md",
         "docs\VERSION.json",
         "docs\index.html",
+        "docs\vngard\index.html",
+        "docs\vngard\polish.css",
+        "docs\vngard\script.js",
+        "docs\vngard\styles.css",
+        "docs\vngard\assets\alpha-sync-fabric-card.jpg",
+        "docs\vngard\assets\mutation-core-card.jpg",
+        "docs\vngard\assets\prismion-atom-card.jpg",
+        "docs\vngard\assets\vngard-guardian-hero-bg.png",
+        "docs\vngard\assets\vngard-wordmark-logo.png",
+        "docs\vngard\assets\fonts\geist-license.txt",
+        "docs\vngard\assets\fonts\geist-sans-variable.woff2",
         "scripts\audit_public_surface.py",
         "scripts\check_public_export.ps1",
         "crates\alphasync-core\Cargo.toml",
@@ -282,10 +329,23 @@ try {
         "SECURITY.md",
         "TRADEMARK_POLICY.md",
         "docs/.nojekyll",
+        "docs/assets/favicon.svg",
+        "docs/assets/vraxion-home-hero.jpg",
         "docs/CURRENT_STATUS.md",
         "docs/PUBLIC_SURFACE_POLICY.md",
         "docs/VERSION.json",
         "docs/index.html",
+        "docs/vngard/assets/alpha-sync-fabric-card.jpg",
+        "docs/vngard/assets/fonts/geist-license.txt",
+        "docs/vngard/assets/fonts/geist-sans-variable.woff2",
+        "docs/vngard/assets/mutation-core-card.jpg",
+        "docs/vngard/assets/prismion-atom-card.jpg",
+        "docs/vngard/assets/vngard-guardian-hero-bg.png",
+        "docs/vngard/assets/vngard-wordmark-logo.png",
+        "docs/vngard/index.html",
+        "docs/vngard/polish.css",
+        "docs/vngard/script.js",
+        "docs/vngard/styles.css",
         "scripts/audit_public_surface.py",
         "scripts/check_public_export.ps1",
         "crates/alphasync-core/Cargo.toml",
@@ -335,7 +395,7 @@ try {
         }
         Assert-NoForbiddenPublicPath -RelativePath $relative
         $totalBytes += $file.Length
-        Assert-TextFileIsBounded -File $file
+        Assert-PublicFileIsBounded -File $file -RelativePath $relative
         if (-not $allowedPublicFileSet.Contains($relative)) {
             throw "unexpected public export file: $relative"
         }
@@ -414,7 +474,7 @@ try {
         }
         Assert-NoForbiddenPublicPath -RelativePath $relative
         $finalTotalBytes += $file.Length
-        Assert-TextFileIsBounded -File $file
+        Assert-PublicFileIsBounded -File $file -RelativePath $relative
         if (-not $allowedPublicFileSet.Contains($relative)) {
             throw "unexpected final public export file: $relative"
         }
