@@ -205,6 +205,7 @@ $forbiddenPublicPathFragments = @(
 $maxPublicBinaryAssetBytes = 4MB
 $publicBinaryAssets = @(
     "docs/assets/vraxion-home-hero.jpg",
+    "docs/instnct/assets/instnct-hero-bg.png",
     "docs/vngard/assets/alpha-sync-fabric-card.jpg",
     "docs/vngard/assets/mutation-core-card.jpg",
     "docs/vngard/assets/prismion-atom-card.jpg",
@@ -332,6 +333,9 @@ try {
         "docs/assets/favicon.svg",
         "docs/assets/vraxion-home-hero.jpg",
         "docs/CURRENT_STATUS.md",
+        "docs/instnct/assets/instnct-hero-bg.png",
+        "docs/instnct/index.html",
+        "docs/instnct/styles.css",
         "docs/PUBLIC_SURFACE_POLICY.md",
         "docs/VERSION.json",
         "docs/index.html",
@@ -387,7 +391,7 @@ try {
             throw "export file escapes export root: $fileFullName"
         }
         $relative = $fileFullName.Substring($exportFullName.Length).TrimStart("\", "/") -replace "\\", "/"
-        if ($relative.StartsWith(".git/", [System.StringComparison]::Ordinal)) {
+        if ($relative -eq ".git" -or $relative.StartsWith(".git/", [System.StringComparison]::Ordinal)) {
             continue
         }
         if (-not $relativeFileSet.Add($relative)) {
@@ -466,7 +470,7 @@ try {
             throw "export file escapes export root after gates: $fileFullName"
         }
         $relative = $fileFullName.Substring($exportFullName.Length).TrimStart("\", "/") -replace "\\", "/"
-        if ($relative.StartsWith(".git/", [System.StringComparison]::Ordinal)) {
+        if ($relative -eq ".git" -or $relative.StartsWith(".git/", [System.StringComparison]::Ordinal)) {
             continue
         }
         if (-not $finalRelativeFileSet.Add($relative)) {
