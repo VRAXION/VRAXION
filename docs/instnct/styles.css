@@ -304,27 +304,26 @@ img {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 28px;
-  padding: 0 10px;
+  min-height: 25px;
+  padding: 0 16px;
   overflow: hidden;
-  border: 1px solid rgba(var(--cyan-rgb), 0.22);
-  border-radius: 6px;
-  color: var(--cyan);
+  border: 1px solid rgba(var(--cyan-rgb), 0.62);
+  border-radius: 7px;
+  color: rgba(2, 7, 10, 0.9);
   background:
-    radial-gradient(circle at 92% 88%, rgba(var(--cyan-rgb), 0.2), transparent 54%),
-    linear-gradient(315deg, rgba(var(--cyan-rgb), 0.1), rgba(3, 7, 10, 0.18) 56%),
-    rgba(3, 7, 10, 0.36);
+    radial-gradient(circle at 88% 88%, rgba(255, 255, 255, 0.62), transparent 36%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.58), rgba(var(--cyan-rgb), 0.92) 26%, rgba(var(--cyan-rgb), 0.74) 66%, rgba(var(--seal-rgb), 0.36));
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.04),
-    inset 1px 0 0 rgba(var(--cyan-rgb), 0.18),
-    0 0 18px rgba(var(--cyan-rgb), 0.08),
-    0 10px 28px rgba(0, 0, 0, 0.24);
-  font-size: 0.68rem;
-  font-weight: 860;
-  line-height: 1;
+    inset 0 1px 0 rgba(255, 255, 255, 0.5),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.22),
+    0 0 22px rgba(var(--cyan-rgb), 0.2),
+    0 10px 28px rgba(0, 0, 0, 0.3);
+  font-size: 0.76rem;
+  font-weight: 900;
+  line-height: 0.92;
   text-shadow:
-    0 0 16px rgba(var(--cyan-rgb), 0.25),
-    0 8px 22px rgba(0, 0, 0, 0.86);
+    0 1px 0 rgba(255, 255, 255, 0.14),
+    0 0 1px rgba(0, 0, 0, 0.42);
   transition:
     border-color 160ms ease,
     color 160ms ease,
@@ -333,52 +332,24 @@ img {
   white-space: nowrap;
 }
 
-.surface-tag::before {
-  content: "";
-  width: 5px;
-  height: 5px;
-  margin-right: 7px;
-  border-radius: 50%;
-  background: currentColor;
-  box-shadow: 0 0 12px currentColor;
-  opacity: 0.86;
-}
-
 .tier-mark {
   gap: 7px;
-  border-color: rgba(var(--seal-rgb), 0.28);
-  color: var(--seal-soft);
+  border-color: rgba(var(--seal-rgb), 0.64);
+  color: rgba(4, 3, 8, 0.9);
   background:
-    radial-gradient(circle at 92% 88%, rgba(var(--seal-rgb), 0.22), transparent 54%),
-    linear-gradient(315deg, rgba(var(--seal-rgb), 0.12), rgba(3, 7, 10, 0.18) 56%),
-    rgba(3, 7, 10, 0.36);
+    radial-gradient(circle at 88% 88%, rgba(255, 255, 255, 0.48), transparent 36%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.48), rgba(var(--seal-rgb), 0.88) 24%, rgba(var(--seal-rgb), 0.72) 62%, rgba(var(--cyan-rgb), 0.42));
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.04),
-    inset -1px 0 0 rgba(var(--seal-rgb), 0.16),
-    0 0 18px rgba(var(--seal-rgb), 0.1),
-    0 10px 28px rgba(0, 0, 0, 0.24);
-}
-
-.tier-mark::before,
-.tier-mark::after {
-  color: var(--cyan);
-  opacity: 0.84;
-  text-shadow: 0 0 12px rgba(var(--cyan-rgb), 0.28);
-}
-
-.tier-mark::before {
-  content: "[";
-}
-
-.tier-mark::after {
-  content: "]";
+    inset 0 1px 0 rgba(255, 255, 255, 0.46),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.24),
+    0 0 24px rgba(var(--seal-rgb), 0.22),
+    0 10px 28px rgba(0, 0, 0, 0.3);
 }
 
 .tier-code {
-  color: var(--cyan);
-  text-shadow:
-    0 0 12px rgba(var(--cyan-rgb), 0.36),
-    0 8px 22px rgba(0, 0, 0, 0.86);
+  color: rgba(2, 7, 10, 0.96);
+  font-weight: 930;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.12);
 }
 
 .inspectable-tier .inspect-panel {
@@ -408,9 +379,15 @@ img {
 .inspectable-tier:hover .tier-mark,
 .inspectable-tier:focus-within .tier-mark,
 .surface-tag:hover {
-  border-color: rgba(var(--seal-rgb), 0.48);
-  color: var(--ink);
+  border-color: rgba(255, 255, 255, 0.58);
+  color: rgba(1, 4, 8, 0.96);
   transform: translateY(-1px);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.62),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.2),
+    0 0 28px rgba(var(--cyan-rgb), 0.22),
+    0 0 30px rgba(var(--seal-rgb), 0.16),
+    0 12px 30px rgba(0, 0, 0, 0.34);
 }
 
 .inspect-panel {
@@ -1586,7 +1563,17 @@ p {
   }
 
   .brand-lockup {
-    gap: 8px 10px;
+    display: inline-grid;
+    grid-template-columns: max-content max-content;
+    gap: 10px;
+  }
+
+  .inspectable-vraxion {
+    grid-column: 1 / -1;
+  }
+
+  .eyebrow-divider {
+    display: none;
   }
 
   .eyebrow-logo {
@@ -1648,15 +1635,15 @@ p {
 
   .surface-tag,
   .tier-mark {
-    min-height: 26px;
-    padding: 0 8px;
-    font-size: 0.62rem;
+    min-height: 24px;
+    padding: 0 12px;
+    font-size: 0.72rem;
   }
 
   .tier-mark {
-    gap: 5px;
-    max-width: min(100%, 13.2rem);
-    white-space: normal;
+    gap: 6px;
+    max-width: min(100%, 14.6rem);
+    white-space: nowrap;
   }
 
   .signal-rail-primary,
