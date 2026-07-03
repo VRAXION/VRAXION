@@ -47,6 +47,9 @@ EXPECTED_CRATES = {"alphasync-core", "alphasync-runtime"}
 
 PUBLIC_BINARY_ASSETS = {
     "docs/assets/vraxion-home-hero.jpg",
+    "docs/instnct/assets/instnct-hero-bg.png",
+    "docs/instnct/assets/instnct-wordmark.png",
+    "docs/instnct/assets/vraxion-note-bg.png",
     "docs/vngard/assets/alpha-sync-fabric-card.jpg",
     "docs/vngard/assets/mutation-core-card.jpg",
     "docs/vngard/assets/prismion-atom-card.jpg",
