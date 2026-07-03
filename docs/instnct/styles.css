@@ -248,7 +248,7 @@ img {
   color: inherit;
   background: transparent;
   font: inherit;
-  cursor: help;
+  cursor: pointer;
 }
 
 .inspect-trigger:focus-visible {
@@ -259,6 +259,11 @@ img {
 
 .logo-trigger {
   position: relative;
+  cursor: pointer;
+}
+
+.logo-trigger img {
+  cursor: pointer;
 }
 
 .logo-trigger::after {
