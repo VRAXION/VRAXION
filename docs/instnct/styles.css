@@ -734,131 +734,345 @@ p {
   text-wrap: pretty;
 }
 
-.mission-grid {
+.mission-system {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
+  gap: 18px;
+  margin-top: 34px;
 }
 
-.mission-panel {
+.signal-rail,
+.roadmap-rail,
+.mark-boundary {
   position: relative;
-  min-height: 190px;
-  padding: 18px;
+  isolation: isolate;
   overflow: hidden;
-  border: 1px solid rgba(var(--cyan-rgb), 0.14);
-  border-radius: 8px;
+  border-top: 1px solid rgba(var(--cyan-rgb), 0.22);
+  border-bottom: 1px solid rgba(var(--seal-rgb), 0.12);
+  border-radius: 6px;
   background:
-    linear-gradient(135deg, rgba(var(--cyan-rgb), 0.065), transparent 42%),
-    rgba(3, 7, 10, 0.48);
+    linear-gradient(90deg, rgba(var(--cyan-rgb), 0.07), transparent 34%, rgba(var(--seal-rgb), 0.045)),
+    linear-gradient(180deg, rgba(7, 16, 20, 0.76), rgba(3, 7, 10, 0.58));
   box-shadow:
-    inset 1px 0 0 rgba(var(--cyan-rgb), 0.28),
-    inset 0 1px 0 rgba(255, 255, 255, 0.035),
-    0 18px 44px rgba(0, 0, 0, 0.34);
+    inset 1px 0 0 rgba(var(--cyan-rgb), 0.2),
+    inset -1px 0 0 rgba(var(--seal-rgb), 0.14),
+    0 24px 60px rgba(0, 0, 0, 0.28);
 }
 
-.mission-panel::after {
+.signal-rail::before,
+.roadmap-rail::before,
+.mark-boundary::before {
   content: "";
   position: absolute;
-  right: -36px;
-  bottom: -48px;
-  width: 128px;
-  height: 128px;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(var(--cyan-rgb), 0.14), transparent 66%);
-  filter: blur(4px);
-}
-
-.mission-panel-large {
-  grid-column: span 2;
-}
-
-.mission-panel-accent {
-  border-color: rgba(var(--seal-rgb), 0.18);
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
   background:
-    linear-gradient(135deg, rgba(var(--seal-rgb), 0.08), transparent 42%),
-    rgba(3, 7, 10, 0.48);
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.026) 0 1px, transparent 1px 74px),
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.018) 0 1px, transparent 1px 32px);
+  opacity: 0.32;
+  mask-image: linear-gradient(90deg, black, transparent 72%);
+}
+
+.signal-rail::after,
+.roadmap-rail::after,
+.mark-boundary::after {
+  content: "";
+  position: absolute;
+  right: 22px;
+  bottom: 0;
+  left: 22px;
+  height: 1px;
+  background: linear-gradient(90deg, rgba(var(--cyan-rgb), 0.84), rgba(var(--seal-rgb), 0.72), transparent);
+  opacity: 0.56;
   box-shadow:
-    inset 1px 0 0 rgba(var(--seal-rgb), 0.34),
-    inset 0 1px 0 rgba(255, 255, 255, 0.035),
-    0 18px 44px rgba(0, 0, 0, 0.34);
+    0 0 18px rgba(var(--cyan-rgb), 0.22),
+    0 0 18px rgba(var(--seal-rgb), 0.16);
 }
 
-.mission-panel-accent::after {
-  background: radial-gradient(circle, rgba(var(--seal-rgb), 0.14), transparent 66%);
+.signal-rail {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 0.48fr);
+  gap: clamp(22px, 4vw, 54px);
+  align-items: end;
+  padding: clamp(22px, 3vw, 34px);
 }
 
-.mission-panel span {
+.signal-rail-primary {
+  min-height: 238px;
+}
+
+.mission-console-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.signal-rail-compact {
+  grid-template-columns: 1fr;
+  min-height: 250px;
+}
+
+.signal-rail-status {
+  border-top-color: rgba(var(--seal-rgb), 0.22);
+}
+
+.rail-copy {
+  position: relative;
+  z-index: 1;
+  max-width: 720px;
+}
+
+.rail-kicker,
+.boundary-label span,
+.roadmap-track span {
   display: block;
-  margin-bottom: 12px;
   color: var(--cyan);
   font-family: "SFMono-Regular", "Cascadia Code", Consolas, "Liberation Mono", ui-monospace, monospace;
   font-size: 0.66rem;
   font-weight: 820;
+  letter-spacing: 0;
   text-transform: uppercase;
+  text-shadow: 0 0 16px rgba(var(--cyan-rgb), 0.24);
 }
 
-.mission-panel-accent span {
+.signal-rail-status .rail-kicker,
+.mark-boundary .boundary-label span {
   color: #ffc4d3;
+  text-shadow: 0 0 16px rgba(var(--seal-rgb), 0.22);
 }
 
-.mission-panel h3 {
-  position: relative;
-  z-index: 1;
-  margin: 0 0 10px;
-  color: #f0fdff;
-  font-size: clamp(1.18rem, 1.55vw, 1.55rem);
-  font-weight: 780;
-  line-height: 1.06;
+.rail-copy h3,
+.roadmap-head h3,
+.boundary-label strong {
+  margin: 10px 0 0;
+  color: #f1fdff;
+  font-size: clamp(1.35rem, 2.15vw, 2.25rem);
+  font-weight: 800;
+  line-height: 1.02;
   text-wrap: balance;
 }
 
-.mission-panel p {
-  position: relative;
-  z-index: 1;
-  margin: 0;
-  color: #b9d9df;
-  font-size: 0.94rem;
+.signal-rail-compact .rail-copy h3 {
+  font-size: clamp(1.2rem, 1.55vw, 1.6rem);
+}
+
+.rail-copy p,
+.roadmap-head p,
+.mark-boundary p {
+  margin: 14px 0 0;
+  color: #b9dce3;
+  font-size: clamp(0.95rem, 1.05vw, 1.05rem);
   font-weight: 480;
-  line-height: 1.52;
+  line-height: 1.55;
   text-wrap: pretty;
 }
 
-.mission-boundary {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 12px 18px;
-  margin-top: 22px;
-  padding-top: 18px;
-  border-top: 1px solid rgba(var(--cyan-rgb), 0.14);
-}
-
-.mission-boundary p {
-  flex: 1 1 520px;
+.rail-tokens {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: 13px;
+  align-content: end;
   margin: 0;
-  color: #96bac2;
-  font-size: 0.88rem;
-  line-height: 1.5;
+  padding: 24px 0 4px;
+  list-style: none;
 }
 
-.mission-boundary a {
+.rail-tokens::before {
+  content: "";
+  position: absolute;
+  top: 7px;
+  right: 0;
+  left: 0;
+  height: 1px;
+  background: linear-gradient(90deg, rgba(var(--cyan-rgb), 0.72), rgba(var(--seal-rgb), 0.58), transparent);
+  box-shadow: 0 0 20px rgba(var(--cyan-rgb), 0.18);
+}
+
+.rail-tokens li {
+  position: relative;
+  min-height: 28px;
+  padding-left: 20px;
+  color: #d9fbff;
+  font-family: "SFMono-Regular", "Cascadia Code", Consolas, "Liberation Mono", ui-monospace, monospace;
+  font-size: 0.72rem;
+  font-weight: 820;
+  line-height: 1.25;
+  text-transform: uppercase;
+}
+
+.rail-tokens li::before {
+  content: "";
+  position: absolute;
+  top: 0.42em;
+  left: 1px;
+  width: 7px;
+  height: 7px;
+  border: 1px solid rgba(var(--cyan-rgb), 0.9);
+  border-radius: 50%;
+  background: rgba(var(--cyan-rgb), 0.42);
+  box-shadow: 0 0 16px rgba(var(--cyan-rgb), 0.42);
+}
+
+.rail-tokens li:nth-child(even)::before,
+.signal-rail-status .rail-tokens li::before {
+  border-color: rgba(var(--seal-rgb), 0.9);
+  background: rgba(var(--seal-rgb), 0.42);
+  box-shadow: 0 0 16px rgba(var(--seal-rgb), 0.38);
+}
+
+.rail-tokens-inline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 18px;
+  align-content: start;
+  padding-top: 20px;
+}
+
+.rail-tokens-inline li {
+  min-height: 24px;
+}
+
+.roadmap-rail {
+  display: grid;
+  grid-template-columns: minmax(0, 0.78fr) minmax(420px, 1fr);
+  gap: clamp(24px, 4vw, 56px);
+  align-items: end;
+  padding: clamp(24px, 3vw, 34px);
+}
+
+.roadmap-head {
+  max-width: 560px;
+}
+
+.roadmap-track {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+  margin: 0;
+  padding: 34px 0 0;
+  list-style: none;
+  counter-reset: roadmap;
+}
+
+.roadmap-track::before {
+  content: "";
+  position: absolute;
+  top: 12px;
+  right: 0;
+  left: 0;
+  height: 1px;
+  background: linear-gradient(90deg, rgba(var(--cyan-rgb), 0.82), rgba(var(--seal-rgb), 0.74), rgba(var(--cyan-rgb), 0.24));
+  box-shadow:
+    0 0 18px rgba(var(--cyan-rgb), 0.22),
+    0 0 18px rgba(var(--seal-rgb), 0.14);
+}
+
+.roadmap-track li {
+  position: relative;
+  min-height: 92px;
+  padding-top: 16px;
+  counter-increment: roadmap;
+}
+
+.roadmap-track li::before {
+  content: "";
+  position: absolute;
+  top: -27px;
+  left: 0;
+  width: 11px;
+  height: 11px;
+  border: 1px solid rgba(var(--cyan-rgb), 0.88);
+  border-radius: 50%;
+  background: #061016;
+  box-shadow: 0 0 18px rgba(var(--cyan-rgb), 0.38);
+}
+
+.roadmap-track li:nth-child(2)::before,
+.roadmap-track li:nth-child(3)::before {
+  border-color: rgba(var(--seal-rgb), 0.86);
+  box-shadow: 0 0 18px rgba(var(--seal-rgb), 0.34);
+}
+
+.roadmap-track li::after {
+  content: "0" counter(roadmap);
+  position: absolute;
+  top: -39px;
+  left: 18px;
+  color: rgba(218, 251, 255, 0.4);
+  font-family: "SFMono-Regular", "Cascadia Code", Consolas, "Liberation Mono", ui-monospace, monospace;
+  font-size: 0.62rem;
+  font-weight: 820;
+}
+
+.roadmap-track strong {
+  display: block;
+  margin-top: 7px;
+  color: #effcff;
+  font-size: clamp(1rem, 1.25vw, 1.18rem);
+  font-weight: 770;
+  line-height: 1.12;
+}
+
+.mark-boundary {
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr) auto;
+  gap: 22px;
+  align-items: center;
+  padding: 22px 24px;
+  border-top-color: rgba(var(--seal-rgb), 0.22);
+}
+
+.boundary-label strong {
+  margin-top: 8px;
+  font-size: 1.02rem;
+}
+
+.mark-boundary p {
+  margin: 0;
+  color: #9fc7ce;
+  font-size: 0.88rem;
+}
+
+.boundary-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.boundary-links a {
   display: inline-flex;
   align-items: center;
-  min-height: 34px;
+  justify-content: center;
+  min-height: 36px;
   padding: 0 12px;
   border: 1px solid rgba(var(--cyan-rgb), 0.22);
   border-radius: 6px;
   color: #cffaff;
-  background: rgba(3, 7, 10, 0.36);
+  background:
+    linear-gradient(180deg, rgba(var(--cyan-rgb), 0.055), rgba(3, 7, 10, 0.34)),
+    rgba(3, 7, 10, 0.36);
   font-family: "SFMono-Regular", "Cascadia Code", Consolas, "Liberation Mono", ui-monospace, monospace;
   font-size: 0.68rem;
   font-weight: 820;
   text-transform: uppercase;
+  white-space: nowrap;
 }
 
-.mission-boundary a:hover,
-.mission-boundary a:focus-visible {
-  border-color: rgba(var(--cyan-rgb), 0.48);
+.boundary-links a:nth-child(2) {
+  border-color: rgba(var(--seal-rgb), 0.26);
+  color: #ffd1dc;
+  background:
+    linear-gradient(180deg, rgba(var(--seal-rgb), 0.055), rgba(3, 7, 10, 0.34)),
+    rgba(3, 7, 10, 0.36);
+}
+
+.boundary-links a:hover,
+.boundary-links a:focus-visible {
+  border-color: rgba(var(--cyan-rgb), 0.52);
   color: #ffffff;
 }
 
@@ -969,24 +1183,95 @@ p {
     line-height: 0.98;
   }
 
-  .mission-grid {
+  .mission-system {
+    gap: 12px;
+    margin-top: 24px;
+  }
+
+  .signal-rail,
+  .roadmap-rail,
+  .mark-boundary {
+    border-radius: 6px;
+  }
+
+  .signal-rail,
+  .roadmap-rail {
     grid-template-columns: 1fr;
+    gap: 18px;
+    padding: 18px 16px 20px;
+  }
+
+  .signal-rail-primary,
+  .signal-rail-compact {
+    min-height: 0;
+  }
+
+  .mission-console-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .rail-copy h3,
+  .roadmap-head h3 {
+    font-size: clamp(1.22rem, 7vw, 1.65rem);
+    line-height: 1.08;
+  }
+
+  .rail-copy p,
+  .roadmap-head p {
+    font-size: 0.93rem;
+  }
+
+  .rail-tokens,
+  .rail-tokens-inline {
+    display: grid;
     gap: 10px;
   }
 
-  .mission-panel,
-  .mission-panel-large {
-    grid-column: auto;
+  .roadmap-track {
+    grid-template-columns: 1fr;
+    gap: 12px;
+    padding: 0 0 0 22px;
+  }
+
+  .roadmap-track::before {
+    top: 0;
+    bottom: 0;
+    left: 5px;
+    width: 1px;
+    height: auto;
+    background: linear-gradient(180deg, rgba(var(--cyan-rgb), 0.82), rgba(var(--seal-rgb), 0.74), transparent);
+  }
+
+  .roadmap-track li {
     min-height: 0;
-    padding: 16px;
+    padding: 0 0 0 8px;
   }
 
-  .mission-boundary {
+  .roadmap-track li::before {
+    top: 0.25rem;
+    left: -21px;
+  }
+
+  .roadmap-track li::after {
+    top: 0;
+    right: 0;
+    left: auto;
+  }
+
+  .mark-boundary {
+    grid-template-columns: 1fr;
+    gap: 14px;
     align-items: stretch;
+    padding: 18px 16px;
   }
 
-  .mission-boundary a {
-    justify-content: center;
+  .boundary-links {
+    justify-content: stretch;
+  }
+
+  .boundary-links a {
+    flex: 1 1 160px;
   }
 
   .wordmark {
