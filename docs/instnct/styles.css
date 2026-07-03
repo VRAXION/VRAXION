@@ -459,6 +459,42 @@ p {
     drop-shadow(0 10px 36px rgba(0, 0, 0, 0.68));
 }
 
+.creator-line {
+  display: inline-flex;
+  align-items: center;
+  max-width: min(100%, 680px);
+  min-height: 22px;
+  margin: -8px 0 18px;
+  color: #a9d0d7;
+  font-family: "SFMono-Regular", "Cascadia Code", Consolas, "Liberation Mono", ui-monospace, monospace;
+  font-size: clamp(0.68rem, 0.8vw, 0.78rem);
+  font-weight: 780;
+  line-height: 1.35;
+  letter-spacing: 0;
+  text-transform: uppercase;
+  text-shadow: 0 10px 28px rgba(0, 0, 0, 0.72);
+}
+
+.creator-line::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  margin-right: 9px;
+  border: 1px solid rgba(var(--cyan-rgb), 0.82);
+  border-radius: 50%;
+  background: rgba(var(--cyan-rgb), 0.28);
+  box-shadow: 0 0 16px rgba(var(--cyan-rgb), 0.36);
+}
+
+.creator-line span {
+  margin-left: 6px;
+  color: #ffd4de;
+  text-shadow:
+    0 0 16px rgba(var(--seal-rgb), 0.22),
+    0 0 12px rgba(var(--cyan-rgb), 0.14),
+    0 10px 28px rgba(0, 0, 0, 0.72);
+}
+
 .hero-headline {
   max-width: 680px;
   margin-bottom: 13px;
@@ -1277,6 +1313,11 @@ p {
   .wordmark {
     max-width: min(100%, 24rem);
     margin-bottom: 18px;
+  }
+
+  .creator-line {
+    margin: -6px 0 16px;
+    font-size: 0.66rem;
   }
 
   .hero-headline {
