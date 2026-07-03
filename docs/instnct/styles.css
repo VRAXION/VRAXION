@@ -295,45 +295,93 @@ p {
 }
 
 .principle-list {
-  max-width: 690px;
+  max-width: 650px;
   display: grid;
-  grid-template-columns: repeat(4, max-content);
-  gap: 9px 18px;
-  margin: 0 0 22px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 9px 12px;
+  margin: 0 0 24px;
   padding: 0;
   list-style: none;
 }
 
 .principle-list li {
-  display: inline-flex;
-  align-items: center;
+  position: relative;
+  display: grid;
+  gap: 2px;
   min-width: 0;
-  color: #dffaff;
-  font-size: clamp(0.82rem, 0.9vw, 0.94rem);
-  font-weight: 650;
-  line-height: 1.2;
+  min-height: 50px;
+  padding: 9px 12px 9px 15px;
+  overflow: hidden;
+  color: #e9fdff;
+  background:
+    linear-gradient(90deg, rgba(var(--cyan-rgb), 0.075), rgba(3, 7, 10, 0.16) 72%, rgba(3, 7, 10, 0)),
+    rgba(3, 7, 10, 0.12);
+  box-shadow:
+    inset 1px 0 0 rgba(var(--cyan-rgb), 0.72),
+    inset 0 1px 0 rgba(255, 255, 255, 0.025),
+    0 12px 28px rgba(0, 0, 0, 0.34);
+}
+
+.principle-list li::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 2px;
+  background: var(--cyan);
+  box-shadow: 0 0 16px rgba(var(--cyan-rgb), 0.56);
+}
+
+.principle-list li::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 44px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(var(--cyan-rgb), 0.28));
+}
+
+.principle-list li span {
+  color: inherit;
+  font-size: clamp(0.82rem, 0.86vw, 0.92rem);
+  font-weight: 760;
+  line-height: 1.15;
   text-shadow:
     0 0 18px rgba(var(--cyan-rgb), 0.13),
     0 10px 26px rgba(0, 0, 0, 0.82);
 }
 
-.principle-list li::before {
-  content: "";
-  width: 5px;
-  height: 5px;
-  margin-right: 9px;
-  border-radius: 50%;
-  background: var(--cyan);
-  box-shadow: 0 0 12px rgba(var(--cyan-rgb), 0.46);
+.principle-list li small {
+  color: #9fcbd2;
+  font-size: clamp(0.66rem, 0.72vw, 0.74rem);
+  font-weight: 620;
+  line-height: 1.15;
+  text-transform: uppercase;
+  text-shadow: 0 8px 18px rgba(0, 0, 0, 0.8);
 }
 
 .principle-list li:nth-child(even) {
-  color: #ffd4dd;
+  color: #ffdbe3;
+  background:
+    linear-gradient(90deg, rgba(var(--seal-rgb), 0.08), rgba(3, 7, 10, 0.16) 72%, rgba(3, 7, 10, 0)),
+    rgba(3, 7, 10, 0.12);
+  box-shadow:
+    inset 1px 0 0 rgba(var(--seal-rgb), 0.68),
+    inset 0 1px 0 rgba(255, 255, 255, 0.025),
+    0 12px 28px rgba(0, 0, 0, 0.34);
 }
 
 .principle-list li:nth-child(even)::before {
   background: var(--seal);
-  box-shadow: 0 0 12px rgba(var(--seal-rgb), 0.42);
+  box-shadow: 0 0 16px rgba(var(--seal-rgb), 0.52);
+}
+
+.principle-list li:nth-child(even)::after {
+  background: linear-gradient(90deg, transparent, rgba(var(--seal-rgb), 0.3));
+}
+
+.principle-list li:nth-child(even) small {
+  color: #d9adb8;
 }
 
 .status-row {
@@ -458,8 +506,17 @@ p {
 
   .principle-list {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 9px 16px;
+    gap: 9px;
     margin-bottom: 22px;
+  }
+
+  .principle-list li {
+    min-height: 48px;
+    padding: 8px 9px 8px 12px;
+  }
+
+  .principle-list li small {
+    font-size: 0.62rem;
   }
 
   .status-row {
