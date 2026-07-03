@@ -111,7 +111,7 @@ img {
 }
 
 .brand img {
-  width: 112px;
+  width: 142px;
   height: auto;
   filter:
     drop-shadow(0 0 10px rgba(var(--cyan-rgb), 0.16))
@@ -199,12 +199,12 @@ img {
 .brand-lockup {
   display: inline-flex;
   align-items: center;
-  gap: 10px;
-  min-height: 22px;
+  gap: 12px;
+  min-height: 28px;
 }
 
 .eyebrow-logo {
-  width: 96px;
+  width: 146px;
   height: auto;
   filter:
     drop-shadow(0 0 12px rgba(var(--cyan-rgb), 0.2))
@@ -284,11 +284,11 @@ p {
   }
 
   .brand {
-    min-width: 98px;
+    min-width: 116px;
   }
 
   .brand img {
-    width: 98px;
+    width: 116px;
   }
 
   .nav {
@@ -321,7 +321,7 @@ p {
   }
 
   .eyebrow-logo {
-    width: 82px;
+    width: 118px;
   }
 
   .wordmark {
@@ -332,5 +332,28 @@ p {
   .lead {
     max-width: 21rem;
     font-size: 1rem;
+  }
+}
+
+@media (max-width: 360px) {
+  .site-header {
+    gap: 10px;
+    padding: 0 12px;
+  }
+
+  .brand {
+    min-width: 104px;
+  }
+
+  .brand img {
+    width: 104px;
+  }
+
+  .nav {
+    gap: 7px;
+  }
+
+  .nav a {
+    font-size: 0.78rem;
   }
 }
