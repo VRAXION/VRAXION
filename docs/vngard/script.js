@@ -30,8 +30,6 @@
 
     canvas.width = Math.floor(width * pixelRatio);
     canvas.height = Math.floor(height * pixelRatio);
-    canvas.style.width = `${width}px`;
-    canvas.style.height = `${height}px`;
 
     ctx.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
   }
