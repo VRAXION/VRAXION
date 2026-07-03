@@ -199,6 +199,7 @@ img {
 .brand-lockup {
   display: inline-flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 12px;
   min-height: 28px;
 }
@@ -215,6 +216,25 @@ img {
   width: 1px;
   height: 16px;
   background: linear-gradient(180deg, rgba(var(--cyan-rgb), 0.08), rgba(var(--cyan-rgb), 0.72), rgba(var(--seal-rgb), 0.5));
+}
+
+.tier-mark {
+  color: #ffc4d3;
+  text-shadow:
+    0 0 14px rgba(var(--seal-rgb), 0.22),
+    0 6px 20px rgba(0, 0, 0, 0.8);
+}
+
+.tier-mark::before {
+  content: "[";
+  margin-right: 3px;
+  color: rgba(var(--cyan-rgb), 0.82);
+}
+
+.tier-mark::after {
+  content: "]";
+  margin-left: 3px;
+  color: rgba(var(--cyan-rgb), 0.82);
 }
 
 h1,
@@ -337,6 +357,10 @@ p {
 
   .eyebrow {
     margin-bottom: 14px;
+  }
+
+  .brand-lockup {
+    gap: 8px 10px;
   }
 
   .eyebrow-logo {
