@@ -50,6 +50,18 @@ img {
   max-width: 100%;
 }
 
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 .skip-link {
   position: fixed;
   top: 12px;
@@ -156,7 +168,7 @@ img {
 
 .hero-content {
   grid-column: 2;
-  width: min(670px, 62vw);
+  width: min(840px, 68vw);
   padding: calc(var(--header-h) + 88px) 0 90px;
   text-shadow: 0 4px 34px rgba(0, 0, 0, 0.9);
 }
@@ -180,11 +192,19 @@ p {
   margin-top: 0;
 }
 
-h1 {
+.wordmark {
+  max-width: min(820px, 60vw);
   margin-bottom: 20px;
-  font-size: clamp(4rem, 10vw, 8.4rem);
-  line-height: 0.86;
-  letter-spacing: 0;
+  line-height: 1;
+}
+
+.wordmark-image {
+  width: 100%;
+  height: auto;
+  filter:
+    drop-shadow(0 0 22px rgba(var(--cyan-rgb), 0.18))
+    drop-shadow(0 0 18px rgba(var(--seal-rgb), 0.14))
+    drop-shadow(0 10px 36px rgba(0, 0, 0, 0.68));
 }
 
 .lead {
@@ -257,8 +277,9 @@ h1 {
     padding: 118px 0 52px;
   }
 
-  h1 {
-    font-size: clamp(3.35rem, 18vw, 4.4rem);
+  .wordmark {
+    max-width: min(100%, 24rem);
+    margin-bottom: 18px;
   }
 
   .lead {

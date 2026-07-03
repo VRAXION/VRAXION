@@ -206,6 +206,7 @@ $maxPublicBinaryAssetBytes = 4MB
 $publicBinaryAssets = @(
     "docs/assets/vraxion-home-hero.jpg",
     "docs/instnct/assets/instnct-hero-bg.png",
+    "docs/instnct/assets/instnct-wordmark.png",
     "docs/vngard/assets/alpha-sync-fabric-card.jpg",
     "docs/vngard/assets/mutation-core-card.jpg",
     "docs/vngard/assets/prismion-atom-card.jpg",
@@ -334,6 +335,7 @@ try {
         "docs/assets/vraxion-home-hero.jpg",
         "docs/CURRENT_STATUS.md",
         "docs/instnct/assets/instnct-hero-bg.png",
+        "docs/instnct/assets/instnct-wordmark.png",
         "docs/instnct/index.html",
         "docs/instnct/styles.css",
         "docs/PUBLIC_SURFACE_POLICY.md",
