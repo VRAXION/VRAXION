@@ -205,6 +205,7 @@ $forbiddenPublicPathFragments = @(
 $maxPublicBinaryAssetBytes = 4MB
 $publicBinaryAssets = @(
     "docs/assets/vraxion-home-hero.jpg",
+    "docs/assets/vraxion-wordmark.png",
     "docs/instnct/assets/instnct-hero-bg.png",
     "docs/instnct/assets/instnct-wordmark.png",
     "docs/vngard/assets/alpha-sync-fabric-card.jpg",
@@ -272,6 +273,7 @@ try {
         "docs\.nojekyll",
         "docs\assets\favicon.svg",
         "docs\assets\vraxion-home-hero.jpg",
+        "docs\assets\vraxion-wordmark.png",
         "docs\CURRENT_STATUS.md",
         "docs\PUBLIC_SURFACE_POLICY.md",
         "docs\VERSION.json",
@@ -333,6 +335,7 @@ try {
         "docs/.nojekyll",
         "docs/assets/favicon.svg",
         "docs/assets/vraxion-home-hero.jpg",
+        "docs/assets/vraxion-wordmark.png",
         "docs/CURRENT_STATUS.md",
         "docs/instnct/assets/instnct-hero-bg.png",
         "docs/instnct/assets/instnct-wordmark.png",

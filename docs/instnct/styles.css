@@ -110,6 +110,14 @@ img {
   color: var(--ink);
 }
 
+.brand img {
+  width: 112px;
+  height: auto;
+  filter:
+    drop-shadow(0 0 10px rgba(var(--cyan-rgb), 0.16))
+    drop-shadow(0 0 9px rgba(var(--seal-rgb), 0.12));
+}
+
 .nav {
   display: flex;
   align-items: center;
@@ -125,7 +133,7 @@ img {
   min-height: 100svh;
   display: grid;
   grid-template-columns: minmax(24px, 1fr) minmax(0, var(--max)) minmax(24px, 1fr);
-  align-items: end;
+  align-items: start;
   overflow: hidden;
   isolation: isolate;
 }
@@ -167,10 +175,10 @@ img {
 }
 
 .hero-content {
-  grid-column: 2;
-  width: min(840px, 68vw);
-  margin-left: clamp(-72px, -4vw, -40px);
-  padding: calc(var(--header-h) + 76px) 0 clamp(138px, 14vh, 174px);
+  grid-column: 1 / -1;
+  width: min(760px, calc(100vw - 48px));
+  margin-left: clamp(28px, 5vw, 96px);
+  padding: calc(var(--header-h) + clamp(74px, 10vh, 124px)) 0 72px;
   text-shadow: 0 4px 34px rgba(0, 0, 0, 0.9);
 }
 
@@ -182,10 +190,31 @@ img {
 }
 
 .eyebrow {
-  margin: 0 0 16px;
+  margin: 0 0 18px;
   color: var(--cyan);
   font-size: 0.78rem;
   font-weight: 820;
+}
+
+.brand-lockup {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 22px;
+}
+
+.eyebrow-logo {
+  width: 96px;
+  height: auto;
+  filter:
+    drop-shadow(0 0 12px rgba(var(--cyan-rgb), 0.2))
+    drop-shadow(0 0 10px rgba(var(--seal-rgb), 0.14));
+}
+
+.eyebrow-divider {
+  width: 1px;
+  height: 16px;
+  background: linear-gradient(180deg, rgba(var(--cyan-rgb), 0.08), rgba(var(--cyan-rgb), 0.72), rgba(var(--seal-rgb), 0.5));
 }
 
 h1,
@@ -194,7 +223,7 @@ p {
 }
 
 .wordmark {
-  max-width: min(820px, 60vw);
+  max-width: min(720px, 72vw);
   margin-bottom: 20px;
   line-height: 1;
 }
@@ -254,6 +283,14 @@ p {
     font-size: 0.86rem;
   }
 
+  .brand {
+    min-width: 98px;
+  }
+
+  .brand img {
+    width: 98px;
+  }
+
   .nav {
     gap: 10px;
   }
@@ -274,9 +311,17 @@ p {
   }
 
   .hero-content {
-    width: 100%;
-    margin-left: 0;
-    padding: 118px 0 86px;
+    width: calc(100% - 32px);
+    margin-left: 16px;
+    padding: calc(var(--header-h) + 78px) 0 62px;
+  }
+
+  .eyebrow {
+    margin-bottom: 14px;
+  }
+
+  .eyebrow-logo {
+    width: 82px;
   }
 
   .wordmark {
