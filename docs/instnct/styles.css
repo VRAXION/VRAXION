@@ -342,6 +342,10 @@ p {
 }
 
 .principle-list li span {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   color: inherit;
   font-size: clamp(0.82rem, 0.86vw, 0.92rem);
   font-weight: 760;
@@ -351,7 +355,36 @@ p {
     0 10px 26px rgba(0, 0, 0, 0.82);
 }
 
+.principle-list li span::before {
+  content: "";
+  flex: 0 0 auto;
+  width: 14px;
+  height: 14px;
+  border: 1px solid rgba(var(--cyan-rgb), 0.64);
+  border-radius: 3px;
+  background:
+    linear-gradient(135deg, rgba(var(--cyan-rgb), 0.18), rgba(3, 7, 10, 0.12) 58%),
+    rgba(3, 7, 10, 0.38);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 0 12px rgba(var(--cyan-rgb), 0.22);
+}
+
+.principle-list li span::after {
+  content: "";
+  position: absolute;
+  left: 4px;
+  top: 50%;
+  width: 4px;
+  height: 8px;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: translateY(-62%) rotate(42deg);
+  filter: drop-shadow(0 0 5px rgba(var(--cyan-rgb), 0.36));
+}
+
 .principle-list li small {
+  margin-left: 22px;
   color: #9fcbd2;
   font-size: clamp(0.66rem, 0.72vw, 0.74rem);
   font-weight: 620;
@@ -382,6 +415,20 @@ p {
 
 .principle-list li:nth-child(even) small {
   color: #d9adb8;
+}
+
+.principle-list li:nth-child(even) span::before {
+  border-color: rgba(var(--seal-rgb), 0.6);
+  background:
+    linear-gradient(135deg, rgba(var(--seal-rgb), 0.18), rgba(3, 7, 10, 0.12) 58%),
+    rgba(3, 7, 10, 0.38);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 0 12px rgba(var(--seal-rgb), 0.2);
+}
+
+.principle-list li:nth-child(even) span::after {
+  filter: drop-shadow(0 0 5px rgba(var(--seal-rgb), 0.34));
 }
 
 .status-row {
@@ -515,7 +562,25 @@ p {
     padding: 8px 9px 8px 12px;
   }
 
+  .principle-list li span {
+    gap: 6px;
+  }
+
+  .principle-list li span::before {
+    width: 12px;
+    height: 12px;
+  }
+
+  .principle-list li span::after {
+    left: 3px;
+    width: 4px;
+    height: 7px;
+    border-right-width: 1.5px;
+    border-bottom-width: 1.5px;
+  }
+
   .principle-list li small {
+    margin-left: 12px;
     font-size: 0.62rem;
   }
 
@@ -550,5 +615,10 @@ p {
 
   .nav a {
     font-size: 0.78rem;
+  }
+
+  .principle-list li small {
+    margin-left: 0;
+    font-size: 0.6rem;
   }
 }
