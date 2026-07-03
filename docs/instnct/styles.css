@@ -284,7 +284,7 @@ p {
 
 .lead {
   max-width: 690px;
-  margin-bottom: 24px;
+  margin-bottom: 14px;
   color: #d1f4f8;
   font-size: clamp(1rem, 1.08vw, 1.12rem);
   font-weight: 450;
@@ -292,6 +292,48 @@ p {
   letter-spacing: 0;
   text-wrap: pretty;
   text-shadow: 0 12px 30px rgba(0, 0, 0, 0.78);
+}
+
+.principle-list {
+  max-width: 690px;
+  display: grid;
+  grid-template-columns: repeat(4, max-content);
+  gap: 9px 18px;
+  margin: 0 0 22px;
+  padding: 0;
+  list-style: none;
+}
+
+.principle-list li {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+  color: #dffaff;
+  font-size: clamp(0.82rem, 0.9vw, 0.94rem);
+  font-weight: 650;
+  line-height: 1.2;
+  text-shadow:
+    0 0 18px rgba(var(--cyan-rgb), 0.13),
+    0 10px 26px rgba(0, 0, 0, 0.82);
+}
+
+.principle-list li::before {
+  content: "";
+  width: 5px;
+  height: 5px;
+  margin-right: 9px;
+  border-radius: 50%;
+  background: var(--cyan);
+  box-shadow: 0 0 12px rgba(var(--cyan-rgb), 0.46);
+}
+
+.principle-list li:nth-child(even) {
+  color: #ffd4dd;
+}
+
+.principle-list li:nth-child(even)::before {
+  background: var(--seal);
+  box-shadow: 0 0 12px rgba(var(--seal-rgb), 0.42);
 }
 
 .status-row {
@@ -412,6 +454,12 @@ p {
   .lead {
     max-width: 21rem;
     font-size: 0.95rem;
+  }
+
+  .principle-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 9px 16px;
+    margin-bottom: 22px;
   }
 
   .status-row {
