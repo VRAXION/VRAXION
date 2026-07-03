@@ -169,7 +169,8 @@ img {
 .hero-content {
   grid-column: 2;
   width: min(840px, 68vw);
-  padding: calc(var(--header-h) + 88px) 0 90px;
+  margin-left: clamp(-72px, -4vw, -40px);
+  padding: calc(var(--header-h) + 76px) 0 clamp(138px, 14vh, 174px);
   text-shadow: 0 4px 34px rgba(0, 0, 0, 0.9);
 }
 
@@ -274,7 +275,8 @@ p {
 
   .hero-content {
     width: 100%;
-    padding: 118px 0 52px;
+    margin-left: 0;
+    padding: 118px 0 86px;
   }
 
   .wordmark {
