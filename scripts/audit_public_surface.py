@@ -27,6 +27,7 @@ FORBIDDEN_PATH_PARTS = [
     marker("vraxion-", "runtime"),
     marker("docs/", "research"),
     marker("tools/", "private_data_adapters"),
+    marker("docs/", "vngard"),
     marker("red", "b"),
 ]
 
@@ -76,12 +77,12 @@ PUBLIC_BINARY_ASSETS = {
     "docs/instnct/assets/instnct-logo.png",
     "docs/instnct/assets/t1-reflex-bg.jpg",
     "docs/instnct/assets/vraxion-note-bg.png",
-    "docs/vngard/assets/alpha-sync-fabric-card.jpg",
-    "docs/vngard/assets/mutation-core-card.jpg",
-    "docs/vngard/assets/prismion-atom-card.jpg",
-    "docs/vngard/assets/vngard-guardian-hero-bg.png",
-    "docs/vngard/assets/vngard-wordmark-logo.png",
-    "docs/vngard/assets/fonts/geist-sans-variable.woff2",
+    "disabled-surfaces/vngard/assets/alpha-sync-fabric-card.jpg",
+    "disabled-surfaces/vngard/assets/mutation-core-card.jpg",
+    "disabled-surfaces/vngard/assets/prismion-atom-card.jpg",
+    "disabled-surfaces/vngard/assets/vngard-guardian-hero-bg.png",
+    "disabled-surfaces/vngard/assets/vngard-wordmark-logo.png",
+    "disabled-surfaces/vngard/assets/fonts/geist-sans-variable.woff2",
 }
 
 MAX_PUBLIC_BINARY_ASSET_BYTES = 4 * 1024 * 1024

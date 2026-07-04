@@ -76,9 +76,15 @@ const sitemapUrl = `${baseUrl}/sitemap.xml`;
 
 const home = await fetchText(homeUrl, "home");
 const instnct = await fetchText(instnctUrl, "INSTNCT");
-const vngard = await fetchText(vngardUrl, "hidden VNGARD");
 const robots = await fetchText(robotsUrl, "robots.txt");
 const sitemap = await fetchText(sitemapUrl, "sitemap.xml");
+let vngardStatus = 0;
+try {
+  const vngardResponse = await fetchWithTimeout(vngardUrl, { redirect: "manual" });
+  vngardStatus = vngardResponse.status;
+} catch (err) {
+  fail(`VNGARD public URL could not be checked: ${vngardUrl} ${err.message}`);
+}
 
 if (home && !home.includes(`releases/tag/${latestRelease}`)) fail("home does not expose the VERSION latest release");
 if (instnct && !instnct.includes(`archive/refs/tags/${latestRelease}.zip`)) {
@@ -102,14 +108,7 @@ if (home && /href=["'][^"']*vngard\/|VNGARD retained|Open roadmap concept/i.test
 if (instnct && /href=["'][^"']*vngard\/|VNGARD roadmap/i.test(instnct)) {
   fail("INSTNCT page exposes hidden VNGARD surface");
 }
-if (vngard && !vngard.includes("noindex,nofollow,noarchive")) fail("VNGARD page is not noindex");
-if (vngard && !vngard.includes("http-equiv='refresh' content='0; url=../'")) {
-  fail("VNGARD page does not redirect to the public homepage");
-}
-if (vngard && !vngard.includes("<link rel='canonical' href='https://vraxion.github.io/VRAXION/'>")) {
-  fail("VNGARD page canonical does not point to the public homepage");
-}
-if (vngard && !vngard.includes("<body hidden aria-hidden='true'>")) fail("VNGARD page body is not hidden");
+if (vngardStatus !== 404) fail(`VNGARD public URL must be absent from Pages, got HTTP ${vngardStatus}`);
 if (robots && !robots.includes(`${baseUrl}/sitemap.xml`)) fail("robots.txt does not point at the live sitemap");
 if (sitemap && !sitemap.includes(`${baseUrl}/instnct/`)) fail("sitemap.xml does not include INSTNCT");
 if (sitemap && sitemap.includes(`${baseUrl}/vngard/`)) fail("sitemap.xml exposes hidden VNGARD");
