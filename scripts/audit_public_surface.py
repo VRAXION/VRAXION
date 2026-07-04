@@ -65,6 +65,8 @@ FORBIDDEN_PUBLIC_COPY = [
     marker("P11 ", "SDK boundary"),
     marker("P11 ", "delivery decision"),
     marker("zero-state ", "SDK"),
+    marker("docs/", "vngard"),
+    marker("docs\\", "vngard"),
 ]
 
 EXPECTED_CRATES = {"alphasync-core", "alphasync-runtime"}

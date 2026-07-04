@@ -143,7 +143,18 @@ function assertSourceGuards() {
   for (const token of ["d1_databases", "vraxion-instnct-notify", "migrations_dir", "RATE_LIMIT_RETENTION_HOURS", "crons", "2026-07-04"]) {
     assert.equal(wranglerExample.includes(token), true, `wrangler example missing ${token}`);
   }
-  for (const token of ["INSTNCT_NOTIFY_ADMIN_TOKEN", "secret put ADMIN_TOKEN", "ADMIN_TOKEN"]) {
+  for (const token of [
+    "Preflight required secrets",
+    "CLOUDFLARE_API_TOKEN",
+    "CLOUDFLARE_ACCOUNT_ID",
+    "INSTNCT_NOTIFY_D1_DATABASE_ID",
+    "INSTNCT_NOTIFY_EMAIL_HASH_PEPPER",
+    "INSTNCT_NOTIFY_ADMIN_TOKEN",
+    "INSTNCT_NOTIFY_API_BASE",
+    "Missing GitHub secret",
+    "secret put ADMIN_TOKEN",
+    "ADMIN_TOKEN",
+  ]) {
     assert.equal(deployWorkflow.includes(token), true, `deploy workflow missing ${token}`);
   }
   for (const token of ["npx wrangler secret put ADMIN_TOKEN", "GET /admin/notify/export", "cleanup-rate-limits", "scheduled cleanup trigger"]) {

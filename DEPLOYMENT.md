@@ -8,9 +8,12 @@ Source:
 
 - `docs/index.html`
 - `docs/instnct/`
-- `docs/vngard/`
 - `docs/robots.txt`
 - `docs/sitemap.xml`
+
+Not published:
+
+- `disabled-surfaces/vngard/` is retained in the repository as a disabled draft only. It must not be moved back under `docs/` until the surface is intentionally approved for public release.
 
 Deployment target:
 
