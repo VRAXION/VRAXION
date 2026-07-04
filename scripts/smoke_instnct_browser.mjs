@@ -559,13 +559,25 @@ async function probeResponsiveViewports(browser, origin) {
     const instnct = await page.evaluate(() => {
       const active = document.querySelector(".mode-panel.is-active");
       const hero = document.querySelector(".hero");
+      const heroRect = hero?.getBoundingClientRect();
+      const nextRect = hero?.nextElementSibling?.getBoundingClientRect();
+      const nextSignal = hero?.nextElementSibling?.querySelector(".section-label, .section-heading, .center-heading");
+      const nextSignalRect = nextSignal?.getBoundingClientRect();
+      const nextSignalStyle = nextSignal ? getComputedStyle(nextSignal) : null;
       const nav = document.querySelector(".site-header .nav");
       const navRect = nav.getBoundingClientRect();
       return {
         overflow: document.documentElement.scrollWidth > document.documentElement.clientWidth,
         activePanelClipped: active ? active.scrollHeight > active.clientHeight + 1 : true,
         heroMeshDisplay: getComputedStyle(document.querySelector(".hero-mesh")).display,
-        heroHeight: hero ? Math.round(hero.getBoundingClientRect().height) : 0,
+        heroHeight: heroRect ? Math.round(heroRect.height) : 0,
+        heroNextTop: nextRect ? Math.round(nextRect.top) : null,
+        heroNextSignalTop: nextSignalRect ? Math.round(nextSignalRect.top) : null,
+        heroNextSignalVisible: nextSignalRect
+          ? nextSignalRect.top <= document.documentElement.clientHeight - 12 &&
+            Number(nextSignalStyle.opacity) > 0.8 &&
+            nextSignalStyle.visibility !== "hidden"
+          : false,
         headerNavClipped:
           nav.scrollWidth > nav.clientWidth + 1 ||
           navRect.left < -1 ||
@@ -575,6 +587,9 @@ async function probeResponsiveViewports(browser, origin) {
     if (instnct.overflow) fail(`INSTNCT ${label} has horizontal overflow`);
     if (instnct.activePanelClipped) fail(`INSTNCT ${label} exact mode panel clips`);
     if (instnct.heroMeshDisplay === "none") fail(`INSTNCT ${label} hero mesh is hidden`);
+    if (!instnct.heroNextSignalVisible) {
+      fail(`INSTNCT ${label} hero does not reveal next-section content in the first viewport: ${JSON.stringify(instnct)}`);
+    }
     if (viewport.width <= 420 && instnct.heroHeight > Math.max(920, viewport.height * 1.2)) {
       fail(`INSTNCT ${label} mobile hero is too tall: ${JSON.stringify(instnct)}`);
     }
