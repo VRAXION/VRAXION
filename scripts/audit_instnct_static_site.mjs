@@ -257,6 +257,11 @@ for (const forbiddenCopy of [
   "boundary text versioned in repo",
   "boundary and release target",
   "release boundaries",
+  "mode boundary",
+  "returns a boundary",
+  "public mark boundary",
+  "opt-in boundary",
+  ">boundary</span>",
 ]) {
   if (html.includes(forbiddenCopy)) fail(`unsafe or internal public copy is visible: ${forbiddenCopy}`);
 }

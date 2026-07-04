@@ -25,6 +25,8 @@ try {
 const latestReleasePath = `releases/tag/${latestRelease}`;
 const latestArchivePath = `archive/refs/tags/${latestRelease}.zip`;
 const criticalResourceTypes = new Set(["document", "stylesheet", "script", "image", "font"]);
+const unsafePublicCopyPatternSource =
+  String.raw`source-available|source available|source snapshot|source archive|public source archive|page source|boundary snapshot|boundary archive|P11 SDK boundary|\bboundary\b`;
 
 function trackPageFailures(page, origin, label) {
   const errors = [];
@@ -223,7 +225,7 @@ async function probeInstnctDesktop(browser, origin) {
   await page.goto(`${origin}/instnct/`, { waitUntil: "networkidle" });
   await page.waitForTimeout(400);
 
-  const top = await page.evaluate(() => ({
+  const top = await page.evaluate((unsafeCopyPattern) => ({
     overflow: document.documentElement.scrollWidth > document.documentElement.clientWidth,
     currentAssetVersion: [...document.querySelectorAll("link,script")].some((el) =>
       String(el.href || el.src || "").includes("release-3")
@@ -234,12 +236,10 @@ async function probeInstnctDesktop(browser, origin) {
     boundaryNote: document.querySelector(".notify-note")?.textContent.includes(
       "not the private engine source, private repo, or a runnable T1 binary"
     ),
-    sourceAvailableCopy: /source-available|source available|source snapshot|source archive|public source archive|page source|boundary snapshot|boundary archive|P11 SDK boundary/i.test(
-      document.body.textContent
-    ),
+    unsafePublicCopy: new RegExp(unsafeCopyPattern, "i").test(document.body.textContent),
     logoAsset: document.querySelector(".wordmark img")?.getAttribute("src") || "",
     schemaType: JSON.parse(document.querySelector('script[type="application/ld+json"]').textContent)["@type"],
-  }));
+  }), unsafePublicCopyPatternSource);
   if (top.overflow) fail("INSTNCT desktop has horizontal overflow");
   if (!top.currentAssetVersion) fail("INSTNCT desktop is not loading release-3 assets");
   if (top.heroMeshDisplay === "none" || top.heroGlowDisplay === "none") {
@@ -248,7 +248,7 @@ async function probeInstnctDesktop(browser, origin) {
   if (!top.boundaryHrefs.some((href) => href.includes(latestArchivePath)) || !top.boundaryNote) {
     fail("INSTNCT GitHub tag ZIP CTA is missing");
   }
-  if (top.sourceAvailableCopy) fail("INSTNCT desktop copy implies public source availability");
+  if (top.unsafePublicCopy) fail("INSTNCT desktop copy exposes unsafe or internal release wording");
   if (!top.logoAsset.includes("instnct-logo.png")) fail("INSTNCT hero is not using the GLM final logo asset");
   if (top.schemaType !== "WebPage") fail(`INSTNCT JSON-LD should be WebPage, found ${top.schemaType}`);
 
@@ -464,16 +464,14 @@ async function probeInstnctMobile(browser, origin) {
   const errors = trackPageFailures(page, origin, "INSTNCT mobile");
   await page.goto(`${origin}/instnct/`, { waitUntil: "networkidle" });
   await page.waitForTimeout(300);
-  const mobile = await page.evaluate(() => ({
+  const mobile = await page.evaluate((unsafeCopyPattern) => ({
     overflow: document.documentElement.scrollWidth > document.documentElement.clientWidth,
     indicatorHidden: getComputedStyle(document.querySelector(".section-indicator")).display === "none",
     keyboardTriggerHidden: getComputedStyle(document.querySelector(".keyboard-help-trigger")).display === "none",
     boundaryPillHidden: getComputedStyle(document.querySelector(".release-snapshot-pill")).display === "none",
     heroMeshDisplay: getComputedStyle(document.querySelector(".hero-mesh")).display,
     boundaryHrefs: [...document.querySelectorAll("a")].map((a) => a.href),
-    sourceAvailableCopy: /source-available|source available|source snapshot|source archive|public source archive|page source|boundary snapshot|boundary archive|P11 SDK boundary/i.test(
-      document.body.textContent
-    ),
+    unsafePublicCopy: new RegExp(unsafeCopyPattern, "i").test(document.body.textContent),
     mobileReadoutHiddenInHero:
       document.querySelector(".mobile-section-readout")?.classList.contains("is-hidden") &&
       Number(getComputedStyle(document.querySelector(".mobile-section-readout")).opacity) < 0.1,
@@ -487,7 +485,7 @@ async function probeInstnctMobile(browser, origin) {
         return !(readout.right <= rect.left || readout.left >= rect.right || readout.bottom <= rect.top || readout.top >= rect.bottom);
       });
     })(),
-  }));
+  }), unsafePublicCopyPatternSource);
   if (mobile.overflow) fail("INSTNCT mobile has horizontal overflow");
   if (!mobile.indicatorHidden || !mobile.keyboardTriggerHidden || !mobile.boundaryPillHidden) {
     fail(`INSTNCT mobile fixed controls are not hidden: ${JSON.stringify(mobile)}`);
@@ -496,7 +494,7 @@ async function probeInstnctMobile(browser, origin) {
   if (!mobile.boundaryHrefs.some((href) => href.includes(latestArchivePath))) {
     fail("INSTNCT mobile GitHub tag ZIP link is missing");
   }
-  if (mobile.sourceAvailableCopy) fail("INSTNCT mobile copy implies public source availability");
+  if (mobile.unsafePublicCopy) fail("INSTNCT mobile copy exposes unsafe or internal release wording");
   if (!mobile.mobileReadoutHiddenInHero || mobile.mobileReadoutOverlapsHeroCard) {
     fail(`INSTNCT mobile section readout overlaps hero state: ${JSON.stringify(mobile)}`);
   }
