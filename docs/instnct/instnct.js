@@ -66,6 +66,7 @@
   const mobileIndicatorNumber = document.querySelector("[data-mobile-indicator-number]");
   const mobileIndicatorTotal = document.querySelector("[data-mobile-indicator-total]");
   const mobileIndicatorLabel = document.querySelector("[data-mobile-indicator-label]");
+  const mobileSectionReadout = document.querySelector(".mobile-section-readout");
   const sectionLinks = Array.from(document.querySelectorAll("[data-section-link]"));
   const hero = document.querySelector(".hero");
   const heroGlow = document.querySelector(".hero-cursor-glow");
@@ -102,6 +103,7 @@
     if (mobileIndicatorNumber) mobileIndicatorNumber.textContent = number;
     if (mobileIndicatorTotal) mobileIndicatorTotal.textContent = `/ ${total}`;
     if (mobileIndicatorLabel) mobileIndicatorLabel.textContent = section.label;
+    if (mobileSectionReadout) mobileSectionReadout.classList.toggle("is-hidden", activeIndex === 0);
 
     sectionLinks.forEach((link) => {
       const isActive = link === section.link;

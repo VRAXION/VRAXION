@@ -169,12 +169,17 @@ async function handlePost(request, env) {
   const id = crypto.randomUUID();
   const source = normalizeSource(data?.source);
 
-  await env.DB.prepare(
-    `INSERT INTO notify_subscribers (id, email, email_hash, source, ip_hash, user_agent_hash, created_at)
+  const insert = await env.DB.prepare(
+    `INSERT OR IGNORE INTO notify_subscribers (id, email, email_hash, source, ip_hash, user_agent_hash, created_at)
      VALUES (?1, ?2, ?3, ?4, ?5, ?6, CURRENT_TIMESTAMP)`
   )
     .bind(id, email, emailHash, source, ipHash, userAgentHash)
     .run();
+
+  const changes = Number(insert?.meta?.changes ?? insert?.changes ?? 1);
+  if (changes === 0) {
+    return withCors(json({ message: "You're already on the list. We'll signal when T1 is ready." }), request, env);
+  }
 
   return withCors(json({ message: "You're on the list. We'll signal when T1 is ready." }, { status: 201 }), request, env);
 }

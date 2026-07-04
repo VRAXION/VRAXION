@@ -54,11 +54,49 @@ async function loadPlaywright() {
   try {
     return require("playwright");
   } catch (err) {
-    const moduleRoot = process.env.PLAYWRIGHT_MODULE_ROOT;
-    if (moduleRoot) {
-      const mod = await import(pathToFileURL(path.join(moduleRoot, "playwright", "index.js")).href);
-      return mod.default || mod;
+    const home = process.env.USERPROFILE || process.env.HOME || "";
+    const candidateRoots = [
+      process.env.PLAYWRIGHT_MODULE_ROOT,
+      process.env.CODEX_NODE_MODULES,
+      home
+        ? path.join(
+            home,
+            ".cache",
+            "codex-runtimes",
+            "codex-primary-runtime",
+            "dependencies",
+            "node",
+            "node_modules"
+          )
+        : "",
+    ].filter(Boolean);
+
+    const expandedRoots = [];
+    for (const moduleRoot of candidateRoots) {
+      expandedRoots.push(moduleRoot);
+      try {
+        const pnpmRoot = path.join(moduleRoot, ".pnpm");
+        const entries = await fs.readdir(pnpmRoot, { withFileTypes: true });
+        for (const entry of entries) {
+          if (entry.isDirectory() && /^playwright@/.test(entry.name)) {
+            expandedRoots.push(path.join(pnpmRoot, entry.name, "node_modules"));
+          }
+        }
+      } catch {
+        // Non-pnpm installs do not have a .pnpm virtual store.
+      }
     }
+
+    for (const moduleRoot of expandedRoots) {
+      try {
+        const mod = await import(pathToFileURL(path.join(moduleRoot, "playwright", "index.js")).href);
+        return mod.default || mod;
+      } catch {
+        // Try the next known runtime location before surfacing the original require error.
+      }
+    }
+
+    err.message = `${err.message}. Install the repo Playwright dev dependency or set PLAYWRIGHT_MODULE_ROOT to a node_modules directory containing playwright.`;
     throw err;
   }
 }
@@ -208,6 +246,47 @@ async function probeInstnctDesktop(browser, origin) {
   if (!top.logoAsset.includes("instnct-logo.png")) fail("INSTNCT hero is not using the GLM final logo asset");
   if (top.schemaType !== "WebPage") fail(`INSTNCT JSON-LD should be WebPage, found ${top.schemaType}`);
 
+  const heroRect = await page.locator(".hero").boundingBox();
+  if (!heroRect) {
+    fail("INSTNCT hero bounding box is missing");
+  } else {
+    const heroBefore = await page.evaluate(() => {
+      const hero = document.querySelector(".hero");
+      const glow = document.querySelector(".hero-cursor-glow");
+      const style = getComputedStyle(hero);
+      return {
+        active: hero.classList.contains("is-pointer-active"),
+        bgX: style.getPropertyValue("--hero-bg-x").trim(),
+        meshX: style.getPropertyValue("--hero-mesh-x").trim(),
+        markX: style.getPropertyValue("--hero-mark-x").trim(),
+        glowTransform: getComputedStyle(glow).transform,
+      };
+    });
+    await page.mouse.move(heroRect.x + 120, heroRect.y + 120);
+    await page.waitForTimeout(220);
+    await page.mouse.move(heroRect.x + heroRect.width - 140, heroRect.y + 250);
+    await page.waitForTimeout(320);
+    const heroAfter = await page.evaluate(() => {
+      const hero = document.querySelector(".hero");
+      const glow = document.querySelector(".hero-cursor-glow");
+      const style = getComputedStyle(hero);
+      return {
+        active: hero.classList.contains("is-pointer-active"),
+        bgX: style.getPropertyValue("--hero-bg-x").trim(),
+        meshX: style.getPropertyValue("--hero-mesh-x").trim(),
+        markX: style.getPropertyValue("--hero-mark-x").trim(),
+        glowTransform: getComputedStyle(glow).transform,
+      };
+    });
+    if (
+      !heroAfter.active ||
+      (heroBefore.bgX === heroAfter.bgX && heroBefore.meshX === heroAfter.meshX && heroBefore.markX === heroAfter.markX) ||
+      heroBefore.glowTransform === heroAfter.glowTransform
+    ) {
+      fail(`hero pointer interaction did not update visual state: ${JSON.stringify({ heroBefore, heroAfter })}`);
+    }
+  }
+
   await page.locator("#hallucination").scrollIntoViewIfNeeded();
   await page.waitForTimeout(200);
   await assertActiveModePanelFits(page, "desktop exact");
@@ -269,6 +348,27 @@ async function probeInstnctDesktop(browser, origin) {
 
   await page.locator("#fabric").scrollIntoViewIfNeeded();
   await page.waitForTimeout(300);
+  const sectionState = await page.evaluate(() => {
+    const fill = document.querySelector(".indicator-track span");
+    const active = document.querySelector(".section-indicator a.is-active");
+    return {
+      number: document.querySelector("[data-indicator-number]")?.textContent.trim(),
+      label: document.querySelector("[data-indicator-label]")?.textContent.trim(),
+      activeHref: active?.getAttribute("href"),
+      activeCurrent: active?.getAttribute("aria-current"),
+      fillHeight: Number.parseFloat(getComputedStyle(fill).height),
+      trackHeight: Number.parseFloat(getComputedStyle(document.querySelector(".indicator-track")).height),
+    };
+  });
+  if (
+    sectionState.number !== "07" ||
+    sectionState.label !== "structure" ||
+    sectionState.activeHref !== "#fabric" ||
+    sectionState.activeCurrent !== "true" ||
+    sectionState.fillHeight < sectionState.trackHeight * 0.45
+  ) {
+    fail(`section indicator did not track fabric section: ${JSON.stringify(sectionState)}`);
+  }
   const fabric = await page.evaluate(() => {
     const panel = document.querySelector(".fabric-flow-panel").getBoundingClientRect();
     const diagram = document.querySelector(".fabric-diagram").getBoundingClientRect();
@@ -337,6 +437,19 @@ async function probeInstnctMobile(browser, origin) {
     sourcePillHidden: getComputedStyle(document.querySelector(".source-snapshot-pill")).display === "none",
     heroMeshDisplay: getComputedStyle(document.querySelector(".hero-mesh")).display,
     sourceHrefs: [...document.querySelectorAll("a")].map((a) => a.href),
+    mobileReadoutHiddenInHero:
+      document.querySelector(".mobile-section-readout")?.classList.contains("is-hidden") &&
+      Number(getComputedStyle(document.querySelector(".mobile-section-readout")).opacity) < 0.1,
+    mobileReadoutOverlapsHeroCard: (() => {
+      const el = document.querySelector(".mobile-section-readout");
+      const style = el ? getComputedStyle(el) : null;
+      if (!el || style.display === "none" || Number(style.opacity) < 0.1 || el.classList.contains("is-hidden")) return false;
+      const readout = el.getBoundingClientRect();
+      return [...document.querySelectorAll(".principle-list li")].some((card) => {
+        const rect = card.getBoundingClientRect();
+        return !(readout.right <= rect.left || readout.left >= rect.right || readout.bottom <= rect.top || readout.top >= rect.bottom);
+      });
+    })(),
   }));
   if (mobile.overflow) fail("INSTNCT mobile has horizontal overflow");
   if (!mobile.indicatorHidden || !mobile.keyboardTriggerHidden || !mobile.sourcePillHidden) {
@@ -346,8 +459,41 @@ async function probeInstnctMobile(browser, origin) {
   if (!mobile.sourceHrefs.some((href) => href.includes(latestArchivePath))) {
     fail("INSTNCT mobile source snapshot link is missing");
   }
+  if (!mobile.mobileReadoutHiddenInHero || mobile.mobileReadoutOverlapsHeroCard) {
+    fail(`INSTNCT mobile section readout overlaps hero state: ${JSON.stringify(mobile)}`);
+  }
+  await page.locator("#fabric").scrollIntoViewIfNeeded();
+  await page.waitForTimeout(280);
+  const mobileIndicator = await page.evaluate(() => ({
+    number: document.querySelector("[data-mobile-indicator-number]")?.textContent.trim(),
+    label: document.querySelector("[data-mobile-indicator-label]")?.textContent.trim(),
+    hidden: document.querySelector(".mobile-section-readout")?.classList.contains("is-hidden"),
+    opacity: Number(getComputedStyle(document.querySelector(".mobile-section-readout")).opacity),
+  }));
+  if (mobileIndicator.number !== "07" || mobileIndicator.label !== "structure" || mobileIndicator.hidden || mobileIndicator.opacity < 0.8) {
+    fail(`INSTNCT mobile section readout did not track fabric section: ${JSON.stringify(mobileIndicator)}`);
+  }
   await page.close();
   if (errors.length) fail(`INSTNCT mobile browser errors: ${errors.join(" | ")}`);
+}
+
+async function probeInstnctNoJs(browser, origin) {
+  const page = await browser.newPage({ viewport: { width: 1280, height: 900 }, javaScriptEnabled: false });
+  const errors = trackPageFailures(page, origin, "INSTNCT no-js");
+  await page.goto(`${origin}/instnct/`, { waitUntil: "networkidle" });
+  const noJs = await page.evaluate(() => ({
+    modeSwitchDisplay: getComputedStyle(document.querySelector(".mode-switch")).display,
+    faqExpanded: [...document.querySelectorAll(".faq-item button")].map((button) => button.getAttribute("aria-expanded")),
+    faqPanelHeights: [...document.querySelectorAll(".faq-panel")].map((panel) => Math.round(panel.getBoundingClientRect().height)),
+    mobileReadoutDesktopDisplay: getComputedStyle(document.querySelector(".mobile-section-readout")).display,
+  }));
+  if (noJs.modeSwitchDisplay !== "none") fail(`no-js mode switch should be hidden: ${JSON.stringify(noJs)}`);
+  if (noJs.faqExpanded.some((value) => value !== "true") || noJs.faqPanelHeights.some((height) => height <= 0)) {
+    fail(`no-js FAQ state is not truthful/readable: ${JSON.stringify(noJs)}`);
+  }
+  if (noJs.mobileReadoutDesktopDisplay !== "none") fail(`no-js mobile readout should not render on desktop: ${JSON.stringify(noJs)}`);
+  await page.close();
+  if (errors.length) fail(`INSTNCT no-js browser errors: ${errors.join(" | ")}`);
 }
 
 async function probeResponsiveViewports(browser, origin) {
@@ -709,6 +855,7 @@ try {
   await probeInstnctDesktop(browser, server.origin);
   await probeInstnctReducedMotion(browser, server.origin);
   await probeInstnctMobile(browser, server.origin);
+  await probeInstnctNoJs(browser, server.origin);
   await probeResponsiveViewports(browser, server.origin);
   await probeInstnctScrollReveals(browser, server.origin);
   await probeInstnctPerformanceBudget(browser, server.origin);

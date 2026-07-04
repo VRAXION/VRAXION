@@ -39,4 +39,4 @@ Keep `EMAIL_HASH_PEPPER` out of source control. Use a long random value and rota
 - `RATE_LIMIT_PER_HOUR`: accepted submissions per hashed client per hour. Default: `20`.
 - `EMAIL_HASH_PEPPER`: Worker secret used to hash email, IP, and user-agent values for duplicate/rate-limit keys.
 
-Do not wire the static INSTNCT page to this endpoint until the Worker is deployed and the live smoke covers `GET`, `POST`, CORS, invalid email, duplicate email, and rate-limit behavior.
+Do not wire the static INSTNCT page to this endpoint until the Worker is deployed and the live smoke covers `GET`, CORS, invalid email, blocked origin, honeypot behavior, and at least one intentional write-mode pass. Write-mode also checks duplicate email handling; set `INSTNCT_NOTIFY_SMOKE_RATE_LIMIT=1` only when intentionally validating live rate-limit behavior because it consumes the caller's hourly limit.

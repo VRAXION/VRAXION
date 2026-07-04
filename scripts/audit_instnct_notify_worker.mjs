@@ -61,19 +61,20 @@ class FakeStatement {
       });
       return { success: true };
     }
-    if (this.sql.startsWith("insert into notify_subscribers")) {
+    if (this.sql.startsWith("insert or ignore into notify_subscribers")) {
       const [id, email, emailHash, source, ipHash, userAgentHash] = this.args;
-      if (!this.db.subscribers.has(emailHash)) {
-        this.db.subscribers.set(emailHash, {
-          id,
-          email,
-          email_hash: emailHash,
-          source,
-          ip_hash: ipHash,
-          user_agent_hash: userAgentHash,
-        });
+      if (this.db.subscribers.has(emailHash)) {
+        return { success: true, meta: { changes: 0 } };
       }
-      return { success: true };
+      this.db.subscribers.set(emailHash, {
+        id,
+        email,
+        email_hash: emailHash,
+        source,
+        ip_hash: ipHash,
+        user_agent_hash: userAgentHash,
+      });
+      return { success: true, meta: { changes: 1 } };
     }
     throw new Error(`unexpected run SQL: ${this.sql}`);
   }
@@ -100,7 +101,7 @@ function assertSourceGuards() {
   for (const token of ["Math.random", "console.log", "localStorage", "sessionStorage", "eval("]) {
     assert.equal(source.includes(token), false, `worker source must not contain ${token}`);
   }
-  for (const token of ["EMAIL_HASH_PEPPER", "notify_subscribers", "notify_rate_limits", "crypto.randomUUID"]) {
+  for (const token of ["EMAIL_HASH_PEPPER", "notify_subscribers", "notify_rate_limits", "crypto.randomUUID", "INSERT OR IGNORE"]) {
     assert.equal(source.includes(token), true, `worker source missing ${token}`);
   }
   for (const token of ["CREATE TABLE IF NOT EXISTS notify_subscribers", "email_hash TEXT NOT NULL UNIQUE", "CREATE TABLE IF NOT EXISTS notify_rate_limits"]) {

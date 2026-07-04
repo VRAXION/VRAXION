@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 const base = String(process.env.INSTNCT_NOTIFY_API_BASE || "").replace(/\/+$/, "");
 const allowedOrigin = process.env.INSTNCT_NOTIFY_ALLOWED_ORIGIN || "https://vraxion.github.io";
 const writeMode = process.env.INSTNCT_NOTIFY_SMOKE_WRITE === "1";
+const rateLimitMode = process.env.INSTNCT_NOTIFY_SMOKE_RATE_LIMIT === "1";
 const failures = [];
 
 function fail(message) {
@@ -105,6 +106,40 @@ if (writeMode) {
     fail(`write-mode valid POST status ${result.response.status}`);
   }
   expectCors(result.response, "write-mode valid POST");
+
+  result = await fetchJson(`${base}/api/notify`, {
+    method: "POST",
+    headers: {
+      origin: allowedOrigin,
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({ email: smokeEmail, source: "instnct-smoke" }),
+  });
+  if (result.response.status !== 200) {
+    fail(`write-mode duplicate POST status ${result.response.status}`);
+  }
+  expectCors(result.response, "write-mode duplicate POST");
+
+  if (rateLimitMode) {
+    const attempts = Number.parseInt(process.env.INSTNCT_NOTIFY_SMOKE_RATE_ATTEMPTS || "24", 10);
+    let limited = false;
+    for (let index = 0; index < attempts; index += 1) {
+      result = await fetchJson(`${base}/api/notify`, {
+        method: "POST",
+        headers: {
+          origin: allowedOrigin,
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({ email: smokeEmail, source: "instnct-smoke" }),
+      });
+      expectCors(result.response, `write-mode rate-limit POST ${index + 1}`);
+      if (result.response.status === 429) {
+        limited = true;
+        break;
+      }
+    }
+    if (!limited) fail(`write-mode rate-limit did not return 429 within ${attempts} duplicate attempts`);
+  }
 }
 
 assert.equal(failures.length, 0, failures.join("\n"));

@@ -150,6 +150,10 @@ for (const required of [
 for (const required of [
   "byteSizeForServedPath",
   "probeInstnctPerformanceBudget",
+  "probeInstnctNoJs",
+  "hero pointer interaction did not update visual state",
+  "section indicator did not track fabric section",
+  "mobile section readout did not track fabric section",
   "totalBytes",
   "externalResources",
 ]) {

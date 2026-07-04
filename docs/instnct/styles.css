@@ -15,6 +15,7 @@
   --ink: #f0f4f8;
   --muted: #8a93a4;
   --metal: #9ba3b4;
+  --metal-soft: #c2c9d6;
   --cyan: #00e5ff;
   --cyan-soft: #b0f4ff;
   --seal: #ff3d81;
@@ -349,6 +350,12 @@ pre {
   font-size: 0.58rem;
   font-weight: 700;
   text-transform: uppercase;
+}
+
+.mobile-section-readout.is-hidden {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(8px);
 }
 
 .back-to-top {
@@ -1683,6 +1690,7 @@ html.keyboard-dialog-open {
 
 .mode-switch {
   position: relative;
+  display: none;
   flex: 0 0 auto;
   width: 64px;
   height: 34px;
@@ -1696,6 +1704,10 @@ html.keyboard-dialog-open {
   transition:
     border-color 180ms ease,
     background 180ms ease;
+}
+
+.has-js .mode-switch {
+  display: block;
 }
 
 .mode-switch span {
@@ -2705,7 +2717,7 @@ html.keyboard-dialog-open {
     display: none;
   }
 
-  .mobile-section-readout {
+  .has-js .mobile-section-readout {
     display: flex;
   }
 
