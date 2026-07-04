@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'none'; style-src 'self'; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'; upgrade-insecure-requests">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'; upgrade-insecure-requests">
   <title>INSTNCT - VRAXION Local Reflex Reasoning</title>
   <meta name="description" content="INSTNCT is VRAXION's local-first T1 Reflex Class surface: not AI, no neural net, offline-oriented, and built around bounded symbol-grounded hot paths.">
   <meta name="theme-color" content="#050507">
@@ -19,10 +19,12 @@
   <meta name="twitter:description" content="A local-first VRAXION T1 Reflex Class surface: not AI, bounded, measurable, and designed to run locally.">
   <meta name="twitter:image" content="https://vraxion.github.io/VRAXION/instnct/assets/instnct-hero-bg.png">
   <link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="./styles.css?v=static-port-1">
+  <link rel="stylesheet" href="./styles.css?v=interactive-1">
+  <script src="./instnct.js?v=interactive-1" defer></script>
 </head>
 <body>
   <a class="skip-link" href="#main">Skip to content</a>
+  <div class="scroll-progress" aria-hidden="true"><span></span></div>
 
   <header class="site-header">
     <a class="brand" href="../" aria-label="VRAXION homepage">
@@ -37,11 +39,41 @@
     </nav>
   </header>
 
+  <nav class="section-indicator" aria-label="Page sections">
+    <div class="indicator-track" aria-hidden="true">
+      <span></span>
+      <i></i>
+    </div>
+    <div class="indicator-readout">
+      <strong>01 <span>/ 12</span></strong>
+      <small>intro</small>
+    </div>
+    <ol>
+      <li><a href="#intro" data-section-link="intro"><span>01</span> Intro</a></li>
+      <li><a href="#not-ai" data-section-link="position"><span>02</span> Position</a></li>
+      <li><a href="#hallucination" data-section-link="flagship"><span>03</span> Flagship</a></li>
+      <li><a href="#trust" data-section-link="verify"><span>04</span> Verify</a></li>
+      <li><a href="#grounding" data-section-link="claim"><span>05</span> Claim</a></li>
+      <li><a href="#fabric" data-section-link="structure"><span>06</span> Structure</a></li>
+      <li><a href="#dev-trail" data-section-link="terminal"><span>07</span> Terminal</a></li>
+      <li><a href="#t1-reflex-class" data-section-link="model"><span>08</span> Model</a></li>
+      <li><a href="#roadmap" data-section-link="direction"><span>09</span> Direction</a></li>
+      <li><a href="#vraxion-note" data-section-link="vraxion"><span>10</span> VRAXION</a></li>
+      <li><a href="#faq" data-section-link="questions"><span>11</span> Questions</a></li>
+      <li><a href="#get-notified" data-section-link="signal"><span>12</span> Signal</a></li>
+    </ol>
+  </nav>
+
+  <button class="back-to-top" type="button" aria-label="Back to top">
+    <span aria-hidden="true"></span>
+  </button>
+
   <main id="main">
-    <section class="hero" aria-labelledby="hero-title">
+    <section class="hero" id="intro" aria-labelledby="hero-title">
       <div class="hero-background" aria-hidden="true">
         <img src="./assets/instnct-hero-bg.png?v=background-pass-1" alt="" decoding="sync" loading="eager" fetchpriority="high">
       </div>
+      <div class="hero-cursor-glow" aria-hidden="true"></div>
       <div class="hero-mesh" aria-hidden="true">
         <span class="mesh-line mesh-line-a"></span>
         <span class="mesh-line mesh-line-b"></span>
