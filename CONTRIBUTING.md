@@ -1,7 +1,7 @@
 # Contributing
 
-This repository is a narrow public SDK boundary. Contributions should stay
-inside the visible SDK and documentation surface.
+This repository is a narrow public SDK/docs surface. Contributions should stay
+inside the visible public review surface.
 
 Before opening a pull request, run:
 

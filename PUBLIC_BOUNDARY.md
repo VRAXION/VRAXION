@@ -1,14 +1,14 @@
-# Public Boundary
+# Public Release Surface
 
-VRAXION public source is intentionally small.
+VRAXION public repository content is intentionally small.
 
 This repository includes:
 
 - `alphasync-core`
 - `alphasync-runtime`
-- public boundary documentation
+- public release documentation
 - public CI and audit scripts
-- public delivery, license, and mark boundary summaries
+- public delivery, license, and mark summaries
 
 This repository excludes:
 
@@ -23,5 +23,5 @@ This repository excludes:
 The current public tree is not a complete product release and is not a claim of
 hosted service availability. The current delivery direction is controlled
 early-access signed binary first and hosted API/SaaS later. This repo remains
-the clean SDK boundary used for public review while private engine development
+the clean public SDK/docs surface used for review while private engine development
 continues elsewhere.

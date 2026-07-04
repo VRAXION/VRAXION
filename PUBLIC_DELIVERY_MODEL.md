@@ -1,8 +1,8 @@
 # VRAXION Public Delivery Model
 
-Status: public P11 boundary summary.
+Status: public delivery summary for release `public-sdk-p11-20260629`.
 
-This repository remains the public SDK and documentation boundary. It does not
+This repository remains the public SDK and documentation surface. It does not
 contain the private engine source.
 
 ## Current Direction
@@ -21,8 +21,8 @@ assistant-style executable.
 ## What This Repo Provides
 
 ```text
-source-visible compatibility SDK
-boundary documentation
+public compatibility SDK
+release documentation
 public CI and audit scripts
 Pages status docs
 ```
@@ -45,7 +45,7 @@ Future public releases should be paired with:
 ```text
 clear release notes
 signed artifacts or checksums
-versioned boundary docs
+versioned release docs
 security contact
 deterministic compatibility fixtures where available
 ```

@@ -1,12 +1,12 @@
 # Current Capabilities
 
-This public repository is a boundary surface, not the private engine release.
+This public repository is a public SDK/docs surface, not the private engine release.
 
 ## Publicly Included
 
 - `alphasync-core`: deterministic public SDK primitives for bounded fabric experiments.
 - `alphasync-runtime`: runtime artifact writing, safe summaries, and public validation helpers.
-- Public docs for delivery boundaries, trademark boundaries, current status, and Pages surfaces.
+- Public docs for delivery, trademarks, current status, and Pages surfaces.
 - Public audit/export guards used by CI to keep private training and engine material out of the repository.
 - INSTNCT Pages preview: a static, local-first product surface describing the T1 release target and verification posture.
 
@@ -33,8 +33,8 @@ yet published as a runnable public artifact.
 
 ## Current Public Release
 
-Latest public boundary release:
+Latest public release:
 [`public-sdk-p11-20260629`](https://github.com/VRAXION/VRAXION/releases/tag/public-sdk-p11-20260629)
 
-That release contains the public SDK/docs boundary and does not include private
+That release contains the public SDK/docs surface and does not include private
 engine source or a signed binary package.

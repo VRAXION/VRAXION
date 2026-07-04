@@ -1,5 +1,5 @@
 cff-version: 1.2.0
-message: "If you use this public SDK boundary, cite VRAXION."
+message: "If you use this public SDK/docs release, cite VRAXION."
 title: "VRAXION Public SDK"
 authors:
   - family-names: "VRAXION"

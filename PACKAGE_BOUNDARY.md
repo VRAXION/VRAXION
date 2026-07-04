@@ -1,6 +1,6 @@
-# Public Package Boundary
+# Public Package Surface
 
-This repository contains the public SDK source boundary only.
+This repository contains the current public SDK source surface only.
 
 Included crates:
 
@@ -20,7 +20,7 @@ Excluded surfaces:
 - hosted product code
 - private engine binaries or internals
 
-The public source tree is expected to pass:
+The public SDK source tree is expected to pass:
 
 ```powershell
 cargo test --workspace --all-features
@@ -28,6 +28,6 @@ python scripts/audit_public_surface.py
 ```
 
 Any future delivery model that exposes a binary package, hosted API, or wrapper
-crate must go through a separate release review. The current P11 direction is
-controlled early-access signed binary first, hosted API/SaaS later, and thin
-public SDK/docs/wrappers where useful.
+crate must go through a separate release review. The current public delivery
+direction is controlled early-access signed binary first, hosted API/SaaS
+later, and thin public SDK/docs/wrappers where useful.

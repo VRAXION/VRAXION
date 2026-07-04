@@ -45,6 +45,27 @@ FORBIDDEN_TEXT = [
     marker("C:", "\\"),
 ]
 
+LEGAL_TEXT_FILES = {
+    "LICENSE",
+    "crates/alphasync-core/LICENSE",
+    "crates/alphasync-runtime/LICENSE",
+}
+
+PUBLIC_COPY_SUFFIXES = (".md", ".html", ".cff")
+
+FORBIDDEN_PUBLIC_COPY = [
+    marker("source", "-available"),
+    marker("source ", "available"),
+    marker("source ", "snapshot"),
+    marker("source ", "archive"),
+    marker("public source ", "archive"),
+    marker("boundary ", "snapshot"),
+    marker("boundary ", "archive"),
+    marker("P11 ", "SDK boundary"),
+    marker("P11 ", "delivery decision"),
+    marker("zero-state ", "SDK"),
+]
+
 EXPECTED_CRATES = {"alphasync-core", "alphasync-runtime"}
 
 PUBLIC_BINARY_ASSETS = {
@@ -115,6 +136,14 @@ def main() -> int:
             for needle in FORBIDDEN_TEXT:
                 if needle in text:
                     failures.append(f"forbidden text marker {needle!r}: {relative}")
+            if (
+                normalized not in LEGAL_TEXT_FILES
+                and normalized.endswith(PUBLIC_COPY_SUFFIXES)
+            ):
+                lower_text = text.lower()
+                for needle in FORBIDDEN_PUBLIC_COPY:
+                    if needle.lower() in lower_text:
+                        failures.append(f"forbidden public copy {needle!r}: {relative}")
 
     version_path = ROOT / "docs" / "VERSION.json"
     try:

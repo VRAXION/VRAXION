@@ -1,6 +1,6 @@
-# VRAXION License Boundary
+# VRAXION License Split
 
-Status: public P11 boundary summary.
+Status: public license split for release `public-sdk-p11-20260629`.
 
 Different VRAXION materials can use different terms. Do not treat this public
 SDK repository as a license grant for every private VRAXION asset.
@@ -24,5 +24,6 @@ Brand names and marks:
   rights reserved
 ```
 
-Use precise wording. Source-available or noncommercial code is not the same as
-OSI open source. The private engine is not source-distributed by this package.
+Use precise wording. VRAXION Community Source or noncommercial code is not the
+same as OSI open source. The private engine is not source-distributed by this
+package.

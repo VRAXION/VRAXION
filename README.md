@@ -1,14 +1,14 @@
 # VRAXION
 
-This repository is the clean public SDK and documentation boundary for VRAXION.
-It contains a narrow, source-available Rust workspace:
+This repository is the clean public SDK and documentation surface for VRAXION.
+It contains the current public Rust SDK/docs surface:
 
 - `alphasync-core`
 - `alphasync-runtime`
 
 The private engine and operational research workspace are not published here.
-Older public commits and releases remain historical archives, but the current
-tree is intentionally reset to a minimal SDK surface.
+Older public commits and releases remain historical records, but the current
+tree is intentionally reset to a minimal public review surface.
 
 ## Build
 
@@ -21,9 +21,9 @@ cargo doc --workspace --no-deps
 python scripts/audit_public_surface.py
 ```
 
-## Boundary
+## Public Surface
 
-The public boundary is documented in `PUBLIC_BOUNDARY.md` and
+The public surface is documented in `PUBLIC_BOUNDARY.md` and
 `PACKAGE_BOUNDARY.md`. The public delivery direction is documented in
 `PUBLIC_DELIVERY_MODEL.md`, with license and mark boundaries in
 `LICENSE_BOUNDARY.md` and `TRADEMARK_POLICY.md`.
@@ -33,10 +33,12 @@ operational run logs, skill persistence, or diagnostic tools.
 
 ## Status
 
-Current status is a public SDK boundary with a P11 delivery decision:
-controlled early-access signed binary first, hosted API/SaaS later, and thin
-public SDK/docs/wrappers where useful. The private engine source is not
-published here.
+Current status is tracked by the latest public GitHub release:
+[`public-sdk-p11-20260629`](https://github.com/VRAXION/VRAXION/releases/tag/public-sdk-p11-20260629).
+
+The delivery direction is controlled early-access signed binary first, hosted
+API/SaaS later, and thin public SDK/docs/wrappers where useful. The private
+engine source is not published here.
 
 ## License
 
