@@ -385,6 +385,51 @@ async function probeResponsiveViewports(browser, origin) {
   }
 }
 
+async function probeInstnctScrollReveals(browser, origin) {
+  const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+  const errors = trackPageFailures(page, origin, "INSTNCT reveal");
+  await page.goto(`${origin}/instnct/`, { waitUntil: "networkidle" });
+  await page.waitForTimeout(300);
+
+  const revealCount = await page.evaluate(() => document.querySelectorAll("[data-reveal]").length);
+  for (let index = 0; index < revealCount; index += 1) {
+    await page.evaluate((targetIndex) => {
+      document.querySelectorAll("[data-reveal]")[targetIndex]?.scrollIntoView({ block: "center" });
+    }, index);
+    await page
+      .waitForFunction(
+        (targetIndex) => document.querySelectorAll("[data-reveal]")[targetIndex]?.classList.contains("is-revealed"),
+        index,
+        { timeout: 1500 }
+      )
+      .catch(() => {});
+  }
+  await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+  await page.waitForTimeout(800);
+
+  const reveal = await page.evaluate(() => {
+    const targets = [...document.querySelectorAll("[data-reveal]")];
+    return {
+      count: targets.length,
+      hidden: targets
+        .filter((target) => !target.classList.contains("is-revealed") || Number(getComputedStyle(target).opacity) < 0.95)
+        .map((target) => ({
+          tag: target.tagName.toLowerCase(),
+          id: target.id || "",
+          className: target.className,
+          text: target.textContent.trim().replace(/\s+/g, " ").slice(0, 80),
+          opacity: getComputedStyle(target).opacity,
+        })),
+    };
+  });
+
+  if (reveal.count < 20 || reveal.hidden.length > 0) {
+    fail(`scroll reveal targets did not all become visible: ${JSON.stringify(reveal)}`);
+  }
+  await page.close();
+  if (errors.length) fail(`INSTNCT reveal browser errors: ${errors.join(" | ")}`);
+}
+
 let server;
 let browser;
 try {
@@ -396,6 +441,7 @@ try {
   await probeInstnctReducedMotion(browser, server.origin);
   await probeInstnctMobile(browser, server.origin);
   await probeResponsiveViewports(browser, server.origin);
+  await probeInstnctScrollReveals(browser, server.origin);
 } finally {
   if (browser) await browser.close();
   if (server) await server.close();
