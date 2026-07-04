@@ -197,14 +197,14 @@ async function probeHome(browser, origin) {
   const page = await browser.newPage({ viewport: { width: 1280, height: 900 }, reducedMotion: "no-preference" });
   const errors = trackPageFailures(page, origin, "home");
   await page.goto(`${origin}/`, { waitUntil: "networkidle" });
-  const result = await page.evaluate(() => ({
+  const result = await page.evaluate((latestReleaseText) => ({
     overflow: document.documentElement.scrollWidth > document.documentElement.clientWidth,
-    latestRelease: document.body.textContent.includes("P11 SDK boundary release"),
+    latestRelease: document.body.textContent.includes(latestReleaseText),
     releaseHrefs: [...document.querySelectorAll("a")].map((a) => a.href),
     oldReleaseHref: [...document.querySelectorAll("a")].some((a) => a.href.includes("releases/tag/v6.1.7")),
     capabilitiesHref: [...document.querySelectorAll("a")].some((a) => a.href.includes("CURRENT_CAPABILITIES.md")),
     instnctLive: document.body.textContent.includes("INSTNCT live"),
-  }));
+  }), latestRelease);
   await page.close();
 
   if (errors.length) fail(`home browser errors: ${errors.join(" | ")}`);
@@ -234,7 +234,7 @@ async function probeInstnctDesktop(browser, origin) {
     boundaryNote: document.querySelector(".notify-note")?.textContent.includes(
       "not the private engine source, private repo, or a runnable T1 binary"
     ),
-    sourceAvailableCopy: /source-available|source available|source snapshot|source archive|public source archive|page source/i.test(
+    sourceAvailableCopy: /source-available|source available|source snapshot|source archive|public source archive|page source|boundary snapshot|boundary archive|P11 SDK boundary/i.test(
       document.body.textContent
     ),
     logoAsset: document.querySelector(".wordmark img")?.getAttribute("src") || "",
@@ -246,7 +246,7 @@ async function probeInstnctDesktop(browser, origin) {
     fail("INSTNCT desktop hero mesh/glow is hidden");
   }
   if (!top.boundaryHrefs.some((href) => href.includes(latestArchivePath)) || !top.boundaryNote) {
-    fail("INSTNCT boundary archive CTA is missing");
+    fail("INSTNCT GitHub tag ZIP CTA is missing");
   }
   if (top.sourceAvailableCopy) fail("INSTNCT desktop copy implies public source availability");
   if (!top.logoAsset.includes("instnct-logo.png")) fail("INSTNCT hero is not using the GLM final logo asset");
@@ -468,10 +468,10 @@ async function probeInstnctMobile(browser, origin) {
     overflow: document.documentElement.scrollWidth > document.documentElement.clientWidth,
     indicatorHidden: getComputedStyle(document.querySelector(".section-indicator")).display === "none",
     keyboardTriggerHidden: getComputedStyle(document.querySelector(".keyboard-help-trigger")).display === "none",
-    boundaryPillHidden: getComputedStyle(document.querySelector(".boundary-snapshot-pill")).display === "none",
+    boundaryPillHidden: getComputedStyle(document.querySelector(".release-snapshot-pill")).display === "none",
     heroMeshDisplay: getComputedStyle(document.querySelector(".hero-mesh")).display,
     boundaryHrefs: [...document.querySelectorAll("a")].map((a) => a.href),
-    sourceAvailableCopy: /source-available|source available|source snapshot|source archive|public source archive|page source/i.test(
+    sourceAvailableCopy: /source-available|source available|source snapshot|source archive|public source archive|page source|boundary snapshot|boundary archive|P11 SDK boundary/i.test(
       document.body.textContent
     ),
     mobileReadoutHiddenInHero:
@@ -494,7 +494,7 @@ async function probeInstnctMobile(browser, origin) {
   }
   if (mobile.heroMeshDisplay === "none") fail("INSTNCT mobile hero mesh is hidden");
   if (!mobile.boundaryHrefs.some((href) => href.includes(latestArchivePath))) {
-    fail("INSTNCT mobile boundary archive link is missing");
+    fail("INSTNCT mobile GitHub tag ZIP link is missing");
   }
   if (mobile.sourceAvailableCopy) fail("INSTNCT mobile copy implies public source availability");
   if (!mobile.mobileReadoutHiddenInHero || mobile.mobileReadoutOverlapsHeroCard) {

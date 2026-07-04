@@ -97,7 +97,7 @@ for (const required of [
   "fabric-flow-panel",
   "fabric-flow-canvas",
   "keyboard-dialog",
-  "boundary-snapshot-pill",
+  "release-snapshot-pill",
   "data-benchmark",
   "terminal-actions",
   "terminal-note",
@@ -133,7 +133,7 @@ for (const required of [
 
 for (const required of [
   ".fabric-flow-panel",
-  ".boundary-snapshot-pill",
+  ".release-snapshot-pill",
   ".button-icon",
   ".card-icon",
   "::-webkit-scrollbar-thumb",
@@ -194,7 +194,7 @@ if (latestRelease && !html.includes(latestRelease)) {
   fail("INSTNCT page must link to the latest public boundary release");
 }
 if (latestRelease && !html.includes(`archive/refs/tags/${latestRelease}.zip`)) {
-  fail("INSTNCT page must expose the safe public boundary archive");
+  fail("INSTNCT page must expose the safe public GitHub tag ZIP");
 }
 if (latestRelease) {
   const releaseSlugs = [...new Set([...html.matchAll(/public-sdk-p\d+-\d{8}/g)].map((match) => match[0]))];
@@ -203,10 +203,10 @@ if (latestRelease) {
   }
 }
 if (!html.includes("not the private engine source")) {
-  fail("INSTNCT boundary archive CTA must state the private-engine boundary");
+  fail("INSTNCT GitHub tag ZIP note must state the private-engine boundary");
 }
 if (!html.includes("not the private engine source, private repo, or a runnable T1 binary")) {
-  fail("INSTNCT boundary archive note must state the private repo and runnable-binary boundary");
+  fail("INSTNCT GitHub tag ZIP note must state the private repo and runnable-binary boundary");
 }
 for (const forbiddenCopy of [
   "source-available",
@@ -216,6 +216,10 @@ for (const forbiddenCopy of [
   "source archive",
   "public source archive",
   "page source",
+  "Boundary snapshot",
+  "boundary archive",
+  "P11 boundary archive",
+  "P11 SDK boundary",
 ]) {
   if (html.includes(forbiddenCopy)) fail(`unsafe public copy implies source availability: ${forbiddenCopy}`);
 }

@@ -80,9 +80,14 @@ const sitemap = await fetchText(sitemapUrl, "sitemap.xml");
 
 if (home && !home.includes(`releases/tag/${latestRelease}`)) fail("home does not expose the VERSION latest release");
 if (instnct && !instnct.includes(`archive/refs/tags/${latestRelease}.zip`)) {
-  fail("INSTNCT does not expose the VERSION boundary archive");
+  fail("INSTNCT does not expose the VERSION GitHub tag ZIP");
 }
-if (instnct && /source-available|source available|source snapshot|source archive|public source archive|page source/i.test(instnct)) {
+if (
+  instnct &&
+  /source-available|source available|source snapshot|source archive|public source archive|page source|boundary snapshot|boundary archive|P11 SDK boundary/i.test(
+    instnct
+  )
+) {
   fail("INSTNCT public copy implies source availability");
 }
 if (instnct && !instnct.includes("artifact-status")) fail("INSTNCT artifact status block is missing on live Pages");
