@@ -592,6 +592,14 @@ async function probeInstnctNoJs(browser, origin) {
     sectionIndicatorDisplay: getComputedStyle(document.querySelector(".section-indicator")).display,
     keyboardTriggerDisplay: getComputedStyle(document.querySelector(".keyboard-help-trigger")).display,
     modeSwitchDisplay: getComputedStyle(document.querySelector(".mode-switch")).display,
+    modePanels: [...document.querySelectorAll(".mode-panel")].map((panel) => ({
+      mode: panel.dataset.modePanel,
+      hidden: panel.hidden,
+      ariaHidden: panel.getAttribute("aria-hidden"),
+      height: Math.round(panel.getBoundingClientRect().height),
+      scrollHeight: panel.scrollHeight,
+      clientHeight: panel.clientHeight,
+    })),
     faqExpanded: [...document.querySelectorAll(".faq-item button")].map((button) => button.getAttribute("aria-expanded")),
     faqPanelHeights: [...document.querySelectorAll(".faq-panel")].map((panel) => Math.round(panel.getBoundingClientRect().height)),
     mobileReadoutDesktopDisplay: getComputedStyle(document.querySelector(".mobile-section-readout")).display,
@@ -600,6 +608,14 @@ async function probeInstnctNoJs(browser, origin) {
     fail(`no-js JS-only controls should be hidden: ${JSON.stringify(noJs)}`);
   }
   if (noJs.modeSwitchDisplay !== "none") fail(`no-js mode switch should be hidden: ${JSON.stringify(noJs)}`);
+  if (
+    noJs.modePanels.length !== 2 ||
+    noJs.modePanels.some(
+      (panel) => panel.hidden || panel.ariaHidden === "true" || panel.height <= 0 || panel.scrollHeight > panel.clientHeight + 1
+    )
+  ) {
+    fail(`no-js mode panels are not both readable: ${JSON.stringify(noJs)}`);
+  }
   if (noJs.faqExpanded.some((value) => value !== "true") || noJs.faqPanelHeights.some((height) => height <= 0)) {
     fail(`no-js FAQ state is not truthful/readable: ${JSON.stringify(noJs)}`);
   }
@@ -610,6 +626,7 @@ async function probeInstnctNoJs(browser, origin) {
 
 async function probeResponsiveViewports(browser, origin) {
   const viewports = [
+    { width: 320, height: 568 },
     { width: 320, height: 740 },
     { width: 390, height: 844 },
     { width: 412, height: 915 },
@@ -633,6 +650,7 @@ async function probeResponsiveViewports(browser, origin) {
       const nextSignal = hero?.nextElementSibling?.querySelector(".section-label, .section-heading, .center-heading");
       const nextSignalRect = nextSignal?.getBoundingClientRect();
       const nextSignalStyle = nextSignal ? getComputedStyle(nextSignal) : null;
+      const heroLead = document.querySelector(".hero .lead");
       const nav = document.querySelector(".site-header .nav");
       const navRect = nav.getBoundingClientRect();
       return {
@@ -647,6 +665,15 @@ async function probeResponsiveViewports(browser, origin) {
             Number(nextSignalStyle.opacity) > 0.8 &&
             nextSignalStyle.visibility !== "hidden"
           : false,
+        heroLeadClipped: heroLead ? heroLead.scrollHeight > heroLead.clientHeight + 1 : true,
+        heroLeadBox: heroLead
+          ? {
+              scrollHeight: heroLead.scrollHeight,
+              clientHeight: heroLead.clientHeight,
+              lineClamp: getComputedStyle(heroLead).webkitLineClamp,
+              overflow: getComputedStyle(heroLead).overflow,
+            }
+          : null,
         headerNavClipped:
           nav.scrollWidth > nav.clientWidth + 1 ||
           navRect.left < -1 ||
@@ -655,6 +682,9 @@ async function probeResponsiveViewports(browser, origin) {
     });
     if (instnct.overflow) fail(`INSTNCT ${label} has horizontal overflow`);
     if (instnct.activePanelClipped) fail(`INSTNCT ${label} exact mode panel clips`);
+    if (viewport.width <= 420 && instnct.heroLeadClipped) {
+      fail(`INSTNCT ${label} hero lead clips on mobile: ${JSON.stringify(instnct)}`);
+    }
     if (instnct.heroMeshDisplay === "none") fail(`INSTNCT ${label} hero mesh is hidden`);
     if (!instnct.heroNextSignalVisible) {
       fail(`INSTNCT ${label} hero does not reveal next-section content in the first viewport: ${JSON.stringify(instnct)}`);

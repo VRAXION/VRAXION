@@ -3219,12 +3219,8 @@ html.keyboard-dialog-open {
   }
 
   .lead {
-    display: -webkit-box;
-    overflow: hidden;
     font-size: 0.84rem;
     line-height: 1.42;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 4;
   }
 
   .hero-actions {
@@ -3262,13 +3258,9 @@ html.keyboard-dialog-open {
   }
 
   .lead {
-    display: -webkit-box;
     max-width: 100%;
-    overflow: hidden;
     font-size: 0.82rem;
     line-height: 1.36;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 3;
   }
 
   .hero-actions {
