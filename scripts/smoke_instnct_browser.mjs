@@ -225,8 +225,8 @@ async function probeInstnctDesktop(browser, origin) {
 
   const top = await page.evaluate(() => ({
     overflow: document.documentElement.scrollWidth > document.documentElement.clientWidth,
-    release2: [...document.querySelectorAll("link,script")].some((el) =>
-      String(el.href || el.src || "").includes("release-2")
+    currentAssetVersion: [...document.querySelectorAll("link,script")].some((el) =>
+      String(el.href || el.src || "").includes("release-3")
     ),
     heroMeshDisplay: getComputedStyle(document.querySelector(".hero-mesh")).display,
     heroGlowDisplay: getComputedStyle(document.querySelector(".hero-cursor-glow")).display,
@@ -241,7 +241,7 @@ async function probeInstnctDesktop(browser, origin) {
     schemaType: JSON.parse(document.querySelector('script[type="application/ld+json"]').textContent)["@type"],
   }));
   if (top.overflow) fail("INSTNCT desktop has horizontal overflow");
-  if (!top.release2) fail("INSTNCT desktop is not loading release-2 assets");
+  if (!top.currentAssetVersion) fail("INSTNCT desktop is not loading release-3 assets");
   if (top.heroMeshDisplay === "none" || top.heroGlowDisplay === "none") {
     fail("INSTNCT desktop hero mesh/glow is hidden");
   }
