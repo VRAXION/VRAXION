@@ -10,7 +10,7 @@
   };
   const reduceMotionQuery = safeMatch("(prefers-reduced-motion: reduce)");
   const finePointerQuery = safeMatch("(pointer: fine)");
-  const reduceMotion = reduceMotionQuery.matches;
+  let reduceMotion = reduceMotionQuery.matches;
   const finePointer = finePointerQuery.matches;
   const raf = window.requestAnimationFrame
     ? window.requestAnimationFrame.bind(window)
@@ -63,6 +63,9 @@
   const indicatorNumber = document.querySelector("[data-indicator-number]");
   const indicatorTotal = document.querySelector("[data-indicator-total]");
   const indicatorLabel = document.querySelector("[data-indicator-label]");
+  const mobileIndicatorNumber = document.querySelector("[data-mobile-indicator-number]");
+  const mobileIndicatorTotal = document.querySelector("[data-mobile-indicator-total]");
+  const mobileIndicatorLabel = document.querySelector("[data-mobile-indicator-label]");
   const sectionLinks = Array.from(document.querySelectorAll("[data-section-link]"));
   const hero = document.querySelector(".hero");
   const heroGlow = document.querySelector(".hero-cursor-glow");
@@ -96,6 +99,9 @@
     if (indicatorNumber) indicatorNumber.textContent = number;
     if (indicatorTotal) indicatorTotal.textContent = `/ ${total}`;
     if (indicatorLabel) indicatorLabel.textContent = section.label;
+    if (mobileIndicatorNumber) mobileIndicatorNumber.textContent = number;
+    if (mobileIndicatorTotal) mobileIndicatorTotal.textContent = `/ ${total}`;
+    if (mobileIndicatorLabel) mobileIndicatorLabel.textContent = section.label;
 
     sectionLinks.forEach((link) => {
       const isActive = link === section.link;
@@ -282,6 +288,28 @@
     let height = 0;
     let nodes = [];
     let meshRaf = 0;
+    let meshVisible = true;
+
+    function shouldAnimateMesh() {
+      return !reduceMotion && meshVisible && document.visibilityState !== "hidden";
+    }
+
+    function stopMesh() {
+      if (meshRaf) {
+        caf(meshRaf);
+        meshRaf = 0;
+      }
+    }
+
+    function queueMesh() {
+      if (!meshRaf && shouldAnimateMesh()) meshRaf = raf(draw);
+    }
+
+    function renderMeshFrame() {
+      stopMesh();
+      draw();
+      if (!shouldAnimateMesh()) stopMesh();
+    }
 
     function init() {
       const rect = canvas.getBoundingClientRect();
@@ -305,6 +333,7 @@
     }
 
     function draw() {
+      meshRaf = 0;
       ctx.clearRect(0, 0, width, height);
       const maxDist = 140;
 
@@ -368,7 +397,7 @@
         ctx.fill();
       });
 
-      meshRaf = reduceMotion ? 0 : raf(draw);
+      if (shouldAnimateMesh()) meshRaf = raf(draw);
     }
 
     function onMove(event) {
@@ -388,8 +417,29 @@
     draw();
     window.addEventListener("resize", () => {
       init();
-      if (reduceMotion) draw();
+      if (shouldAnimateMesh()) queueMesh();
+      else renderMeshFrame();
     });
+    document.addEventListener("visibilitychange", () => {
+      if (shouldAnimateMesh()) queueMesh();
+      else stopMesh();
+    });
+    reduceMotionQuery.addEventListener("change", () => {
+      reduceMotion = reduceMotionQuery.matches;
+      if (shouldAnimateMesh()) queueMesh();
+      else renderMeshFrame();
+    });
+    if ("IntersectionObserver" in window) {
+      const obs = new IntersectionObserver(
+        (entries) => {
+          meshVisible = entries.some((entry) => entry.isIntersecting);
+          if (shouldAnimateMesh()) queueMesh();
+          else stopMesh();
+        },
+        { rootMargin: "160px" }
+      );
+      obs.observe(canvas);
+    }
     if (!reduceMotion && hero) {
       hero.addEventListener("pointermove", onMove, { passive: true });
       hero.addEventListener("pointerleave", onLeave, { passive: true });
@@ -594,12 +644,34 @@
     let height = 0;
     let t = 0;
     let flowRaf = 0;
+    let flowVisible = true;
     const nodes = [
       { label: "INPUT", sub: "data", x: 0.08, color: "0, 229, 255" },
       { label: "PRISMION", sub: "prism + neuron", x: 0.32, color: "255, 61, 129" },
-      { label: "A-SYNC", sub: "fabric", x: 0.56, color: "0, 229, 255" },
+      { label: "α-SYNC", sub: "fabric", x: 0.56, color: "0, 229, 255" },
       { label: "BOUNDED", sub: "result path", x: 0.8, color: "255, 61, 129" },
     ];
+
+    function shouldAnimateFlow() {
+      return !reduceMotion && flowVisible && document.visibilityState !== "hidden";
+    }
+
+    function stopFlow() {
+      if (flowRaf) {
+        caf(flowRaf);
+        flowRaf = 0;
+      }
+    }
+
+    function queueFlow() {
+      if (!flowRaf && shouldAnimateFlow()) flowRaf = raf(draw);
+    }
+
+    function renderFlowFrame() {
+      stopFlow();
+      draw();
+      if (!shouldAnimateFlow()) stopFlow();
+    }
 
     function init() {
       const rect = canvas.getBoundingClientRect();
@@ -612,6 +684,7 @@
     }
 
     function draw() {
+      flowRaf = 0;
       if (!reduceMotion) t += 0.012;
       ctx.clearRect(0, 0, width, height);
       const pad = 16;
@@ -684,15 +757,36 @@
         ctx.fillText(node.sub, nx, ny + 52);
       });
 
-      flowRaf = reduceMotion ? 0 : raf(draw);
+      if (shouldAnimateFlow()) flowRaf = raf(draw);
     }
 
     init();
     draw();
     window.addEventListener("resize", () => {
       init();
-      if (reduceMotion) draw();
+      if (shouldAnimateFlow()) queueFlow();
+      else renderFlowFrame();
     });
+    document.addEventListener("visibilitychange", () => {
+      if (shouldAnimateFlow()) queueFlow();
+      else stopFlow();
+    });
+    reduceMotionQuery.addEventListener("change", () => {
+      reduceMotion = reduceMotionQuery.matches;
+      if (shouldAnimateFlow()) queueFlow();
+      else renderFlowFrame();
+    });
+    if ("IntersectionObserver" in window) {
+      const obs = new IntersectionObserver(
+        (entries) => {
+          flowVisible = entries.some((entry) => entry.isIntersecting);
+          if (shouldAnimateFlow()) queueFlow();
+          else stopFlow();
+        },
+        { rootMargin: "160px" }
+      );
+      obs.observe(canvas);
+    }
   }
 
   installFabricFlow();
@@ -809,6 +903,7 @@
     return fallbackCopyText(text);
   }
 
+  const copyStatus = document.querySelector("[data-copy-status]");
   document.querySelectorAll("[data-copy-command]").forEach((button) => {
     button.addEventListener("click", () => {
       const original = button.textContent;
@@ -816,15 +911,18 @@
         .then(() => {
           button.classList.add("is-copied");
           button.textContent = "copied";
+          if (copyStatus) copyStatus.textContent = `${original} copied`;
         })
         .catch(() => {
           button.classList.add("is-copy-failed");
           button.textContent = "copy failed";
+          if (copyStatus) copyStatus.textContent = `${original} copy failed`;
         })
         .finally(() => {
           window.setTimeout(() => {
             button.textContent = original;
             button.classList.remove("is-copied", "is-copy-failed");
+            if (copyStatus) copyStatus.textContent = "";
           }, 1300);
         });
     });

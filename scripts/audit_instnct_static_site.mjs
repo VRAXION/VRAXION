@@ -78,6 +78,9 @@ for (const required of [
   "terminal-actions",
   "terminal-note",
   "artifact-status",
+  "mobile-section-readout",
+  "data-copy-status",
+  "data-mobile-indicator-number",
   "planned local flow",
   "planned commands:",
   "../INSTNCT_BENCHMARK_NOTES.md",
@@ -90,7 +93,11 @@ for (const required of [
   "installFabricFlow",
   "installCliDemo",
   "installReveals",
+  "shouldAnimateMesh",
+  "shouldAnimateFlow",
   "data-copy-command",
+  "data-copy-status",
+  "α-SYNC",
   "setKeyboardBackgroundInert",
   "dataset.lineType",
   "aria-hidden",
@@ -109,6 +116,9 @@ for (const required of [
   ".faq-item button",
   ".terminal-note",
   ".artifact-status",
+  ".mobile-section-readout",
+  ".has-js .faq-panel",
+  "@media (max-width: 420px) and (max-height: 700px)",
 ]) {
   if (!css.includes(required)) fail(`missing INSTNCT style: ${required}`);
 }

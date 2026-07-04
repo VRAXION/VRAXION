@@ -83,6 +83,11 @@
     </ol>
   </nav>
 
+  <div class="mobile-section-readout" aria-hidden="true">
+    <strong><span data-mobile-indicator-number>01</span> <span data-mobile-indicator-total>/ 13</span></strong>
+    <small data-mobile-indicator-label>intro</small>
+  </div>
+
   <button class="back-to-top" type="button" aria-label="Back to top">
     <span aria-hidden="true"></span>
   </button>
@@ -441,6 +446,7 @@ mode: exact recall</code></pre>
             <button type="button" data-copy-command="instnct run --mode exact-recall">instnct run --mode exact-recall</button>
             <button type="button" data-copy-command="instnct toggle --imagination on">toggle imagination</button>
           </div>
+          <span class="sr-only" data-copy-status aria-live="polite"></span>
           <p class="terminal-note">These commands are release-target examples until the signed T1 artifact ships.</p>
         </div>
       </div>

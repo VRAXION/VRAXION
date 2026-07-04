@@ -1,0 +1,23 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "vraxion-instnct-notify",
+  "main": "src/index.mjs",
+  "compatibility_date": "2026-07-04",
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 1
+  },
+  "vars": {
+    "ALLOWED_ORIGIN": "https://vraxion.github.io",
+    "SUBSCRIBER_GOAL": "1000",
+    "RATE_LIMIT_PER_HOUR": "20"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "vraxion-instnct-notify",
+      "database_id": "00000000-0000-0000-0000-000000000000",
+      "migrations_dir": "migrations"
+    }
+  ]
+}
