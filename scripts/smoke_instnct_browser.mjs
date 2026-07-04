@@ -81,6 +81,19 @@ function contentType(filePath) {
   );
 }
 
+async function byteSizeForServedPath(pathname) {
+  let cleanPath = decodeURIComponent(pathname);
+  if (cleanPath.endsWith("/")) cleanPath += "index.html";
+  const target = path.resolve(docsRoot, `.${cleanPath}`);
+  if (!target.startsWith(docsRoot + path.sep)) return 0;
+  try {
+    const stat = await fs.stat(target);
+    return stat.isFile() ? stat.size : 0;
+  } catch {
+    return 0;
+  }
+}
+
 async function startServer() {
   const server = http.createServer(async (req, res) => {
     try {
@@ -296,14 +309,17 @@ async function probeInstnctReducedMotion(browser, origin) {
   const terminal = await page.evaluate(() => ({
     lineCount: document.querySelectorAll(".terminal-line").length,
     types: [...new Set([...document.querySelectorAll(".terminal-line")].map((el) => el.dataset.lineType))],
-    counts: [...document.querySelectorAll("[data-count-to]")].map((el) => el.textContent.trim()),
+    heroCount: document.querySelector(".live-readout [data-count-to]")?.textContent.trim() || "",
+    benchmarkCounts: [...document.querySelectorAll("[data-benchmark] [data-count-to]")].map((el) =>
+      el.textContent.trim()
+    ),
   }));
   const expectedTypes = ["prompt", "output", "trace", "ok", "query", "warn"];
   if (terminal.lineCount !== 14 || expectedTypes.some((type) => !terminal.types.includes(type))) {
     fail(`terminal reduced-motion fallback is incomplete: ${JSON.stringify(terminal)}`);
   }
-  if (terminal.counts.join(",") !== "5,261,52") {
-    fail(`reduced-motion benchmark counts are wrong: ${terminal.counts.join(",")}`);
+  if (terminal.heroCount !== "5" || terminal.benchmarkCounts.join(",") !== "5,261,52") {
+    fail(`reduced-motion counts are wrong: ${JSON.stringify(terminal)}`);
   }
   await page.close();
   if (errors.length) fail(`INSTNCT reduced-motion browser errors: ${errors.join(" | ")}`);
@@ -337,6 +353,7 @@ async function probeInstnctMobile(browser, origin) {
 async function probeResponsiveViewports(browser, origin) {
   const viewports = [
     { width: 320, height: 740 },
+    { width: 390, height: 844 },
     { width: 412, height: 915 },
     { width: 768, height: 1024 },
     { width: 1024, height: 768 },
@@ -352,15 +369,29 @@ async function probeResponsiveViewports(browser, origin) {
     await page.waitForTimeout(250);
     const instnct = await page.evaluate(() => {
       const active = document.querySelector(".mode-panel.is-active");
+      const hero = document.querySelector(".hero");
+      const nav = document.querySelector(".site-header .nav");
+      const navRect = nav.getBoundingClientRect();
       return {
         overflow: document.documentElement.scrollWidth > document.documentElement.clientWidth,
         activePanelClipped: active ? active.scrollHeight > active.clientHeight + 1 : true,
         heroMeshDisplay: getComputedStyle(document.querySelector(".hero-mesh")).display,
+        heroHeight: hero ? Math.round(hero.getBoundingClientRect().height) : 0,
+        headerNavClipped:
+          nav.scrollWidth > nav.clientWidth + 1 ||
+          navRect.left < -1 ||
+          navRect.right > document.documentElement.clientWidth + 1,
       };
     });
     if (instnct.overflow) fail(`INSTNCT ${label} has horizontal overflow`);
     if (instnct.activePanelClipped) fail(`INSTNCT ${label} exact mode panel clips`);
     if (instnct.heroMeshDisplay === "none") fail(`INSTNCT ${label} hero mesh is hidden`);
+    if (viewport.width <= 420 && instnct.heroHeight > Math.max(920, viewport.height * 1.2)) {
+      fail(`INSTNCT ${label} mobile hero is too tall: ${JSON.stringify(instnct)}`);
+    }
+    if (viewport.width <= 420 && instnct.headerNavClipped) {
+      fail(`INSTNCT ${label} header nav is clipped: ${JSON.stringify(instnct)}`);
+    }
 
     await page.locator("#hallucination").scrollIntoViewIfNeeded();
     await page.locator(".mode-switch").click();
@@ -428,6 +459,98 @@ async function probeInstnctScrollReveals(browser, origin) {
   }
   await page.close();
   if (errors.length) fail(`INSTNCT reveal browser errors: ${errors.join(" | ")}`);
+}
+
+function resourceKind(pathname, resourceType) {
+  const ext = path.extname(pathname).toLowerCase();
+  if (resourceType === "script" || ext === ".js") return "script";
+  if (resourceType === "stylesheet" || ext === ".css") return "style";
+  if (resourceType === "font" || ext === ".woff2") return "font";
+  if (resourceType === "image" || [".png", ".jpg", ".jpeg", ".svg"].includes(ext)) return "image";
+  return resourceType || "resource";
+}
+
+async function probeInstnctPerformanceBudget(browser, origin) {
+  const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+  const errors = trackPageFailures(page, origin, "INSTNCT performance");
+  const sameOriginResources = new Map();
+  const externalResources = new Set();
+
+  function rememberResource(urlText, resourceType) {
+    let url;
+    try {
+      url = new URL(urlText);
+    } catch {
+      return;
+    }
+    if (!criticalResourceTypes.has(resourceType)) return;
+    if (url.origin !== origin) {
+      if (resourceType !== "document") externalResources.add(url.href);
+      return;
+    }
+    const previous = sameOriginResources.get(url.pathname);
+    sameOriginResources.set(url.pathname, previous || resourceType);
+  }
+
+  page.on("response", (response) => {
+    rememberResource(response.url(), response.request().resourceType());
+  });
+
+  await page.goto(`${origin}/instnct/`, { waitUntil: "networkidle" });
+  for (const y of [0, 700, 1500, 2400, 3400, 4600, 6200, 8200, 10000]) {
+    await page.evaluate((nextY) => window.scrollTo(0, nextY), y);
+    await page.waitForTimeout(90);
+  }
+  await page.waitForLoadState("networkidle");
+
+  const performanceResources = await page.evaluate(() =>
+    performance.getEntriesByType("resource").map((entry) => ({
+      name: entry.name,
+      initiatorType: entry.initiatorType || "resource",
+    }))
+  );
+  for (const entry of performanceResources) {
+    const resourceType = entry.initiatorType === "link" ? "stylesheet" : entry.initiatorType;
+    rememberResource(entry.name, resourceType);
+  }
+
+  const resources = [];
+  for (const [pathname, resourceType] of sameOriginResources.entries()) {
+    const bytes = await byteSizeForServedPath(pathname);
+    resources.push({
+      path: pathname,
+      kind: resourceKind(pathname, resourceType),
+      bytes,
+    });
+  }
+
+  const totalBytes = resources.reduce((sum, resource) => sum + resource.bytes, 0);
+  const scriptStyleBytes = resources
+    .filter((resource) => resource.kind === "script" || resource.kind === "style")
+    .reduce((sum, resource) => sum + resource.bytes, 0);
+  const mediaFontBytes = resources
+    .filter((resource) => ["image", "font"].includes(resource.kind))
+    .reduce((sum, resource) => sum + resource.bytes, 0);
+  const missingBytePaths = resources.filter((resource) => resource.bytes <= 0).map((resource) => resource.path);
+  const largest = [...resources].sort((a, b) => b.bytes - a.bytes).slice(0, 5);
+  const budget = {
+    resourceCount: resources.length,
+    totalBytes,
+    scriptStyleBytes,
+    mediaFontBytes,
+    missingBytePaths,
+    externalResources: [...externalResources],
+    largest,
+  };
+
+  if (resources.length > 18 || totalBytes > 5_600_000 || scriptStyleBytes > 360_000 || mediaFontBytes > 5_200_000) {
+    fail(`INSTNCT performance budget exceeded: ${JSON.stringify(budget)}`);
+  }
+  if (missingBytePaths.length) fail(`INSTNCT performance missing byte sizes: ${JSON.stringify(budget)}`);
+  if (externalResources.size) fail(`INSTNCT loaded external subresources: ${JSON.stringify(budget)}`);
+
+  await page.close();
+  if (errors.length) fail(`INSTNCT performance browser errors: ${errors.join(" | ")}`);
 }
 
 async function probeAccessibilitySemantics(browser, origin) {
@@ -588,6 +711,7 @@ try {
   await probeInstnctMobile(browser, server.origin);
   await probeResponsiveViewports(browser, server.origin);
   await probeInstnctScrollReveals(browser, server.origin);
+  await probeInstnctPerformanceBudget(browser, server.origin);
   await probeAccessibilitySemantics(browser, server.origin);
 } finally {
   if (browser) await browser.close();

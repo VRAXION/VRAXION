@@ -52,7 +52,7 @@
       <a href="#get-notified">INSTNCT</a>
       <a href="#not-ai">Not AI</a>
       <a href="#trust">Proof</a>
-      <a href="../vngard/">VNGARD roadmap</a>
+      <a href="../vngard/" aria-label="VNGARD roadmap">VNGARD</a>
       <a href="https://github.com/VRAXION/VRAXION" target="_blank" rel="noopener noreferrer">GitHub</a>
     </nav>
   </header>
@@ -63,7 +63,7 @@
       <i></i>
     </div>
     <div class="indicator-readout">
-      <strong><span data-indicator-number>01</span> <span data-indicator-total>/ 12</span></strong>
+      <strong><span data-indicator-number>01</span> <span data-indicator-total>/ 13</span></strong>
       <small data-indicator-label>intro</small>
     </div>
     <ol>
@@ -72,13 +72,14 @@
       <li><a href="#hallucination" data-section-link="flagship"><span>03</span> Flagship</a></li>
       <li><a href="#trust" data-section-link="verify"><span>04</span> Verify</a></li>
       <li><a href="#grounding" data-section-link="claim"><span>05</span> Claim</a></li>
-      <li><a href="#fabric" data-section-link="structure"><span>06</span> Structure</a></li>
-      <li><a href="#dev-trail" data-section-link="terminal"><span>07</span> Terminal</a></li>
-      <li><a href="#t1-reflex-class" data-section-link="model"><span>08</span> Model</a></li>
-      <li><a href="#roadmap" data-section-link="direction"><span>09</span> Direction</a></li>
-      <li><a href="#vraxion-note" data-section-link="vraxion"><span>10</span> VRAXION</a></li>
-      <li><a href="#faq" data-section-link="questions"><span>11</span> Questions</a></li>
-      <li><a href="#get-notified" data-section-link="signal"><span>12</span> Signal</a></li>
+      <li><a href="#manifesto" data-section-link="manifesto"><span>06</span> Manifesto</a></li>
+      <li><a href="#fabric" data-section-link="structure"><span>07</span> Structure</a></li>
+      <li><a href="#dev-trail" data-section-link="terminal"><span>08</span> Terminal</a></li>
+      <li><a href="#t1-reflex-class" data-section-link="model"><span>09</span> Model</a></li>
+      <li><a href="#roadmap" data-section-link="direction"><span>10</span> Direction</a></li>
+      <li><a href="#vraxion-note" data-section-link="vraxion"><span>11</span> VRAXION</a></li>
+      <li><a href="#faq" data-section-link="questions"><span>12</span> Questions</a></li>
+      <li><a href="#get-notified" data-section-link="signal"><span>13</span> Signal</a></li>
     </ol>
   </nav>
 
@@ -166,7 +167,7 @@
           <div class="live-readout" aria-label="Warm selector benchmark">
             <span class="pulse-dot"></span>
             <div>
-              <strong>5<span>us</span></strong>
+              <strong><span class="metric-value" data-count-to="5">5</span><span class="metric-unit">us</span></strong>
               <small>warm selector p50</small>
             </div>
             <div class="waveform" aria-hidden="true">
@@ -344,7 +345,7 @@
       </div>
     </section>
 
-    <section class="manifesto section-dark" aria-label="INSTNCT manifesto">
+    <section class="manifesto section-dark" id="manifesto" tabindex="-1" aria-label="INSTNCT manifesto">
       <div class="shell manifesto-inner" data-manifesto>
         <div class="manifesto-panel">
           <span class="corner corner-tl"></span>
@@ -368,7 +369,7 @@
     <section class="section section-dark" id="fabric" tabindex="-1" aria-labelledby="fabric-title">
       <div class="shell">
         <div class="section-label">
-          <span>06</span>
+          <span>07</span>
           <small>how it fits together</small>
         </div>
         <div class="section-heading">
@@ -424,7 +425,7 @@
           <div class="terminal-bar">
             <span></span><span></span><span></span>
             <strong>instnct - bash - 80x24</strong>
-            <em>live local preview</em>
+            <em>planned local flow</em>
           </div>
           <pre data-cli-demo><code>$ instnct --mode exact --offline
 network: disabled
@@ -435,11 +436,12 @@ speedup: 52x
 unsupported-query: refused, no invention
 mode: exact recall</code></pre>
           <div class="terminal-actions" aria-label="Copy INSTNCT commands">
-            <span>try:</span>
+            <span>planned commands:</span>
             <button type="button" data-copy-command="instnct --version">instnct --version</button>
             <button type="button" data-copy-command="instnct run --mode exact-recall">instnct run --mode exact-recall</button>
             <button type="button" data-copy-command="instnct toggle --imagination on">toggle imagination</button>
           </div>
+          <p class="terminal-note">These commands are release-target examples until the signed T1 artifact ships.</p>
         </div>
       </div>
     </section>
@@ -447,7 +449,7 @@ mode: exact recall</code></pre>
     <section class="section" id="t1-reflex-class" tabindex="-1" aria-labelledby="t1-title">
       <div class="shell">
         <div class="section-label">
-          <span>08</span>
+          <span>09</span>
           <small>model note / T1</small>
         </div>
         <div class="section-heading">
@@ -484,7 +486,7 @@ mode: exact recall</code></pre>
     <section class="section section-dark" id="roadmap" tabindex="-1" aria-labelledby="roadmap-title">
       <div class="shell">
         <div class="section-label">
-          <span>09</span>
+          <span>10</span>
           <small>roadmap</small>
         </div>
         <div class="section-heading">
@@ -515,7 +517,7 @@ mode: exact recall</code></pre>
     <section class="section" id="vraxion-note" tabindex="-1" aria-labelledby="founder-title">
       <div class="shell narrow">
         <div class="section-label">
-          <span>10</span>
+          <span>11</span>
           <small>founder note / VRAXION</small>
         </div>
         <div class="section-heading">
@@ -633,9 +635,23 @@ mode: exact recall</code></pre>
         <div class="notify-actions">
           <a class="button button-primary" href="https://github.com/VRAXION/VRAXION" target="_blank" rel="noopener noreferrer">Watch the repo</a>
           <a class="button button-secondary" href="https://github.com/VRAXION/VRAXION/blob/main/LICENSE_BOUNDARY.md" target="_blank" rel="noopener noreferrer">Release boundary</a>
+          <a class="button button-secondary" href="https://github.com/VRAXION/VRAXION/blob/main/CURRENT_STATUS.md" target="_blank" rel="noopener noreferrer">Current status</a>
+          <a class="button button-secondary" href="https://github.com/VRAXION/VRAXION/blob/main/CURRENT_CAPABILITIES.md" target="_blank" rel="noopener noreferrer">Capabilities</a>
+          <a class="button button-secondary" href="https://github.com/VRAXION/VRAXION/blob/main/PUBLIC_DELIVERY_MODEL.md" target="_blank" rel="noopener noreferrer">Delivery model</a>
+          <a class="button button-secondary" href="https://github.com/VRAXION/VRAXION/blob/main/PUBLIC_SURFACE_POLICY.md" target="_blank" rel="noopener noreferrer">Surface policy</a>
           <a class="button button-secondary" href="https://github.com/VRAXION/VRAXION/releases/tag/public-sdk-p11-20260629" target="_blank" rel="noopener noreferrer">P11 SDK boundary</a>
           <a class="button button-secondary" href="https://github.com/VRAXION/VRAXION/archive/refs/tags/public-sdk-p11-20260629.zip" target="_blank" rel="noopener noreferrer">P11 source archive</a>
           <a class="button button-secondary" href="../INSTNCT_BENCHMARK_NOTES.md">Benchmark notes</a>
+        </div>
+        <div class="artifact-status" aria-label="INSTNCT artifact availability">
+          <div>
+            <strong>Available now</strong>
+            <span>P11 SDK boundary release, public source archive, benchmark notes, status docs.</span>
+          </div>
+          <div>
+            <strong>Not yet available</strong>
+            <span>Signed T1 binary, checksums, benchmark harness, raw timing output, refusal examples.</span>
+          </div>
         </div>
         <p class="notify-note">
           P11 source archive means the public SDK/docs boundary snapshot, not the private engine source or a runnable T1 binary. The current INSTNCT page source lives on main until the next release tag.

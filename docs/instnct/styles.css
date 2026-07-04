@@ -689,6 +689,9 @@ html.keyboard-dialog-open {
   --hero-mesh-y: 0px;
   --hero-mark-x: 0px;
   --hero-mark-y: 0px;
+  --hero-scroll-y: 0px;
+  --hero-scroll-bg-y: 0px;
+  --hero-scroll-opacity: 1;
   min-height: 100svh;
   display: flex;
   align-items: center;
@@ -711,7 +714,7 @@ html.keyboard-dialog-open {
   object-position: 64% center;
   opacity: 0.52;
   filter: saturate(1.08) contrast(1.04) brightness(0.9);
-  transform: translate3d(var(--hero-bg-x), var(--hero-bg-y), 0) scale(1.025);
+  transform: translate3d(var(--hero-bg-x), calc(var(--hero-bg-y) + var(--hero-scroll-bg-y)), 0) scale(1.025);
   transition: transform 900ms cubic-bezier(0.16, 1, 0.3, 1);
   will-change: transform;
 }
@@ -757,6 +760,12 @@ html.keyboard-dialog-open {
   z-index: 2;
   width: min(100%, var(--max));
   margin: 0 auto;
+  opacity: var(--hero-scroll-opacity);
+  transform: translate3d(0, var(--hero-scroll-y), 0);
+  transition:
+    opacity 180ms linear,
+    transform 180ms linear;
+  will-change: opacity, transform;
 }
 
 .hero-cursor-glow {
@@ -912,6 +921,38 @@ html.keyboard-dialog-open {
   background-clip: text;
 }
 
+.has-js .hero .badge-row,
+.has-js .hero .wordmark,
+.has-js .hero .creator-line,
+.has-js .hero .hero-headline,
+.has-js .hero .lead,
+.has-js .hero .hero-actions,
+.has-js .hero .principle-list {
+  opacity: 0;
+  transform: translateY(12px);
+  transition:
+    opacity 520ms ease,
+    transform 520ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.has-js .hero.is-booted .badge-row,
+.has-js .hero.is-booted .wordmark,
+.has-js .hero.is-booted .creator-line,
+.has-js .hero.is-booted .hero-headline,
+.has-js .hero.is-booted .lead,
+.has-js .hero.is-booted .hero-actions,
+.has-js .hero.is-booted .principle-list {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.has-js .hero.is-booted .wordmark { transition-delay: 70ms; }
+.has-js .hero.is-booted .creator-line { transition-delay: 120ms; }
+.has-js .hero.is-booted .hero-headline { transition-delay: 170ms; }
+.has-js .hero.is-booted .lead { transition-delay: 220ms; }
+.has-js .hero.is-booted .hero-actions { transition-delay: 270ms; }
+.has-js .hero.is-booted .principle-list { transition-delay: 320ms; }
+
 .lead {
   max-width: 620px;
   margin-bottom: 0;
@@ -1009,13 +1050,23 @@ html.keyboard-dialog-open {
   line-height: 0.92;
 }
 
-.live-readout strong span {
+.live-readout strong .metric-unit {
   margin-left: 2px;
   color: rgba(176, 244, 255, 0.78);
   background: none;
   -webkit-text-fill-color: currentColor;
   font-size: 0.78rem;
   font-weight: 700;
+}
+
+.live-readout strong .metric-value {
+  margin-left: 0;
+  color: transparent;
+  background: linear-gradient(180deg, #ffffff, var(--cyan-soft) 52%, var(--cyan));
+  -webkit-background-clip: text;
+  background-clip: text;
+  font-size: 1em;
+  font-weight: inherit;
 }
 
 .live-readout small {
@@ -2287,6 +2338,17 @@ html.keyboard-dialog-open {
   background: rgba(255, 61, 129, 0.1);
 }
 
+.terminal-note {
+  margin: 0;
+  padding: 0 16px 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.04);
+  color: var(--metal);
+  background: rgba(5, 5, 7, 0.32);
+  font-family: "SFMono-Regular", "Cascadia Code", Consolas, "Liberation Mono", ui-monospace, monospace;
+  font-size: 0.68rem;
+  line-height: 1.55;
+}
+
 .info-grid,
 .founder-grid {
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -2522,6 +2584,45 @@ html.keyboard-dialog-open {
   line-height: 1.6;
 }
 
+.artifact-status {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin: 26px auto 0;
+  text-align: left;
+}
+
+.artifact-status div {
+  min-height: 116px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background:
+    linear-gradient(135deg, rgba(0, 229, 255, 0.05), transparent 48%),
+    rgba(255, 255, 255, 0.022);
+}
+
+.artifact-status div:last-child {
+  background:
+    linear-gradient(135deg, rgba(255, 61, 129, 0.055), transparent 48%),
+    rgba(255, 255, 255, 0.022);
+}
+
+.artifact-status strong {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--ink);
+  font-size: 0.94rem;
+  font-weight: 820;
+}
+
+.artifact-status span {
+  display: block;
+  color: var(--muted);
+  font-size: 0.86rem;
+  line-height: 1.55;
+}
+
 .site-footer {
   border-top: 1px solid var(--line);
   background: var(--void-950);
@@ -2626,13 +2727,14 @@ html.keyboard-dialog-open {
   }
 
   .nav a:nth-child(2),
+  .nav a:nth-child(3),
   .nav-soon {
     display: none;
   }
 
   .hero {
     min-height: auto;
-    padding: calc(var(--header-h) + 64px) 16px 74px;
+    padding: calc(var(--header-h) + 40px) 16px 54px;
   }
 
   .hero-background img {
@@ -2670,7 +2772,7 @@ html.keyboard-dialog-open {
 
   .badge-row {
     gap: 8px;
-    margin-bottom: 22px;
+    margin-bottom: 16px;
   }
 
   .badge {
@@ -2684,25 +2786,27 @@ html.keyboard-dialog-open {
   }
 
   .creator-line {
-    margin-bottom: 24px;
+    margin-bottom: 16px;
     font-size: 0.68rem;
   }
 
   .hero-headline {
     max-width: 520px;
-    font-size: 2rem;
+    font-size: 1.92rem;
   }
 
   .lead {
     max-width: 520px;
-    font-size: 1rem;
+    font-size: 0.96rem;
+    line-height: 1.58;
   }
 
   .hero-actions {
     display: grid;
     grid-template-columns: 1fr;
     max-width: 430px;
-    margin: 28px 0 36px;
+    gap: 10px;
+    margin: 22px 0 22px;
   }
 
   .button,
@@ -2710,8 +2814,14 @@ html.keyboard-dialog-open {
     width: 100%;
   }
 
+  .button {
+    min-height: 44px;
+    padding: 0 18px;
+  }
+
   .live-readout {
     justify-content: flex-start;
+    min-height: 50px;
   }
 
   .principle-list {
@@ -2720,8 +2830,8 @@ html.keyboard-dialog-open {
   }
 
   .principle-list li {
-    min-height: 74px;
-    padding: 13px;
+    min-height: 64px;
+    padding: 12px;
   }
 
   .section {
@@ -2850,6 +2960,10 @@ html.keyboard-dialog-open {
     flex-wrap: wrap;
     justify-content: flex-start;
   }
+
+  .artifact-status {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 420px) {
@@ -2869,21 +2983,55 @@ html.keyboard-dialog-open {
     font-size: 0.78rem;
   }
 
-  .nav a:nth-child(3) {
+  .nav a:nth-child(4) {
     display: none;
   }
 
   .hero {
-    padding-right: 14px;
-    padding-left: 14px;
+    padding: calc(var(--header-h) + 34px) 14px 44px;
   }
 
   .hero-headline {
     font-size: 1.7rem;
   }
 
+  .lead {
+    font-size: 0.9rem;
+    line-height: 1.5;
+  }
+
+  .hero-actions .button-secondary {
+    display: none;
+  }
+
   .principle-list {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .principle-list li {
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    align-content: center;
+    min-height: 56px;
+    padding: 10px;
+    column-gap: 8px;
+  }
+
+  .principle-list .card-icon {
+    grid-row: span 2;
+    width: 18px;
+    height: 18px;
+    margin-bottom: 0;
+  }
+
+  .principle-list strong {
+    margin-bottom: 0;
+    font-size: 0.78rem;
+  }
+
+  .principle-list span {
+    font-size: 0.56rem;
   }
 
   .waveform {
@@ -2907,6 +3055,17 @@ html.keyboard-dialog-open {
   }
 
   .has-js [data-reveal] {
+    opacity: 1;
+    transform: none;
+  }
+
+  .has-js .hero .badge-row,
+  .has-js .hero .wordmark,
+  .has-js .hero .creator-line,
+  .has-js .hero .hero-headline,
+  .has-js .hero .lead,
+  .has-js .hero .hero-actions,
+  .has-js .hero .principle-list {
     opacity: 1;
     transform: none;
   }

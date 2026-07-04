@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /VRAXION/
+
+Sitemap: https://vraxion.github.io/VRAXION/sitemap.xml

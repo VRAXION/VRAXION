@@ -7,13 +7,17 @@ const root = process.cwd();
 const htmlPath = path.join(root, "docs", "instnct", "index.html");
 const jsPath = path.join(root, "docs", "instnct", "instnct.js");
 const cssPath = path.join(root, "docs", "instnct", "styles.css");
+const browserSmokePath = path.join(root, "scripts", "smoke_instnct_browser.mjs");
 const versionPath = path.join(root, "docs", "VERSION.json");
+const robotsPath = path.join(root, "docs", "robots.txt");
+const sitemapPath = path.join(root, "docs", "sitemap.xml");
 const docsRoot = path.join(root, "docs");
 const siteRoot = path.join(root, "docs", "instnct");
 
 const html = fs.readFileSync(htmlPath, "utf8");
 const js = fs.readFileSync(jsPath, "utf8");
 const css = fs.readFileSync(cssPath, "utf8");
+const browserSmoke = fs.readFileSync(browserSmokePath, "utf8");
 let latestRelease = "";
 const failures = [];
 
@@ -72,6 +76,10 @@ for (const required of [
   "source-snapshot-pill",
   "data-benchmark",
   "terminal-actions",
+  "terminal-note",
+  "artifact-status",
+  "planned local flow",
+  "planned commands:",
   "../INSTNCT_BENCHMARK_NOTES.md",
 ]) {
   if (!html.includes(required)) fail(`missing INSTNCT markup: ${required}`);
@@ -99,8 +107,19 @@ for (const required of [
   ".terminal-line[data-line-type=\"ok\"]",
   ".terminal-bar em",
   ".faq-item button",
+  ".terminal-note",
+  ".artifact-status",
 ]) {
   if (!css.includes(required)) fail(`missing INSTNCT style: ${required}`);
+}
+
+for (const required of [
+  "byteSizeForServedPath",
+  "probeInstnctPerformanceBudget",
+  "totalBytes",
+  "externalResources",
+]) {
+  if (!browserSmoke.includes(required)) fail(`missing INSTNCT browser smoke guard: ${required}`);
 }
 
 for (const forbidden of [
@@ -129,6 +148,12 @@ if (latestRelease && !html.includes(latestRelease)) {
 }
 if (latestRelease && !html.includes(`archive/refs/tags/${latestRelease}.zip`)) {
   fail("INSTNCT page must expose the safe public source snapshot archive");
+}
+if (latestRelease) {
+  const releaseSlugs = [...new Set([...html.matchAll(/public-sdk-p\d+-\d{8}/g)].map((match) => match[0]))];
+  for (const slug of releaseSlugs) {
+    if (slug !== latestRelease) fail(`release slug ${slug} does not match docs/VERSION.json ${latestRelease}`);
+  }
 }
 if (!html.includes("not the private engine source")) {
   fail("INSTNCT source snapshot CTA must state the private-engine boundary");
@@ -178,8 +203,8 @@ for (const match of html.matchAll(/\shref="#([^"]+)"/g)) {
 
 const sectionLinks = [...html.matchAll(/data-section-link="/g)].length;
 const initialTotal = html.match(/data-indicator-total>\s*\/\s*(\d+)/)?.[1];
-if (sectionLinks !== 12) fail(`expected 12 section links, found ${sectionLinks}`);
-if (initialTotal !== "12") fail(`initial indicator total should be 12, found ${initialTotal || "missing"}`);
+if (sectionLinks !== 13) fail(`expected 13 section links, found ${sectionLinks}`);
+if (initialTotal !== "13") fail(`initial indicator total should be 13, found ${initialTotal || "missing"}`);
 
 const faqItems = [...html.matchAll(/class="faq-item/g)].length;
 if (faqItems < 8) fail(`expected at least 8 FAQ items, found ${faqItems}`);
@@ -225,6 +250,26 @@ if (/\.fabric-diagram::before/.test(css)) {
 }
 if (/\.icon-dot\b/.test(css) || html.includes("icon-dot")) {
   fail("old dot-only card icon language should not remain");
+}
+
+if (!fs.existsSync(robotsPath)) fail("docs/robots.txt is missing");
+else {
+  const robots = fs.readFileSync(robotsPath, "utf8");
+  if (!robots.includes("Sitemap: https://vraxion.github.io/VRAXION/sitemap.xml")) {
+    fail("robots.txt must point at the VRAXION sitemap");
+  }
+}
+
+if (!fs.existsSync(sitemapPath)) fail("docs/sitemap.xml is missing");
+else {
+  const sitemap = fs.readFileSync(sitemapPath, "utf8");
+  for (const url of [
+    "https://vraxion.github.io/VRAXION/",
+    "https://vraxion.github.io/VRAXION/instnct/",
+    "https://vraxion.github.io/VRAXION/vngard/",
+  ]) {
+    if (!sitemap.includes(`<loc>${url}</loc>`)) fail(`sitemap missing ${url}`);
+  }
 }
 
 if (failures.length > 0) {

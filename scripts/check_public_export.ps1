@@ -360,6 +360,8 @@ try {
         "docs/instnct/instnct.js",
         "docs/instnct/styles.css",
         "docs/PUBLIC_SURFACE_POLICY.md",
+        "docs/robots.txt",
+        "docs/sitemap.xml",
         "docs/VERSION.json",
         "docs/index.html",
         "docs/vngard/assets/alpha-sync-fabric-card.jpg",

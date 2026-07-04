@@ -64,6 +64,8 @@
   const indicatorTotal = document.querySelector("[data-indicator-total]");
   const indicatorLabel = document.querySelector("[data-indicator-label]");
   const sectionLinks = Array.from(document.querySelectorAll("[data-section-link]"));
+  const hero = document.querySelector(".hero");
+  const heroGlow = document.querySelector(".hero-cursor-glow");
 
   const sections = sectionLinks
     .map((link) => {
@@ -111,6 +113,15 @@
     if (backToTop) {
       backToTop.classList.toggle("is-visible", window.scrollY > window.innerHeight * 1.25);
     }
+    if (hero) {
+      const rect = hero.getBoundingClientRect();
+      const range = Math.max(1, rect.height * 0.72);
+      const heroProgress = Math.min(1, Math.max(0, -rect.top / range));
+      const heroOpacity = Math.max(0.42, 1 - heroProgress * 0.62);
+      hero.style.setProperty("--hero-scroll-y", reduceMotion ? "0px" : `${(-34 * heroProgress).toFixed(2)}px`);
+      hero.style.setProperty("--hero-scroll-bg-y", reduceMotion ? "0px" : `${(26 * heroProgress).toFixed(2)}px`);
+      hero.style.setProperty("--hero-scroll-opacity", reduceMotion ? "1" : heroOpacity.toFixed(3));
+    }
 
     if (indicator && sections.length > 0) {
       const trigger = window.innerHeight * 0.56;
@@ -146,8 +157,9 @@
   window.addEventListener("resize", requestScrollUpdate);
   updateScrollState();
 
-  const hero = document.querySelector(".hero");
-  const heroGlow = document.querySelector(".hero-cursor-glow");
+  if (hero) {
+    raf(() => hero.classList.add("is-booted"));
+  }
 
   if (hero && heroGlow && finePointer && !reduceMotion) {
     const target = {
@@ -430,8 +442,8 @@
     raf(tick);
   }
 
-  const benchmark = document.querySelector("[data-benchmark]");
-  if (benchmark) {
+  const countSections = Array.from(document.querySelectorAll("[data-benchmark], .live-readout"));
+  countSections.forEach((benchmark) => {
     const counters = Array.from(benchmark.querySelectorAll("[data-count-to]"));
     counters.forEach((counter) => {
       if (!reduceMotion) counter.textContent = "0";
@@ -459,7 +471,7 @@
     } else {
       revealBenchmark();
     }
-  }
+  });
 
   function installManifesto() {
     const wrap = document.querySelector("[data-manifesto]");
