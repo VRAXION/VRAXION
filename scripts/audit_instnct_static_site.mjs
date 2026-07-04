@@ -117,6 +117,18 @@ for (const required of [
   if (!html.includes(required)) fail(`missing INSTNCT markup: ${required}`);
 }
 
+const keyboardTrigger = html.match(/<button class="keyboard-help-trigger"[^>]*>/)?.[0] || "";
+if (
+  attr(keyboardTrigger, "aria-haspopup") !== "dialog" ||
+  attr(keyboardTrigger, "aria-controls") !== "keyboard-dialog" ||
+  attr(keyboardTrigger, "aria-expanded") !== "false"
+) {
+  fail("keyboard shortcut trigger must expose dialog controls and closed state");
+}
+if (!html.includes('id="keyboard-dialog" class="keyboard-dialog" role="dialog"')) {
+  fail("keyboard shortcut dialog must expose a stable id for aria-controls");
+}
+
 for (const required of [
   "installHeroMesh",
   "installFabricFlow",
@@ -129,6 +141,8 @@ for (const required of [
   "data-copy-status",
   "α-SYNC",
   "setKeyboardBackgroundInert",
+  'keyboardTrigger?.setAttribute("aria-expanded", "true")',
+  'keyboardTrigger?.setAttribute("aria-expanded", "false")',
   "dataset.lineType",
   "aria-hidden",
 ]) {

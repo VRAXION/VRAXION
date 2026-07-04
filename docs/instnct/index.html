@@ -91,7 +91,7 @@
     <span aria-hidden="true"></span>
   </button>
 
-  <button class="keyboard-help-trigger" type="button" aria-label="Keyboard shortcuts" title="Keyboard shortcuts">
+  <button class="keyboard-help-trigger" type="button" aria-label="Keyboard shortcuts" title="Keyboard shortcuts" aria-haspopup="dialog" aria-controls="keyboard-dialog" aria-expanded="false">
     <span aria-hidden="true">?</span>
   </button>
 
@@ -100,7 +100,7 @@
     GitHub tag ZIP
   </a>
 
-  <div class="keyboard-dialog" role="dialog" aria-modal="true" aria-labelledby="keyboard-dialog-title" hidden>
+  <div id="keyboard-dialog" class="keyboard-dialog" role="dialog" aria-modal="true" aria-labelledby="keyboard-dialog-title" hidden>
     <div class="keyboard-dialog-backdrop" data-keyboard-close></div>
     <div class="keyboard-dialog-panel">
       <div class="keyboard-dialog-head">

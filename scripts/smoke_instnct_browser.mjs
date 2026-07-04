@@ -367,11 +367,27 @@ async function probeInstnctDesktop(browser, origin) {
     open: !document.querySelector(".keyboard-dialog").hidden,
     focusInside: document.querySelector(".keyboard-dialog").contains(document.activeElement),
     mainInert: document.querySelector("main").hasAttribute("inert"),
+    dialogId: document.querySelector(".keyboard-dialog")?.id,
+    triggerControls: document.querySelector(".keyboard-help-trigger")?.getAttribute("aria-controls"),
+    triggerExpanded: document.querySelector(".keyboard-help-trigger")?.getAttribute("aria-expanded"),
   }));
-  if (!dialog.open || !dialog.focusInside || !dialog.mainInert) {
+  if (
+    !dialog.open ||
+    !dialog.focusInside ||
+    !dialog.mainInert ||
+    dialog.dialogId !== "keyboard-dialog" ||
+    dialog.triggerControls !== "keyboard-dialog" ||
+    dialog.triggerExpanded !== "true"
+  ) {
     fail(`keyboard dialog is not modal: ${JSON.stringify(dialog)}`);
   }
   await page.keyboard.press("Escape");
+  const keyboardTriggerExpandedAfterClose = await page.evaluate(() =>
+    document.querySelector(".keyboard-help-trigger")?.getAttribute("aria-expanded"),
+  );
+  if (keyboardTriggerExpandedAfterClose !== "false") {
+    fail(`keyboard dialog trigger did not return to closed state: ${keyboardTriggerExpandedAfterClose}`);
+  }
   await page.locator("header .nav a").first().focus();
   const focusedBeforeEscape = await page.evaluate(() => document.activeElement?.textContent?.trim());
   await page.keyboard.press("Escape");

@@ -1033,6 +1033,7 @@
     if (!keyboardDialog) return;
     lastKeyboardFocus = document.activeElement;
     keyboardDialog.hidden = false;
+    keyboardTrigger?.setAttribute("aria-expanded", "true");
     doc.classList.add("keyboard-dialog-open");
     setKeyboardBackgroundInert(true);
     const close = keyboardDialog.querySelector(".keyboard-close");
@@ -1043,6 +1044,7 @@
     if (!keyboardDialog || keyboardDialog.hidden) return;
     setKeyboardBackgroundInert(false);
     keyboardDialog.hidden = true;
+    keyboardTrigger?.setAttribute("aria-expanded", "false");
     doc.classList.remove("keyboard-dialog-open");
     restoreKeyboardFocus();
   }
