@@ -411,6 +411,9 @@ if (/\.fabric-diagram::before/.test(css)) {
 if (/\.icon-dot\b/.test(css) || html.includes("icon-dot")) {
   fail("old dot-only card icon language should not remain");
 }
+if (/\.nav-soon\b/.test(css) || html.includes("nav-soon")) {
+  fail("old hidden nav-soon shell should not remain");
+}
 
 if (!fs.existsSync(robotsPath)) fail("docs/robots.txt is missing");
 else {

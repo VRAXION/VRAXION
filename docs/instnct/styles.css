@@ -739,8 +739,7 @@ html.keyboard-dialog-open {
   min-width: 0;
 }
 
-.nav a,
-.nav-soon {
+.nav a {
   display: inline-flex;
   align-items: center;
   min-height: 38px;
@@ -754,23 +753,6 @@ html.keyboard-dialog-open {
 .nav a:hover,
 .nav a:focus-visible {
   color: var(--ink);
-}
-
-.nav-soon {
-  gap: 6px;
-  color: rgba(138, 147, 164, 0.58);
-}
-
-.nav-soon span {
-  padding: 3px 6px;
-  border: 1px solid var(--line);
-  border-radius: 5px;
-  color: rgba(176, 244, 255, 0.58);
-  background: rgba(255, 255, 255, 0.04);
-  font-family: "SFMono-Regular", "Cascadia Code", Consolas, "Liberation Mono", ui-monospace, monospace;
-  font-size: 0.62rem;
-  font-weight: 800;
-  text-transform: uppercase;
 }
 
 .hero {
@@ -2839,15 +2821,13 @@ html.keyboard-dialog-open {
     gap: 8px;
   }
 
-  .nav a,
-  .nav-soon {
+  .nav a {
     min-height: 36px;
     font-size: 0.82rem;
   }
 
   .nav a:nth-child(2),
-  .nav a:nth-child(3),
-  .nav-soon {
+  .nav a:nth-child(3) {
     display: none;
   }
 
