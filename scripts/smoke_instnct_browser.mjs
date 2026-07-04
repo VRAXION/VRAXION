@@ -430,6 +430,152 @@ async function probeInstnctScrollReveals(browser, origin) {
   if (errors.length) fail(`INSTNCT reveal browser errors: ${errors.join(" | ")}`);
 }
 
+async function probeAccessibilitySemantics(browser, origin) {
+  const targets = [
+    { path: "/", label: "home" },
+    { path: "/instnct/", label: "INSTNCT" },
+  ];
+
+  for (const target of targets) {
+    const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+    const errors = trackPageFailures(page, origin, `${target.label} accessibility`);
+    await page.goto(`${origin}${target.path}`, { waitUntil: "networkidle" });
+    await page.waitForTimeout(300);
+
+    const result = await page.evaluate(() => {
+      const focusableSelector = [
+        "a[href]",
+        "button:not([disabled])",
+        "input:not([disabled])",
+        "select:not([disabled])",
+        "textarea:not([disabled])",
+        "summary",
+        "[tabindex]:not([tabindex='-1'])",
+      ].join(",");
+      const isHidden = (el) => {
+        if (!el) return true;
+        if (el.hidden || el.closest("[hidden]") || el.closest("[inert]")) return true;
+        const style = getComputedStyle(el);
+        return style.display === "none" || style.visibility === "hidden";
+      };
+      const visible = (el) => !isHidden(el) && (el.offsetWidth > 0 || el.offsetHeight > 0);
+      const nameOf = (el) =>
+        (el.getAttribute("aria-label") ||
+          (el.getAttribute("aria-labelledby") || "")
+            .split(/\s+/)
+            .map((id) => document.getElementById(id)?.textContent || "")
+            .join(" ") ||
+          el.textContent ||
+          el.getAttribute("title") ||
+          "")
+          .trim()
+          .replace(/\s+/g, " ");
+
+      const ids = [...document.querySelectorAll("[id]")].map((el) => el.id);
+      const duplicates = ids.filter((id, index) => ids.indexOf(id) !== index);
+      const headings = [...document.querySelectorAll("h1,h2,h3,h4,h5,h6")]
+        .filter(visible)
+        .map((heading) => ({
+          level: Number(heading.tagName.slice(1)),
+          text: heading.textContent.trim().replace(/\s+/g, " "),
+        }));
+      const headingSkips = [];
+      for (let i = 1; i < headings.length; i += 1) {
+        if (headings[i].level > headings[i - 1].level + 1) {
+          headingSkips.push(`${headings[i - 1].text} -> ${headings[i].text}`);
+        }
+      }
+
+      const interactiveMissingNames = [...document.querySelectorAll("a[href],button")]
+        .filter(visible)
+        .filter((el) => !nameOf(el))
+        .map((el) => el.outerHTML.slice(0, 140));
+      const imageIssues = [...document.images]
+        .filter(visible)
+        .filter((img) => !img.hasAttribute("alt") && img.getAttribute("aria-hidden") !== "true")
+        .map((img) => img.currentSrc || img.src);
+      const ariaHiddenFocusable = [...document.querySelectorAll('[aria-hidden="true"]')]
+        .flatMap((el) => [...el.querySelectorAll(focusableSelector)].filter(visible))
+        .map((el) => el.outerHTML.slice(0, 140));
+      const brokenAriaRefs = [];
+      for (const el of document.querySelectorAll("[aria-controls],[aria-labelledby],[aria-describedby]")) {
+        for (const attr of ["aria-controls", "aria-labelledby", "aria-describedby"]) {
+          const value = el.getAttribute(attr);
+          if (!value) continue;
+          for (const id of value.split(/\s+/)) {
+            if (id && !document.getElementById(id)) brokenAriaRefs.push(`${attr}=${id}`);
+          }
+        }
+      }
+
+      return {
+        landmarks: {
+          header: document.querySelectorAll("header").length,
+          main: document.querySelectorAll("main").length,
+          footer: document.querySelectorAll("footer").length,
+          navPrimary: document.querySelectorAll('nav[aria-label="Primary"]').length,
+        },
+        h1Count: headings.filter((heading) => heading.level === 1).length,
+        headingSkips,
+        duplicates: [...new Set(duplicates)],
+        interactiveMissingNames,
+        imageIssues,
+        ariaHiddenFocusable,
+        brokenAriaRefs: [...new Set(brokenAriaRefs)],
+      };
+    });
+
+    if (result.landmarks.header !== 1 || result.landmarks.main !== 1 || result.landmarks.footer !== 1) {
+      fail(`${target.label} landmark count is invalid: ${JSON.stringify(result.landmarks)}`);
+    }
+    if (result.landmarks.navPrimary !== 1) {
+      fail(`${target.label} primary nav landmark is missing: ${JSON.stringify(result.landmarks)}`);
+    }
+    if (result.h1Count !== 1) fail(`${target.label} must expose exactly one visible h1, found ${result.h1Count}`);
+    if (result.headingSkips.length) fail(`${target.label} heading levels skip: ${result.headingSkips.join(" | ")}`);
+    if (result.duplicates.length) fail(`${target.label} duplicate ids: ${result.duplicates.join(", ")}`);
+    if (result.interactiveMissingNames.length) {
+      fail(`${target.label} interactive elements without names: ${result.interactiveMissingNames.join(" | ")}`);
+    }
+    if (result.imageIssues.length) fail(`${target.label} images missing alt/aria-hidden: ${result.imageIssues.join(" | ")}`);
+    if (result.ariaHiddenFocusable.length) {
+      fail(`${target.label} aria-hidden contains focusable elements: ${result.ariaHiddenFocusable.join(" | ")}`);
+    }
+    if (result.brokenAriaRefs.length) fail(`${target.label} broken aria refs: ${result.brokenAriaRefs.join(", ")}`);
+
+    await page.keyboard.press("Home");
+    const focusProblems = [];
+    for (let i = 0; i < 18; i += 1) {
+      await page.keyboard.press("Tab");
+      const state = await page.evaluate(() => {
+        const el = document.activeElement;
+        const rect = el?.getBoundingClientRect();
+        const style = el ? getComputedStyle(el) : null;
+        return {
+          tag: el?.tagName || "",
+          text: el?.textContent?.trim().replace(/\s+/g, " ").slice(0, 80) || "",
+          hidden:
+            !el ||
+            el === document.body ||
+            el.hidden ||
+            !!el.closest("[hidden]") ||
+            !!el.closest("[inert]") ||
+            style?.display === "none" ||
+            style?.visibility === "hidden",
+          visibleRect: !!rect && rect.width > 0 && rect.height > 0,
+        };
+      });
+      if (state.hidden || !state.visibleRect) focusProblems.push(state);
+    }
+    if (focusProblems.length) {
+      fail(`${target.label} keyboard tab reached hidden/nonvisible controls: ${JSON.stringify(focusProblems)}`);
+    }
+
+    await page.close();
+    if (errors.length) fail(`${target.label} accessibility browser errors: ${errors.join(" | ")}`);
+  }
+}
+
 let server;
 let browser;
 try {
@@ -442,6 +588,7 @@ try {
   await probeInstnctMobile(browser, server.origin);
   await probeResponsiveViewports(browser, server.origin);
   await probeInstnctScrollReveals(browser, server.origin);
+  await probeAccessibilitySemantics(browser, server.origin);
 } finally {
   if (browser) await browser.close();
   if (server) await server.close();
