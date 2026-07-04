@@ -379,6 +379,16 @@ if (initialTotal !== "13") fail(`initial indicator total should be 13, found ${i
 
 const faqItems = [...html.matchAll(/class="faq-item/g)].length;
 if (faqItems < 8) fail(`expected at least 8 FAQ items, found ${faqItems}`);
+for (let i = 1; i <= 8; i += 1) {
+  const buttonId = `instnct-faq-button-${i}`;
+  const panelId = `instnct-faq-${i}`;
+  if (!html.includes(`id="${buttonId}" type="button" aria-expanded="true" aria-controls="${panelId}"`)) {
+    fail(`FAQ button ${i} is missing static aria-controls wiring`);
+  }
+  if (!html.includes(`id="${panelId}" class="faq-panel" role="region" aria-labelledby="${buttonId}"`)) {
+    fail(`FAQ panel ${i} is missing static region/label wiring`);
+  }
+}
 
 const refs = [
   ...html.matchAll(/\s(?:src|href)="(\.{1,2}\/[^"#?]+)(?:[?#][^"]*)?"/g),

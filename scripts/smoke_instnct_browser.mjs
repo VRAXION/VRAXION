@@ -426,8 +426,19 @@ async function probeInstnctDesktop(browser, origin) {
     count: document.querySelectorAll(".faq-item").length,
     openCount: document.querySelectorAll(".faq-item.is-open").length,
     hiddenCount: [...document.querySelectorAll(".faq-panel")].filter((panel) => panel.getAttribute("aria-hidden") === "true").length,
+    wiredCount: [...document.querySelectorAll(".faq-item")].filter((item) => {
+      const button = item.querySelector("button");
+      const panel = item.querySelector(".faq-panel");
+      return (
+        button &&
+        panel &&
+        button.getAttribute("aria-controls") === panel.id &&
+        panel.getAttribute("role") === "region" &&
+        panel.getAttribute("aria-labelledby") === button.id
+      );
+    }).length,
   }));
-  if (faq.count < 8 || faq.openCount !== 1 || faq.hiddenCount !== faq.count - 1) {
+  if (faq.count < 8 || faq.openCount !== 1 || faq.hiddenCount !== faq.count - 1 || faq.wiredCount !== faq.count) {
     fail(`FAQ accessibility state is invalid: ${JSON.stringify(faq)}`);
   }
 
