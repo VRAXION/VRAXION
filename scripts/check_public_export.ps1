@@ -257,6 +257,7 @@ try {
     Assert-NoReparsePoints -Root $exportPath
     $requiredRootEntries = @(
         ".github\workflows\ci.yml",
+        ".github\workflows\public-pages-smoke.yml",
         ".github\workflows\public-surface-audit.yml",
         "CHANGELOG.md",
         "CITATION.cff",
@@ -303,7 +304,9 @@ try {
         "scripts\audit_instnct_static_site.mjs",
         "scripts\audit_public_surface.py",
         "scripts\check_public_export.ps1",
+        "scripts\smoke_public_pages_links.mjs",
         "scripts\smoke_instnct_browser.mjs",
+        "scripts\sync_public_release_links.mjs",
         "crates\alphasync-core\Cargo.toml",
         "crates\alphasync-core\LICENSE",
         "crates\alphasync-core\README.md",
@@ -330,6 +333,7 @@ try {
     Write-Host "==> public export exact path allowlist"
     $allowedPublicFiles = @(
         ".github/workflows/ci.yml",
+        ".github/workflows/public-pages-smoke.yml",
         ".github/workflows/public-surface-audit.yml",
         "CHANGELOG.md",
         "CITATION.cff",
@@ -378,7 +382,9 @@ try {
         "scripts/audit_instnct_static_site.mjs",
         "scripts/audit_public_surface.py",
         "scripts/check_public_export.ps1",
+        "scripts/smoke_public_pages_links.mjs",
         "scripts/smoke_instnct_browser.mjs",
+        "scripts/sync_public_release_links.mjs",
         "crates/alphasync-core/Cargo.toml",
         "crates/alphasync-core/LICENSE",
         "crates/alphasync-core/README.md",
@@ -468,8 +474,11 @@ try {
 
     Invoke-Checked "public site static audits" {
         node --check scripts/audit_instnct_static_site.mjs
+        node --check scripts/sync_public_release_links.mjs
+        node --check scripts/smoke_public_pages_links.mjs
         node --check scripts/smoke_instnct_browser.mjs
         node --check docs/instnct/instnct.js
+        node scripts/sync_public_release_links.mjs --check
         node scripts/audit_instnct_static_site.mjs
         python scripts/audit_public_surface.py
     }

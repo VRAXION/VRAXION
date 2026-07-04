@@ -18,8 +18,11 @@ jobs:
       - name: INSTNCT static smoke
         run: |
           node --check scripts/audit_instnct_static_site.mjs
+          node --check scripts/sync_public_release_links.mjs
+          node --check scripts/smoke_public_pages_links.mjs
           node --check scripts/smoke_instnct_browser.mjs
           node --check docs/instnct/instnct.js
+          node scripts/sync_public_release_links.mjs --check
           node scripts/audit_instnct_static_site.mjs
       - name: INSTNCT browser smoke
         run: |
