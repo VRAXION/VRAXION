@@ -287,6 +287,22 @@ async function probeInstnctDesktop(browser, origin) {
     }
   }
 
+  await page.evaluate(() => window.scrollTo(0, Math.round(window.innerHeight * 0.72)));
+  await page.waitForTimeout(240);
+  const heroScroll = await page.evaluate(() => {
+    const hero = document.querySelector(".hero");
+    const style = getComputedStyle(hero);
+    return {
+      y: Number.parseFloat(style.getPropertyValue("--hero-scroll-y")),
+      opacity: Number.parseFloat(style.getPropertyValue("--hero-scroll-opacity")),
+    };
+  });
+  if (!(heroScroll.y > 32) || !(heroScroll.opacity < 0.78)) {
+    fail(`hero scroll motion should move downward and fade: ${JSON.stringify(heroScroll)}`);
+  }
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.waitForTimeout(120);
+
   await page.locator("#hallucination").scrollIntoViewIfNeeded();
   await page.waitForTimeout(200);
   await assertActiveModePanelFits(page, "desktop exact");

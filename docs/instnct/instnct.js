@@ -58,6 +58,7 @@
   const progressBar = document.querySelector(".scroll-progress span");
   const backToTop = document.querySelector(".back-to-top");
   const indicator = document.querySelector(".section-indicator");
+  const indicatorReadout = document.querySelector(".indicator-readout");
   const indicatorFill = document.querySelector(".indicator-track span");
   const indicatorThumb = document.querySelector(".indicator-track i");
   const indicatorNumber = document.querySelector("[data-indicator-number]");
@@ -85,6 +86,23 @@
 
   let activeIndex = -1;
   let scrollTicking = false;
+  const readoutAnimationTimers = new WeakMap();
+
+  function animateReadout(el) {
+    if (!el || reduceMotion) return;
+    const existing = readoutAnimationTimers.get(el);
+    if (existing) window.clearTimeout(existing);
+    el.classList.remove("is-changing");
+    void el.offsetWidth;
+    el.classList.add("is-changing");
+    readoutAnimationTimers.set(
+      el,
+      window.setTimeout(() => {
+        el.classList.remove("is-changing");
+        readoutAnimationTimers.delete(el);
+      }, 280)
+    );
+  }
 
   function updateActiveSection(nextIndex) {
     if (nextIndex === activeIndex || sections.length === 0) return;
@@ -94,6 +112,7 @@
     const total = sections.length;
     const progress = ((activeIndex + 1) / total) * 100;
     const number = String(activeIndex + 1).padStart(2, "0");
+    const previousLabel = indicatorLabel?.textContent || "";
 
     if (indicatorFill) indicatorFill.style.height = `${progress}%`;
     if (indicatorThumb) indicatorThumb.style.top = `calc(${progress}% - 3px)`;
@@ -104,6 +123,10 @@
     if (mobileIndicatorTotal) mobileIndicatorTotal.textContent = `/ ${total}`;
     if (mobileIndicatorLabel) mobileIndicatorLabel.textContent = section.label;
     if (mobileSectionReadout) mobileSectionReadout.classList.toggle("is-hidden", activeIndex === 0);
+    if (previousLabel && previousLabel !== section.label) {
+      animateReadout(indicatorReadout);
+      animateReadout(mobileSectionReadout);
+    }
 
     sectionLinks.forEach((link) => {
       const isActive = link === section.link;
@@ -123,11 +146,11 @@
     }
     if (hero) {
       const rect = hero.getBoundingClientRect();
-      const range = Math.max(1, rect.height * 0.72);
+      const range = Math.max(1, rect.height * 0.8);
       const heroProgress = Math.min(1, Math.max(0, -rect.top / range));
-      const heroOpacity = Math.max(0.42, 1 - heroProgress * 0.62);
-      hero.style.setProperty("--hero-scroll-y", reduceMotion ? "0px" : `${(-34 * heroProgress).toFixed(2)}px`);
-      hero.style.setProperty("--hero-scroll-bg-y", reduceMotion ? "0px" : `${(26 * heroProgress).toFixed(2)}px`);
+      const heroOpacity = Math.max(0, 1 - heroProgress);
+      hero.style.setProperty("--hero-scroll-y", reduceMotion ? "0px" : `${(120 * heroProgress).toFixed(2)}px`);
+      hero.style.setProperty("--hero-scroll-bg-y", reduceMotion ? "0px" : `${(42 * heroProgress).toFixed(2)}px`);
       hero.style.setProperty("--hero-scroll-opacity", reduceMotion ? "1" : heroOpacity.toFixed(3));
     }
 
