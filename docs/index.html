@@ -331,7 +331,7 @@
 
     .path-grid {
       display: grid;
-      grid-template-columns: minmax(0, 1.18fr) minmax(0, 0.82fr);
+      grid-template-columns: 1fr;
       gap: 16px;
     }
 
@@ -364,14 +364,6 @@
         var(--panel-strong);
     }
 
-    .path-card.roadmap-path {
-      border-color: rgba(var(--seal-rgb), 0.18);
-      background:
-        radial-gradient(circle at 82% 12%, rgba(var(--seal-rgb), 0.1), transparent 220px),
-        linear-gradient(135deg, rgba(245, 193, 95, 0.05), transparent 44%),
-        var(--panel);
-    }
-
     .path-kicker {
       display: flex;
       flex-wrap: wrap;
@@ -390,11 +382,6 @@
       background: rgba(5, 8, 10, 0.54);
       font: 760 0.68rem/1 "SFMono-Regular", Consolas, "Liberation Mono", monospace;
       text-transform: uppercase;
-    }
-
-    .roadmap-path .path-kicker span {
-      color: #ff8faa;
-      border-color: rgba(var(--seal-rgb), 0.18);
     }
 
     .path-card h3 {
@@ -681,10 +668,10 @@
       <p class="eyebrow">VRAXION / governed operator runtime</p>
       <h1 id="hero-title">VRAXION</h1>
       <p class="lead">
-        Runtime first. Claims second. VRAXION is a Rust-first research system for governed Operators: scoped capability, auditable state changes, and evidence-bound execution. The public surface starts here, then forks into demo work, evidence, and future product concepts.
+        Runtime first. Claims second. VRAXION is a Rust-first research system for governed Operators: scoped capability, auditable state changes, and evidence-bound execution. The public surface starts here, then routes to the INSTNCT preview, status docs, and release evidence.
       </p>
       <div class="actions" aria-label="Primary actions">
-        <a class="button primary" href="#paths">Choose path</a>
+        <a class="button primary" href="./instnct/">Open INSTNCT</a>
         <a class="button ghost" href="https://github.com/VRAXION/VRAXION" target="_blank" rel="noopener noreferrer">Open repository</a>
         <a class="button ghost" href="https://github.com/VRAXION/VRAXION/blob/main/docs/CURRENT_STATUS.md" target="_blank" rel="noopener noreferrer">Current status</a>
       </div>
@@ -700,8 +687,8 @@
     <section class="section" id="paths" aria-labelledby="paths-title">
       <div class="section-head">
         <div>
-          <p class="system-label">Product paths</p>
-          <h2 id="paths-title">Start from VRAXION, then branch by surface.</h2>
+          <p class="system-label">Public path</p>
+          <h2 id="paths-title">Start from VRAXION, then open INSTNCT.</h2>
         </div>
         <p>
           The homepage is the neutral entry point. INSTNCT is the current public preview surface for the planned T1 Reflex release. Other roadmap work stays private until it is ready for a public release.

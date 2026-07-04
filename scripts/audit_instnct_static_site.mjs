@@ -202,6 +202,13 @@ for (const forbidden of [
   if (home.includes(forbidden)) fail(`VNGARD should not be visible on the public homepage: ${forbidden}`);
 }
 for (const forbidden of [
+  "future product concepts",
+  "Product paths",
+  "Start from VRAXION, then branch by surface",
+]) {
+  if (home.includes(forbidden)) fail(`stale homepage path copy should not be visible: ${forbidden}`);
+}
+for (const forbidden of [
   'href="../vngard/"',
   "VNGARD roadmap",
 ]) {
