@@ -12,7 +12,7 @@ The preview page shows:
 
 This is an internal preview measurement for a 16k mixed-unique workload. It is not an end-to-end latency claim, not a broad system benchmark, and not proof that every INSTNCT path runs at this speed.
 
-## Release Boundary
+## Release Scope
 
 No public runnable T1 binary is published yet. The public reproduction path must ship with the first signed artifact and should include:
 
@@ -35,4 +35,4 @@ The target proof path is:
 4. Run the benchmark/refusal harness locally.
 5. Compare the reported selector timing and refusal behavior with the published notes.
 
-The repo remains the source of truth for release boundaries and updates.
+The repo remains the source of truth for release scope and updates.

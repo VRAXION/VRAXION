@@ -18,7 +18,7 @@ This public repository is a public SDK/docs surface, not the private engine rele
 - Signed runnable T1 binary artifact.
 - Training service, mutation service, skill persistence store, or private diagnostic surfaces.
 
-## Current INSTNCT Claim Boundary
+## Current INSTNCT Claim Scope
 
 INSTNCT is presented publicly as a T1 Reflex Class release target:
 

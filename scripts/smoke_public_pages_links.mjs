@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const version = JSON.parse(await fs.readFile(path.join(root, "docs", "VERSION.json"), "utf8"));
 const latestRelease = String(version.latest_public_release || "");
+const instnctAssetVersion = String(version.instnct_asset_version || "");
 const baseUrl = (process.env.PUBLIC_PAGES_BASE_URL || "https://vraxion.github.io/VRAXION").replace(/\/+$/, "");
 const failures = [];
 
@@ -89,6 +90,16 @@ try {
 if (home && !home.includes(`releases/tag/${latestRelease}`)) fail("home does not expose the VERSION latest release");
 if (instnct && !instnct.includes(`archive/refs/tags/${latestRelease}.zip`)) {
   fail("INSTNCT does not expose the VERSION GitHub tag ZIP");
+}
+if (!/^release-\d+$/.test(instnctAssetVersion)) {
+  fail(`VERSION instnct_asset_version is invalid: ${instnctAssetVersion || "missing"}`);
+}
+if (
+  instnct &&
+  (!instnct.includes(`styles.css?v=${instnctAssetVersion}`) ||
+    !instnct.includes(`instnct.js?v=${instnctAssetVersion}`))
+) {
+  fail("INSTNCT live page does not load the VERSION asset cache key");
 }
 if (
   instnct &&

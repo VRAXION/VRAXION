@@ -1088,10 +1088,17 @@
     return false;
   }
 
-  function smoothScrollTo(target) {
+  function canUsePageShortcut(target) {
+    if (!target || target === document.body || target === document.documentElement) return true;
+    if (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable) return false;
+    return !target.closest("a[href], button, input, select, textarea, summary, [role], [contenteditable]");
+  }
+
+  function smoothScrollTo(target, focusTarget = false) {
     const el = typeof target === "string" ? document.querySelector(target) : target;
     if (!el) return;
     el.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "start" });
+    if (focusTarget && el.focus) el.focus({ preventScroll: true });
   }
 
   window.addEventListener("keydown", (event) => {
@@ -1112,23 +1119,28 @@
       return;
     }
 
+    if (keyboardDialog && !keyboardDialog.hidden) return;
+
+    if (!canUsePageShortcut(target)) {
+      pendingGo = false;
+      return;
+    }
+
     if (event.key === "?" || (event.key === "/" && event.shiftKey)) {
       event.preventDefault();
       toggleKeyboardDialog();
       return;
     }
 
-    if (keyboardDialog && !keyboardDialog.hidden) return;
-
     if (pendingGo) {
       pendingGo = false;
       window.clearTimeout(pendingTimer);
       if (event.key.toLowerCase() === "n") {
         event.preventDefault();
-        smoothScrollTo("#get-notified");
+        smoothScrollTo("#get-notified", true);
       } else if (event.key.toLowerCase() === "h") {
         event.preventDefault();
-        window.scrollTo({ top: 0, behavior: reduceMotion ? "auto" : "smooth" });
+        smoothScrollTo("#main", true);
       }
       return;
     }

@@ -14,10 +14,15 @@ function fail(message) {
 }
 
 let latestRelease = "";
+let instnctAssetVersion = "";
 try {
   const version = JSON.parse(await fs.readFile(path.join(docsRoot, "VERSION.json"), "utf8"));
   latestRelease = String(version.latest_public_release || "");
   if (!latestRelease) fail("VERSION.json latest_public_release is missing");
+  instnctAssetVersion = String(version.instnct_asset_version || "");
+  if (!/^release-\d+$/.test(instnctAssetVersion)) {
+    fail(`VERSION.json instnct_asset_version is invalid: ${instnctAssetVersion || "missing"}`);
+  }
 } catch (err) {
   fail(`VERSION.json could not be read: ${err.message}`);
 }
@@ -225,10 +230,10 @@ async function probeInstnctDesktop(browser, origin) {
   await page.goto(`${origin}/instnct/`, { waitUntil: "networkidle" });
   await page.waitForTimeout(400);
 
-  const top = await page.evaluate((unsafeCopyPattern) => ({
+  const top = await page.evaluate(({ unsafeCopyPattern, assetVersion }) => ({
     overflow: document.documentElement.scrollWidth > document.documentElement.clientWidth,
     currentAssetVersion: [...document.querySelectorAll("link,script")].some((el) =>
-      String(el.href || el.src || "").includes("release-4")
+      String(el.href || el.src || "").includes(assetVersion)
     ),
     heroMeshDisplay: getComputedStyle(document.querySelector(".hero-mesh")).display,
     heroGlowDisplay: getComputedStyle(document.querySelector(".hero-cursor-glow")).display,
@@ -239,9 +244,9 @@ async function probeInstnctDesktop(browser, origin) {
     unsafePublicCopy: new RegExp(unsafeCopyPattern, "i").test(document.body.textContent),
     logoAsset: document.querySelector(".wordmark img")?.getAttribute("src") || "",
     schemaType: JSON.parse(document.querySelector('script[type="application/ld+json"]').textContent)["@type"],
-  }), unsafePublicCopyPatternSource);
+  }), { unsafeCopyPattern: unsafePublicCopyPatternSource, assetVersion: instnctAssetVersion });
   if (top.overflow) fail("INSTNCT desktop has horizontal overflow");
-  if (!top.currentAssetVersion) fail("INSTNCT desktop is not loading release-4 assets");
+  if (!top.currentAssetVersion) fail(`INSTNCT desktop is not loading VERSION asset version ${instnctAssetVersion}`);
   if (top.heroMeshDisplay === "none" || top.heroGlowDisplay === "none") {
     fail("INSTNCT desktop hero mesh/glow is hidden");
   }
@@ -343,6 +348,24 @@ async function probeInstnctDesktop(browser, origin) {
   }
   await assertActiveModePanelFits(page, "desktop imagination");
 
+  await page.locator(".mode-switch").focus();
+  await page.keyboard.press("?");
+  const shortcutBlockedOnControl = await page.evaluate(() => ({
+    dialogOpen: !document.querySelector(".keyboard-dialog").hidden,
+    activeClass: document.activeElement?.className || "",
+  }));
+  if (shortcutBlockedOnControl.dialogOpen) {
+    fail(`single-key shortcut opened while a control was focused: ${JSON.stringify(shortcutBlockedOnControl)}`);
+  }
+  await page.locator("header .nav a").first().focus();
+  const scrollBeforeFocusedShortcut = await page.evaluate(() => window.scrollY);
+  await page.keyboard.press("j");
+  await page.waitForTimeout(120);
+  const scrollAfterFocusedShortcut = await page.evaluate(() => window.scrollY);
+  if (Math.abs(scrollAfterFocusedShortcut - scrollBeforeFocusedShortcut) > 2) {
+    fail(`scroll shortcut fired while a link was focused: ${scrollBeforeFocusedShortcut} -> ${scrollAfterFocusedShortcut}`);
+  }
+
   await page.locator(".indicator-track").hover();
   await page.waitForTimeout(240);
   const indicator = await page.evaluate(() => {
@@ -361,6 +384,7 @@ async function probeInstnctDesktop(browser, origin) {
     fail(`section indicator hover target is broken: ${JSON.stringify(indicator)}`);
   }
 
+  await page.evaluate(() => document.activeElement?.blur());
   await page.keyboard.press("?");
   for (let i = 0; i < 8; i += 1) await page.keyboard.press("Tab");
   const dialog = await page.evaluate(() => ({
@@ -536,6 +560,26 @@ async function probeInstnctMobile(browser, origin) {
   if (mobileIndicator.number !== "07" || mobileIndicator.label !== "structure" || mobileIndicator.hidden || mobileIndicator.opacity < 0.8) {
     fail(`INSTNCT mobile section readout did not track fabric section: ${JSON.stringify(mobileIndicator)}`);
   }
+  const mobileFixedControls = await page.evaluate(() => {
+    const readout = document.querySelector(".mobile-section-readout");
+    const top = document.querySelector(".back-to-top");
+    const visible = (el) => {
+      if (!el) return false;
+      const style = getComputedStyle(el);
+      return style.display !== "none" && style.visibility !== "hidden" && Number(style.opacity) > 0.25;
+    };
+    if (!visible(readout) || !visible(top)) return { overlap: false };
+    const a = readout.getBoundingClientRect();
+    const b = top.getBoundingClientRect();
+    return {
+      overlap: !(a.right <= b.left || a.left >= b.right || a.bottom <= b.top || a.top >= b.bottom),
+      readout: { left: Math.round(a.left), right: Math.round(a.right), top: Math.round(a.top), bottom: Math.round(a.bottom) },
+      top: { left: Math.round(b.left), right: Math.round(b.right), top: Math.round(b.top), bottom: Math.round(b.bottom) },
+    };
+  });
+  if (mobileFixedControls.overlap) {
+    fail(`INSTNCT mobile fixed controls overlap after scroll: ${JSON.stringify(mobileFixedControls)}`);
+  }
   await page.close();
   if (errors.length) fail(`INSTNCT mobile browser errors: ${errors.join(" | ")}`);
 }
@@ -622,6 +666,31 @@ async function probeResponsiveViewports(browser, origin) {
       fail(`INSTNCT ${label} header nav is clipped: ${JSON.stringify(instnct)}`);
     }
 
+    if (viewport.width <= 1020) {
+      await page.locator("#fabric").scrollIntoViewIfNeeded();
+      await page.waitForTimeout(260);
+      const fixedControls = await page.evaluate(() => {
+        const readout = document.querySelector(".mobile-section-readout");
+        const top = document.querySelector(".back-to-top");
+        const visible = (el) => {
+          if (!el) return false;
+          const style = getComputedStyle(el);
+          return style.display !== "none" && style.visibility !== "hidden" && Number(style.opacity) > 0.25;
+        };
+        if (!visible(readout) || !visible(top)) return { overlap: false };
+        const a = readout.getBoundingClientRect();
+        const b = top.getBoundingClientRect();
+        return {
+          overlap: !(a.right <= b.left || a.left >= b.right || a.bottom <= b.top || a.top >= b.bottom),
+          readout: { left: Math.round(a.left), right: Math.round(a.right), top: Math.round(a.top), bottom: Math.round(a.bottom) },
+          top: { left: Math.round(b.left), right: Math.round(b.right), top: Math.round(b.top), bottom: Math.round(b.bottom) },
+        };
+      });
+      if (fixedControls.overlap) {
+        fail(`INSTNCT ${label} fixed controls overlap after scroll: ${JSON.stringify(fixedControls)}`);
+      }
+    }
+
     await page.locator("#hallucination").scrollIntoViewIfNeeded();
     await page.locator(".mode-switch").click();
     await assertActiveModePanelFits(page, `responsive ${label} imagination`);
@@ -629,15 +698,28 @@ async function probeResponsiveViewports(browser, origin) {
     await page.goto(`${origin}/`, { waitUntil: "networkidle" });
     const home = await page.evaluate(() => {
       const nav = document.querySelector(".nav");
+      const navRect = nav.getBoundingClientRect();
+      const clippedLinks = [...nav.querySelectorAll("a")]
+        .filter((link) => {
+          const style = getComputedStyle(link);
+          return style.display !== "none" && style.visibility !== "hidden";
+        })
+        .map((link) => ({ text: link.textContent.trim(), rect: link.getBoundingClientRect() }))
+        .filter(({ rect }) => rect.left < navRect.left - 1 || rect.right > navRect.right + 1)
+        .map(({ text, rect }) => ({ text, left: Math.round(rect.left), right: Math.round(rect.right) }));
       return {
         overflow: document.documentElement.scrollWidth > document.documentElement.clientWidth,
         navDisplay: getComputedStyle(nav).display,
         navText: nav.textContent,
+        clippedLinks,
       };
     });
     if (home.overflow) fail(`home ${label} has horizontal overflow`);
     if (viewport.width <= 980 && (home.navDisplay === "none" || !home.navText.includes("INSTNCT"))) {
       fail(`home ${label} mobile nav does not expose INSTNCT: ${JSON.stringify(home)}`);
+    }
+    if (home.clippedLinks.length) {
+      fail(`home ${label} mobile nav links clip outside nav: ${JSON.stringify(home)}`);
     }
 
     await page.close();
@@ -894,6 +976,23 @@ async function probeAccessibilitySemantics(browser, origin) {
       fail(`${target.label} aria-hidden contains focusable elements: ${result.ariaHiddenFocusable.join(" | ")}`);
     }
     if (result.brokenAriaRefs.length) fail(`${target.label} broken aria refs: ${result.brokenAriaRefs.join(", ")}`);
+
+    if (target.path === "/instnct/") {
+      await page.keyboard.press("Home");
+      await page.keyboard.press("Tab");
+      const skipFocus = await page.evaluate(() => document.activeElement?.classList.contains("skip-link"));
+      if (!skipFocus) fail("INSTNCT skip link is not the first keyboard target");
+      await page.keyboard.press("Enter");
+      await page.waitForTimeout(120);
+      const skipState = await page.evaluate(() => ({
+        hash: window.location.hash,
+        activeId: document.activeElement?.id || "",
+        mainTabIndex: document.querySelector("main")?.getAttribute("tabindex"),
+      }));
+      if (skipState.hash !== "#main" || skipState.activeId !== "main" || skipState.mainTabIndex !== "-1") {
+        fail(`INSTNCT skip link does not move focus to main: ${JSON.stringify(skipState)}`);
+      }
+    }
 
     await page.keyboard.press("Home");
     const focusProblems = [];

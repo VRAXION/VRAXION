@@ -2760,6 +2760,8 @@ html.keyboard-dialog-open {
 
   .has-js .mobile-section-readout {
     display: flex;
+    right: auto;
+    left: 14px;
   }
 
   .nav {

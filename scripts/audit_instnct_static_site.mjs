@@ -14,6 +14,8 @@ const browserSmokePath = path.join(root, "scripts", "smoke_instnct_browser.mjs")
 const versionPath = path.join(root, "docs", "VERSION.json");
 const robotsPath = path.join(root, "docs", "robots.txt");
 const sitemapPath = path.join(root, "docs", "sitemap.xml");
+const currentCapabilitiesPath = path.join(root, "docs", "CURRENT_CAPABILITIES.md");
+const benchmarkNotesPath = path.join(root, "docs", "INSTNCT_BENCHMARK_NOTES.md");
 const docsRoot = path.join(root, "docs");
 const siteRoot = path.join(root, "docs", "instnct");
 
@@ -22,7 +24,10 @@ const home = fs.readFileSync(homePath, "utf8");
 const js = fs.readFileSync(jsPath, "utf8");
 const css = fs.readFileSync(cssPath, "utf8");
 const browserSmoke = fs.readFileSync(browserSmokePath, "utf8");
+const currentCapabilities = fs.readFileSync(currentCapabilitiesPath, "utf8");
+const benchmarkNotes = fs.readFileSync(benchmarkNotesPath, "utf8");
 let latestRelease = "";
+let instnctAssetVersion = "";
 const failures = [];
 
 function fail(message) {
@@ -87,6 +92,15 @@ try {
   const version = JSON.parse(fs.readFileSync(versionPath, "utf8"));
   latestRelease = String(version.latest_public_release || "");
   if (!latestRelease) fail("docs/VERSION.json must define latest_public_release");
+  instnctAssetVersion = String(version.instnct_asset_version || "");
+  if (!/^release-\d+$/.test(instnctAssetVersion)) {
+    fail(`docs/VERSION.json instnct_asset_version is invalid: ${instnctAssetVersion || "missing"}`);
+  }
+  for (const [field, value] of Object.entries(version)) {
+    if (typeof value === "string" && /\bboundary\b/i.test(value)) {
+      fail(`docs/VERSION.json public field ${field} must use scope wording, not boundary`);
+    }
+  }
 } catch (err) {
   fail(`invalid docs/VERSION.json: ${err.message}`);
 }
@@ -101,6 +115,7 @@ for (const required of [
   "fabric-flow-panel",
   "fabric-flow-canvas",
   "keyboard-dialog",
+  'main id="main" tabindex="-1"',
   "release-snapshot-pill",
   "data-benchmark",
   "terminal-actions",
@@ -141,6 +156,9 @@ for (const required of [
   "data-copy-status",
   "α-SYNC",
   "setKeyboardBackgroundInert",
+  "canUsePageShortcut",
+  'smoothScrollTo("#get-notified", true)',
+  'smoothScrollTo("#main", true)',
   'keyboardTrigger?.setAttribute("aria-expanded", "true")',
   'keyboardTrigger?.setAttribute("aria-expanded", "false")',
   "dataset.lineType",
@@ -247,6 +265,25 @@ if (latestRelease) {
     if (slug !== latestRelease) fail(`release slug ${slug} does not match docs/VERSION.json ${latestRelease}`);
   }
 }
+if (instnctAssetVersion) {
+  if (!html.includes(`./styles.css?v=${instnctAssetVersion}`)) {
+    fail("INSTNCT stylesheet cache key must match docs/VERSION.json instnct_asset_version");
+  }
+  if (!html.includes(`./instnct.js?v=${instnctAssetVersion}`)) {
+    fail("INSTNCT script cache key must match docs/VERSION.json instnct_asset_version");
+  }
+  const assetVersions = [
+    ...html.matchAll(/\.(?:css|js)\?v=(release-\d+)/g),
+  ].map((match) => match[1]);
+  for (const version of new Set(assetVersions)) {
+    if (version !== instnctAssetVersion) {
+      fail(`INSTNCT asset cache key ${version} does not match docs/VERSION.json ${instnctAssetVersion}`);
+    }
+  }
+  if (!browserSmoke.includes("instnctAssetVersion")) {
+    fail("INSTNCT browser smoke must read the asset cache key from docs/VERSION.json");
+  }
+}
 if (!html.includes("not the private engine source")) {
   fail("INSTNCT GitHub tag ZIP note must state the private-engine boundary");
 }
@@ -262,12 +299,16 @@ for (const forbiddenCopy of [
   "public source archive",
   "page source",
   "Boundary snapshot",
+  "boundary-first language",
   "boundary archive",
   "P11 boundary archive",
   "P11 SDK boundary",
   "binary boundary",
+  "Claim Boundary",
+  "claim boundaries",
   "release boundary",
   "Release boundary",
+  "Release Boundary",
   "boundary text versioned in repo",
   "boundary and release target",
   "release boundaries",
@@ -278,6 +319,13 @@ for (const forbiddenCopy of [
   ">boundary</span>",
 ]) {
   if (html.includes(forbiddenCopy)) fail(`unsafe or internal public copy is visible: ${forbiddenCopy}`);
+  if (home.includes(forbiddenCopy)) fail(`unsafe or internal public homepage copy is visible: ${forbiddenCopy}`);
+  if (currentCapabilities.includes(forbiddenCopy)) {
+    fail(`unsafe or internal public capabilities copy is visible: ${forbiddenCopy}`);
+  }
+  if (benchmarkNotes.includes(forbiddenCopy)) {
+    fail(`unsafe or internal public benchmark copy is visible: ${forbiddenCopy}`);
+  }
 }
 
 if (!html.includes("connect-src 'none'")) fail("CSP must keep connect-src 'none'");
@@ -382,6 +430,16 @@ for (const urlMatch of css.matchAll(/url\(["']?([^"')]+)["']?\)/gi)) {
 }
 
 const ids = new Set([...html.matchAll(/\sid="([^"]+)"/g)].map((match) => match[1]));
+for (const tagMatch of html.matchAll(/<[^>]+>/g)) {
+  const tag = tagMatch[0];
+  for (const attrName of ["aria-controls", "aria-labelledby", "aria-describedby"]) {
+    const value = attr(tag, attrName);
+    if (!value) continue;
+    for (const id of value.split(/\s+/).filter(Boolean)) {
+      if (!ids.has(id)) fail(`broken static ${attrName} reference: #${id}`);
+    }
+  }
+}
 for (const match of html.matchAll(/\shref="#([^"]+)"/g)) {
   if (!ids.has(match[1])) fail(`broken hash link: #${match[1]}`);
 }

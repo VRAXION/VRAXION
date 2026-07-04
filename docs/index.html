@@ -646,6 +646,22 @@
         min-height: 210px;
       }
     }
+
+    @media (max-width: 360px) {
+      .site-header {
+        gap: 8px;
+        padding: 0 12px;
+      }
+
+      .header-action {
+        min-width: 68px;
+        padding: 0 8px;
+      }
+
+      .nav a:nth-child(4) {
+        display: none;
+      }
+    }
   </style>
 </head>
 <body>
@@ -723,7 +739,7 @@
           <h2 id="runtime-title">A governed runtime, not a black-box assistant claim.</h2>
         </div>
         <p>
-          The public explanation should stay simple: scoped Operators, explicit gates, reproducible traces, and boundary-first language.
+          The public explanation should stay simple: scoped Operators, explicit gates, reproducible traces, and scope-first language.
         </p>
       </div>
 
@@ -731,7 +747,7 @@
         <article class="info-card">
           <span class="metric-label">01 / scope</span>
           <h3>Operators before personality.</h3>
-          <p>VRAXION frames capability as scoped Operators with known roles, status, and boundaries instead of a broad claim of general intelligence.</p>
+          <p>VRAXION frames capability as scoped Operators with known roles, status, and limits instead of a broad claim of general intelligence.</p>
         </article>
         <article class="info-card">
           <span class="metric-label">02 / gate</span>
@@ -752,9 +768,9 @@
           <p class="system-label">Evidence surface</p>
           <h2 id="evidence-title">Enough signal to trust the direction, not enough to misread the claim.</h2>
           <p>
-            VRAXION remains privately developed research with explicit public boundaries. The starter page should route serious readers to status documents and release notes, while keeping demo/product framing separate from deeper experimental logs.
+            VRAXION remains privately developed research with explicit public scope limits. The starter page should route serious readers to status documents and release notes, while keeping demo/product framing separate from deeper experimental logs.
           </p>
-          <div class="boundary-row" aria-label="Public claim boundaries">
+          <div class="boundary-row" aria-label="Public claim scope limits">
             <span>no hosted SaaS claim</span>
             <span>no open-domain assistant claim</span>
             <span>no deployment claim</span>
