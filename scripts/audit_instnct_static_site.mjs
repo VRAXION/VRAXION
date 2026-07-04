@@ -251,8 +251,13 @@ for (const forbiddenCopy of [
   "boundary archive",
   "P11 boundary archive",
   "P11 SDK boundary",
+  "binary boundary",
+  "Release boundary",
+  "boundary text versioned in repo",
+  "boundary and release target",
+  "release boundaries",
 ]) {
-  if (html.includes(forbiddenCopy)) fail(`unsafe public copy implies source availability: ${forbiddenCopy}`);
+  if (html.includes(forbiddenCopy)) fail(`unsafe or internal public copy is visible: ${forbiddenCopy}`);
 }
 
 if (!html.includes("connect-src 'none'")) fail("CSP must keep connect-src 'none'");

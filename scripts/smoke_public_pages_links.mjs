@@ -92,11 +92,11 @@ if (instnct && !instnct.includes(`archive/refs/tags/${latestRelease}.zip`)) {
 }
 if (
   instnct &&
-  /source-available|source available|source snapshot|source archive|public source archive|page source|boundary snapshot|boundary archive|P11 SDK boundary/i.test(
+  /source-available|source available|source snapshot|source archive|public source archive|page source|boundary snapshot|boundary archive|P11 SDK boundary|binary boundary|Release boundary|boundary text versioned in repo|boundary and release target|release boundaries/i.test(
     instnct
   )
 ) {
-  fail("INSTNCT public copy implies source availability");
+  fail("INSTNCT public copy exposes unsafe or internal release wording");
 }
 if (instnct && !instnct.includes("artifact-status")) fail("INSTNCT artifact status block is missing on live Pages");
 if (instnct && /github\.com\/VRAXION\/VRAXION\/blob\/main\/(?:CURRENT_|PUBLIC_SURFACE_POLICY)/.test(instnct)) {
