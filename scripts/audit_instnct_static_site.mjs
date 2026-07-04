@@ -30,6 +30,30 @@ function attr(tag, name) {
   return match ? match[1] : "";
 }
 
+function isExternalRef(value) {
+  return /^(?:https?:)?\/\//i.test(value);
+}
+
+function isLocalOrDataRef(value) {
+  return (
+    value.startsWith("./") ||
+    value.startsWith("../") ||
+    value.startsWith("#") ||
+    value.startsWith("data:image/")
+  );
+}
+
+function parseCsp(content) {
+  const directives = new Map();
+  for (const part of content.split(";")) {
+    const trimmed = part.trim();
+    if (!trimmed) continue;
+    const [name, ...tokens] = trimmed.split(/\s+/);
+    directives.set(name, tokens);
+  }
+  return directives;
+}
+
 function metaContent(name, value) {
   const pattern = new RegExp(`<meta\\s+[^>]*(?:name|property)="${name}"[^>]*content="([^"]*)"[^>]*>`, "i");
   const match = html.match(pattern);
@@ -175,6 +199,22 @@ if (!html.includes("form-action 'none'")) fail("CSP must keep form-action 'none'
 const cspTag = html.match(/<meta\s+[^>]*http-equiv="Content-Security-Policy"[^>]*>/i)?.[0] || "";
 const csp = attr(cspTag, "content");
 if (!csp) fail("missing Content-Security-Policy meta");
+const cspDirectives = parseCsp(csp);
+for (const [name, expected] of [
+  ["default-src", ["'self'"]],
+  ["style-src", ["'self'"]],
+  ["img-src", ["'self'", "data:"]],
+  ["connect-src", ["'none'"]],
+  ["object-src", ["'none'"]],
+  ["base-uri", ["'none'"]],
+  ["form-action", ["'none'"]],
+]) {
+  const actual = cspDirectives.get(name) || [];
+  if (actual.join(" ") !== expected.join(" ")) {
+    fail(`CSP ${name} mismatch: ${actual.join(" ") || "missing"}`);
+  }
+}
+if (!cspDirectives.has("upgrade-insecure-requests")) fail("CSP missing upgrade-insecure-requests");
 
 const jsonLdMatch = html.match(/<script\s+type="application\/ld\+json">([\s\S]*?)<\/script>/i);
 if (!jsonLdMatch) {
@@ -203,6 +243,54 @@ for (const scriptTag of html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi)
   const src = attr(tag, "src");
   if (!src && type !== "application/ld+json") {
     fail("unexpected inline script without JSON-LD type");
+  }
+  if (src && (!isLocalOrDataRef(src) || isExternalRef(src))) {
+    fail(`external script source is not allowed: ${src}`);
+  }
+}
+
+for (const tagMatch of html.matchAll(/<(img|source|video|audio|iframe|object)\b[^>]*>/gi)) {
+  const tag = tagMatch[0];
+  const tagName = tagMatch[1].toLowerCase();
+  for (const name of ["src", "poster", "data"]) {
+    const value = attr(tag, name);
+    if (value && (!isLocalOrDataRef(value) || isExternalRef(value))) {
+      fail(`external ${tagName} ${name} is not allowed: ${value}`);
+    }
+  }
+  const srcset = attr(tag, "srcset");
+  if (srcset) {
+    for (const candidate of srcset.split(",")) {
+      const value = candidate.trim().split(/\s+/)[0] || "";
+      if (value && (!isLocalOrDataRef(value) || isExternalRef(value))) {
+        fail(`external ${tagName} srcset is not allowed: ${value}`);
+      }
+    }
+  }
+}
+
+for (const linkTag of html.matchAll(/<link\b[^>]*>/gi)) {
+  const tag = linkTag[0];
+  const rel = attr(tag, "rel").toLowerCase();
+  const href = attr(tag, "href");
+  if (!href) continue;
+  const isSubresource = /\b(?:stylesheet|preload|modulepreload|icon|apple-touch-icon|manifest)\b/.test(rel);
+  if (isSubresource && (!isLocalOrDataRef(href) || isExternalRef(href))) {
+    fail(`external link subresource is not allowed: ${href}`);
+  }
+}
+
+for (const importMatch of css.matchAll(/@import\s+(?:url\()?["']?([^"')\s]+)["']?\)?/gi)) {
+  const value = importMatch[1];
+  if (!isLocalOrDataRef(value) || isExternalRef(value)) {
+    fail(`external CSS import is not allowed: ${value}`);
+  }
+}
+
+for (const urlMatch of css.matchAll(/url\(["']?([^"')]+)["']?\)/gi)) {
+  const value = urlMatch[1];
+  if (!isLocalOrDataRef(value) || isExternalRef(value)) {
+    fail(`external CSS url is not allowed: ${value}`);
   }
 }
 

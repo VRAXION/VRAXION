@@ -20,6 +20,7 @@ jobs:
           node --check scripts/audit_instnct_static_site.mjs
           node --check scripts/audit_instnct_notify_worker.mjs
           node --check scripts/sync_public_release_links.mjs
+          node --check scripts/smoke_instnct_notify_live.mjs
           node --check scripts/smoke_public_pages_links.mjs
           node --check scripts/smoke_instnct_browser.mjs
           node --check docs/instnct/instnct.js
