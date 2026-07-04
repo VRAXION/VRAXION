@@ -825,9 +825,9 @@
     const script = [
       { type: "prompt", text: "$ instnct --version" },
       { type: "output", text: "INSTNCT T1 Reflex Engine - v0.1.0-preview" },
-      { type: "trace", text: "VRAXION SymGround fabric - local-only - no telemetry" },
+      { type: "trace", text: "VRAXION local proof target - network disabled" },
       { type: "prompt", text: "$ instnct run --mode exact-recall" },
-      { type: "ok", text: "ok fabric warm - selector p50 = 5 us" },
+      { type: "ok", text: "ok selector timing: see signed benchmark notes" },
       { type: "ok", text: "ok exact/refusal contract: ON (approved paths only)" },
       { type: "query", text: '$ "What is the capital of Hungary?"' },
       { type: "output", text: "Budapest" },

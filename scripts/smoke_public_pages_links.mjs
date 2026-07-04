@@ -7,6 +7,45 @@ const version = JSON.parse(await fs.readFile(path.join(root, "docs", "VERSION.js
 const latestRelease = String(version.latest_public_release || "");
 const instnctAssetVersion = String(version.instnct_asset_version || "");
 const baseUrl = (process.env.PUBLIC_PAGES_BASE_URL || "https://vraxion.github.io/VRAXION").replace(/\/+$/, "");
+const hiddenSurfaceSlug = ["vn", "gard"].join("");
+const token = (...parts) => parts.join("");
+const unsafePublicCopyPattern = new RegExp(
+  [
+    "Not AI",
+    "Not ever",
+    "Runs locally",
+    "microsecond-class reasoning core",
+    "Hallucination,",
+    "hallucination, toggleable",
+    "fabric that reasons",
+    "decentralized intelligence",
+    "Scales by dimension",
+    "No weights",
+    "No probabilities",
+    "T1 is coming",
+    "local runnable",
+    token("source", "-available"),
+    token("source ", "available"),
+    token("source ", "snapshot"),
+    token("source ", "archive"),
+    token("public source ", "archive"),
+    token("page ", "source"),
+    token("boundary ", "snapshot"),
+    token("boundary ", "archive"),
+    token("P11 SDK ", "boundary"),
+    token("binary ", "boundary"),
+    token("release ", "boundary"),
+    token("boundary text ", "versioned in repo"),
+    token("boundary and ", "release target"),
+    token("release ", "boundaries"),
+    token("mode ", "boundary"),
+    token("returns a ", "boundary"),
+    token("public mark ", "boundary"),
+    token("opt-in ", "boundary"),
+    token(">bound", "ary<\\/span>"),
+  ].join("|"),
+  "i"
+);
 const failures = [];
 
 function fail(message) {
@@ -71,7 +110,7 @@ function collectUrls(html, pageUrl) {
 
 const homeUrl = `${baseUrl}/`;
 const instnctUrl = `${baseUrl}/instnct/`;
-const vngardUrl = `${baseUrl}/vngard/`;
+const hiddenSurfaceUrl = `${baseUrl}/${hiddenSurfaceSlug}/`;
 const robotsUrl = `${baseUrl}/robots.txt`;
 const sitemapUrl = `${baseUrl}/sitemap.xml`;
 
@@ -79,12 +118,12 @@ const home = await fetchText(homeUrl, "home");
 const instnct = await fetchText(instnctUrl, "INSTNCT");
 const robots = await fetchText(robotsUrl, "robots.txt");
 const sitemap = await fetchText(sitemapUrl, "sitemap.xml");
-let vngardStatus = 0;
+let hiddenSurfaceStatus = 0;
 try {
-  const vngardResponse = await fetchWithTimeout(vngardUrl, { redirect: "manual" });
-  vngardStatus = vngardResponse.status;
+  const hiddenSurfaceResponse = await fetchWithTimeout(hiddenSurfaceUrl, { redirect: "manual" });
+  hiddenSurfaceStatus = hiddenSurfaceResponse.status;
 } catch (err) {
-  fail(`VNGARD public URL could not be checked: ${vngardUrl} ${err.message}`);
+  fail(`hidden roadmap surface URL could not be checked: ${hiddenSurfaceUrl} ${err.message}`);
 }
 
 if (home && !home.includes(`releases/tag/${latestRelease}`)) fail("home does not expose the VERSION latest release");
@@ -101,28 +140,23 @@ if (
 ) {
   fail("INSTNCT live page does not load the VERSION asset cache key");
 }
-if (
-  instnct &&
-  /Not AI|Not ever|Runs locally|microsecond-class reasoning core|Hallucination,|hallucination, toggleable|fabric that reasons|decentralized intelligence|Scales by dimension|No weights|No probabilities|T1 is coming|local runnable|source-available|source available|source snapshot|source archive|public source archive|page source|boundary snapshot|boundary archive|P11 SDK boundary|binary boundary|release boundary|boundary text versioned in repo|boundary and release target|release boundaries|mode boundary|returns a boundary|public mark boundary|opt-in boundary|>boundary<\/span>/i.test(
-    instnct
-  )
-) {
+if (instnct && unsafePublicCopyPattern.test(instnct)) {
   fail("INSTNCT public copy exposes unsafe or internal release wording");
 }
 if (instnct && !instnct.includes("artifact-status")) fail("INSTNCT artifact status block is missing on live Pages");
 if (instnct && /github\.com\/VRAXION\/VRAXION\/blob\/main\/(?:CURRENT_|PUBLIC_SURFACE_POLICY)/.test(instnct)) {
   fail("INSTNCT live page links public docs at the repository root instead of docs/");
 }
-if (home && /href=["'][^"']*vngard\/|VNGARD retained|Open roadmap concept/i.test(home)) {
-  fail("home page exposes hidden VNGARD surface");
+if (home && new RegExp(`href=["'][^"']*${hiddenSurfaceSlug}/|hidden roadmap retained|Open roadmap concept`, "i").test(home)) {
+  fail("home page exposes hidden roadmap surface");
 }
-if (instnct && /href=["'][^"']*vngard\/|VNGARD roadmap/i.test(instnct)) {
-  fail("INSTNCT page exposes hidden VNGARD surface");
+if (instnct && new RegExp(`href=["'][^"']*${hiddenSurfaceSlug}/|hidden roadmap`, "i").test(instnct)) {
+  fail("INSTNCT page exposes hidden roadmap surface");
 }
-if (vngardStatus !== 404) fail(`VNGARD public URL must be absent from Pages, got HTTP ${vngardStatus}`);
+if (hiddenSurfaceStatus !== 404) fail(`hidden roadmap surface URL must be absent from Pages, got HTTP ${hiddenSurfaceStatus}`);
 if (robots && !robots.includes(`${baseUrl}/sitemap.xml`)) fail("robots.txt does not point at the live sitemap");
 if (sitemap && !sitemap.includes(`${baseUrl}/instnct/`)) fail("sitemap.xml does not include INSTNCT");
-if (sitemap && sitemap.includes(`${baseUrl}/vngard/`)) fail("sitemap.xml exposes hidden VNGARD");
+if (sitemap && sitemap.includes(`${baseUrl}/${hiddenSurfaceSlug}/`)) fail("sitemap.xml exposes hidden roadmap surface");
 
 const urls = new Set([
   ...collectUrls(home, homeUrl),

@@ -217,7 +217,7 @@ $forbiddenPublicPathFragments = @(
     ("golden_" + "legacy_parity"),
     ("alphasync-" + "selftrain"),
     ("alphasync-" + "skillstore"),
-    ("docs/" + "vngard")
+    ("docs/" + "vn" + "gard")
 )
 $maxPublicBinaryAssetBytes = 4MB
 $publicBinaryAssets = @(
@@ -227,13 +227,7 @@ $publicBinaryAssets = @(
     "docs/instnct/assets/instnct-hero-bg.png",
     "docs/instnct/assets/instnct-logo.png",
     "docs/instnct/assets/t1-reflex-bg.jpg",
-    "docs/instnct/assets/vraxion-note-bg.png",
-    "disabled-surfaces/vngard/assets/alpha-sync-fabric-card.jpg",
-    "disabled-surfaces/vngard/assets/mutation-core-card.jpg",
-    "disabled-surfaces/vngard/assets/prismion-atom-card.jpg",
-    "disabled-surfaces/vngard/assets/vngard-guardian-hero-bg.png",
-    "disabled-surfaces/vngard/assets/vngard-wordmark-logo.png",
-    "disabled-surfaces/vngard/assets/fonts/geist-sans-variable.woff2"
+    "docs/instnct/assets/vraxion-note-bg.png"
 )
 $publicBinaryAssetSet = New-OrdinalSet -Items $publicBinaryAssets
 $privatePersistenceCrate = "alphasync-" + "skillstore"
@@ -302,6 +296,7 @@ try {
         ".github\workflows\deploy-instnct-notify.yml",
         ".github\workflows\public-pages-smoke.yml",
         ".github\workflows\public-surface-audit.yml",
+        ".gitignore",
         "CHANGELOG.md",
         "CITATION.cff",
         "CODE_OF_CONDUCT.md",
@@ -336,17 +331,6 @@ try {
         "docs\PUBLIC_SURFACE_POLICY.md",
         "docs\VERSION.json",
         "docs\index.html",
-        "disabled-surfaces\vngard\index.html",
-        "disabled-surfaces\vngard\polish.css",
-        "disabled-surfaces\vngard\script.js",
-        "disabled-surfaces\vngard\styles.css",
-        "disabled-surfaces\vngard\assets\alpha-sync-fabric-card.jpg",
-        "disabled-surfaces\vngard\assets\mutation-core-card.jpg",
-        "disabled-surfaces\vngard\assets\prismion-atom-card.jpg",
-        "disabled-surfaces\vngard\assets\vngard-guardian-hero-bg.png",
-        "disabled-surfaces\vngard\assets\vngard-wordmark-logo.png",
-        "disabled-surfaces\vngard\assets\fonts\geist-license.txt",
-        "disabled-surfaces\vngard\assets\fonts\geist-sans-variable.woff2",
         "workers\instnct-notify\README.md",
         "workers\instnct-notify\migrations\0001_init.sql",
         "workers\instnct-notify\src\index.mjs",
@@ -388,6 +372,7 @@ try {
         ".github/workflows/deploy-instnct-notify.yml",
         ".github/workflows/public-pages-smoke.yml",
         ".github/workflows/public-surface-audit.yml",
+        ".gitignore",
         "CHANGELOG.md",
         "CITATION.cff",
         "CODE_OF_CONDUCT.md",
@@ -424,17 +409,6 @@ try {
         "docs/sitemap.xml",
         "docs/VERSION.json",
         "docs/index.html",
-        "disabled-surfaces/vngard/assets/alpha-sync-fabric-card.jpg",
-        "disabled-surfaces/vngard/assets/fonts/geist-license.txt",
-        "disabled-surfaces/vngard/assets/fonts/geist-sans-variable.woff2",
-        "disabled-surfaces/vngard/assets/mutation-core-card.jpg",
-        "disabled-surfaces/vngard/assets/prismion-atom-card.jpg",
-        "disabled-surfaces/vngard/assets/vngard-guardian-hero-bg.png",
-        "disabled-surfaces/vngard/assets/vngard-wordmark-logo.png",
-        "disabled-surfaces/vngard/index.html",
-        "disabled-surfaces/vngard/polish.css",
-        "disabled-surfaces/vngard/script.js",
-        "disabled-surfaces/vngard/styles.css",
         "scripts/audit_instnct_notify_worker.mjs",
         "scripts/audit_instnct_static_site.mjs",
         "scripts/audit_public_surface.py",

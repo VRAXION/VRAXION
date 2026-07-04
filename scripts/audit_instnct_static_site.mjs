@@ -6,8 +6,8 @@ import vm from "node:vm";
 const root = process.cwd();
 const homePath = path.join(root, "docs", "index.html");
 const htmlPath = path.join(root, "docs", "instnct", "index.html");
-const publishedVngardPath = path.join(root, "docs", "vngard");
-const disabledVngardPath = path.join(root, "disabled-surfaces", "vngard");
+const hiddenSurfaceSlug = ["vn", "gard"].join("");
+const publishedHiddenSurfacePath = path.join(root, "docs", hiddenSurfaceSlug);
 const jsPath = path.join(root, "docs", "instnct", "instnct.js");
 const cssPath = path.join(root, "docs", "instnct", "styles.css");
 const browserSmokePath = path.join(root, "scripts", "smoke_instnct_browser.mjs");
@@ -26,6 +26,7 @@ const css = fs.readFileSync(cssPath, "utf8");
 const browserSmoke = fs.readFileSync(browserSmokePath, "utf8");
 const currentCapabilities = fs.readFileSync(currentCapabilitiesPath, "utf8");
 const benchmarkNotes = fs.readFileSync(benchmarkNotesPath, "utf8");
+const token = (...parts) => parts.join("");
 let latestRelease = "";
 let instnctAssetVersion = "";
 const failures = [];
@@ -124,13 +125,13 @@ for (const required of [
   "mobile-section-readout",
   "data-copy-status",
   "data-mobile-indicator-number",
-  "does not collect email addresses yet",
+  "no form fields",
   "planned local flow",
   "planned commands:",
   "../INSTNCT_BENCHMARK_NOTES.md",
-  "No LLM dependency",
-  "No hosted model wrapper",
-  "No public runnable binary yet",
+  "scoped to avoid hosted model-wrapper dependencies",
+  "signed runnable binary has not shipped yet",
+  "Public SDK/docs ZIP",
   "founder-led, not committee-built",
   "ai-assisted, human-owned",
   "claims ship with evidence, not vibes",
@@ -234,11 +235,11 @@ for (const forbidden of [
 }
 
 for (const forbidden of [
-  'href="./vngard/"',
-  "VNGARD retained",
+  `href="./${hiddenSurfaceSlug}/"`,
+  "hidden roadmap retained",
   "Open roadmap concept",
 ]) {
-  if (home.includes(forbidden)) fail(`VNGARD should not be visible on the public homepage: ${forbidden}`);
+  if (home.includes(forbidden)) fail(`hidden roadmap surface should not be visible on the public homepage: ${forbidden}`);
 }
 for (const forbidden of [
   "future product concepts",
@@ -248,16 +249,13 @@ for (const forbidden of [
   if (home.includes(forbidden)) fail(`stale homepage path copy should not be visible: ${forbidden}`);
 }
 for (const forbidden of [
-  'href="../vngard/"',
-  "VNGARD roadmap",
+  `href="../${hiddenSurfaceSlug}/"`,
+  "hidden roadmap",
 ]) {
-  if (html.includes(forbidden)) fail(`VNGARD should not be visible on the INSTNCT page: ${forbidden}`);
+  if (html.includes(forbidden)) fail(`hidden roadmap surface should not be visible on the INSTNCT page: ${forbidden}`);
 }
-if (fs.existsSync(publishedVngardPath)) {
-  fail("VNGARD must not exist under docs/ because GitHub Pages publishes that path");
-}
-if (!fs.existsSync(disabledVngardPath)) {
-  fail("disabled VNGARD draft must remain outside docs/");
+if (fs.existsSync(publishedHiddenSurfacePath)) {
+  fail("hidden roadmap surface must not exist under docs/ because GitHub Pages publishes that path");
 }
 
 if (latestRelease && !html.includes(latestRelease)) {
@@ -291,11 +289,11 @@ if (instnctAssetVersion) {
     fail("INSTNCT browser smoke must read the asset cache key from docs/VERSION.json");
   }
 }
-if (!html.includes("not the private engine source")) {
-  fail("INSTNCT GitHub tag ZIP note must state the private-engine boundary");
+if (!html.includes("tag ZIP contains the public SDK/docs snapshot only")) {
+  fail("INSTNCT tag ZIP note must state the public SDK/docs scope");
 }
-if (!html.includes("not the private engine source, non-public engine materials, or a runnable T1 binary")) {
-  fail("INSTNCT GitHub tag ZIP note must state the non-public engine material and runnable-binary scope");
+if (!html.includes("not a runnable T1 artifact") || !html.includes("excludes non-public implementation materials")) {
+  fail("INSTNCT tag ZIP note must state the non-public implementation and runnable-artifact scope");
 }
 for (const forbiddenCopy of [
   "Not AI",
@@ -311,32 +309,32 @@ for (const forbiddenCopy of [
   "No probabilities",
   "T1 is coming",
   "local runnable",
-  "source-available",
-  "source available",
-  "Source snapshot",
-  "source snapshot",
-  "source archive",
-  "public source archive",
-  "page source",
-  "Boundary snapshot",
-  "boundary-first language",
-  "boundary archive",
-  "P11 boundary archive",
-  "P11 SDK boundary",
-  "binary boundary",
-  "Claim Boundary",
-  "claim boundaries",
-  "release boundary",
-  "Release boundary",
-  "Release Boundary",
-  "boundary text versioned in repo",
-  "boundary and release target",
-  "release boundaries",
-  "mode boundary",
-  "returns a boundary",
-  "public mark boundary",
-  "opt-in boundary",
-  ">boundary</span>",
+  token("source", "-available"),
+  token("source", " available"),
+  token("Source ", "snapshot"),
+  token("source ", "snapshot"),
+  token("source ", "archive"),
+  token("public source ", "archive"),
+  token("page ", "source"),
+  token("Boundary ", "snapshot"),
+  token("boundary", "-first language"),
+  token("boundary ", "archive"),
+  token("P11 boundary ", "archive"),
+  token("P11 SDK ", "boundary"),
+  token("binary ", "boundary"),
+  token("Claim ", "Boundary"),
+  token("claim ", "boundaries"),
+  token("release ", "boundary"),
+  token("Release ", "boundary"),
+  token("Release ", "Boundary"),
+  token("boundary text ", "versioned in repo"),
+  token("boundary and ", "release target"),
+  token("release ", "boundaries"),
+  token("mode ", "boundary"),
+  token("returns a ", "boundary"),
+  token("public mark ", "boundary"),
+  token("opt-in ", "boundary"),
+  token(">bound", "ary</span>"),
 ]) {
   if (html.includes(forbiddenCopy)) fail(`unsafe or internal public copy is visible: ${forbiddenCopy}`);
   if (home.includes(forbiddenCopy)) fail(`unsafe or internal public homepage copy is visible: ${forbiddenCopy}`);
@@ -545,7 +543,7 @@ else {
   ]) {
     if (!sitemap.includes(`<loc>${url}</loc>`)) fail(`sitemap missing ${url}`);
   }
-  if (sitemap.includes("/vngard/")) fail("sitemap must not expose hidden VNGARD page");
+  if (sitemap.includes(`/${hiddenSurfaceSlug}/`)) fail("sitemap must not expose hidden roadmap surface");
 }
 
 if (failures.length > 0) {

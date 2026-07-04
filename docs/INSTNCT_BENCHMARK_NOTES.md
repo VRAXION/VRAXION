@@ -10,11 +10,11 @@ The preview page shows:
 - `261 us` linear scan baseline p50
 - `~52x` selector speedup
 
-This is an internal preview measurement for a 16k mixed-unique workload. It is not an end-to-end latency claim, not a broad system benchmark, and not proof that every INSTNCT path runs at this speed.
+This is an internal selector-only preview measurement for a 16k mixed-unique workload. It is not a public benchmark, not an end-to-end latency claim, not a broad system benchmark, and not proof that every INSTNCT path runs at this speed.
 
 ## Release Scope
 
-No public runnable T1 binary is published yet. The public reproduction path must ship with the first signed artifact and should include:
+No public runnable T1 binary is published yet. Planned proof materials should include:
 
 - the signed artifact and checksums
 - the exact benchmark harness
@@ -23,7 +23,7 @@ No public runnable T1 binary is published yet. The public reproduction path must
 - raw timing output
 - refusal-mode examples
 
-Until those are published, the numbers should be read as a scoped preview signal only.
+Until those are published, the numbers should be read as a scoped internal preview signal only.
 
 ## Intended Public Reproduction
 

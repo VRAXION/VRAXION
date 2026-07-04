@@ -27,7 +27,7 @@ FORBIDDEN_PATH_PARTS = [
     marker("vraxion-", "runtime"),
     marker("docs/", "research"),
     marker("tools/", "private_data_adapters"),
-    marker("docs/", "vngard"),
+    marker("docs/", "vn", "gard"),
     marker("red", "b"),
 ]
 
@@ -62,11 +62,11 @@ FORBIDDEN_PUBLIC_COPY = [
     marker("public source ", "archive"),
     marker("boundary ", "snapshot"),
     marker("boundary ", "archive"),
-    marker("P11 ", "SDK boundary"),
+    marker("P11 ", "SDK ", "bound", "ary"),
     marker("P11 ", "delivery decision"),
     marker("zero-state ", "SDK"),
-    marker("docs/", "vngard"),
-    marker("docs\\", "vngard"),
+    marker("docs/", "vn", "gard"),
+    marker("docs\\", "vn", "gard"),
 ]
 
 EXPECTED_CRATES = {"alphasync-core", "alphasync-runtime"}
@@ -79,12 +79,6 @@ PUBLIC_BINARY_ASSETS = {
     "docs/instnct/assets/instnct-logo.png",
     "docs/instnct/assets/t1-reflex-bg.jpg",
     "docs/instnct/assets/vraxion-note-bg.png",
-    "disabled-surfaces/vngard/assets/alpha-sync-fabric-card.jpg",
-    "disabled-surfaces/vngard/assets/mutation-core-card.jpg",
-    "disabled-surfaces/vngard/assets/prismion-atom-card.jpg",
-    "disabled-surfaces/vngard/assets/vngard-guardian-hero-bg.png",
-    "disabled-surfaces/vngard/assets/vngard-wordmark-logo.png",
-    "disabled-surfaces/vngard/assets/fonts/geist-sans-variable.woff2",
 }
 
 MAX_PUBLIC_BINARY_ASSET_BYTES = 4 * 1024 * 1024

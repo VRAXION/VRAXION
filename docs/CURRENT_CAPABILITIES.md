@@ -1,6 +1,6 @@
 # Current Capabilities
 
-This public repository is a public SDK/docs surface, not the private engine release.
+This public repository is a public SDK/docs surface, not a runnable engine release.
 
 ## Publicly Included
 
@@ -12,7 +12,7 @@ This public repository is a public SDK/docs surface, not the private engine rele
 
 ## Publicly Not Included
 
-- Private engine source.
+- Implementation internals and non-public release materials.
 - Private binary internals.
 - Production hosted API or SaaS deployment.
 - Signed runnable T1 binary artifact.
@@ -23,7 +23,7 @@ This public repository is a public SDK/docs surface, not the private engine rele
 INSTNCT is presented publicly as a T1 Reflex Class release target:
 
 - local-first
-- not a neural network claim
+- scoped to avoid hosted LLM/model-wrapper dependencies
 - exact mode should refuse unsupported answers
 - imagination mode, when present, must be explicit and labeled
 - benchmark numbers are scoped selector claims, not universal latency claims
@@ -36,5 +36,5 @@ yet published as a runnable public artifact.
 Latest public release:
 [`public-sdk-p11-20260629`](https://github.com/VRAXION/VRAXION/releases/tag/public-sdk-p11-20260629)
 
-That release contains the public SDK/docs surface and does not include private
-engine source or a signed binary package.
+That release contains the public SDK/docs surface and does not include
+non-public implementation materials or a signed binary package.

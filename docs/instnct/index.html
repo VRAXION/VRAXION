@@ -3,9 +3,9 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-DjjqmK8m5ua02FitEnnl/TnHE3CJ0BDpxLp6uGvFVOg='; style-src 'self'; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'; upgrade-insecure-requests">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-Qy5EEmXvJEKh5hPh9fnm8Lz7/ZCm7eg0NyUQ+OOfi20='; style-src 'self'; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'; upgrade-insecure-requests">
   <title>INSTNCT - VRAXION Local Reflex Reasoning</title>
-  <meta name="description" content="INSTNCT is VRAXION's planned local-first T1 Reflex surface: no LLM, no neural-network dependency, and scoped for signed offline verification.">
+  <meta name="description" content="INSTNCT is VRAXION's planned local-first T1 Reflex target: exact paths, explicit refusal, and signed offline verification before broader claims.">
   <meta name="theme-color" content="#050507">
   <meta name="robots" content="index,follow">
   <link rel="canonical" href="https://vraxion.github.io/VRAXION/instnct/">
@@ -24,9 +24,9 @@
   <meta name="twitter:image" content="https://vraxion.github.io/VRAXION/instnct/assets/instnct-hero-bg.png">
   <meta name="twitter:image:alt" content="INSTNCT local reflex reasoning hero surface">
   <link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="./styles.css?v=release-5">
-  <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebPage","name":"INSTNCT","description":"Preview page for VRAXION's planned local-first T1 Reflex release. No public runnable T1 binary is published yet.","url":"https://vraxion.github.io/VRAXION/instnct/","isPartOf":{"@type":"WebSite","name":"VRAXION","url":"https://vraxion.github.io/VRAXION/"},"author":{"@type":"Person","name":"Daniel Kenessy"},"publisher":{"@type":"Organization","name":"VRAXION","url":"https://vraxion.github.io/VRAXION/"},"about":{"@type":"Thing","name":"INSTNCT T1 Reflex release target","description":"Local-first, no-LLM, no-neural-network target with bounded reasoning and offline verification planned for the first signed artifact."}}</script>
-  <script src="./instnct.js?v=release-5" defer></script>
+  <link rel="stylesheet" href="./styles.css?v=release-6">
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebPage","name":"INSTNCT","description":"Preview page for VRAXION's planned local-first T1 Reflex release. No public runnable T1 binary is published yet.","url":"https://vraxion.github.io/VRAXION/instnct/","isPartOf":{"@type":"WebSite","name":"VRAXION","url":"https://vraxion.github.io/VRAXION/"},"author":{"@type":"Person","name":"Daniel Kenessy"},"publisher":{"@type":"Organization","name":"VRAXION","url":"https://vraxion.github.io/VRAXION/"},"about":{"@type":"Thing","name":"INSTNCT T1 Reflex release target","description":"Local-first release target scoped to avoid hosted model-wrapper dependencies, with bounded reasoning and offline verification planned for the first signed artifact."}}</script>
+  <script src="./instnct.js?v=release-6" defer></script>
 </head>
 <body>
   <a class="skip-link" href="#main">Skip to content</a>
@@ -50,7 +50,7 @@
     </a>
     <nav class="nav" aria-label="Primary">
       <a href="#get-notified">INSTNCT</a>
-      <a href="#not-ai">No LLM</a>
+      <a href="#not-ai">Model scope</a>
       <a href="#trust">Proof</a>
       <a href="https://github.com/VRAXION/VRAXION" target="_blank" rel="noopener noreferrer">GitHub</a>
     </nav>
@@ -67,18 +67,18 @@
     </div>
     <ol>
       <li><a href="#intro" data-section-link="intro"><span>01</span> Intro</a></li>
-      <li><a href="#not-ai" data-section-link="position"><span>02</span> Position</a></li>
-      <li><a href="#hallucination" data-section-link="flagship"><span>03</span> Flagship</a></li>
-      <li><a href="#trust" data-section-link="verify"><span>04</span> Verify</a></li>
+      <li><a href="#not-ai" data-section-link="model scope"><span>02</span> Model scope</a></li>
+      <li><a href="#hallucination" data-section-link="modes"><span>03</span> Modes</a></li>
+      <li><a href="#trust" data-section-link="proof"><span>04</span> Proof</a></li>
       <li><a href="#grounding" data-section-link="claim"><span>05</span> Claim</a></li>
       <li><a href="#manifesto" data-section-link="manifesto"><span>06</span> Manifesto</a></li>
-      <li><a href="#fabric" data-section-link="structure"><span>07</span> Structure</a></li>
-      <li><a href="#dev-trail" data-section-link="terminal"><span>08</span> Terminal</a></li>
-      <li><a href="#t1-reflex-class" data-section-link="model"><span>09</span> Model</a></li>
-      <li><a href="#roadmap" data-section-link="direction"><span>10</span> Direction</a></li>
-      <li><a href="#vraxion-note" data-section-link="vraxion"><span>11</span> VRAXION</a></li>
-      <li><a href="#faq" data-section-link="questions"><span>12</span> Questions</a></li>
-      <li><a href="#get-notified" data-section-link="signal"><span>13</span> Signal</a></li>
+      <li><a href="#fabric" data-section-link="path"><span>07</span> Path</a></li>
+      <li><a href="#dev-trail" data-section-link="cli"><span>08</span> CLI</a></li>
+      <li><a href="#t1-reflex-class" data-section-link="t1"><span>09</span> T1</a></li>
+      <li><a href="#roadmap" data-section-link="roadmap"><span>10</span> Roadmap</a></li>
+      <li><a href="#vraxion-note" data-section-link="founder"><span>11</span> Founder</a></li>
+      <li><a href="#faq" data-section-link="faq"><span>12</span> FAQ</a></li>
+      <li><a href="#get-notified" data-section-link="release"><span>13</span> Release</a></li>
     </ol>
   </nav>
 
@@ -95,9 +95,9 @@
     <span aria-hidden="true">?</span>
   </button>
 
-  <a class="release-snapshot-pill" href="https://github.com/VRAXION/VRAXION/archive/refs/tags/public-sdk-p11-20260629.zip" target="_blank" rel="noopener noreferrer" aria-label="Download the GitHub tag ZIP for public-sdk-p11-20260629">
+  <a class="release-snapshot-pill" href="https://github.com/VRAXION/VRAXION/archive/refs/tags/public-sdk-p11-20260629.zip" target="_blank" rel="noopener noreferrer" aria-label="Download the public SDK and docs tag ZIP for public-sdk-p11-20260629; no runnable T1 binary included">
     <span aria-hidden="true"></span>
-    GitHub tag ZIP
+    Public SDK/docs ZIP
   </a>
 
   <div id="keyboard-dialog" class="keyboard-dialog" role="dialog" aria-modal="true" aria-labelledby="keyboard-dialog-title" hidden>
@@ -142,8 +142,8 @@
 
       <div class="hero-inner">
         <div class="badge-row" aria-label="INSTNCT status">
-          <span class="badge badge-cyan"><span class="pulse-dot"></span>T1 REFLEX CLASS</span>
-          <span class="badge badge-seal">NO LLM</span>
+          <span class="badge badge-cyan"><span class="pulse-dot"></span>T1 RELEASE TARGET</span>
+          <span class="badge badge-seal">NO HOSTED MODEL WRAPPER</span>
           <span class="badge badge-muted">LOCAL-FIRST</span>
         </div>
 
@@ -162,17 +162,17 @@
         </p>
 
         <p class="lead">
-          INSTNCT is VRAXION's first public SymGround preview surface: a planned T1 release target for bounded exact paths, refusal behavior, and offline verification. No LLM dependency. No hosted model wrapper. No public runnable binary yet.
+          INSTNCT is VRAXION's planned T1 Reflex release: a local-first surface for exact paths, explicit refusal, and offline verification. It is scoped to avoid hosted model-wrapper dependencies, and the signed runnable binary has not shipped yet.
         </p>
 
         <div class="hero-actions" aria-label="INSTNCT actions">
-          <a class="button button-primary" href="#get-notified"><svg class="button-icon" aria-hidden="true"><use href="#icon-terminal"></use></svg><span>Track T1 release</span></a>
+          <a class="button button-primary" href="#get-notified"><svg class="button-icon" aria-hidden="true"><use href="#icon-terminal"></use></svg><span>Watch T1 release evidence</span></a>
           <a class="button button-secondary" href="https://github.com/VRAXION/VRAXION" target="_blank" rel="noopener noreferrer"><svg class="button-icon" aria-hidden="true"><use href="#icon-repo"></use></svg><span>Open repo</span></a>
           <div class="live-readout" aria-label="Warm selector benchmark">
             <span class="pulse-dot"></span>
             <div>
               <strong><span class="metric-value" data-count-to="5">5</span><span class="metric-unit">us</span></strong>
-              <small>warm selector p50</small>
+              <small>internal selector p50</small>
             </div>
             <div class="waveform" aria-hidden="true">
               <span></span><span></span><span></span><span></span><span></span><span></span>
@@ -188,19 +188,19 @@
         </ul>
       </div>
 
-      <a class="scroll-cue" href="#not-ai" aria-label="Scroll to No LLM section"><span></span></a>
+      <a class="scroll-cue" href="#not-ai" aria-label="Scroll to model scope section"><span></span></a>
     </section>
 
     <section class="section section-dark" id="not-ai" tabindex="-1" aria-labelledby="not-ai-title">
       <div class="shell">
         <div class="section-label">
           <span>02</span>
-          <small>position</small>
+          <small>model scope</small>
         </div>
         <div class="section-heading">
-          <h2 id="not-ai-title">Not an LLM. <span>Not a model wrapper.</span></h2>
+          <h2 id="not-ai-title">Local-first, <span>not a hosted model wrapper.</span></h2>
           <p>
-            The current public T1 target has no LLM or neural-network dependency. Judge it as a local reflex surface with bounded behavior and release evidence, not as another hosted model wrapper with new paint.
+            The planned T1 artifact is scoped to avoid hosted model-wrapper dependencies. Final dependency disclosure belongs with the signed artifact, so judge this preview by release evidence and bounded behavior rather than broad AI claims.
           </p>
         </div>
 
@@ -208,7 +208,7 @@
           <article class="card pillar">
             <svg class="card-icon" aria-hidden="true"><use href="#icon-network"></use></svg>
             <h3>Owned path</h3>
-            <p>The &alpha;-Sync substrate is a VRAXION surface, not someone else's remote answer stream.</p>
+            <p>The public target is framed as a VRAXION runtime path, not someone else's remote answer stream with new paint.</p>
           </article>
           <article class="card pillar pillar-seal">
             <svg class="card-icon card-icon-seal" aria-hidden="true"><use href="#icon-shield"></use></svg>
@@ -228,11 +228,11 @@
       <div class="shell two-column">
         <div>
           <p class="kicker seal">mode contract</p>
-          <h2 id="hallucination-title">Exact by default. <span>Imagination only when labeled.</span></h2>
+          <h2 id="hallucination-title">Exact mode refuses <span>unsupported paths.</span></h2>
           <p class="section-copy">
             The release target is simple to judge: supported paths answer, unsupported paths refuse, and creative drift stays opt-in, bounded, and traceable.
           </p>
-          <div class="small-proof"><span></span> Planned for the free T1 release target.</div>
+          <div class="small-proof"><span></span> Planned for the T1 release target.</div>
         </div>
 
         <div class="mode-card" data-mode="exact" aria-label="INSTNCT reasoning modes">
@@ -274,7 +274,7 @@
       <div class="shell">
         <div class="center-heading">
           <p class="kicker cyan">trust protocol</p>
-          <h2 id="trust-title">Public proof path. <span>Verify before trusting it.</span></h2>
+          <h2 id="trust-title">The proof path is offline. <span>Verify before trusting it.</span></h2>
           <p>The first signed T1 artifact should make three properties directly testable. Until then, this page describes the verification target.</p>
         </div>
 
@@ -295,8 +295,8 @@
             <p>Local-first has to survive a disconnected network, checksum verification, and a local timing check once the signed artifact ships.</p>
             <dl>
               <div><dt>pull wifi</dt><dd>public artifact target</dd></div>
-              <div><dt>5 us</dt><dd>internal preview p50</dd></div>
-              <div><dt>repeatable</dt><dd>harness will ship</dd></div>
+              <div><dt>5 us</dt><dd>selector-only preview</dd></div>
+              <div><dt>planned</dt><dd>reproduction harness</dd></div>
             </dl>
           </article>
           <article class="card trust-card">
@@ -305,8 +305,8 @@
             <p>The current GitHub release tag is <code>public-sdk-p11-20260629</code>. It marks the public status record, not a runnable T1 binary.</p>
             <dl>
               <div><dt>release tag</dt><dd>public-sdk-p11-20260629</dd></div>
-              <div><dt>no telemetry</dt><dd>local run target</dd></div>
-              <div><dt>artifact next</dt><dd>watch release notes</dd></div>
+              <div><dt>static page</dt><dd>no form fields</dd></div>
+              <div><dt>artifact next</dt><dd>watch release evidence</dd></div>
             </dl>
           </article>
         </div>
@@ -330,7 +330,7 @@
             <span>selector speedup</span>
             <strong>~<span data-count-to="52">52</span>x</strong>
           </div>
-          <p>Internal preview measurement: warm exact selector p50, not universal end-to-end latency. <a href="../INSTNCT_BENCHMARK_NOTES.md">Benchmark notes</a>.</p>
+          <p>Internal selector-only preview measurement for a 16k mixed-unique workload; not public end-to-end latency. <a href="../INSTNCT_BENCHMARK_NOTES.md">Benchmark notes</a>.</p>
         </div>
       </div>
     </section>
@@ -377,28 +377,28 @@
           <small>how it fits together</small>
         </div>
         <div class="section-heading">
-          <h2 id="fabric-title">The path, <span>at a glance.</span></h2>
-          <p>High-level only, on purpose: input, selector, bounded path, refusal or output. Enough to understand the public shape without exposing non-public engine materials.</p>
+          <h2 id="fabric-title">From input <span>to bounded result.</span></h2>
+          <p>High-level only, on purpose: input, selector, bounded path, refusal or output. Enough to understand the public shape while mechanism details stay outside the public release until they are testable.</p>
         </div>
 
         <div class="fabric-flow-panel" aria-label="INSTNCT refraction flow preview">
           <canvas class="fabric-flow-canvas" aria-hidden="true"></canvas>
           <div class="fabric-flow-caption">
             <span>observable path</span>
-            <strong>input -> prismion -> fabric -> bounded result</strong>
+            <strong>input -> selector -> bounded path -> result/refusal</strong>
           </div>
         </div>
 
         <div class="fabric-diagram" aria-label="INSTNCT fabric diagram">
           <article>
             <small>01</small>
-            <h3>Prismion</h3>
-            <p>Prism + neuron. Incoming data is refracted instead of sampled.</p>
+            <h3>Input</h3>
+            <p>A request enters the public proof path with an explicit mode and scope.</p>
           </article>
           <article>
             <small>02</small>
-            <h3>&alpha;-Sync fabric</h3>
-            <p>The substrate where refracted data propagates and interacts.</p>
+            <h3>Selector</h3>
+            <p>The target behavior is an approved path or a refusal, not an open-ended answer stream.</p>
           </article>
           <article>
             <small>03</small>
@@ -413,7 +413,7 @@
       <div class="shell two-column">
         <div>
           <p class="kicker cyan">developer trail</p>
-          <h2 id="dev-trail-title">Local terminal, not demo theater.</h2>
+          <h2 id="dev-trail-title">The demo should be a local command.</h2>
           <p class="section-copy">
             Release trust should point people at a local command, a repeatable benchmark, and refusal behavior they can inspect without a hosted service.
           </p>
@@ -434,9 +434,8 @@
           <pre data-cli-demo><code>$ instnct --mode exact --offline
 network: disabled
 surface: t1-reflex-preview
-selector.p50: 5 us
-baseline.p50: 261 us
-speedup: 52x
+selector timing: see signed benchmark notes
+baseline timing: see signed benchmark notes
 unsupported-query: refused, no invention
 mode: exact recall</code></pre>
           <div class="terminal-actions" aria-label="Copy INSTNCT commands">
@@ -458,22 +457,22 @@ mode: exact recall</code></pre>
           <small>model note / T1</small>
         </div>
         <div class="section-heading">
-          <h2 id="t1-title">Tier 1: a fast local baseline.</h2>
-          <p>T1 means Tier 1 in the INSTNCT capability ladder, a free, noncommercial target for local, low-power experimentation before higher creative and long-horizon tiers arrive.</p>
+          <h2 id="t1-title">Tier 1: a bounded local baseline.</h2>
+          <p>T1 means Tier 1 in the INSTNCT capability ladder: a planned local baseline for low-power experimentation before any broader capability claims or final release terms.</p>
         </div>
 
         <div class="info-grid">
           <article class="card info-card">
             <span class="kicker cyan">public backbone</span>
-            <h3>Small first, useful first, free first.</h3>
-            <p>Not a sellable hosted wrapper. Not a frontier model claim. A practical starting point for people who need affordable local reasoning.</p>
-            <div class="token-row"><span>free target</span><span>local artifact target</span><span>noncommercial</span></div>
+            <h3>Small first, useful first, proof first.</h3>
+            <p>Not a hosted wrapper. Not a frontier model claim. A practical release target that should earn trust through local evidence.</p>
+            <div class="token-row"><span>release target</span><span>local artifact target</span><span>terms pending</span></div>
           </article>
           <article class="card info-card info-card-seal">
-            <span class="kicker seal">prismion basis</span>
-            <h3>Reasoning from data refraction units.</h3>
-            <p>Prismion means prism plus neuron. Instead of light, a Prismion refracts data into the &alpha;-Sync fabric, where propagation produces a bounded result path.</p>
-            <div class="token-row"><span>prism + neuron</span><span>data refraction</span><span>bounded path</span></div>
+            <span class="kicker seal">concept vocabulary</span>
+            <h3>Keep mechanism claims testable.</h3>
+            <p>Public vocabulary stays conceptual: input, selector, bounded path, refusal or output. Mechanism details should ship only when artifacts make them testable.</p>
+            <div class="token-row"><span>input</span><span>selector</span><span>bounded path</span></div>
           </article>
         </div>
 
@@ -481,7 +480,7 @@ mode: exact recall</code></pre>
           <div>
             <span class="kicker seal">scope</span>
             <h3>Fast baseline, not an all-knowing system.</h3>
-            <p>T1 is intentionally bounded. Some reasoning loops stay narrow to reduce risk while the free baseline stabilizes. Founder-led and private by default; broader licensing or open-source terms remain a future choice, not a current promise.</p>
+            <p>T1 is intentionally bounded. Some reasoning loops stay narrow to reduce risk while the baseline stabilizes. Founder-led and private by default; broader licensing or open-source terms remain a future choice, not a current promise.</p>
           </div>
           <a class="button button-primary" href="https://github.com/VRAXION/VRAXION" target="_blank" rel="noopener noreferrer">Open repo</a>
         </div>
@@ -495,7 +494,7 @@ mode: exact recall</code></pre>
           <small>roadmap</small>
         </div>
         <div class="section-heading">
-          <h2 id="roadmap-title">Local scale, <span>not current capability.</span></h2>
+          <h2 id="roadmap-title">Prove local first, <span>then expand.</span></h2>
           <p>Direction, not promises. The order matters: prove it locally first, then expand.</p>
         </div>
 
@@ -560,7 +559,7 @@ mode: exact recall</code></pre>
               Is INSTNCT an LLM?
             </button>
             <div id="instnct-faq-1" class="faq-panel" role="region" aria-labelledby="instnct-faq-button-1">
-              <p>No. The current public T1 target has no LLM or neural-network dependency. INSTNCT is positioned as a local reflex surface: bounded, inspectable, and measured by behavior people can test.</p>
+              <p>The planned T1 artifact is scoped to avoid hosted LLM/model-wrapper dependencies. Final dependency disclosure should ship with the signed artifact; today, judge the page as a release target and proof path.</p>
             </div>
           </article>
           <article class="faq-item">
@@ -596,7 +595,7 @@ mode: exact recall</code></pre>
               Do you collect any data from my machine?
             </button>
             <div id="instnct-faq-5" class="faq-panel" role="region" aria-labelledby="instnct-faq-button-5">
-              <p>The public T1 target is local-first and no-telemetry by default. Any future networked tier needs a separate opt-in release plan and cannot be implied by this page.</p>
+              <p>This static page has no form fields, and its CSP blocks page-script network connections. Runtime telemetry claims should be made only with a signed artifact and release notes.</p>
             </div>
           </article>
           <article class="faq-item">
@@ -605,7 +604,7 @@ mode: exact recall</code></pre>
               What can it actually do right now?
             </button>
             <div id="instnct-faq-6" class="faq-panel" role="region" aria-labelledby="instnct-faq-button-6">
-              <p>T1 is intentionally bounded. The honest current story is a public preview for a local release target with exact paths, refusal behavior, and scoped selector measurements before broader capability claims.</p>
+              <p>Right now, the public surface is SDK/docs plus this INSTNCT release preview. You can inspect status, capability notes, benchmark scope, and release tags. You cannot run the signed T1 artifact yet.</p>
             </div>
           </article>
           <article class="faq-item">
@@ -623,7 +622,7 @@ mode: exact recall</code></pre>
               When can people run it?
             </button>
             <div id="instnct-faq-8" class="faq-panel" role="region" aria-labelledby="instnct-faq-button-8">
-              <p>The binary is not ready yet. The public repo remains the status record for release notes, benchmark notes, and the first runnable artifact.</p>
+              <p>No public runnable artifact or final release terms are available today. Planned proof materials may include signed artifacts, checksums, harness details, and benchmark notes.</p>
             </div>
           </article>
         </div>
@@ -633,7 +632,7 @@ mode: exact recall</code></pre>
     <section class="section section-dark get-notified" id="get-notified" tabindex="-1" aria-labelledby="notify-title">
       <div class="shell narrow center-heading">
         <p class="kicker cyan">release tracking</p>
-        <h2 id="notify-title">Track the T1 artifact.<br><span>Release evidence first.</span></h2>
+        <h2 id="notify-title">Watch the T1 proof path.<br><span>Release evidence first.</span></h2>
         <p>
           No runnable T1 binary is public yet. Watch the repo for signed artifacts, checksums, release notes, benchmark notes, and public updates.
         </p>
@@ -645,21 +644,21 @@ mode: exact recall</code></pre>
           <a class="button button-secondary" href="https://github.com/VRAXION/VRAXION/blob/main/PUBLIC_DELIVERY_MODEL.md" target="_blank" rel="noopener noreferrer">Delivery model</a>
           <a class="button button-secondary" href="https://github.com/VRAXION/VRAXION/blob/main/docs/PUBLIC_SURFACE_POLICY.md" target="_blank" rel="noopener noreferrer">Surface policy</a>
           <a class="button button-secondary" href="https://github.com/VRAXION/VRAXION/releases/tag/public-sdk-p11-20260629" target="_blank" rel="noopener noreferrer">GitHub release: public-sdk-p11-20260629</a>
-          <a class="button button-secondary" href="https://github.com/VRAXION/VRAXION/archive/refs/tags/public-sdk-p11-20260629.zip" target="_blank" rel="noopener noreferrer">GitHub tag ZIP: public-sdk-p11-20260629</a>
+          <a class="button button-secondary" href="https://github.com/VRAXION/VRAXION/archive/refs/tags/public-sdk-p11-20260629.zip" target="_blank" rel="noopener noreferrer">Public SDK/docs ZIP: public-sdk-p11-20260629</a>
           <a class="button button-secondary" href="../INSTNCT_BENCHMARK_NOTES.md">Benchmark notes</a>
         </div>
         <div class="artifact-status" aria-label="INSTNCT artifact availability">
           <div>
             <strong>Available now</strong>
-            <span>GitHub release public-sdk-p11-20260629, its public tag ZIP, benchmark notes, status docs.</span>
+            <span>Public SDK/docs release public-sdk-p11-20260629, tag ZIP, status docs, capability notes, and scoped benchmark notes.</span>
           </div>
           <div>
             <strong>Not yet available</strong>
-            <span>Signed T1 binary, checksums, benchmark harness, raw timing output, refusal examples.</span>
+            <span>Signed runnable T1 binary, checksums, reproduction harness, raw timing logs, and refusal examples.</span>
           </div>
         </div>
         <p class="notify-note">
-          This static page does not collect email addresses yet. The GitHub tag ZIP contains only public files from this repo at public-sdk-p11-20260629, not the private engine source, non-public engine materials, or a runnable T1 binary.
+          This static page has no form fields and its CSP blocks page-script network connections. The tag ZIP contains the public SDK/docs snapshot only; it is not a runnable T1 artifact and excludes non-public implementation materials.
         </p>
       </div>
     </section>
@@ -671,7 +670,7 @@ mode: exact recall</code></pre>
         <img src="../assets/vraxion-wordmark.png?v=brand-pass-1" alt="" width="1672" height="308" loading="lazy" decoding="async">
       </a>
       <span>© 2026 Daniel Kenessy</span>
-      <span>No LLM. Local-first target.</span>
+      <span>Model scope. Local-first target.</span>
       <a href="https://github.com/VRAXION/VRAXION/releases/tag/public-sdk-p11-20260629" target="_blank" rel="noopener noreferrer">public-sdk-p11-20260629</a>
       <a href="https://github.com/VRAXION/VRAXION" target="_blank" rel="noopener noreferrer">GitHub</a>
     </div>

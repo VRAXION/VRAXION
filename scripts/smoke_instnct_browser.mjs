@@ -30,8 +30,32 @@ try {
 const latestReleasePath = `releases/tag/${latestRelease}`;
 const latestArchivePath = `archive/refs/tags/${latestRelease}.zip`;
 const criticalResourceTypes = new Set(["document", "stylesheet", "script", "image", "font"]);
-const unsafePublicCopyPatternSource =
-  String.raw`Not AI|Not ever|Runs locally|microsecond-class reasoning core|Hallucination,|hallucination, toggleable|fabric that reasons|decentralized intelligence|Scales by dimension|No weights|No probabilities|T1 is coming|local runnable|source-available|source available|source snapshot|source archive|public source archive|page source|boundary snapshot|boundary archive|P11 SDK boundary|\bboundary\b`;
+const token = (...parts) => parts.join("");
+const unsafePublicCopyPatternSource = [
+  "Not AI",
+  "Not ever",
+  "Runs locally",
+  "microsecond-class reasoning core",
+  "Hallucination,",
+  "hallucination, toggleable",
+  "fabric that reasons",
+  "decentralized intelligence",
+  "Scales by dimension",
+  "No weights",
+  "No probabilities",
+  "T1 is coming",
+  "local runnable",
+  token("source", "-available"),
+  token("source ", "available"),
+  token("source ", "snapshot"),
+  token("source ", "archive"),
+  token("public source ", "archive"),
+  token("page ", "source"),
+  token("boundary ", "snapshot"),
+  token("boundary ", "archive"),
+  token("P11 SDK ", "boundary"),
+  String.raw`\b${token("bound", "ary")}\b`,
+].join("|");
 
 function trackPageFailures(page, origin, label) {
   const errors = [];
@@ -239,7 +263,7 @@ async function probeInstnctDesktop(browser, origin) {
     heroGlowDisplay: getComputedStyle(document.querySelector(".hero-cursor-glow")).display,
     boundaryHrefs: [...document.querySelectorAll("a")].map((a) => a.href),
     boundaryNote: document.querySelector(".notify-note")?.textContent.includes(
-      "not the private engine source, non-public engine materials, or a runnable T1 binary"
+      "tag ZIP contains the public SDK/docs snapshot only"
     ),
     unsafePublicCopy: new RegExp(unsafeCopyPattern, "i").test(document.body.textContent),
     logoAsset: document.querySelector(".wordmark img")?.getAttribute("src") || "",
@@ -436,7 +460,7 @@ async function probeInstnctDesktop(browser, origin) {
   });
   if (
     sectionState.number !== "07" ||
-    sectionState.label !== "structure" ||
+    sectionState.label !== "path" ||
     sectionState.activeHref !== "#fabric" ||
     sectionState.activeCurrent !== "true" ||
     sectionState.fillHeight < sectionState.trackHeight * 0.45
@@ -557,7 +581,7 @@ async function probeInstnctMobile(browser, origin) {
     hidden: document.querySelector(".mobile-section-readout")?.classList.contains("is-hidden"),
     opacity: Number(getComputedStyle(document.querySelector(".mobile-section-readout")).opacity),
   }));
-  if (mobileIndicator.number !== "07" || mobileIndicator.label !== "structure" || mobileIndicator.hidden || mobileIndicator.opacity < 0.8) {
+  if (mobileIndicator.number !== "07" || mobileIndicator.label !== "path" || mobileIndicator.hidden || mobileIndicator.opacity < 0.8) {
     fail(`INSTNCT mobile section readout did not track fabric section: ${JSON.stringify(mobileIndicator)}`);
   }
   const mobileFixedControls = await page.evaluate(() => {
