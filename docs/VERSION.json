@@ -5,7 +5,7 @@
   "public_surface": "sdk_release_scope",
   "pages_surface": "instnct_release_polish",
   "latest_public_release": "public-sdk-p11-20260629",
-  "instnct_asset_version": "release-4",
+  "instnct_asset_version": "release-5",
   "delivery_direction": "controlled_binary_first_api_later",
   "crates": [
     "alphasync-core",
