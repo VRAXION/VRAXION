@@ -18,8 +18,14 @@ jobs:
       - name: INSTNCT static smoke
         run: |
           node --check scripts/audit_instnct_static_site.mjs
+          node --check scripts/smoke_instnct_browser.mjs
           node --check docs/instnct/instnct.js
           node scripts/audit_instnct_static_site.mjs
+      - name: INSTNCT browser smoke
+        run: |
+          npm install --prefix "$RUNNER_TEMP/instnct-playwright" --no-save --no-audit --no-fund playwright@1.61.1
+          "$RUNNER_TEMP/instnct-playwright/node_modules/.bin/playwright" install --with-deps chromium
+          PLAYWRIGHT_MODULE_ROOT="$RUNNER_TEMP/instnct-playwright/node_modules" node scripts/smoke_instnct_browser.mjs
 
   rust:
     runs-on: windows-latest

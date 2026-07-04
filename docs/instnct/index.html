@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-bNdJHBUyNy7XRZfMP35RZ6jxcXfi6fpm/vn/Wr84T6k='; style-src 'self'; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'; upgrade-insecure-requests">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-0BMCZN6sKMCMla0ZkrzSQLWvFYLLOUMyBraCjVMMQfI='; style-src 'self'; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'; upgrade-insecure-requests">
   <title>INSTNCT - VRAXION Local Reflex Reasoning</title>
   <meta name="description" content="INSTNCT is VRAXION's local-first T1 Reflex Class surface: not AI, no neural net, offline-oriented, and built around bounded symbol-grounded hot paths.">
   <meta name="theme-color" content="#050507">
@@ -25,7 +25,7 @@
   <meta name="twitter:image:alt" content="INSTNCT local reflex reasoning hero surface">
   <link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="./styles.css?v=release-2">
-  <script type="application/ld+json">{"@context":"https://schema.org","@type":"SoftwareApplication","name":"INSTNCT","applicationCategory":"DeveloperApplication","operatingSystem":"Windows, macOS, Linux","description":"A local-first reflex-class reasoning engine from VRAXION. Not AI, no neural net, offline-oriented, and built around bounded symbol-grounded hot paths.","url":"https://vraxion.github.io/VRAXION/instnct/","author":{"@type":"Person","name":"Daniel Kenessy"},"publisher":{"@type":"Organization","name":"VRAXION","url":"https://vraxion.github.io/VRAXION/"},"offers":{"@type":"Offer","price":"0","priceCurrency":"USD","description":"Free local noncommercial release target."},"featureList":["Local-first reasoning","Symbol Grounding Engine","Toggleable exact/imagination mode","Microsecond-class warm selector","Offline verification target"]}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebPage","name":"INSTNCT","description":"Preview page for VRAXION's planned local-first T1 Reflex release. No public runnable T1 binary is published yet.","url":"https://vraxion.github.io/VRAXION/instnct/","isPartOf":{"@type":"WebSite","name":"VRAXION","url":"https://vraxion.github.io/VRAXION/"},"author":{"@type":"Person","name":"Daniel Kenessy"},"publisher":{"@type":"Organization","name":"VRAXION","url":"https://vraxion.github.io/VRAXION/"},"about":{"@type":"Thing","name":"INSTNCT T1 Reflex release target","description":"Local-first, no-neural-net, bounded reasoning target with offline verification planned for the first signed artifact."}}</script>
   <script src="./instnct.js?v=release-2" defer></script>
 </head>
 <body>
@@ -40,7 +40,7 @@
       <a href="#get-notified">INSTNCT</a>
       <a href="#not-ai">Not AI</a>
       <a href="#trust">Proof</a>
-      <span class="nav-soon">VNGARD <span>soon</span></span>
+      <a href="../vngard/">VNGARD roadmap</a>
       <a href="https://github.com/VRAXION/VRAXION" target="_blank" rel="noopener noreferrer">GitHub</a>
     </nav>
   </header>
@@ -77,6 +77,11 @@
   <button class="keyboard-help-trigger" type="button" aria-label="Keyboard shortcuts" title="Keyboard shortcuts">
     <span aria-hidden="true">?</span>
   </button>
+
+  <a class="source-snapshot-pill" href="https://github.com/VRAXION/VRAXION/archive/refs/tags/public-sdk-p11-20260629.zip" target="_blank" rel="noopener noreferrer" aria-label="Download the P11 public SDK source archive">
+    <span aria-hidden="true"></span>
+    Source snapshot
+  </a>
 
   <div class="keyboard-dialog" role="dialog" aria-modal="true" aria-labelledby="keyboard-dialog-title" hidden>
     <div class="keyboard-dialog-backdrop" data-keyboard-close></div>
@@ -127,7 +132,7 @@
 
         <h1 id="hero-title" class="wordmark" aria-label="INSTNCT">
           <span class="sr-only">INSTNCT</span>
-          <img src="./assets/instnct-wordmark.png?v=wordmark-pass-1" alt="" width="1478" height="254" decoding="sync" loading="eager" fetchpriority="high">
+          <img src="./assets/instnct-logo.png?v=logo-pass-1" alt="" width="1478" height="254" decoding="sync" loading="eager" fetchpriority="high">
         </h1>
 
         <p class="creator-line">
@@ -140,11 +145,11 @@
         </p>
 
         <p class="lead">
-          INSTNCT is VRAXION's first public SymGround demo surface, a microsecond-class reasoning core built around a Symbol Grounding Engine. No neural net. No phone-home posture. Pull the network and the premise still has to stand.
+          INSTNCT is VRAXION's first public SymGround preview surface: a planned microsecond-class reasoning core built around bounded, checkable paths. No neural net. No phone-home posture. When the first signed T1 artifact ships, pulling the network is part of the proof.
         </p>
 
         <div class="hero-actions" aria-label="INSTNCT actions">
-          <a class="button button-primary" href="#get-notified">Be first to run it</a>
+          <a class="button button-primary" href="#get-notified">Track T1 release</a>
           <a class="button button-secondary" href="https://github.com/VRAXION/VRAXION" target="_blank" rel="noopener noreferrer">Open repo</a>
           <div class="live-readout" aria-label="Warm selector benchmark">
             <span class="pulse-dot"></span>
@@ -210,7 +215,7 @@
           <p class="section-copy">
             Two modes. Exact recall only emits supported transformations and refuses when support is missing. Imagination can exist, but it must be visibly labeled as creative speculation.
           </p>
-          <div class="small-proof"><span></span> Included in the free T1 release target.</div>
+          <div class="small-proof"><span></span> Planned for the free T1 release target.</div>
         </div>
 
         <div class="mode-card" data-mode="exact" aria-label="INSTNCT reasoning modes">
@@ -252,8 +257,8 @@
       <div class="shell">
         <div class="center-heading">
           <p class="kicker cyan">trust protocol</p>
-          <h2 id="trust-title">Run it. <span>Measure it.</span> Trust it.</h2>
-          <p>Three properties should be directly testable. No faith required.</p>
+          <h2 id="trust-title">Public proof path. <span>Measure it.</span> Then trust it.</h2>
+          <p>The first signed T1 artifact should make three properties directly testable. Until then, this page describes the verification target.</p>
         </div>
 
         <div class="trust-grid">
@@ -268,20 +273,20 @@
           </article>
           <article class="card trust-card trust-card-seal">
             <span class="kicker seal">provable</span>
-            <p>Local-first has to survive a disconnected network and a local timing check.</p>
+            <p>Local-first has to survive a disconnected network and a local timing check once the signed artifact ships.</p>
             <dl>
-              <div><dt>pull wifi</dt><dd>it still runs</dd></div>
-              <div><dt>5 us</dt><dd>warm selector p50</dd></div>
-              <div><dt>repeatable</dt><dd>measure it yourself</dd></div>
+              <div><dt>pull wifi</dt><dd>public artifact target</dd></div>
+              <div><dt>5 us</dt><dd>internal preview p50</dd></div>
+              <div><dt>repeatable</dt><dd>harness will ship</dd></div>
             </dl>
           </article>
           <article class="card trust-card">
             <span class="kicker cyan">binary boundary</span>
-            <p>The source boundary stays honest: behavior can be inspected before internals are fully published.</p>
+            <p>The release boundary stays honest: the current public archive is an SDK/docs boundary snapshot, not a runnable T1 binary.</p>
             <dl>
-              <div><dt>source-available</dt><dd>not fully open yet</dd></div>
+              <div><dt>P11 SDK</dt><dd>boundary release</dd></div>
               <div><dt>no telemetry</dt><dd>local run target</dd></div>
-              <div><dt>behavior first</dt><dd>watch it, decide</dd></div>
+              <div><dt>artifact next</dt><dd>watch release notes</dd></div>
             </dl>
           </article>
         </div>
@@ -305,7 +310,7 @@
             <span>selector speedup</span>
             <strong>~<span data-count-to="52">52</span>x</strong>
           </div>
-          <p>Scoped claim: warm exact selector p50, not universal end-to-end latency.</p>
+          <p>Internal preview measurement: warm exact selector p50, not universal end-to-end latency. <a href="../INSTNCT_BENCHMARK_NOTES.md">Benchmark notes</a>.</p>
         </div>
       </div>
     </section>
@@ -313,13 +318,13 @@
     <section class="section" id="grounding" tabindex="-1" aria-labelledby="grounding-title">
       <div class="shell narrow center-heading">
         <p class="kicker cyan">the claim</p>
-        <h2 id="grounding-title">Symbol grounding, <span>solved.</span></h2>
+        <h2 id="grounding-title">Symbol grounding: <span>the release claim.</span></h2>
         <p>
-          The grounding problem is old and hard. The public page cannot ask people to believe private internals. The proof path is the artifact: run the binary, pull the network, measure the behavior, and compare refusal boundaries.
+          The grounding problem is old and hard. The public claim is narrower than solving the whole field: INSTNCT outputs should stay tied to bounded anchors and checkable paths. Treat this as a verification target until the runnable artifact and benchmark notes ship.
         </p>
         <div class="statement-panel">
-          <strong>So we made a different trade.</strong>
-          <p>Ship the thing first. Let people test it locally. Keep claims smaller than the reproducible evidence.</p>
+          <strong>So the release has to carry the claim.</strong>
+          <p>Ship the artifact and notes. Let people test it locally. Keep claims smaller than the reproducible evidence.</p>
         </div>
       </div>
     </section>
@@ -542,7 +547,7 @@ mode: exact recall</code></pre>
               How do I verify it actually runs locally?
             </button>
             <div class="faq-panel">
-              <p>The release proof path is simple: run the artifact locally, disable the network, and measure the same benchmark/refusal behavior without a hosted service.</p>
+              <p>The first public proof path will be simple: run the signed artifact locally, disable the network, run the benchmark/refusal script, and compare outputs. Until that artifact ships, this page describes the verification target.</p>
             </div>
           </article>
           <article class="faq-item">
@@ -551,7 +556,7 @@ mode: exact recall</code></pre>
               What does symbol grounding mean here?
             </button>
             <div class="faq-panel">
-              <p>Publicly, it means outputs should stay tied to bounded anchors and checkable paths. Private mechanism details stay limited until release artifacts make the claim testable.</p>
+              <p>Publicly, it means outputs should stay tied to bounded anchors and checkable paths. Mechanism details stay limited until release artifacts make the claim testable.</p>
             </div>
           </article>
           <article class="faq-item">
@@ -578,7 +583,7 @@ mode: exact recall</code></pre>
               What can it actually do right now?
             </button>
             <div class="faq-panel">
-              <p>T1 is intentionally bounded. The honest current story is a local release target with exact recall, refusal behavior, and measured selector performance before broader capability claims.</p>
+              <p>T1 is intentionally bounded. The honest current story is a public preview for a local release target with exact recall, refusal behavior, and measured selector performance before broader capability claims.</p>
             </div>
           </article>
           <article class="faq-item">
@@ -605,19 +610,20 @@ mode: exact recall</code></pre>
 
     <section class="section section-dark get-notified" id="get-notified" tabindex="-1" aria-labelledby="notify-title">
       <div class="shell narrow center-heading">
-        <p class="kicker cyan">training in progress</p>
-        <h2 id="notify-title">T1 is coming.<br><span>Be first to run it.</span></h2>
+        <p class="kicker cyan">release tracking</p>
+        <h2 id="notify-title">T1 is coming.<br><span>Track the release.</span></h2>
         <p>
-          The binary is not ready yet. Until the first runnable artifact ships, the repo is the source of truth for release boundaries, benchmark notes, and public updates.
+          No runnable T1 binary is public yet. Watch the repo for signed artifacts, checksums, release notes, benchmark notes, and public updates.
         </p>
         <div class="notify-actions">
           <a class="button button-primary" href="https://github.com/VRAXION/VRAXION" target="_blank" rel="noopener noreferrer">Watch the repo</a>
           <a class="button button-secondary" href="https://github.com/VRAXION/VRAXION/blob/main/LICENSE_BOUNDARY.md" target="_blank" rel="noopener noreferrer">Release boundary</a>
-          <a class="button button-secondary" href="https://github.com/VRAXION/VRAXION/releases/tag/public-sdk-p11-20260629" target="_blank" rel="noopener noreferrer">Public release</a>
-          <a class="button button-secondary" href="https://github.com/VRAXION/VRAXION/archive/refs/tags/public-sdk-p11-20260629.zip" target="_blank" rel="noopener noreferrer">Source snapshot</a>
+          <a class="button button-secondary" href="https://github.com/VRAXION/VRAXION/releases/tag/public-sdk-p11-20260629" target="_blank" rel="noopener noreferrer">P11 SDK boundary</a>
+          <a class="button button-secondary" href="https://github.com/VRAXION/VRAXION/archive/refs/tags/public-sdk-p11-20260629.zip" target="_blank" rel="noopener noreferrer">P11 source archive</a>
+          <a class="button button-secondary" href="../INSTNCT_BENCHMARK_NOTES.md">Benchmark notes</a>
         </div>
         <p class="notify-note">
-          Source snapshot means the public SDK/docs repository archive for the latest boundary release, not the private engine source or a runnable T1 binary.
+          P11 source archive means the public SDK/docs boundary snapshot, not the private engine source or a runnable T1 binary. The current INSTNCT page source lives on main until the next release tag.
         </p>
       </div>
     </section>
@@ -630,7 +636,7 @@ mode: exact recall</code></pre>
       </a>
       <span>© 2026 Daniel Kenessy</span>
       <span>Not AI. Local-first.</span>
-      <a href="https://github.com/VRAXION/VRAXION/releases/tag/public-sdk-p11-20260629" target="_blank" rel="noopener noreferrer">Release</a>
+      <a href="https://github.com/VRAXION/VRAXION/releases/tag/public-sdk-p11-20260629" target="_blank" rel="noopener noreferrer">P11 boundary</a>
       <a href="https://github.com/VRAXION/VRAXION" target="_blank" rel="noopener noreferrer">GitHub</a>
     </div>
   </footer>

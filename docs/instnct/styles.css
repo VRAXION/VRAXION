@@ -166,15 +166,25 @@ pre {
 .indicator-track {
   position: relative;
   justify-self: end;
-  width: 1px;
+  width: 28px;
   height: 132px;
+  pointer-events: auto;
+}
+
+.indicator-track::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 13px;
+  width: 1px;
+  height: 100%;
   background: rgba(255, 255, 255, 0.12);
 }
 
 .indicator-track span {
   position: absolute;
   top: 0;
-  left: 0;
+  left: 13px;
   width: 1px;
   height: 8.333%;
   background: linear-gradient(180deg, var(--cyan), var(--seal));
@@ -186,7 +196,7 @@ pre {
 
 .indicator-track i {
   position: absolute;
-  left: -3px;
+  left: 10px;
   top: calc(8.333% - 3px);
   width: 7px;
   height: 7px;
@@ -200,6 +210,7 @@ pre {
   grid-column: 2;
   grid-row: 1;
   min-height: 34px;
+  pointer-events: none;
   text-align: right;
 }
 
@@ -214,6 +225,10 @@ pre {
 
 .indicator-readout strong span {
   color: rgba(138, 147, 164, 0.58);
+}
+
+.indicator-readout strong [data-indicator-number] {
+  color: var(--cyan);
 }
 
 .indicator-readout small {
@@ -372,6 +387,73 @@ pre {
   box-shadow:
     0 12px 42px rgba(0, 0, 0, 0.48),
     0 0 28px rgba(0, 229, 255, 0.18);
+  transform: translateY(-1px);
+}
+
+.source-snapshot-pill {
+  position: fixed;
+  left: 82px;
+  bottom: 24px;
+  z-index: 39;
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 42px;
+  padding: 0 14px;
+  border: 1px solid rgba(0, 229, 255, 0.24);
+  border-radius: 999px;
+  color: var(--cyan-soft);
+  background: rgba(10, 11, 14, 0.82);
+  box-shadow: 0 12px 42px rgba(0, 0, 0, 0.42);
+  backdrop-filter: blur(16px);
+  font-family: "SFMono-Regular", "Cascadia Code", Consolas, "Liberation Mono", ui-monospace, monospace;
+  font-size: 0.68rem;
+  font-weight: 820;
+  text-transform: uppercase;
+  transition:
+    border-color 160ms ease,
+    color 160ms ease,
+    transform 160ms ease,
+    background 160ms ease;
+}
+
+.source-snapshot-pill span {
+  position: relative;
+  width: 16px;
+  height: 16px;
+  border: 1px solid rgba(0, 229, 255, 0.36);
+  border-radius: 4px;
+}
+
+.source-snapshot-pill span::before,
+.source-snapshot-pill span::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  background: currentColor;
+  transform: translateX(-50%);
+}
+
+.source-snapshot-pill span::before {
+  top: 3px;
+  width: 2px;
+  height: 7px;
+}
+
+.source-snapshot-pill span::after {
+  bottom: 3px;
+  width: 8px;
+  height: 2px;
+  box-shadow:
+    -3px -3px 0 -2px currentColor,
+    3px -3px 0 -2px currentColor;
+}
+
+.source-snapshot-pill:hover,
+.source-snapshot-pill:focus-visible {
+  border-color: rgba(0, 229, 255, 0.52);
+  color: var(--ink);
+  background: rgba(0, 229, 255, 0.1);
   transform: translateY(-1px);
 }
 
@@ -1146,6 +1228,20 @@ html.keyboard-dialog-open {
   background-repeat: no-repeat;
 }
 
+.has-js [data-reveal] {
+  opacity: 0;
+  transform: translateY(18px);
+  transition:
+    opacity 520ms ease var(--reveal-delay, 0ms),
+    transform 520ms cubic-bezier(0.16, 1, 0.3, 1) var(--reveal-delay, 0ms);
+  will-change: opacity, transform;
+}
+
+.has-js [data-reveal].is-revealed {
+  opacity: 1;
+  transform: translateY(0);
+}
+
 #t1-reflex-class::after,
 #vraxion-note::after {
   content: "";
@@ -1560,13 +1656,12 @@ html.keyboard-dialog-open {
 
 .mode-panels {
   position: relative;
-  min-height: 230px;
+  min-height: 0;
 }
 
 .mode-panel {
-  position: absolute;
-  inset: 0;
-  display: grid;
+  position: relative;
+  display: none;
   align-content: start;
   gap: 12px;
   padding: 18px;
@@ -1582,6 +1677,7 @@ html.keyboard-dialog-open {
 }
 
 .mode-panel.is-active {
+  display: grid;
   opacity: 1;
   transform: translateY(0);
   pointer-events: auto;
@@ -1763,6 +1859,11 @@ html.keyboard-dialog-open {
   color: var(--muted);
   font-size: 0.9rem;
   line-height: 1.5;
+}
+
+.benchmark-card p a {
+  color: var(--cyan-soft);
+  font-weight: 760;
 }
 
 .statement-panel {
@@ -2636,7 +2737,7 @@ html.keyboard-dialog-open {
   }
 
   .mode-panels {
-    min-height: 290px;
+    min-height: 0;
   }
 
   .bar-row {
@@ -2683,6 +2784,10 @@ html.keyboard-dialog-open {
   }
 
   .keyboard-help-trigger {
+    display: none;
+  }
+
+  .source-snapshot-pill {
     display: none;
   }
 
@@ -2776,5 +2881,10 @@ html.keyboard-dialog-open {
     animation-iteration-count: 1 !important;
     scroll-behavior: auto !important;
     transition-duration: 0.01ms !important;
+  }
+
+  .has-js [data-reveal] {
+    opacity: 1;
+    transform: none;
   }
 }

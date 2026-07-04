@@ -46,13 +46,12 @@ FORBIDDEN_TEXT = [
 ]
 
 EXPECTED_CRATES = {"alphasync-core", "alphasync-runtime"}
-EXPECTED_LATEST_PUBLIC_RELEASE = "public-sdk-p11-20260629"
 
 PUBLIC_BINARY_ASSETS = {
     "docs/assets/vraxion-home-hero.jpg",
     "docs/assets/vraxion-wordmark.png",
     "docs/instnct/assets/instnct-hero-bg.png",
-    "docs/instnct/assets/instnct-wordmark.png",
+    "docs/instnct/assets/instnct-logo.png",
     "docs/instnct/assets/t1-reflex-bg.jpg",
     "docs/instnct/assets/vraxion-note-bg.png",
     "docs/vngard/assets/alpha-sync-fabric-card.jpg",
@@ -124,18 +123,14 @@ def main() -> int:
         version = {}
 
     latest_release = version.get("latest_public_release")
-    if latest_release != EXPECTED_LATEST_PUBLIC_RELEASE:
-        failures.append(
-            "docs/VERSION.json latest_public_release must be "
-            f"{EXPECTED_LATEST_PUBLIC_RELEASE!r}, found {latest_release!r}"
-        )
+    if not isinstance(latest_release, str) or not latest_release.startswith("public-sdk-"):
+        failures.append(f"docs/VERSION.json latest_public_release is invalid: {latest_release!r}")
 
     index_html = read_text(ROOT / "docs" / "index.html")
-    expected_release_url = (
-        "https://github.com/VRAXION/VRAXION/releases/tag/"
-        + EXPECTED_LATEST_PUBLIC_RELEASE
+    expected_release_url = "https://github.com/VRAXION/VRAXION/releases/tag/" + str(
+        latest_release or ""
     )
-    if expected_release_url not in index_html:
+    if latest_release and expected_release_url not in index_html:
         failures.append("docs/index.html does not link to the latest public release")
 
     for match in re.finditer(

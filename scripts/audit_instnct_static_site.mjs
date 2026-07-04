@@ -7,12 +7,14 @@ const root = process.cwd();
 const htmlPath = path.join(root, "docs", "instnct", "index.html");
 const jsPath = path.join(root, "docs", "instnct", "instnct.js");
 const cssPath = path.join(root, "docs", "instnct", "styles.css");
+const versionPath = path.join(root, "docs", "VERSION.json");
 const docsRoot = path.join(root, "docs");
 const siteRoot = path.join(root, "docs", "instnct");
 
 const html = fs.readFileSync(htmlPath, "utf8");
 const js = fs.readFileSync(jsPath, "utf8");
 const css = fs.readFileSync(cssPath, "utf8");
+let latestRelease = "";
 const failures = [];
 
 function fail(message) {
@@ -49,6 +51,14 @@ try {
   fail(`INSTNCT JS syntax error: ${err.message}`);
 }
 
+try {
+  const version = JSON.parse(fs.readFileSync(versionPath, "utf8"));
+  latestRelease = String(version.latest_public_release || "");
+  if (!latestRelease) fail("docs/VERSION.json must define latest_public_release");
+} catch (err) {
+  fail(`invalid docs/VERSION.json: ${err.message}`);
+}
+
 for (const required of [
   "hero-mesh-canvas",
   "mode-switch",
@@ -57,8 +67,10 @@ for (const required of [
   "fabric-flow-panel",
   "fabric-flow-canvas",
   "keyboard-dialog",
+  "source-snapshot-pill",
   "data-benchmark",
   "terminal-actions",
+  "../INSTNCT_BENCHMARK_NOTES.md",
 ]) {
   if (!html.includes(required)) fail(`missing INSTNCT markup: ${required}`);
 }
@@ -67,6 +79,7 @@ for (const required of [
   "installHeroMesh",
   "installFabricFlow",
   "installCliDemo",
+  "installReveals",
   "data-copy-command",
   "setKeyboardBackgroundInert",
   "dataset.lineType",
@@ -77,6 +90,8 @@ for (const required of [
 
 for (const required of [
   ".fabric-flow-panel",
+  ".source-snapshot-pill",
+  ".has-js [data-reveal]",
   ".terminal-line[data-line-type=\"ok\"]",
   ".terminal-bar em",
   ".faq-item button",
@@ -105,10 +120,10 @@ for (const forbidden of [
   if (html.includes(forbidden)) fail(`unsafe static-page boundary token: ${forbidden}`);
 }
 
-if (!html.includes("public-sdk-p11-20260629")) {
+if (latestRelease && !html.includes(latestRelease)) {
   fail("INSTNCT page must link to the latest public boundary release");
 }
-if (!html.includes("archive/refs/tags/public-sdk-p11-20260629.zip")) {
+if (latestRelease && !html.includes(`archive/refs/tags/${latestRelease}.zip`)) {
   fail("INSTNCT page must expose the safe public source snapshot archive");
 }
 if (!html.includes("not the private engine source")) {
@@ -132,8 +147,12 @@ if (!jsonLdMatch) {
   }
   try {
     const data = JSON.parse(jsonLdMatch[1]);
-    if (data["@type"] !== "SoftwareApplication") fail("JSON-LD @type must be SoftwareApplication");
+    if (data["@type"] !== "WebPage") fail("JSON-LD @type must be WebPage");
     if (data.name !== "INSTNCT") fail("JSON-LD name must be INSTNCT");
+    if (!String(data.description || "").includes("No public runnable T1 binary")) {
+      fail("JSON-LD description must state the public T1 binary boundary");
+    }
+    if ("offers" in data) fail("JSON-LD must not expose an offer before a runnable artifact exists");
   } catch (err) {
     fail(`invalid JSON-LD: ${err.message}`);
   }

@@ -399,6 +399,7 @@
       if (modeState) modeState.textContent = isImagination ? "imagination opt-in" : "exact by default";
       panels.forEach((panel) => {
         const isActive = panel.dataset.modePanel === mode;
+        panel.hidden = !isActive;
         panel.classList.toggle("is-active", isActive);
         panel.setAttribute("aria-hidden", String(!isActive));
         setElementInert(panel, !isActive);
@@ -521,6 +522,55 @@
   }
 
   installManifesto();
+
+  function installReveals() {
+    const revealTargets = Array.from(
+      document.querySelectorAll(
+        [
+          ".section-label",
+          ".section-heading",
+          ".center-heading",
+          ".pillar",
+          ".trust-card",
+          ".benchmark-card",
+          ".statement-panel",
+          ".fabric-flow-panel",
+          ".fabric-diagram article",
+          ".terminal-panel",
+          ".info-card",
+          ".roadmap-list li",
+          ".faq-item",
+          ".get-notified .button",
+        ].join(",")
+      )
+    );
+
+    if (revealTargets.length === 0) return;
+    revealTargets.forEach((target, index) => {
+      target.dataset.reveal = "";
+      target.style.setProperty("--reveal-delay", `${Math.min(index % 4, 3) * 45}ms`);
+    });
+
+    if (reduceMotion || !("IntersectionObserver" in window)) {
+      revealTargets.forEach((target) => target.classList.add("is-revealed"));
+      return;
+    }
+
+    const obs = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (!entry.isIntersecting) return;
+          entry.target.classList.add("is-revealed");
+          obs.unobserve(entry.target);
+        });
+      },
+      { rootMargin: "0px 0px -12% 0px", threshold: 0.14 }
+    );
+
+    revealTargets.forEach((target) => obs.observe(target));
+  }
+
+  installReveals();
 
   function installFabricFlow() {
     const canvas = document.querySelector(".fabric-flow-canvas");
@@ -855,7 +905,7 @@
   }
 
   function closeKeyboardDialog() {
-    if (!keyboardDialog) return;
+    if (!keyboardDialog || keyboardDialog.hidden) return;
     setKeyboardBackgroundInert(false);
     keyboardDialog.hidden = true;
     doc.classList.remove("keyboard-dialog-open");
@@ -917,7 +967,10 @@
     if (typing) return;
 
     if (event.key === "Escape") {
-      closeKeyboardDialog();
+      if (keyboardDialog && !keyboardDialog.hidden) {
+        event.preventDefault();
+        closeKeyboardDialog();
+      }
       pendingGo = false;
       return;
     }

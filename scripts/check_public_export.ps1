@@ -207,7 +207,7 @@ $publicBinaryAssets = @(
     "docs/assets/vraxion-home-hero.jpg",
     "docs/assets/vraxion-wordmark.png",
     "docs/instnct/assets/instnct-hero-bg.png",
-    "docs/instnct/assets/instnct-wordmark.png",
+    "docs/instnct/assets/instnct-logo.png",
     "docs/instnct/assets/t1-reflex-bg.jpg",
     "docs/instnct/assets/vraxion-note-bg.png",
     "docs/vngard/assets/alpha-sync-fabric-card.jpg",
@@ -278,8 +278,9 @@ try {
         "docs\assets\vraxion-wordmark.png",
         "docs\CURRENT_CAPABILITIES.md",
         "docs\CURRENT_STATUS.md",
+        "docs\INSTNCT_BENCHMARK_NOTES.md",
         "docs\instnct\assets\instnct-hero-bg.png",
-        "docs\instnct\assets\instnct-wordmark.png",
+        "docs\instnct\assets\instnct-logo.png",
         "docs\instnct\assets\t1-reflex-bg.jpg",
         "docs\instnct\assets\vraxion-note-bg.png",
         "docs\instnct\index.html",
@@ -302,6 +303,7 @@ try {
         "scripts\audit_instnct_static_site.mjs",
         "scripts\audit_public_surface.py",
         "scripts\check_public_export.ps1",
+        "scripts\smoke_instnct_browser.mjs",
         "crates\alphasync-core\Cargo.toml",
         "crates\alphasync-core\LICENSE",
         "crates\alphasync-core\README.md",
@@ -349,8 +351,9 @@ try {
         "docs/assets/vraxion-wordmark.png",
         "docs/CURRENT_CAPABILITIES.md",
         "docs/CURRENT_STATUS.md",
+        "docs/INSTNCT_BENCHMARK_NOTES.md",
         "docs/instnct/assets/instnct-hero-bg.png",
-        "docs/instnct/assets/instnct-wordmark.png",
+        "docs/instnct/assets/instnct-logo.png",
         "docs/instnct/assets/t1-reflex-bg.jpg",
         "docs/instnct/assets/vraxion-note-bg.png",
         "docs/instnct/index.html",
@@ -373,6 +376,7 @@ try {
         "scripts/audit_instnct_static_site.mjs",
         "scripts/audit_public_surface.py",
         "scripts/check_public_export.ps1",
+        "scripts/smoke_instnct_browser.mjs",
         "crates/alphasync-core/Cargo.toml",
         "crates/alphasync-core/LICENSE",
         "crates/alphasync-core/README.md",
@@ -459,6 +463,14 @@ try {
         -Root (Join-Path $exportPath "crates") `
         -Pattern $trainingSurfacePattern `
         -Label "private Logic-IQ training surface"
+
+    Invoke-Checked "public site static audits" {
+        node --check scripts/audit_instnct_static_site.mjs
+        node --check scripts/smoke_instnct_browser.mjs
+        node --check docs/instnct/instnct.js
+        node scripts/audit_instnct_static_site.mjs
+        python scripts/audit_public_surface.py
+    }
 
     Invoke-Checked "cargo metadata locked" { cargo metadata --locked --format-version 1 | Out-Null }
     Invoke-Checked "cargo fmt locked all features" {
