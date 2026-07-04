@@ -642,25 +642,45 @@
     if (!code) return;
 
     const script = [
-      "$ instnct --version",
-      "INSTNCT T1 Reflex Engine - v0.1.0-preview",
-      "VRAXION SymGround fabric - local-only - no telemetry",
-      "$ instnct run --mode exact-recall",
-      "ok fabric warm - selector p50 = 5 us",
-      "ok hallucination: OFF (only approved patterns)",
-      '$ "What is the capital of Hungary?"',
-      "Budapest",
-      "[trace: selector -> approved path - 1 hop - grounded]",
-      '$ "Invent a city that does not exist"',
-      "refused - no approved pattern matches",
-      "[exact-recall mode does not invent. flip toggle to compose.]",
-      "$ instnct toggle --imagination on",
-      "ok imagination: ON (bounded drift budget: 0.3)",
+      { type: "prompt", text: "$ instnct --version" },
+      { type: "output", text: "INSTNCT T1 Reflex Engine - v0.1.0-preview" },
+      { type: "trace", text: "VRAXION SymGround fabric - local-only - no telemetry" },
+      { type: "prompt", text: "$ instnct run --mode exact-recall" },
+      { type: "ok", text: "ok fabric warm - selector p50 = 5 us" },
+      { type: "ok", text: "ok hallucination: OFF (only approved patterns)" },
+      { type: "query", text: '$ "What is the capital of Hungary?"' },
+      { type: "output", text: "Budapest" },
+      { type: "trace", text: "[trace: selector -> approved path - 1 hop - grounded]" },
+      { type: "query", text: '$ "Invent a city that does not exist"' },
+      { type: "warn", text: "refused - no approved pattern matches" },
+      { type: "trace", text: "[exact-recall mode does not invent. flip toggle to compose.]" },
+      { type: "prompt", text: "$ instnct toggle --imagination on" },
+      { type: "ok", text: "ok imagination: ON (bounded drift budget: 0.3)" },
     ];
 
-    const fullText = script.join("\n");
+    function createLine(entry, text, includeCursor) {
+      const span = document.createElement("span");
+      span.className = "terminal-line";
+      span.dataset.lineType = entry.type;
+      span.append(document.createTextNode(text));
+      if (includeCursor) span.append(cursor);
+      return span;
+    }
+
+    function renderLines(limit, currentText, includeCursor) {
+      const frag = document.createDocumentFragment();
+      for (let i = 0; i < limit; i += 1) {
+        frag.append(createLine(script[i], script[i].text, false));
+      }
+      if (limit < script.length) {
+        frag.append(createLine(script[limit], currentText, includeCursor));
+      }
+      code.replaceChildren(frag);
+      pre.scrollTop = pre.scrollHeight;
+    }
+
     if (reduceMotion) {
-      code.textContent = fullText;
+      renderLines(script.length, "", false);
       return;
     }
 
@@ -671,12 +691,9 @@
 
     let line = 0;
     let char = 0;
-    let visible = "";
-
     function render() {
-      const current = script[line] || "";
-      code.replaceChildren(document.createTextNode(visible + current.slice(0, char)), cursor);
-      pre.scrollTop = pre.scrollHeight;
+      const current = script[line] || { text: "", type: "output" };
+      renderLines(line, current.text.slice(0, char), true);
     }
 
     function tick() {
@@ -684,7 +701,6 @@
         window.setTimeout(() => {
           line = 0;
           char = 0;
-          visible = "";
           tick();
         }, 4200);
         return;
@@ -692,14 +708,13 @@
 
       const current = script[line];
       render();
-      if (char <= current.length) {
+      if (char <= current.text.length) {
         char += 1;
-        window.setTimeout(tick, current.startsWith("$") ? 28 : 12);
+        window.setTimeout(tick, current.type === "prompt" || current.type === "query" ? 28 : 12);
       } else {
-        visible += `${current}\n`;
         line += 1;
         char = 0;
-        window.setTimeout(tick, current.startsWith("$") ? 420 : 260);
+        window.setTimeout(tick, current.type === "prompt" || current.type === "query" ? 420 : 260);
       }
     }
 

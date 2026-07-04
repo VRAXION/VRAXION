@@ -672,14 +672,14 @@ html.keyboard-dialog-open {
   background:
     radial-gradient(circle, rgba(0, 229, 255, 0.12) 0%, rgba(255, 61, 129, 0.06) 36%, transparent 66%);
   filter: blur(20px);
-  opacity: 0;
+  opacity: 0.22;
   transform: translate3d(calc(50vw - 300px), calc(50vh - 300px), 0);
   transition: opacity 220ms ease;
   will-change: transform, opacity;
 }
 
 .hero.is-pointer-active .hero-cursor-glow {
-  opacity: 0.62;
+  opacity: 0.68;
 }
 
 .badge-row {
@@ -1009,7 +1009,7 @@ html.keyboard-dialog-open {
   height: 54%;
   min-height: 420px;
   pointer-events: none;
-  opacity: 0.62;
+  opacity: 0.68;
   transform: translate3d(var(--hero-mesh-x), var(--hero-mesh-y), 0);
   transition:
     opacity 220ms ease,
@@ -1018,7 +1018,7 @@ html.keyboard-dialog-open {
 }
 
 .hero.is-pointer-active .hero-mesh {
-  opacity: 0.78;
+  opacity: 0.84;
 }
 
 .hero-mesh-canvas,
@@ -1881,42 +1881,72 @@ html.keyboard-dialog-open {
   transform: translateY(0);
 }
 
-.fabric-diagram {
+.fabric-flow-panel {
   position: relative;
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 16px;
-  padding: 22px;
+  min-height: 220px;
+  margin-bottom: 20px;
+  overflow: hidden;
   border: 1px solid var(--line);
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.022);
+  background:
+    radial-gradient(circle at 18% 50%, rgba(0, 229, 255, 0.14), transparent 28%),
+    radial-gradient(circle at 82% 48%, rgba(255, 61, 129, 0.12), transparent 30%),
+    rgba(255, 255, 255, 0.022);
+}
+
+.fabric-flow-panel::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+  background-size: 34px 34px;
+  mask-image: radial-gradient(circle at center, black, transparent 78%);
+  opacity: 0.4;
 }
 
 .fabric-flow-canvas {
   position: absolute;
-  inset: 18px;
-  z-index: 0;
-  width: calc(100% - 36px);
-  height: calc(100% - 36px);
-  opacity: 0.82;
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  opacity: 0.9;
   pointer-events: none;
 }
 
-.fabric-diagram::before {
-  content: "";
+.fabric-flow-caption {
   position: absolute;
-  top: 50%;
-  right: 8%;
-  left: 8%;
-  height: 1px;
-  background: linear-gradient(90deg, var(--cyan), var(--seal), var(--cyan));
-  opacity: 0.58;
-  box-shadow: 0 0 18px rgba(0, 229, 255, 0.18);
+  right: 18px;
+  bottom: 16px;
+  left: 18px;
+  z-index: 2;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  color: var(--metal);
+  font-family: "SFMono-Regular", "Cascadia Code", Consolas, "Liberation Mono", ui-monospace, monospace;
+  font-size: 0.68rem;
+  text-transform: uppercase;
+}
+
+.fabric-flow-caption strong {
+  color: var(--cyan-soft);
+  font-weight: 820;
+}
+
+.fabric-diagram {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
 }
 
 .fabric-diagram article {
   position: relative;
-  z-index: 2;
   min-height: 170px;
   padding: 22px;
   border: 1px solid var(--line);
@@ -2019,6 +2049,21 @@ html.keyboard-dialog-open {
   font-size: 0.66rem;
 }
 
+.terminal-bar em {
+  margin-left: auto;
+  padding: 5px 8px;
+  border: 1px solid rgba(0, 229, 255, 0.22);
+  border-radius: 999px;
+  color: var(--cyan-soft);
+  background: rgba(0, 229, 255, 0.055);
+  font-family: "SFMono-Regular", "Cascadia Code", Consolas, "Liberation Mono", ui-monospace, monospace;
+  font-size: 0.58rem;
+  font-style: normal;
+  font-weight: 820;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
 .terminal-panel pre {
   height: 340px;
   margin: 0;
@@ -2036,6 +2081,36 @@ html.keyboard-dialog-open {
   display: inline-block;
   color: var(--cyan);
   animation: caret-blink 0.9s steps(1) infinite;
+}
+
+.terminal-line {
+  display: block;
+  min-height: 1.75em;
+  white-space: pre-wrap;
+}
+
+.terminal-line[data-line-type="prompt"] {
+  color: var(--ink);
+}
+
+.terminal-line[data-line-type="output"] {
+  color: var(--cyan-soft);
+}
+
+.terminal-line[data-line-type="ok"] {
+  color: #9dffcb;
+}
+
+.terminal-line[data-line-type="warn"] {
+  color: var(--seal-soft);
+}
+
+.terminal-line[data-line-type="trace"] {
+  color: var(--metal);
+}
+
+.terminal-line[data-line-type="query"] {
+  color: #f5c15f;
 }
 
 .terminal-actions {
@@ -2380,14 +2455,6 @@ html.keyboard-dialog-open {
     grid-template-columns: 1fr;
   }
 
-  .fabric-diagram::before {
-    top: 8%;
-    bottom: 8%;
-    left: 34px;
-    width: 1px;
-    height: auto;
-    background: linear-gradient(180deg, var(--cyan), var(--seal), var(--cyan));
-  }
 }
 
 @media (max-width: 760px) {
@@ -2453,11 +2520,19 @@ html.keyboard-dialog-open {
   }
 
   .hero-mesh {
-    display: none;
+    top: 8%;
+    right: -28%;
+    width: 78vw;
+    height: 42%;
+    min-height: 280px;
+    opacity: 0.22;
   }
 
   .hero-cursor-glow {
-    display: none;
+    width: 460px;
+    height: 460px;
+    opacity: 0.16;
+    transform: translate3d(calc(50vw - 230px), 80px, 0);
   }
 
   .badge-row {
@@ -2573,7 +2648,10 @@ html.keyboard-dialog-open {
     font-size: 1.12rem;
   }
 
-  .fabric-diagram,
+  .fabric-flow-panel {
+    min-height: 190px;
+  }
+
   .fabric-diagram article {
     padding: 18px;
   }
@@ -2582,6 +2660,17 @@ html.keyboard-dialog-open {
     height: 300px;
     padding: 20px;
     font-size: 0.78rem;
+  }
+
+  .terminal-bar em {
+    display: none;
+  }
+
+  .faq-item button {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 9px;
+    padding-right: 54px;
   }
 
   .keyboard-help-trigger {
