@@ -4,7 +4,9 @@ import path from "node:path";
 import vm from "node:vm";
 
 const root = process.cwd();
+const homePath = path.join(root, "docs", "index.html");
 const htmlPath = path.join(root, "docs", "instnct", "index.html");
+const vngardHtmlPath = path.join(root, "docs", "vngard", "index.html");
 const jsPath = path.join(root, "docs", "instnct", "instnct.js");
 const cssPath = path.join(root, "docs", "instnct", "styles.css");
 const browserSmokePath = path.join(root, "scripts", "smoke_instnct_browser.mjs");
@@ -15,6 +17,8 @@ const docsRoot = path.join(root, "docs");
 const siteRoot = path.join(root, "docs", "instnct");
 
 const html = fs.readFileSync(htmlPath, "utf8");
+const home = fs.readFileSync(homePath, "utf8");
+const vngardHtml = fs.readFileSync(vngardHtmlPath, "utf8");
 const js = fs.readFileSync(jsPath, "utf8");
 const css = fs.readFileSync(cssPath, "utf8");
 const browserSmoke = fs.readFileSync(browserSmokePath, "utf8");
@@ -188,6 +192,32 @@ for (const forbidden of [
   'type="email"',
 ]) {
   if (html.includes(forbidden)) fail(`unsafe static-page boundary token: ${forbidden}`);
+}
+
+for (const forbidden of [
+  'href="./vngard/"',
+  "VNGARD retained",
+  "Open roadmap concept",
+]) {
+  if (home.includes(forbidden)) fail(`VNGARD should not be visible on the public homepage: ${forbidden}`);
+}
+for (const forbidden of [
+  'href="../vngard/"',
+  "VNGARD roadmap",
+]) {
+  if (html.includes(forbidden)) fail(`VNGARD should not be visible on the INSTNCT page: ${forbidden}`);
+}
+if (!vngardHtml.includes("noindex,nofollow,noarchive")) {
+  fail("hidden VNGARD page must be noindex/nofollow/noarchive");
+}
+if (!vngardHtml.includes("http-equiv='refresh' content='0; url=../'")) {
+  fail("hidden VNGARD page must redirect to the public homepage");
+}
+if (!vngardHtml.includes("<link rel='canonical' href='https://vraxion.github.io/VRAXION/'>")) {
+  fail("hidden VNGARD page canonical must point at the public homepage");
+}
+if (!vngardHtml.includes("<body hidden aria-hidden='true'>")) {
+  fail("hidden VNGARD page body must not render");
 }
 
 if (latestRelease && !html.includes(latestRelease)) {
@@ -395,10 +425,10 @@ else {
   for (const url of [
     "https://vraxion.github.io/VRAXION/",
     "https://vraxion.github.io/VRAXION/instnct/",
-    "https://vraxion.github.io/VRAXION/vngard/",
   ]) {
     if (!sitemap.includes(`<loc>${url}</loc>`)) fail(`sitemap missing ${url}`);
   }
+  if (sitemap.includes("/vngard/")) fail("sitemap must not expose hidden VNGARD page");
 }
 
 if (failures.length > 0) {

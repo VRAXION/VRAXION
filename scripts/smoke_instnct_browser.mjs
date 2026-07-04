@@ -857,7 +857,32 @@ async function probeAccessibilitySemantics(browser, origin) {
 
     await page.keyboard.press("Home");
     const focusProblems = [];
-    for (let i = 0; i < 18; i += 1) {
+    const focusableCount = await page.evaluate(() => {
+      const focusableSelector = [
+        "a[href]",
+        "area[href]",
+        "button:not([disabled])",
+        "input:not([disabled])",
+        "select:not([disabled])",
+        "textarea:not([disabled])",
+        "summary",
+        "[tabindex]:not([tabindex='-1'])",
+      ].join(",");
+      return [...document.querySelectorAll(focusableSelector)].filter((el) => {
+        const style = getComputedStyle(el);
+        return (
+          el !== document.body &&
+          !el.hidden &&
+          !el.closest("[hidden]") &&
+          !el.closest("[inert]") &&
+          style.display !== "none" &&
+          style.visibility !== "hidden" &&
+          el.getBoundingClientRect().width > 0 &&
+          el.getBoundingClientRect().height > 0
+        );
+      }).length;
+    });
+    for (let i = 0; i < Math.min(18, focusableCount); i += 1) {
       await page.keyboard.press("Tab");
       const state = await page.evaluate(() => {
         const el = document.activeElement;

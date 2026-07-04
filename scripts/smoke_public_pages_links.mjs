@@ -70,11 +70,13 @@ function collectUrls(html, pageUrl) {
 
 const homeUrl = `${baseUrl}/`;
 const instnctUrl = `${baseUrl}/instnct/`;
+const vngardUrl = `${baseUrl}/vngard/`;
 const robotsUrl = `${baseUrl}/robots.txt`;
 const sitemapUrl = `${baseUrl}/sitemap.xml`;
 
 const home = await fetchText(homeUrl, "home");
 const instnct = await fetchText(instnctUrl, "INSTNCT");
+const vngard = await fetchText(vngardUrl, "hidden VNGARD");
 const robots = await fetchText(robotsUrl, "robots.txt");
 const sitemap = await fetchText(sitemapUrl, "sitemap.xml");
 
@@ -94,8 +96,23 @@ if (instnct && !instnct.includes("artifact-status")) fail("INSTNCT artifact stat
 if (instnct && /github\.com\/VRAXION\/VRAXION\/blob\/main\/(?:CURRENT_|PUBLIC_SURFACE_POLICY)/.test(instnct)) {
   fail("INSTNCT live page links public docs at the repository root instead of docs/");
 }
+if (home && /href=["'][^"']*vngard\/|VNGARD retained|Open roadmap concept/i.test(home)) {
+  fail("home page exposes hidden VNGARD surface");
+}
+if (instnct && /href=["'][^"']*vngard\/|VNGARD roadmap/i.test(instnct)) {
+  fail("INSTNCT page exposes hidden VNGARD surface");
+}
+if (vngard && !vngard.includes("noindex,nofollow,noarchive")) fail("VNGARD page is not noindex");
+if (vngard && !vngard.includes("http-equiv='refresh' content='0; url=../'")) {
+  fail("VNGARD page does not redirect to the public homepage");
+}
+if (vngard && !vngard.includes("<link rel='canonical' href='https://vraxion.github.io/VRAXION/'>")) {
+  fail("VNGARD page canonical does not point to the public homepage");
+}
+if (vngard && !vngard.includes("<body hidden aria-hidden='true'>")) fail("VNGARD page body is not hidden");
 if (robots && !robots.includes(`${baseUrl}/sitemap.xml`)) fail("robots.txt does not point at the live sitemap");
 if (sitemap && !sitemap.includes(`${baseUrl}/instnct/`)) fail("sitemap.xml does not include INSTNCT");
+if (sitemap && sitemap.includes(`${baseUrl}/vngard/`)) fail("sitemap.xml exposes hidden VNGARD");
 
 const urls = new Set([
   ...collectUrls(home, homeUrl),
