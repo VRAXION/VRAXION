@@ -1,8 +1,10 @@
 {
   "schema": "vraxion.public.version.v1",
   "status": "p11_public_delivery_boundary",
-  "date": "2026-06-29",
+  "date": "2026-07-04",
   "public_surface": "sdk_boundary",
+  "pages_surface": "instnct_release_polish",
+  "latest_public_release": "public-sdk-p11-20260629",
   "delivery_direction": "controlled_binary_first_api_later",
   "crates": [
     "alphasync-core",

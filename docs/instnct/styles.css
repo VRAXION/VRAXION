@@ -2389,6 +2389,15 @@ html.keyboard-dialog-open {
   margin-top: 30px;
 }
 
+.notify-note {
+  max-width: 620px;
+  margin: 18px auto 0;
+  color: var(--metal);
+  font-family: "SFMono-Regular", "Cascadia Code", Consolas, "Liberation Mono", ui-monospace, monospace;
+  font-size: 0.72rem;
+  line-height: 1.6;
+}
+
 .site-footer {
   border-top: 1px solid var(--line);
   background: var(--void-950);

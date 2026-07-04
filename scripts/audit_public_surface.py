@@ -3,7 +3,9 @@
 
 from __future__ import annotations
 
+import json
 import pathlib
+import re
 import subprocess
 import sys
 
@@ -44,6 +46,7 @@ FORBIDDEN_TEXT = [
 ]
 
 EXPECTED_CRATES = {"alphasync-core", "alphasync-runtime"}
+EXPECTED_LATEST_PUBLIC_RELEASE = "public-sdk-p11-20260629"
 
 PUBLIC_BINARY_ASSETS = {
     "docs/assets/vraxion-home-hero.jpg",
@@ -82,6 +85,7 @@ def main() -> int:
     failures: list[str] = []
     warnings: list[str] = []
     files = tracked_files()
+    file_set = {relative.replace("\\", "/") for relative in files}
 
     crate_root = ROOT / "crates"
     crates = {
@@ -111,6 +115,36 @@ def main() -> int:
             for needle in FORBIDDEN_TEXT:
                 if needle in text:
                     failures.append(f"forbidden text marker {needle!r}: {relative}")
+
+    version_path = ROOT / "docs" / "VERSION.json"
+    try:
+        version = json.loads(read_text(version_path))
+    except Exception as exc:  # noqa: BLE001 - audit should report the parse failure.
+        failures.append(f"invalid docs/VERSION.json: {exc}")
+        version = {}
+
+    latest_release = version.get("latest_public_release")
+    if latest_release != EXPECTED_LATEST_PUBLIC_RELEASE:
+        failures.append(
+            "docs/VERSION.json latest_public_release must be "
+            f"{EXPECTED_LATEST_PUBLIC_RELEASE!r}, found {latest_release!r}"
+        )
+
+    index_html = read_text(ROOT / "docs" / "index.html")
+    expected_release_url = (
+        "https://github.com/VRAXION/VRAXION/releases/tag/"
+        + EXPECTED_LATEST_PUBLIC_RELEASE
+    )
+    if expected_release_url not in index_html:
+        failures.append("docs/index.html does not link to the latest public release")
+
+    for match in re.finditer(
+        r"https://github\.com/VRAXION/VRAXION/blob/main/([^\"#?]+)",
+        index_html,
+    ):
+        linked_path = match.group(1)
+        if linked_path not in file_set:
+            failures.append(f"docs/index.html links to missing repo path: {linked_path}")
 
     print("PUBLIC_SURFACE_AUDIT")
     print(f"tracked_files={len(files)}")

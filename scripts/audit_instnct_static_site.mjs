@@ -105,6 +105,16 @@ for (const forbidden of [
   if (html.includes(forbidden)) fail(`unsafe static-page boundary token: ${forbidden}`);
 }
 
+if (!html.includes("public-sdk-p11-20260629")) {
+  fail("INSTNCT page must link to the latest public boundary release");
+}
+if (!html.includes("archive/refs/tags/public-sdk-p11-20260629.zip")) {
+  fail("INSTNCT page must expose the safe public source snapshot archive");
+}
+if (!html.includes("not the private engine source")) {
+  fail("INSTNCT source snapshot CTA must state the private-engine boundary");
+}
+
 if (!html.includes("connect-src 'none'")) fail("CSP must keep connect-src 'none'");
 if (!html.includes("form-action 'none'")) fail("CSP must keep form-action 'none'");
 
