@@ -252,6 +252,7 @@ for (const forbiddenCopy of [
   "P11 boundary archive",
   "P11 SDK boundary",
   "binary boundary",
+  "release boundary",
   "Release boundary",
   "boundary text versioned in repo",
   "boundary and release target",
