@@ -4,6 +4,7 @@ const base = String(process.env.INSTNCT_NOTIFY_API_BASE || "").replace(/\/+$/, "
 const allowedOrigin = process.env.INSTNCT_NOTIFY_ALLOWED_ORIGIN || "https://vraxion.github.io";
 const writeMode = process.env.INSTNCT_NOTIFY_SMOKE_WRITE === "1";
 const rateLimitMode = process.env.INSTNCT_NOTIFY_SMOKE_RATE_LIMIT === "1";
+const adminToken = process.env.INSTNCT_NOTIFY_ADMIN_TOKEN || "";
 const failures = [];
 
 function fail(message) {
@@ -90,8 +91,9 @@ result = await fetchJson(`${base}/api/notify`, {
 });
 if (result.response.status !== 403) fail(`blocked origin POST status ${result.response.status}`);
 
+let smokeEmail = "";
 if (writeMode) {
-  const smokeEmail =
+  smokeEmail =
     process.env.INSTNCT_NOTIFY_SMOKE_EMAIL ||
     `instnct-smoke+${Date.now().toString(36)}@example.com`;
   result = await fetchJson(`${base}/api/notify`, {
@@ -139,6 +141,43 @@ if (writeMode) {
       }
     }
     if (!limited) fail(`write-mode rate-limit did not return 429 within ${attempts} duplicate attempts`);
+  }
+}
+
+if (adminToken) {
+  result = await fetchJson(`${base}/admin/notify/export?limit=5`, {
+    headers: { authorization: `Bearer ${adminToken}` },
+  });
+  if (result.response.status !== 200) fail(`admin export status ${result.response.status}`);
+  if (!Array.isArray(result.data?.subscribers)) fail("admin export missing subscribers array");
+
+  result = await fetchJson(`${base}/admin/notify/export?limit=1`, {
+    headers: { authorization: "Bearer wrong-token" },
+  });
+  if (result.response.status !== 403) fail(`admin wrong-token export status ${result.response.status}`);
+
+  result = await fetchJson(`${base}/admin/notify/cleanup-rate-limits`, {
+    method: "POST",
+    headers: {
+      authorization: `Bearer ${adminToken}`,
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({ olderThanHours: 48 }),
+  });
+  if (result.response.status !== 200) fail(`admin cleanup status ${result.response.status}`);
+  if (typeof result.data?.deleted !== "number") fail("admin cleanup missing deleted count");
+
+  if (writeMode && smokeEmail && process.env.INSTNCT_NOTIFY_SMOKE_DELETE !== "0") {
+    result = await fetchJson(`${base}/admin/notify/delete`, {
+      method: "POST",
+      headers: {
+        authorization: `Bearer ${adminToken}`,
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({ email: smokeEmail }),
+    });
+    if (result.response.status !== 200) fail(`admin smoke delete status ${result.response.status}`);
+    if (typeof result.data?.deleted !== "number") fail("admin smoke delete missing deleted count");
   }
 }
 

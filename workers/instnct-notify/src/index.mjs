@@ -4,6 +4,9 @@ const MAX_BODY_BYTES = 4096;
 const DEFAULT_GOAL = 1000;
 const DEFAULT_RATE_LIMIT = 20;
 const DEFAULT_ALLOWED_ORIGIN = "https://vraxion.github.io";
+const DEFAULT_RATE_LIMIT_RETENTION_HOURS = 48;
+const MAX_EXPORT_LIMIT = 10000;
+const MIN_ADMIN_TOKEN_LENGTH = 24;
 
 function json(data, init = {}) {
   const headers = new Headers(init.headers || {});
@@ -16,6 +19,10 @@ function json(data, init = {}) {
 function parsePositiveInt(value, fallback) {
   const parsed = Number.parseInt(String(value || ""), 10);
   return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+}
+
+function clampPositiveInt(value, fallback, max) {
+  return Math.min(parsePositiveInt(value, fallback), max);
 }
 
 function allowedOrigins(env) {
@@ -56,6 +63,10 @@ function methodNotAllowed(request, env) {
   return withCors(json({ error: "method not allowed" }, { status: 405, headers: { allow: "GET, POST, OPTIONS" } }), request, env);
 }
 
+function adminMethodNotAllowed(allow) {
+  return json({ error: "method not allowed" }, { status: 405, headers: { allow } });
+}
+
 function normalizeEmail(value) {
   return String(value || "").trim().toLowerCase();
 }
@@ -69,6 +80,17 @@ async function sha256Hex(value) {
   const bytes = new TextEncoder().encode(value);
   const digest = await crypto.subtle.digest("SHA-256", bytes);
   return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
+async function timingSafeEqual(left, right) {
+  const leftBytes = new TextEncoder().encode(String(left || ""));
+  const rightBytes = new TextEncoder().encode(String(right || ""));
+  const maxLength = Math.max(leftBytes.length, rightBytes.length);
+  let diff = leftBytes.length ^ rightBytes.length;
+  for (let index = 0; index < maxLength; index += 1) {
+    diff |= (leftBytes[index] || 0) ^ (rightBytes[index] || 0);
+  }
+  return diff === 0;
 }
 
 function hourWindow(now = new Date()) {
@@ -99,6 +121,28 @@ async function readJsonBody(request) {
   } catch {
     return { error: json({ error: "invalid JSON" }, { status: 400 }) };
   }
+}
+
+function bearerToken(request) {
+  const value = request.headers.get("authorization") || "";
+  const match = value.match(/^Bearer\s+(.+)$/i);
+  return match ? match[1].trim() : "";
+}
+
+async function requireAdmin(request, env) {
+  if (!env.DB) return { response: json({ error: "missing DB binding" }, { status: 503 }) };
+  if (!env.ADMIN_TOKEN || String(env.ADMIN_TOKEN).length < MIN_ADMIN_TOKEN_LENGTH) {
+    return { response: json({ error: "notify admin is not configured" }, { status: 503 }) };
+  }
+
+  const token = bearerToken(request);
+  if (!token) {
+    return { response: json({ error: "admin authorization required" }, { status: 401, headers: { "www-authenticate": "Bearer" } }) };
+  }
+  if (!(await timingSafeEqual(token, env.ADMIN_TOKEN))) {
+    return { response: json({ error: "admin authorization failed" }, { status: 403 }) };
+  }
+  return { ok: true };
 }
 
 async function applyRateLimit(request, env) {
@@ -184,9 +228,81 @@ async function handlePost(request, env) {
   return withCors(json({ message: "You're on the list. We'll signal when T1 is ready." }, { status: 201 }), request, env);
 }
 
+async function handleAdminExport(request, env, url) {
+  if (request.method !== "GET") return adminMethodNotAllowed("GET");
+  const limit = clampPositiveInt(url.searchParams.get("limit"), MAX_EXPORT_LIMIT, MAX_EXPORT_LIMIT);
+  const result = await env.DB.prepare(
+    `SELECT email, source, created_at
+     FROM notify_subscribers
+     ORDER BY created_at ASC
+     LIMIT ?1`
+  )
+    .bind(limit)
+    .all();
+  const subscribers = Array.isArray(result?.results) ? result.results : [];
+  return json({ subscribers, count: subscribers.length, limited: subscribers.length === limit });
+}
+
+async function handleAdminDelete(request, env) {
+  if (request.method !== "POST") return adminMethodNotAllowed("POST");
+  if (!env.EMAIL_HASH_PEPPER || String(env.EMAIL_HASH_PEPPER).length < 16) {
+    return json({ error: "notify duplicate key is not configured" }, { status: 503 });
+  }
+
+  const type = request.headers.get("content-type") || "";
+  if (!type.toLowerCase().includes("application/json")) {
+    return json({ error: "content-type must be application/json" }, { status: 415 });
+  }
+  const { data, error } = await readJsonBody(request);
+  if (error) return error;
+
+  const email = normalizeEmail(data?.email);
+  if (!email || email.length > MAX_EMAIL_LENGTH || !EMAIL_RE.test(email)) {
+    return json({ error: "Please provide a valid email." }, { status: 400 });
+  }
+
+  const emailHash = await sha256Hex(`notify-email:${email}:${env.EMAIL_HASH_PEPPER}`);
+  const result = await env.DB.prepare("DELETE FROM notify_subscribers WHERE email_hash = ?1").bind(emailHash).run();
+  const deleted = Number(result?.meta?.changes ?? result?.changes ?? 0);
+  return json({ deleted });
+}
+
+async function cleanupRateLimits(env, olderThanHours) {
+  const hours = clampPositiveInt(olderThanHours || env.RATE_LIMIT_RETENTION_HOURS, DEFAULT_RATE_LIMIT_RETENTION_HOURS, 24 * 30);
+  const cutoff = new Date(Date.now() - hours * 60 * 60 * 1000).toISOString();
+  if (!env.DB) return { deleted: 0, cutoff, olderThanHours: hours };
+
+  const result = await env.DB.prepare("DELETE FROM notify_rate_limits WHERE window_start < ?1").bind(cutoff).run();
+  const deleted = Number(result?.meta?.changes ?? result?.changes ?? 0);
+  return { deleted, cutoff, olderThanHours: hours };
+}
+
+async function handleAdminCleanupRateLimits(request, env) {
+  if (request.method !== "POST") return adminMethodNotAllowed("POST");
+  let data = null;
+  if ((request.headers.get("content-type") || "").toLowerCase().includes("application/json")) {
+    const body = await readJsonBody(request);
+    if (body.error) return body.error;
+    data = body.data;
+  }
+
+  return json(await cleanupRateLimits(env, data?.olderThanHours));
+}
+
+async function handleAdmin(request, env, url) {
+  const auth = await requireAdmin(request, env);
+  if (!auth.ok) return auth.response;
+
+  if (url.pathname === "/admin/notify/export") return handleAdminExport(request, env, url);
+  if (url.pathname === "/admin/notify/delete") return handleAdminDelete(request, env);
+  if (url.pathname === "/admin/notify/cleanup-rate-limits") return handleAdminCleanupRateLimits(request, env);
+  return json({ error: "not found" }, { status: 404 });
+}
+
 async function route(request, env) {
   const url = new URL(request.url);
   if (url.pathname === "/health") return json({ ok: true });
+  if (url.pathname.startsWith("/admin/notify/")) return handleAdmin(request, env, url);
 
   if (url.pathname !== "/api/notify") {
     return json({ error: "not found" }, { status: 404 });
@@ -211,5 +327,13 @@ export default {
         : "server error";
       return withCors(json({ error: message }, { status: 500 }), request, env || {});
     }
+  },
+  async scheduled(_event, env, ctx) {
+    const task = cleanupRateLimits(env || {}, undefined);
+    if (ctx?.waitUntil) {
+      ctx.waitUntil(task);
+      return;
+    }
+    await task;
   },
 };

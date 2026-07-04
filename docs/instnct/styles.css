@@ -172,13 +172,17 @@ pre {
   top: 50%;
   right: 24px;
   z-index: 34;
-  display: grid;
+  display: none;
   grid-template-columns: auto minmax(0, 86px);
   gap: 14px;
   align-items: center;
   color: var(--metal);
   pointer-events: none;
   transform: translateY(-50%);
+}
+
+.has-js .section-indicator {
+  display: grid;
 }
 
 .indicator-track {
@@ -415,7 +419,7 @@ pre {
   left: 24px;
   bottom: 24px;
   z-index: 40;
-  display: flex;
+  display: none;
   align-items: center;
   justify-content: center;
   width: 44px;
@@ -433,6 +437,10 @@ pre {
     background 160ms ease,
     box-shadow 160ms ease,
     transform 160ms ease;
+}
+
+.has-js .keyboard-help-trigger {
+  display: flex;
 }
 
 .keyboard-help-trigger span {
@@ -2591,7 +2599,8 @@ html.keyboard-dialog-open {
   transform: rotate(90deg);
 }
 
-.faq-item.is-open button::after {
+.faq-item.is-open button::after,
+.faq-item button[aria-expanded="true"]::after {
   opacity: 0;
   transform: rotate(0deg);
 }
@@ -2713,7 +2722,8 @@ html.keyboard-dialog-open {
 }
 
 @media (max-width: 1020px) {
-  .section-indicator {
+  .section-indicator,
+  .has-js .section-indicator {
     display: none;
   }
 
@@ -2986,7 +2996,8 @@ html.keyboard-dialog-open {
     padding-right: 54px;
   }
 
-  .keyboard-help-trigger {
+  .keyboard-help-trigger,
+  .has-js .keyboard-help-trigger {
     display: none;
   }
 

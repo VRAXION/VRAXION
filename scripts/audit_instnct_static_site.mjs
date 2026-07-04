@@ -105,6 +105,7 @@ for (const required of [
   "mobile-section-readout",
   "data-copy-status",
   "data-mobile-indicator-number",
+  "does not collect email addresses yet",
   "planned local flow",
   "planned commands:",
   "../INSTNCT_BENCHMARK_NOTES.md",
@@ -141,7 +142,10 @@ for (const required of [
   ".terminal-note",
   ".artifact-status",
   ".mobile-section-readout",
+  ".has-js .section-indicator",
+  ".has-js .keyboard-help-trigger",
   ".has-js .faq-panel",
+  ".faq-item button[aria-expanded=\"true\"]::after",
   "@media (max-width: 420px) and (max-height: 700px)",
 ]) {
   if (!css.includes(required)) fail(`missing INSTNCT style: ${required}`);
@@ -154,6 +158,7 @@ for (const required of [
   "hero pointer interaction did not update visual state",
   "section indicator did not track fabric section",
   "mobile section readout did not track fabric section",
+  "no-js JS-only controls should be hidden",
   "totalBytes",
   "externalResources",
 ]) {

@@ -50,6 +50,7 @@ Required GitHub secrets:
 - `CLOUDFLARE_ACCOUNT_ID`
 - `INSTNCT_NOTIFY_D1_DATABASE_ID`
 - `INSTNCT_NOTIFY_EMAIL_HASH_PEPPER`
+- `INSTNCT_NOTIFY_ADMIN_TOKEN`
 - `INSTNCT_NOTIFY_API_BASE`
 
 Manual Cloudflare setup:
@@ -60,7 +61,7 @@ npx wrangler login
 npx wrangler d1 create vraxion-instnct-notify
 ```
 
-Copy the returned D1 database id into the GitHub secret `INSTNCT_NOTIFY_D1_DATABASE_ID`. Use a long random value for `INSTNCT_NOTIFY_EMAIL_HASH_PEPPER`.
+Copy the returned D1 database id into the GitHub secret `INSTNCT_NOTIFY_D1_DATABASE_ID`. Use long random values for `INSTNCT_NOTIFY_EMAIL_HASH_PEPPER` and `INSTNCT_NOTIFY_ADMIN_TOKEN`.
 
 Manual deploy:
 
@@ -69,6 +70,7 @@ cd workers\instnct-notify
 copy wrangler.example.jsonc wrangler.jsonc
 npx wrangler d1 migrations apply vraxion-instnct-notify --remote
 npx wrangler secret put EMAIL_HASH_PEPPER
+npx wrangler secret put ADMIN_TOKEN
 npx wrangler deploy
 ```
 
@@ -76,7 +78,7 @@ Automated deploy:
 
 1. Open the `Deploy INSTNCT Notify Worker` workflow.
 2. Run it manually from `main`.
-3. Confirm the workflow ran migrations, deployed the Worker, and passed live smoke.
+3. Confirm the workflow ran migrations, deployed the Worker with the scheduled rate-limit cleanup trigger, and passed live smoke.
 
 Post-deploy live smoke:
 
@@ -92,6 +94,17 @@ $env:INSTNCT_NOTIFY_SMOKE_WRITE = "1"
 node scripts\smoke_instnct_notify_live.mjs
 ```
 
+Operator checks after write-mode smoke:
+
+```powershell
+$env:INSTNCT_NOTIFY_ADMIN_TOKEN = "<admin token>"
+curl.exe -H "Authorization: Bearer $env:INSTNCT_NOTIFY_ADMIN_TOKEN" "$env:INSTNCT_NOTIFY_API_BASE/admin/notify/export"
+curl.exe -X POST "$env:INSTNCT_NOTIFY_API_BASE/admin/notify/cleanup-rate-limits" `
+  -H "Authorization: Bearer $env:INSTNCT_NOTIFY_ADMIN_TOKEN" `
+  -H "content-type: application/json" `
+  --data "{\"olderThanHours\":48}"
+```
+
 ## Frontend form switch
 
 Do not add an active email form to `docs/instnct/index.html` until all of these are true:
@@ -99,6 +112,8 @@ Do not add an active email form to `docs/instnct/index.html` until all of these 
 - Worker URL is stable and stored in `INSTNCT_NOTIFY_API_BASE`.
 - D1 migrations have been applied remotely.
 - `EMAIL_HASH_PEPPER` is set in Cloudflare.
+- `ADMIN_TOKEN` is set in Cloudflare and operator export/delete/cleanup has been checked.
+- Scheduled rate-limit cleanup is visible in the deployed Worker triggers.
 - `scripts/smoke_instnct_notify_live.mjs` passes in read-only mode.
 - Write-mode smoke has been run once intentionally.
 - The INSTNCT CSP has been changed from `connect-src 'none'; form-action 'none'` to the exact Worker origin.

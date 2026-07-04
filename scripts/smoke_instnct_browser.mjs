@@ -482,11 +482,16 @@ async function probeInstnctNoJs(browser, origin) {
   const errors = trackPageFailures(page, origin, "INSTNCT no-js");
   await page.goto(`${origin}/instnct/`, { waitUntil: "networkidle" });
   const noJs = await page.evaluate(() => ({
+    sectionIndicatorDisplay: getComputedStyle(document.querySelector(".section-indicator")).display,
+    keyboardTriggerDisplay: getComputedStyle(document.querySelector(".keyboard-help-trigger")).display,
     modeSwitchDisplay: getComputedStyle(document.querySelector(".mode-switch")).display,
     faqExpanded: [...document.querySelectorAll(".faq-item button")].map((button) => button.getAttribute("aria-expanded")),
     faqPanelHeights: [...document.querySelectorAll(".faq-panel")].map((panel) => Math.round(panel.getBoundingClientRect().height)),
     mobileReadoutDesktopDisplay: getComputedStyle(document.querySelector(".mobile-section-readout")).display,
   }));
+  if (noJs.sectionIndicatorDisplay !== "none" || noJs.keyboardTriggerDisplay !== "none") {
+    fail(`no-js JS-only controls should be hidden: ${JSON.stringify(noJs)}`);
+  }
   if (noJs.modeSwitchDisplay !== "none") fail(`no-js mode switch should be hidden: ${JSON.stringify(noJs)}`);
   if (noJs.faqExpanded.some((value) => value !== "true") || noJs.faqPanelHeights.some((height) => height <= 0)) {
     fail(`no-js FAQ state is not truthful/readable: ${JSON.stringify(noJs)}`);
