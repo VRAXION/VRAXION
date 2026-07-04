@@ -75,7 +75,7 @@ const archiveUrl = `https://github.com/VRAXION/VRAXION/archive/refs/tags/${lates
 
 if (!indexHtml.includes(releaseUrl)) fail("docs/index.html does not link to the VERSION latest release URL");
 if (!instnctHtml.includes(releaseUrl)) fail("docs/instnct/index.html does not link to the VERSION latest release URL");
-if (!instnctHtml.includes(archiveUrl)) fail("docs/instnct/index.html does not link to the VERSION source archive URL");
+if (!instnctHtml.includes(archiveUrl)) fail("docs/instnct/index.html does not link to the VERSION boundary archive URL");
 
 if (write) {
   console.log(`public_release_links_write=${changed.length ? changed.join(",") : "none"}`);

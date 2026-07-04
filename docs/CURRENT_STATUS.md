@@ -2,7 +2,7 @@
 
 The public repository is in zero-state SDK mode.
 
-- Public source: `alphasync-core`, `alphasync-runtime`
+- Public boundary materials: `alphasync-core`, `alphasync-runtime`
 - Public docs: boundary and status pages
 - Private engine source: not included
 - Product delivery direction: controlled signed binary first, hosted API/SaaS later

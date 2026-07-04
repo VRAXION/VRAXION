@@ -499,7 +499,7 @@ pre {
   transform: translateY(-1px);
 }
 
-.source-snapshot-pill {
+.boundary-snapshot-pill {
   position: fixed;
   left: 82px;
   bottom: 24px;
@@ -526,7 +526,7 @@ pre {
     background 160ms ease;
 }
 
-.source-snapshot-pill span {
+.boundary-snapshot-pill span {
   position: relative;
   width: 16px;
   height: 16px;
@@ -534,8 +534,8 @@ pre {
   border-radius: 4px;
 }
 
-.source-snapshot-pill span::before,
-.source-snapshot-pill span::after {
+.boundary-snapshot-pill span::before,
+.boundary-snapshot-pill span::after {
   content: "";
   position: absolute;
   left: 50%;
@@ -543,13 +543,13 @@ pre {
   transform: translateX(-50%);
 }
 
-.source-snapshot-pill span::before {
+.boundary-snapshot-pill span::before {
   top: 3px;
   width: 2px;
   height: 7px;
 }
 
-.source-snapshot-pill span::after {
+.boundary-snapshot-pill span::after {
   bottom: 3px;
   width: 8px;
   height: 2px;
@@ -558,8 +558,8 @@ pre {
     3px -3px 0 -2px currentColor;
 }
 
-.source-snapshot-pill:hover,
-.source-snapshot-pill:focus-visible {
+.boundary-snapshot-pill:hover,
+.boundary-snapshot-pill:focus-visible {
   border-color: rgba(0, 229, 255, 0.52);
   color: var(--ink);
   background: rgba(0, 229, 255, 0.1);
@@ -3041,7 +3041,7 @@ html.keyboard-dialog-open {
     display: none;
   }
 
-  .source-snapshot-pill {
+  .boundary-snapshot-pill {
     display: none;
   }
 

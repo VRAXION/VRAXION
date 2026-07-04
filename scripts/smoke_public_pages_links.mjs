@@ -80,7 +80,10 @@ const sitemap = await fetchText(sitemapUrl, "sitemap.xml");
 
 if (home && !home.includes(`releases/tag/${latestRelease}`)) fail("home does not expose the VERSION latest release");
 if (instnct && !instnct.includes(`archive/refs/tags/${latestRelease}.zip`)) {
-  fail("INSTNCT does not expose the VERSION source archive");
+  fail("INSTNCT does not expose the VERSION boundary archive");
+}
+if (instnct && /source-available|source available|source snapshot|source archive|public source archive|page source/i.test(instnct)) {
+  fail("INSTNCT public copy implies source availability");
 }
 if (instnct && !instnct.includes("artifact-status")) fail("INSTNCT artifact status block is missing on live Pages");
 if (instnct && /github\.com\/VRAXION\/VRAXION\/blob\/main\/(?:CURRENT_|PUBLIC_SURFACE_POLICY)/.test(instnct)) {

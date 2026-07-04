@@ -194,7 +194,7 @@ async function assertActiveModePanelFits(page, label) {
 }
 
 async function probeHome(browser, origin) {
-  const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+  const page = await browser.newPage({ viewport: { width: 1280, height: 900 }, reducedMotion: "no-preference" });
   const errors = trackPageFailures(page, origin, "home");
   await page.goto(`${origin}/`, { waitUntil: "networkidle" });
   const result = await page.evaluate(() => ({
@@ -218,7 +218,7 @@ async function probeHome(browser, origin) {
 }
 
 async function probeInstnctDesktop(browser, origin) {
-  const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+  const page = await browser.newPage({ viewport: { width: 1280, height: 900 }, reducedMotion: "no-preference" });
   const errors = trackPageFailures(page, origin, "INSTNCT desktop");
   await page.goto(`${origin}/instnct/`, { waitUntil: "networkidle" });
   await page.waitForTimeout(400);
@@ -230,8 +230,13 @@ async function probeInstnctDesktop(browser, origin) {
     ),
     heroMeshDisplay: getComputedStyle(document.querySelector(".hero-mesh")).display,
     heroGlowDisplay: getComputedStyle(document.querySelector(".hero-cursor-glow")).display,
-    sourceHrefs: [...document.querySelectorAll("a")].map((a) => a.href),
-    boundaryNote: document.querySelector(".notify-note")?.textContent.includes("not the private engine source"),
+    boundaryHrefs: [...document.querySelectorAll("a")].map((a) => a.href),
+    boundaryNote: document.querySelector(".notify-note")?.textContent.includes(
+      "not the private engine source, private repo, or a runnable T1 binary"
+    ),
+    sourceAvailableCopy: /source-available|source available|source snapshot|source archive|public source archive|page source/i.test(
+      document.body.textContent
+    ),
     logoAsset: document.querySelector(".wordmark img")?.getAttribute("src") || "",
     schemaType: JSON.parse(document.querySelector('script[type="application/ld+json"]').textContent)["@type"],
   }));
@@ -240,9 +245,10 @@ async function probeInstnctDesktop(browser, origin) {
   if (top.heroMeshDisplay === "none" || top.heroGlowDisplay === "none") {
     fail("INSTNCT desktop hero mesh/glow is hidden");
   }
-  if (!top.sourceHrefs.some((href) => href.includes(latestArchivePath)) || !top.boundaryNote) {
-    fail("INSTNCT source snapshot boundary CTA is missing");
+  if (!top.boundaryHrefs.some((href) => href.includes(latestArchivePath)) || !top.boundaryNote) {
+    fail("INSTNCT boundary archive CTA is missing");
   }
+  if (top.sourceAvailableCopy) fail("INSTNCT desktop copy implies public source availability");
   if (!top.logoAsset.includes("instnct-logo.png")) fail("INSTNCT hero is not using the GLM final logo asset");
   if (top.schemaType !== "WebPage") fail(`INSTNCT JSON-LD should be WebPage, found ${top.schemaType}`);
 
@@ -287,8 +293,20 @@ async function probeInstnctDesktop(browser, origin) {
     }
   }
 
-  await page.evaluate(() => window.scrollTo(0, Math.round(window.innerHeight * 0.72)));
-  await page.waitForTimeout(240);
+  await page.evaluate(() => {
+    document.documentElement.style.scrollBehavior = "auto";
+    document.body.style.scrollBehavior = "auto";
+    window.scrollTo({ left: 0, top: Math.round(window.innerHeight * 0.72), behavior: "auto" });
+  });
+  await page.waitForFunction(() => window.scrollY >= Math.round(window.innerHeight * 0.68), null, { timeout: 1000 });
+  await page.waitForFunction(() => {
+    const hero = document.querySelector(".hero");
+    const style = getComputedStyle(hero);
+    return (
+      Number.parseFloat(style.getPropertyValue("--hero-scroll-y")) > 32 &&
+      Number.parseFloat(style.getPropertyValue("--hero-scroll-opacity")) < 0.78
+    );
+  }, null, { timeout: 1000 });
   const heroScroll = await page.evaluate(() => {
     const hero = document.querySelector(".hero");
     const style = getComputedStyle(hero);
@@ -300,7 +318,7 @@ async function probeInstnctDesktop(browser, origin) {
   if (!(heroScroll.y > 32) || !(heroScroll.opacity < 0.78)) {
     fail(`hero scroll motion should move downward and fade: ${JSON.stringify(heroScroll)}`);
   }
-  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.evaluate(() => window.scrollTo({ left: 0, top: 0, behavior: "auto" }));
   await page.waitForTimeout(120);
 
   await page.locator("#hallucination").scrollIntoViewIfNeeded();
@@ -450,9 +468,12 @@ async function probeInstnctMobile(browser, origin) {
     overflow: document.documentElement.scrollWidth > document.documentElement.clientWidth,
     indicatorHidden: getComputedStyle(document.querySelector(".section-indicator")).display === "none",
     keyboardTriggerHidden: getComputedStyle(document.querySelector(".keyboard-help-trigger")).display === "none",
-    sourcePillHidden: getComputedStyle(document.querySelector(".source-snapshot-pill")).display === "none",
+    boundaryPillHidden: getComputedStyle(document.querySelector(".boundary-snapshot-pill")).display === "none",
     heroMeshDisplay: getComputedStyle(document.querySelector(".hero-mesh")).display,
-    sourceHrefs: [...document.querySelectorAll("a")].map((a) => a.href),
+    boundaryHrefs: [...document.querySelectorAll("a")].map((a) => a.href),
+    sourceAvailableCopy: /source-available|source available|source snapshot|source archive|public source archive|page source/i.test(
+      document.body.textContent
+    ),
     mobileReadoutHiddenInHero:
       document.querySelector(".mobile-section-readout")?.classList.contains("is-hidden") &&
       Number(getComputedStyle(document.querySelector(".mobile-section-readout")).opacity) < 0.1,
@@ -468,13 +489,14 @@ async function probeInstnctMobile(browser, origin) {
     })(),
   }));
   if (mobile.overflow) fail("INSTNCT mobile has horizontal overflow");
-  if (!mobile.indicatorHidden || !mobile.keyboardTriggerHidden || !mobile.sourcePillHidden) {
+  if (!mobile.indicatorHidden || !mobile.keyboardTriggerHidden || !mobile.boundaryPillHidden) {
     fail(`INSTNCT mobile fixed controls are not hidden: ${JSON.stringify(mobile)}`);
   }
   if (mobile.heroMeshDisplay === "none") fail("INSTNCT mobile hero mesh is hidden");
-  if (!mobile.sourceHrefs.some((href) => href.includes(latestArchivePath))) {
-    fail("INSTNCT mobile source snapshot link is missing");
+  if (!mobile.boundaryHrefs.some((href) => href.includes(latestArchivePath))) {
+    fail("INSTNCT mobile boundary archive link is missing");
   }
+  if (mobile.sourceAvailableCopy) fail("INSTNCT mobile copy implies public source availability");
   if (!mobile.mobileReadoutHiddenInHero || mobile.mobileReadoutOverlapsHeroCard) {
     fail(`INSTNCT mobile section readout overlaps hero state: ${JSON.stringify(mobile)}`);
   }
