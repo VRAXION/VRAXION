@@ -1502,6 +1502,261 @@ p {
   outline: none;
 }
 
+.hero-headline span {
+  color: var(--seal-soft);
+  text-shadow:
+    0 0 18px rgba(var(--seal-rgb), 0.24),
+    0 14px 34px rgba(0, 0, 0, 0.78);
+}
+
+.proof-section::after,
+.trust-section::after,
+.faq-section::after {
+  background-image: url("./assets/instnct-hero-bg.png?v=background-pass-1");
+  background-position: center;
+  opacity: 0.38;
+  filter: saturate(1.08) contrast(1.02) brightness(0.72);
+}
+
+.proof-grid,
+.trust-board,
+.faq-grid {
+  display: grid;
+  gap: 18px;
+}
+
+.proof-grid {
+  grid-template-columns: minmax(0, 1.2fr) repeat(2, minmax(0, 0.9fr));
+}
+
+.proof-card,
+.mode-panel,
+.trust-card,
+.terminal-panel,
+.faq-grid details,
+.signal-strip {
+  position: relative;
+  z-index: 1;
+  overflow: hidden;
+  border: 1px solid rgba(var(--cyan-rgb), 0.17);
+  border-top-color: rgba(var(--cyan-rgb), 0.28);
+  border-radius: 6px;
+  background:
+    radial-gradient(circle at 94% 92%, rgba(var(--seal-rgb), 0.13), transparent 40%),
+    linear-gradient(135deg, rgba(var(--cyan-rgb), 0.06), transparent 46%),
+    linear-gradient(180deg, rgba(7, 16, 20, 0.72), rgba(3, 7, 10, 0.56));
+  box-shadow:
+    inset 1px 0 0 rgba(var(--cyan-rgb), 0.14),
+    inset -1px 0 0 rgba(var(--seal-rgb), 0.1),
+    0 22px 52px rgba(0, 0, 0, 0.24);
+}
+
+.proof-card,
+.trust-card,
+.faq-grid details {
+  padding: clamp(20px, 2.8vw, 30px);
+}
+
+.proof-card-primary {
+  min-height: 270px;
+}
+
+.proof-card-seal,
+.mode-option:nth-child(2),
+.trust-card:nth-child(3),
+.faq-grid details:nth-child(even) {
+  border-color: rgba(var(--seal-rgb), 0.18);
+  border-top-color: rgba(var(--seal-rgb), 0.3);
+}
+
+.proof-card h3,
+.mode-copy h3,
+.trust-card h3,
+.signal-strip strong {
+  margin: 10px 0 0;
+  color: var(--ink);
+  font-size: clamp(1.16rem, 1.8vw, 1.95rem);
+  font-weight: 800;
+  line-height: 1.04;
+  text-wrap: balance;
+}
+
+.proof-card p,
+.mode-copy p,
+.mode-option p,
+.trust-card p,
+.faq-grid p {
+  margin: 13px 0 0;
+  color: var(--metal-soft);
+  font-size: clamp(0.92rem, 1vw, 1.02rem);
+  font-weight: 480;
+  line-height: 1.55;
+  text-wrap: pretty;
+}
+
+.mode-panel {
+  display: grid;
+  grid-template-columns: minmax(0, 0.82fr) minmax(420px, 1fr);
+  gap: clamp(22px, 4vw, 54px);
+  align-items: stretch;
+  margin-top: 18px;
+  padding: clamp(22px, 3vw, 34px);
+}
+
+.mode-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.mode-option {
+  min-height: 178px;
+  padding: 18px;
+  border: 1px solid rgba(var(--cyan-rgb), 0.16);
+  border-radius: 6px;
+  background:
+    radial-gradient(circle at 90% 86%, rgba(var(--cyan-rgb), 0.14), transparent 44%),
+    rgba(3, 7, 10, 0.34);
+}
+
+.mode-option span,
+.terminal-bar strong {
+  display: block;
+  color: var(--cyan);
+  font-family: "SFMono-Regular", "Cascadia Code", Consolas, "Liberation Mono", ui-monospace, monospace;
+  font-size: 0.66rem;
+  font-weight: 820;
+  text-transform: uppercase;
+}
+
+.mode-option strong {
+  display: block;
+  margin-top: 9px;
+  color: var(--ink);
+  font-size: clamp(1.25rem, 2vw, 1.9rem);
+  line-height: 1;
+}
+
+.mode-option-active {
+  border-color: rgba(var(--cyan-rgb), 0.36);
+  box-shadow:
+    inset 0 0 0 1px rgba(var(--cyan-rgb), 0.08),
+    0 0 32px rgba(var(--cyan-rgb), 0.09),
+    0 22px 52px rgba(0, 0, 0, 0.24);
+}
+
+.trust-board {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.terminal-panel {
+  margin-top: 18px;
+  border-color: rgba(var(--cyan-rgb), 0.24);
+  background:
+    repeating-linear-gradient(0deg, rgba(var(--cyan-rgb), 0.04) 0 1px, transparent 1px 4px),
+    radial-gradient(circle at 96% 86%, rgba(var(--seal-rgb), 0.1), transparent 38%),
+    linear-gradient(180deg, rgba(2, 8, 10, 0.94), rgba(1, 3, 5, 0.92));
+}
+
+.terminal-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 42px;
+  padding: 0 16px;
+  border-bottom: 1px solid rgba(var(--cyan-rgb), 0.16);
+}
+
+.terminal-bar span {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(var(--cyan-rgb), 0.76);
+  box-shadow: 0 0 14px rgba(var(--cyan-rgb), 0.28);
+}
+
+.terminal-bar span:nth-child(2) {
+  background: rgba(var(--seal-rgb), 0.76);
+  box-shadow: 0 0 14px rgba(var(--seal-rgb), 0.24);
+}
+
+.terminal-bar span:nth-child(3) {
+  background: rgba(245, 193, 95, 0.76);
+  box-shadow: 0 0 14px rgba(245, 193, 95, 0.18);
+}
+
+.terminal-bar strong {
+  margin-left: 6px;
+  color: var(--metal-soft);
+  font-size: 0.62rem;
+}
+
+.terminal-panel pre {
+  margin: 0;
+  padding: clamp(18px, 3vw, 28px);
+  overflow-x: auto;
+  color: var(--cyan-soft);
+  font-family: "SFMono-Regular", "Cascadia Code", Consolas, "Liberation Mono", ui-monospace, monospace;
+  font-size: clamp(0.78rem, 1vw, 0.92rem);
+  font-weight: 680;
+  line-height: 1.75;
+}
+
+.faq-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.faq-grid details {
+  min-height: 146px;
+}
+
+.faq-grid summary {
+  color: var(--ink);
+  cursor: pointer;
+  font-size: clamp(1.05rem, 1.35vw, 1.35rem);
+  font-weight: 790;
+  line-height: 1.18;
+}
+
+.faq-grid summary::marker {
+  color: var(--cyan);
+}
+
+.signal-strip {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 22px;
+  align-items: center;
+  margin-top: 18px;
+  padding: 22px 24px;
+  border-top-color: rgba(var(--seal-rgb), 0.26);
+}
+
+.signal-strip a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 0 16px;
+  border: 1px solid rgba(var(--cyan-rgb), 0.28);
+  border-radius: 6px;
+  color: var(--cyan-soft);
+  background:
+    linear-gradient(180deg, rgba(var(--cyan-rgb), 0.07), rgba(3, 7, 10, 0.34)),
+    rgba(3, 7, 10, 0.36);
+  font-family: "SFMono-Regular", "Cascadia Code", Consolas, "Liberation Mono", ui-monospace, monospace;
+  font-size: 0.68rem;
+  font-weight: 820;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.signal-strip a:hover,
+.signal-strip a:focus-visible {
+  border-color: rgba(var(--cyan-rgb), 0.56);
+  color: var(--ink);
+}
+
 @media (max-width: 760px) {
   .site-header {
     height: 58px;
@@ -1523,7 +1778,7 @@ p {
   }
 
   .nav {
-    gap: 10px;
+    gap: 9px;
   }
 
   .hero {
@@ -1604,6 +1859,51 @@ p {
 
   .mission-section {
     padding: 64px 16px 76px;
+  }
+
+  .nav a[href="../vngard/"] {
+    display: none;
+  }
+
+  .proof-grid,
+  .trust-board,
+  .faq-grid,
+  .mode-panel,
+  .signal-strip {
+    grid-template-columns: 1fr;
+  }
+
+  .proof-card,
+  .trust-card,
+  .faq-grid details,
+  .mode-panel,
+  .signal-strip {
+    padding: 18px 16px 20px;
+  }
+
+  .proof-card-primary,
+  .faq-grid details {
+    min-height: 0;
+  }
+
+  .mode-options {
+    grid-template-columns: 1fr;
+  }
+
+  .mode-option {
+    min-height: 0;
+  }
+
+  .terminal-bar {
+    padding: 0 12px;
+  }
+
+  .terminal-panel pre {
+    padding: 16px 14px 18px;
+  }
+
+  .signal-strip a {
+    width: 100%;
   }
 
   .mission-intro {
