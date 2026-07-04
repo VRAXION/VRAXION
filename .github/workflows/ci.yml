@@ -8,6 +8,90 @@ on:
   workflow_dispatch:
 
 jobs:
+  static-site:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: INSTNCT static smoke
+        run: |
+          node --check docs/instnct/instnct.js
+          node <<'NODE'
+          const fs = require("node:fs");
+          const path = require("node:path");
+
+          const root = process.cwd();
+          const htmlPath = path.join(root, "docs/instnct/index.html");
+          const jsPath = path.join(root, "docs/instnct/instnct.js");
+          const cssPath = path.join(root, "docs/instnct/styles.css");
+          const html = fs.readFileSync(htmlPath, "utf8");
+          const js = fs.readFileSync(jsPath, "utf8");
+          const css = fs.readFileSync(cssPath, "utf8");
+          const failures = [];
+
+          for (const required of [
+            "hero-mesh-canvas",
+            "mode-switch",
+            "data-cli-demo",
+            "data-manifesto",
+            "fabric-flow-canvas",
+            "keyboard-dialog",
+            "data-benchmark",
+          ]) {
+            if (!html.includes(required)) failures.push(`missing INSTNCT markup: ${required}`);
+          }
+
+          for (const required of [
+            "installHeroMesh",
+            "installFabricFlow",
+            "installCliDemo",
+            "data-copy-command",
+            "aria-expanded",
+          ]) {
+            if (!js.includes(required)) failures.push(`missing INSTNCT enhancement: ${required}`);
+          }
+
+          for (const forbidden of [
+            "fetch(",
+            "XMLHttpRequest",
+            "sendBeacon",
+            "localStorage",
+            "sessionStorage",
+            "eval(",
+          ]) {
+            if (js.includes(forbidden)) failures.push(`forbidden client API in INSTNCT JS: ${forbidden}`);
+          }
+
+          const ids = new Set([...html.matchAll(/\sid="([^"]+)"/g)].map((match) => match[1]));
+          for (const match of html.matchAll(/\shref="#([^"]+)"/g)) {
+            if (!ids.has(match[1])) failures.push(`broken hash link: #${match[1]}`);
+          }
+
+          const refs = [
+            ...html.matchAll(/\s(?:src|href)="(\.{1,2}\/[^"#?]+)(?:[?#][^"]*)?"/g),
+            ...css.matchAll(/url\("(\.{1,2}\/[^"#?]+)(?:[?#][^"]*)?"\)/g),
+          ].map((match) => match[1]);
+
+          for (const ref of refs) {
+            if (ref.startsWith("../") || ref.startsWith("./")) {
+              const base = ref.startsWith("../") ? path.join(root, "docs/instnct") : path.dirname(htmlPath);
+              const target = path.resolve(base, ref);
+              if (!target.startsWith(path.join(root, "docs"))) {
+                failures.push(`asset escapes docs: ${ref}`);
+              } else if (!fs.existsSync(target)) {
+                failures.push(`missing local asset: ${ref}`);
+              }
+            }
+          }
+
+          if (failures.length > 0) {
+            console.error(failures.join("\n"));
+            process.exit(1);
+          }
+          NODE
+
   rust:
     runs-on: windows-latest
     steps:

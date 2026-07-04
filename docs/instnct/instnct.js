@@ -1,9 +1,57 @@
 (() => {
   "use strict";
 
-  const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  const finePointer = window.matchMedia("(pointer: fine)").matches;
   const doc = document.documentElement;
+  const safeMatch = (query) => {
+    if (typeof window.matchMedia !== "function") {
+      return { matches: false, addEventListener() {}, removeEventListener() {} };
+    }
+    return window.matchMedia(query);
+  };
+  const reduceMotionQuery = safeMatch("(prefers-reduced-motion: reduce)");
+  const finePointerQuery = safeMatch("(pointer: fine)");
+  const reduceMotion = reduceMotionQuery.matches;
+  const finePointer = finePointerQuery.matches;
+  const raf = window.requestAnimationFrame
+    ? window.requestAnimationFrame.bind(window)
+    : (callback) => window.setTimeout(() => callback(Date.now()), 16);
+  const caf = window.cancelAnimationFrame
+    ? window.cancelAnimationFrame.bind(window)
+    : window.clearTimeout.bind(window);
+  const focusableSelector = [
+    "a[href]",
+    "area[href]",
+    "button:not([disabled])",
+    "input:not([disabled])",
+    "select:not([disabled])",
+    "textarea:not([disabled])",
+    "summary",
+    "[tabindex]:not([tabindex='-1'])",
+  ].join(",");
+
+  function isVisible(el) {
+    if (!el) return false;
+    const style = window.getComputedStyle(el);
+    return style.visibility !== "hidden" && style.display !== "none";
+  }
+
+  function getFocusable(container) {
+    if (!container) return [];
+    return Array.from(container.querySelectorAll(focusableSelector)).filter((el) => {
+      if (el.hasAttribute("disabled") || el.getAttribute("aria-hidden") === "true") return false;
+      return isVisible(el) && (el.offsetWidth > 0 || el.offsetHeight > 0 || el === document.activeElement);
+    });
+  }
+
+  function setElementInert(el, inert) {
+    if (!el) return;
+    try {
+      el.inert = inert;
+    } catch (_err) {
+      // Older browsers may only honor the inert attribute.
+    }
+    el.toggleAttribute("inert", inert);
+  }
 
   doc.classList.add("has-js");
 
@@ -12,26 +60,22 @@
   const indicator = document.querySelector(".section-indicator");
   const indicatorFill = document.querySelector(".indicator-track span");
   const indicatorThumb = document.querySelector(".indicator-track i");
-  const indicatorNumber = document.querySelector(".indicator-readout strong");
-  const indicatorLabel = document.querySelector(".indicator-readout small");
+  const indicatorNumber = document.querySelector("[data-indicator-number]");
+  const indicatorTotal = document.querySelector("[data-indicator-total]");
+  const indicatorLabel = document.querySelector("[data-indicator-label]");
   const sectionLinks = Array.from(document.querySelectorAll("[data-section-link]"));
 
-  const sections = [
-    { id: "intro", label: "intro" },
-    { id: "not-ai", label: "position" },
-    { id: "hallucination", label: "flagship" },
-    { id: "trust", label: "verify" },
-    { id: "grounding", label: "claim" },
-    { id: "fabric", label: "structure" },
-    { id: "dev-trail", label: "terminal" },
-    { id: "t1-reflex-class", label: "model" },
-    { id: "roadmap", label: "direction" },
-    { id: "vraxion-note", label: "vraxion" },
-    { id: "faq", label: "questions" },
-    { id: "get-notified", label: "signal" },
-  ]
-    .map((section) => ({ ...section, el: document.getElementById(section.id) }))
-    .filter((section) => section.el);
+  const sections = sectionLinks
+    .map((link) => {
+      const id = (link.getAttribute("href") || "").replace("#", "");
+      return {
+        id,
+        label: link.dataset.sectionLink || link.textContent.trim().toLowerCase(),
+        el: document.getElementById(id),
+        link,
+      };
+    })
+    .filter((section) => section.id && section.el);
 
   let activeIndex = -1;
   let scrollTicking = false;
@@ -47,17 +91,15 @@
 
     if (indicatorFill) indicatorFill.style.height = `${progress}%`;
     if (indicatorThumb) indicatorThumb.style.top = `calc(${progress}% - 3px)`;
-    if (indicatorNumber) indicatorNumber.innerHTML = `${number} <span>/ ${total}</span>`;
+    if (indicatorNumber) indicatorNumber.textContent = number;
+    if (indicatorTotal) indicatorTotal.textContent = `/ ${total}`;
     if (indicatorLabel) indicatorLabel.textContent = section.label;
 
     sectionLinks.forEach((link) => {
-      const isActive = link.getAttribute("href") === `#${section.id}`;
+      const isActive = link === section.link;
       link.classList.toggle("is-active", isActive);
-      if (isActive) {
-        link.setAttribute("aria-current", "true");
-      } else {
-        link.removeAttribute("aria-current");
-      }
+      if (isActive) link.setAttribute("aria-current", "true");
+      else link.removeAttribute("aria-current");
     });
   }
 
@@ -65,10 +107,7 @@
     const maxScroll = Math.max(1, document.body.scrollHeight - window.innerHeight);
     const scrollRatio = Math.min(1, Math.max(0, window.scrollY / maxScroll));
 
-    if (progressBar) {
-      progressBar.style.transform = `scaleX(${scrollRatio})`;
-    }
-
+    if (progressBar) progressBar.style.transform = `scaleX(${scrollRatio})`;
     if (backToTop) {
       backToTop.classList.toggle("is-visible", window.scrollY > window.innerHeight * 1.25);
     }
@@ -77,10 +116,9 @@
       const trigger = window.innerHeight * 0.56;
       let nextIndex = 0;
 
-      for (let i = 0; i < sections.length; i += 1) {
-        const rect = sections[i].el.getBoundingClientRect();
-        if (rect.top <= trigger) nextIndex = i;
-      }
+      sections.forEach((section, index) => {
+        if (section.el.getBoundingClientRect().top <= trigger) nextIndex = index;
+      });
 
       if (window.innerHeight + window.scrollY >= document.body.scrollHeight - 4) {
         nextIndex = sections.length - 1;
@@ -95,7 +133,7 @@
   function requestScrollUpdate() {
     if (scrollTicking) return;
     scrollTicking = true;
-    window.requestAnimationFrame(updateScrollState);
+    raf(updateScrollState);
   }
 
   if (backToTop) {
@@ -122,7 +160,6 @@
       markX: 0,
       markY: 0,
     };
-
     const current = { ...target };
     let heroRaf = 0;
     let active = false;
@@ -168,20 +205,18 @@
 
       const moving =
         Math.abs(current.x - target.x) +
-        Math.abs(current.y - target.y) +
-        Math.abs(current.bgX - target.bgX) +
-        Math.abs(current.meshX - target.meshX) +
-        Math.abs(current.markX - target.markX) > 0.15;
+          Math.abs(current.y - target.y) +
+          Math.abs(current.bgX - target.bgX) +
+          Math.abs(current.meshX - target.meshX) +
+          Math.abs(current.markX - target.markX) >
+        0.15;
 
-      if (active || moving) {
-        heroRaf = window.requestAnimationFrame(tickHero);
-      } else {
-        heroRaf = 0;
-      }
+      if (active || moving) heroRaf = raf(tickHero);
+      else heroRaf = 0;
     }
 
     function startHeroLoop() {
-      if (!heroRaf) heroRaf = window.requestAnimationFrame(tickHero);
+      if (!heroRaf) heroRaf = raf(tickHero);
     }
 
     hero.addEventListener(
@@ -223,4 +258,690 @@
       { passive: true }
     );
   }
+
+  function installHeroMesh() {
+    const canvas = document.querySelector(".hero-mesh-canvas");
+    if (!canvas || !canvas.getContext) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    const mouse = { x: -1000, y: -1000, active: false };
+    let width = 0;
+    let height = 0;
+    let nodes = [];
+    let meshRaf = 0;
+
+    function init() {
+      const rect = canvas.getBoundingClientRect();
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      width = Math.max(1, rect.width);
+      height = Math.max(1, rect.height);
+      canvas.width = Math.floor(width * dpr);
+      canvas.height = Math.floor(height * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+      const count = Math.max(24, Math.min(90, Math.floor(width * height * 0.00008)));
+      nodes = Array.from({ length: count }, () => ({
+        x: Math.random() * width,
+        y: Math.random() * height,
+        vx: (Math.random() - 0.5) * 0.18,
+        vy: (Math.random() - 0.5) * 0.18,
+        r: 1 + Math.random() * 1.8,
+        hue: Math.random() < 0.7 ? 0 : 1,
+        pulse: Math.random() * Math.PI * 2,
+      }));
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, width, height);
+      const maxDist = 140;
+
+      for (let i = 0; i < nodes.length; i += 1) {
+        for (let j = i + 1; j < nodes.length; j += 1) {
+          const a = nodes[i];
+          const b = nodes[j];
+          const dx = a.x - b.x;
+          const dy = a.y - b.y;
+          const d = Math.sqrt(dx * dx + dy * dy);
+          if (d >= maxDist) continue;
+
+          const alpha = (1 - d / maxDist) * 0.18;
+          const grad = ctx.createLinearGradient(a.x, a.y, b.x, b.y);
+          grad.addColorStop(0, `rgba(${a.hue ? "255, 61, 129" : "0, 229, 255"}, ${alpha})`);
+          grad.addColorStop(1, `rgba(${b.hue ? "255, 61, 129" : "0, 229, 255"}, ${alpha})`);
+          ctx.strokeStyle = grad;
+          ctx.lineWidth = 0.7;
+          ctx.beginPath();
+          ctx.moveTo(a.x, a.y);
+          ctx.lineTo(b.x, b.y);
+          ctx.stroke();
+        }
+      }
+
+      nodes.forEach((node) => {
+        if (!reduceMotion) {
+          node.x += node.vx;
+          node.y += node.vy;
+          node.pulse += 0.02;
+
+          if (node.x < -10) node.x = width + 10;
+          if (node.x > width + 10) node.x = -10;
+          if (node.y < -10) node.y = height + 10;
+          if (node.y > height + 10) node.y = -10;
+
+          if (mouse.active) {
+            const dx = node.x - mouse.x;
+            const dy = node.y - mouse.y;
+            const d = Math.sqrt(dx * dx + dy * dy);
+            if (d < 160 && d > 0.1) {
+              const force = (1 - d / 160) * 0.6;
+              node.x += (dx / d) * force;
+              node.y += (dy / d) * force;
+            }
+          }
+        }
+
+        const pulse = 0.6 + Math.sin(node.pulse) * 0.4;
+        const color = node.hue ? "255, 61, 129" : "0, 229, 255";
+        const glow = ctx.createRadialGradient(node.x, node.y, 0, node.x, node.y, node.r * 6);
+        glow.addColorStop(0, `rgba(${color}, ${0.5 * pulse})`);
+        glow.addColorStop(1, `rgba(${color}, 0)`);
+        ctx.fillStyle = glow;
+        ctx.beginPath();
+        ctx.arc(node.x, node.y, node.r * 6, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = `rgba(${color}, ${0.9 * pulse})`;
+        ctx.beginPath();
+        ctx.arc(node.x, node.y, node.r, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      meshRaf = reduceMotion ? 0 : raf(draw);
+    }
+
+    function onMove(event) {
+      const rect = canvas.getBoundingClientRect();
+      mouse.x = event.clientX - rect.left;
+      mouse.y = event.clientY - rect.top;
+      mouse.active = true;
+    }
+
+    function onLeave() {
+      mouse.active = false;
+      mouse.x = -1000;
+      mouse.y = -1000;
+    }
+
+    init();
+    draw();
+    window.addEventListener("resize", () => {
+      init();
+      if (reduceMotion) draw();
+    });
+    if (!reduceMotion && hero) {
+      hero.addEventListener("pointermove", onMove, { passive: true });
+      hero.addEventListener("pointerleave", onLeave, { passive: true });
+    }
+  }
+
+  installHeroMesh();
+
+  const modeCard = document.querySelector(".mode-card");
+  if (modeCard) {
+    const modeSwitch = modeCard.querySelector(".mode-switch");
+    const modeState = modeCard.querySelector("[data-mode-state]");
+    const panels = Array.from(modeCard.querySelectorAll("[data-mode-panel]"));
+
+    function setMode(mode) {
+      const isImagination = mode === "imagination";
+      modeCard.dataset.mode = mode;
+      if (modeSwitch) modeSwitch.setAttribute("aria-checked", String(isImagination));
+      if (modeState) modeState.textContent = isImagination ? "imagination opt-in" : "exact by default";
+      panels.forEach((panel) => {
+        const isActive = panel.dataset.modePanel === mode;
+        panel.classList.toggle("is-active", isActive);
+        panel.setAttribute("aria-hidden", String(!isActive));
+        setElementInert(panel, !isActive);
+      });
+    }
+
+    if (modeSwitch) {
+      modeSwitch.addEventListener("click", () => {
+        setMode(modeCard.dataset.mode === "imagination" ? "exact" : "imagination");
+      });
+    }
+    setMode("exact");
+  }
+
+  function countTo(el, value, duration) {
+    if (reduceMotion) {
+      el.textContent = String(value);
+      return;
+    }
+    const start = performance.now();
+    function tick(now) {
+      const t = Math.min(1, (now - start) / duration);
+      const eased = 1 - Math.pow(1 - t, 3);
+      el.textContent = String(Math.round(value * eased));
+      if (t < 1) raf(tick);
+    }
+    el.textContent = "0";
+    raf(tick);
+  }
+
+  const benchmark = document.querySelector("[data-benchmark]");
+  if (benchmark) {
+    const counters = Array.from(benchmark.querySelectorAll("[data-count-to]"));
+    counters.forEach((counter) => {
+      if (!reduceMotion) counter.textContent = "0";
+    });
+
+    const revealBenchmark = () => {
+      if (benchmark.classList.contains("is-visible")) return;
+      benchmark.classList.add("is-visible");
+      counters.forEach((counter, index) => {
+        countTo(counter, Number(counter.dataset.countTo || "0"), 900 + index * 220);
+      });
+    };
+
+    if ("IntersectionObserver" in window && !reduceMotion) {
+      const obs = new IntersectionObserver(
+        ([entry]) => {
+          if (entry.isIntersecting) {
+            revealBenchmark();
+            obs.disconnect();
+          }
+        },
+        { threshold: 0.32 }
+      );
+      obs.observe(benchmark);
+    } else {
+      revealBenchmark();
+    }
+  }
+
+  function installManifesto() {
+    const wrap = document.querySelector("[data-manifesto]");
+    if (!wrap) return;
+    const lines = Array.from(wrap.querySelectorAll("[data-manifesto-line]"));
+    const signature = wrap.querySelector(".manifesto-signature");
+    const texts = lines.map((line) => line.textContent.trim());
+
+    if (reduceMotion) {
+      wrap.classList.add("is-complete");
+      return;
+    }
+
+    lines.forEach((line) => {
+      line.textContent = "";
+    });
+    if (signature) signature.setAttribute("aria-hidden", "true");
+
+    const caret = document.createElement("span");
+    caret.className = "manifesto-caret";
+    caret.setAttribute("aria-hidden", "true");
+
+    function renderLine(index, length) {
+      const line = lines[index];
+      if (!line) return;
+      line.replaceChildren(document.createTextNode(texts[index].slice(0, length)), caret);
+    }
+
+    function typeLine(index, length) {
+      if (index >= lines.length) {
+        caret.remove();
+        wrap.classList.add("is-complete");
+        if (signature) signature.removeAttribute("aria-hidden");
+        return;
+      }
+
+      renderLine(index, length);
+      if (length <= texts[index].length) {
+        window.setTimeout(() => typeLine(index, length + 1), texts[index].length ? 34 : 180);
+      } else {
+        window.setTimeout(() => typeLine(index + 1, 0), 360);
+      }
+    }
+
+    const start = () => typeLine(0, 0);
+    if ("IntersectionObserver" in window) {
+      const obs = new IntersectionObserver(
+        ([entry]) => {
+          if (entry.isIntersecting) {
+            start();
+            obs.disconnect();
+          }
+        },
+        { threshold: 0.35 }
+      );
+      obs.observe(wrap);
+    } else {
+      start();
+    }
+  }
+
+  installManifesto();
+
+  function installFabricFlow() {
+    const canvas = document.querySelector(".fabric-flow-canvas");
+    if (!canvas || !canvas.getContext) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    let width = 0;
+    let height = 0;
+    let t = 0;
+    let flowRaf = 0;
+    const nodes = [
+      { label: "INPUT", sub: "data", x: 0.08, color: "0, 229, 255" },
+      { label: "PRISMION", sub: "prism + neuron", x: 0.32, color: "255, 61, 129" },
+      { label: "A-SYNC", sub: "fabric", x: 0.56, color: "0, 229, 255" },
+      { label: "BOUNDED", sub: "result path", x: 0.8, color: "255, 61, 129" },
+    ];
+
+    function init() {
+      const rect = canvas.getBoundingClientRect();
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      width = Math.max(1, rect.width);
+      height = Math.max(1, rect.height);
+      canvas.width = Math.floor(width * dpr);
+      canvas.height = Math.floor(height * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+
+    function draw() {
+      if (!reduceMotion) t += 0.012;
+      ctx.clearRect(0, 0, width, height);
+      const pad = 16;
+      const usableW = width - pad * 2;
+      const cy = height / 2;
+
+      for (let i = 0; i < nodes.length - 1; i += 1) {
+        const a = nodes[i];
+        const b = nodes[i + 1];
+        const ax = pad + a.x * usableW;
+        const bx = pad + b.x * usableW;
+        const ay = cy + Math.sin(t + i) * 6;
+        const by = cy + Math.sin(t + i + 1) * 6;
+        const grad = ctx.createLinearGradient(ax, ay, bx, by);
+        grad.addColorStop(0, `rgba(${a.color}, 0.5)`);
+        grad.addColorStop(1, `rgba(${b.color}, 0.5)`);
+        ctx.strokeStyle = grad;
+        ctx.lineWidth = 1.2;
+        ctx.beginPath();
+        ctx.moveTo(ax, ay);
+        ctx.lineTo(bx, by);
+        ctx.stroke();
+      }
+
+      const pos = (t * 0.5) % (nodes.length - 1);
+      const segIdx = Math.floor(pos);
+      const segFrac = pos - segIdx;
+      const a = nodes[segIdx];
+      const b = nodes[segIdx + 1] || a;
+      const px = pad + (a.x + (b.x - a.x) * segFrac) * usableW;
+      const py = cy + Math.sin(t + segIdx + segFrac) * 6;
+      const pulseGrad = ctx.createRadialGradient(px, py, 0, px, py, 18);
+      pulseGrad.addColorStop(0, "rgba(255, 255, 255, 0.9)");
+      pulseGrad.addColorStop(0.4, `rgba(${a.color}, 0.6)`);
+      pulseGrad.addColorStop(1, `rgba(${a.color}, 0)`);
+      ctx.fillStyle = pulseGrad;
+      ctx.beginPath();
+      ctx.arc(px, py, 18, 0, Math.PI * 2);
+      ctx.fill();
+
+      nodes.forEach((node, index) => {
+        const nx = pad + node.x * usableW;
+        const ny = cy + Math.sin(t + index) * 6;
+        const pulse = 0.7 + Math.sin(t * 2 + index) * 0.3;
+        const glow = ctx.createRadialGradient(nx, ny, 0, nx, ny, 40);
+        glow.addColorStop(0, `rgba(${node.color}, ${0.25 * pulse})`);
+        glow.addColorStop(1, `rgba(${node.color}, 0)`);
+        ctx.fillStyle = glow;
+        ctx.beginPath();
+        ctx.arc(nx, ny, 40, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.strokeStyle = `rgba(${node.color}, 0.6)`;
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.arc(nx, ny, 16, 0, Math.PI * 2);
+        ctx.stroke();
+
+        ctx.fillStyle = `rgba(${node.color}, 0.9)`;
+        ctx.beginPath();
+        ctx.arc(nx, ny, 4, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = "rgba(240, 244, 248, 0.92)";
+        ctx.font = "700 10px SFMono-Regular, Cascadia Code, Consolas, monospace";
+        ctx.textAlign = "center";
+        ctx.fillText(node.label, nx, ny + 38);
+        ctx.fillStyle = "rgba(138, 147, 164, 0.72)";
+        ctx.font = "500 9px SFMono-Regular, Cascadia Code, Consolas, monospace";
+        ctx.fillText(node.sub, nx, ny + 52);
+      });
+
+      flowRaf = reduceMotion ? 0 : raf(draw);
+    }
+
+    init();
+    draw();
+    window.addEventListener("resize", () => {
+      init();
+      if (reduceMotion) draw();
+    });
+  }
+
+  installFabricFlow();
+
+  function installCliDemo() {
+    const pre = document.querySelector("[data-cli-demo]");
+    if (!pre) return;
+    const code = pre.querySelector("code");
+    if (!code) return;
+
+    const script = [
+      "$ instnct --version",
+      "INSTNCT T1 Reflex Engine - v0.1.0-preview",
+      "VRAXION SymGround fabric - local-only - no telemetry",
+      "$ instnct run --mode exact-recall",
+      "ok fabric warm - selector p50 = 5 us",
+      "ok hallucination: OFF (only approved patterns)",
+      '$ "What is the capital of Hungary?"',
+      "Budapest",
+      "[trace: selector -> approved path - 1 hop - grounded]",
+      '$ "Invent a city that does not exist"',
+      "refused - no approved pattern matches",
+      "[exact-recall mode does not invent. flip toggle to compose.]",
+      "$ instnct toggle --imagination on",
+      "ok imagination: ON (bounded drift budget: 0.3)",
+    ];
+
+    const fullText = script.join("\n");
+    if (reduceMotion) {
+      code.textContent = fullText;
+      return;
+    }
+
+    const cursor = document.createElement("span");
+    cursor.className = "terminal-cursor";
+    cursor.textContent = "|";
+    cursor.setAttribute("aria-hidden", "true");
+
+    let line = 0;
+    let char = 0;
+    let visible = "";
+
+    function render() {
+      const current = script[line] || "";
+      code.replaceChildren(document.createTextNode(visible + current.slice(0, char)), cursor);
+      pre.scrollTop = pre.scrollHeight;
+    }
+
+    function tick() {
+      if (line >= script.length) {
+        window.setTimeout(() => {
+          line = 0;
+          char = 0;
+          visible = "";
+          tick();
+        }, 4200);
+        return;
+      }
+
+      const current = script[line];
+      render();
+      if (char <= current.length) {
+        char += 1;
+        window.setTimeout(tick, current.startsWith("$") ? 28 : 12);
+      } else {
+        visible += `${current}\n`;
+        line += 1;
+        char = 0;
+        window.setTimeout(tick, current.startsWith("$") ? 420 : 260);
+      }
+    }
+
+    code.textContent = "";
+    tick();
+  }
+
+  installCliDemo();
+
+  function fallbackCopyText(text) {
+    const area = document.createElement("textarea");
+    area.value = text;
+    area.setAttribute("readonly", "");
+    area.style.position = "fixed";
+    area.style.top = "-1000px";
+    document.body.append(area);
+    area.select();
+    try {
+      const copied = document.execCommand("copy");
+      return copied ? Promise.resolve() : Promise.reject(new Error("copy failed"));
+    } finally {
+      area.remove();
+    }
+  }
+
+  function copyText(text) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      return navigator.clipboard.writeText(text).catch(() => fallbackCopyText(text));
+    }
+    return fallbackCopyText(text);
+  }
+
+  document.querySelectorAll("[data-copy-command]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const original = button.textContent;
+      copyText(button.dataset.copyCommand || "")
+        .then(() => {
+          button.classList.add("is-copied");
+          button.textContent = "copied";
+        })
+        .catch(() => {
+          button.classList.add("is-copy-failed");
+          button.textContent = "copy failed";
+        })
+        .finally(() => {
+          window.setTimeout(() => {
+            button.textContent = original;
+            button.classList.remove("is-copied", "is-copy-failed");
+          }, 1300);
+        });
+    });
+  });
+
+  const faqItems = Array.from(document.querySelectorAll(".faq-item"));
+  faqItems.forEach((item, index) => {
+    const button = item.querySelector("button");
+    const panel = item.querySelector(".faq-panel");
+    if (!button || !panel) return;
+    const panelId = `instnct-faq-${index + 1}`;
+    const buttonId = `instnct-faq-button-${index + 1}`;
+    panel.id = panelId;
+    if (!button.id) button.id = buttonId;
+    button.setAttribute("aria-controls", panelId);
+    panel.setAttribute("role", "region");
+    panel.setAttribute("aria-labelledby", button.id);
+
+    function setFaqOpen(target, open) {
+      const targetButton = target.querySelector("button");
+      const targetPanel = target.querySelector(".faq-panel");
+      target.classList.toggle("is-open", open);
+      if (targetButton) targetButton.setAttribute("aria-expanded", String(open));
+      if (targetPanel) {
+        targetPanel.setAttribute("aria-hidden", String(!open));
+        setElementInert(targetPanel, !open);
+      }
+    }
+
+    setFaqOpen(item, item.classList.contains("is-open"));
+
+    button.addEventListener("click", () => {
+      const nextOpen = !item.classList.contains("is-open");
+      faqItems.forEach((other) => setFaqOpen(other, false));
+      setFaqOpen(item, nextOpen);
+    });
+  });
+
+  const keyboardTrigger = document.querySelector(".keyboard-help-trigger");
+  const keyboardDialog = document.querySelector(".keyboard-dialog");
+  const keyboardPanel = document.querySelector(".keyboard-dialog-panel");
+  const keyboardBackgroundState = new Map();
+  let lastKeyboardFocus = null;
+  let pendingGo = false;
+  let pendingTimer = 0;
+
+  function setKeyboardBackgroundInert(open) {
+    if (!keyboardDialog) return;
+    Array.from(document.body.children).forEach((el) => {
+      if (el === keyboardDialog) return;
+      if (open) {
+        if (!keyboardBackgroundState.has(el)) {
+          keyboardBackgroundState.set(el, {
+            inert: el.hasAttribute("inert"),
+            ariaHidden: el.getAttribute("aria-hidden"),
+          });
+        }
+        setElementInert(el, true);
+        el.setAttribute("aria-hidden", "true");
+      } else {
+        const state = keyboardBackgroundState.get(el);
+        if (!state) return;
+        setElementInert(el, state.inert);
+        if (state.ariaHidden === null) el.removeAttribute("aria-hidden");
+        else el.setAttribute("aria-hidden", state.ariaHidden);
+      }
+    });
+    if (!open) keyboardBackgroundState.clear();
+  }
+
+  function restoreKeyboardFocus() {
+    const candidate =
+      lastKeyboardFocus && lastKeyboardFocus.focus && isVisible(lastKeyboardFocus)
+        ? lastKeyboardFocus
+        : keyboardTrigger;
+    lastKeyboardFocus = null;
+    if (candidate && candidate.focus && isVisible(candidate) && !candidate.closest("[inert]")) {
+      candidate.focus({ preventScroll: true });
+    }
+  }
+
+  function openKeyboardDialog() {
+    if (!keyboardDialog) return;
+    lastKeyboardFocus = document.activeElement;
+    keyboardDialog.hidden = false;
+    doc.classList.add("keyboard-dialog-open");
+    setKeyboardBackgroundInert(true);
+    const close = keyboardDialog.querySelector(".keyboard-close");
+    if (close) close.focus({ preventScroll: true });
+  }
+
+  function closeKeyboardDialog() {
+    if (!keyboardDialog) return;
+    setKeyboardBackgroundInert(false);
+    keyboardDialog.hidden = true;
+    doc.classList.remove("keyboard-dialog-open");
+    restoreKeyboardFocus();
+  }
+
+  function toggleKeyboardDialog() {
+    if (!keyboardDialog) return;
+    if (keyboardDialog.hidden) openKeyboardDialog();
+    else closeKeyboardDialog();
+  }
+
+  if (keyboardTrigger) keyboardTrigger.addEventListener("click", toggleKeyboardDialog);
+  if (keyboardDialog) {
+    keyboardDialog.querySelectorAll("[data-keyboard-close]").forEach((el) => {
+      el.addEventListener("click", closeKeyboardDialog);
+    });
+    if (keyboardPanel) {
+      keyboardPanel.addEventListener("click", (event) => event.stopPropagation());
+    }
+  }
+
+  function trapKeyboardDialogFocus(event) {
+    if (!keyboardDialog || keyboardDialog.hidden || event.key !== "Tab") return false;
+    const focusable = getFocusable(keyboardPanel || keyboardDialog);
+    if (focusable.length === 0) {
+      event.preventDefault();
+      return true;
+    }
+
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault();
+      last.focus({ preventScroll: true });
+      return true;
+    }
+    if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first.focus({ preventScroll: true });
+      return true;
+    }
+    return false;
+  }
+
+  function smoothScrollTo(target) {
+    const el = typeof target === "string" ? document.querySelector(target) : target;
+    if (!el) return;
+    el.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "start" });
+  }
+
+  window.addEventListener("keydown", (event) => {
+    if (trapKeyboardDialogFocus(event)) return;
+
+    const target = event.target;
+    const typing =
+      target &&
+      (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable);
+    if (typing) return;
+
+    if (event.key === "Escape") {
+      closeKeyboardDialog();
+      pendingGo = false;
+      return;
+    }
+
+    if (event.key === "?" || (event.key === "/" && event.shiftKey)) {
+      event.preventDefault();
+      toggleKeyboardDialog();
+      return;
+    }
+
+    if (keyboardDialog && !keyboardDialog.hidden) return;
+
+    if (pendingGo) {
+      pendingGo = false;
+      window.clearTimeout(pendingTimer);
+      if (event.key.toLowerCase() === "n") {
+        event.preventDefault();
+        smoothScrollTo("#get-notified");
+      } else if (event.key.toLowerCase() === "h") {
+        event.preventDefault();
+        window.scrollTo({ top: 0, behavior: reduceMotion ? "auto" : "smooth" });
+      }
+      return;
+    }
+
+    if (event.key.toLowerCase() === "g") {
+      pendingGo = true;
+      pendingTimer = window.setTimeout(() => {
+        pendingGo = false;
+      }, 1100);
+      return;
+    }
+
+    if (event.key.toLowerCase() === "j") {
+      event.preventDefault();
+      window.scrollBy({ top: window.innerHeight * 0.82, behavior: reduceMotion ? "auto" : "smooth" });
+    } else if (event.key.toLowerCase() === "k") {
+      event.preventDefault();
+      window.scrollBy({ top: -window.innerHeight * 0.82, behavior: reduceMotion ? "auto" : "smooth" });
+    }
+  });
 })();

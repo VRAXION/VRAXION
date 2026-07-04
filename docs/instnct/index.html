@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'; upgrade-insecure-requests">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-bNdJHBUyNy7XRZfMP35RZ6jxcXfi6fpm/vn/Wr84T6k='; style-src 'self'; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'; upgrade-insecure-requests">
   <title>INSTNCT - VRAXION Local Reflex Reasoning</title>
   <meta name="description" content="INSTNCT is VRAXION's local-first T1 Reflex Class surface: not AI, no neural net, offline-oriented, and built around bounded symbol-grounded hot paths.">
   <meta name="theme-color" content="#050507">
@@ -13,14 +13,20 @@
   <meta property="og:description" content="A local-first VRAXION T1 Reflex Class surface: not AI, bounded, measurable, and designed to run locally.">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://vraxion.github.io/VRAXION/instnct/">
+  <meta property="og:site_name" content="VRAXION">
   <meta property="og:image" content="https://vraxion.github.io/VRAXION/instnct/assets/instnct-hero-bg.png">
+  <meta property="og:image:alt" content="INSTNCT local reflex reasoning hero surface">
+  <meta property="og:image:width" content="1536">
+  <meta property="og:image:height" content="1024">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="INSTNCT">
   <meta name="twitter:description" content="A local-first VRAXION T1 Reflex Class surface: not AI, bounded, measurable, and designed to run locally.">
   <meta name="twitter:image" content="https://vraxion.github.io/VRAXION/instnct/assets/instnct-hero-bg.png">
+  <meta name="twitter:image:alt" content="INSTNCT local reflex reasoning hero surface">
   <link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="./styles.css?v=interactive-1">
-  <script src="./instnct.js?v=interactive-1" defer></script>
+  <link rel="stylesheet" href="./styles.css?v=release-2">
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"SoftwareApplication","name":"INSTNCT","applicationCategory":"DeveloperApplication","operatingSystem":"Windows, macOS, Linux","description":"A local-first reflex-class reasoning engine from VRAXION. Not AI, no neural net, offline-oriented, and built around bounded symbol-grounded hot paths.","url":"https://vraxion.github.io/VRAXION/instnct/","author":{"@type":"Person","name":"Daniel Kenessy"},"publisher":{"@type":"Organization","name":"VRAXION","url":"https://vraxion.github.io/VRAXION/"},"offers":{"@type":"Offer","price":"0","priceCurrency":"USD","description":"Free local noncommercial release target."},"featureList":["Local-first reasoning","Symbol Grounding Engine","Toggleable exact/imagination mode","Microsecond-class warm selector","Offline verification target"]}</script>
+  <script src="./instnct.js?v=release-2" defer></script>
 </head>
 <body>
   <a class="skip-link" href="#main">Skip to content</a>
@@ -45,8 +51,8 @@
       <i></i>
     </div>
     <div class="indicator-readout">
-      <strong>01 <span>/ 12</span></strong>
-      <small>intro</small>
+      <strong><span data-indicator-number>01</span> <span data-indicator-total>/ 12</span></strong>
+      <small data-indicator-label>intro</small>
     </div>
     <ol>
       <li><a href="#intro" data-section-link="intro"><span>01</span> Intro</a></li>
@@ -68,6 +74,31 @@
     <span aria-hidden="true"></span>
   </button>
 
+  <button class="keyboard-help-trigger" type="button" aria-label="Keyboard shortcuts" title="Keyboard shortcuts">
+    <span aria-hidden="true">?</span>
+  </button>
+
+  <div class="keyboard-dialog" role="dialog" aria-modal="true" aria-labelledby="keyboard-dialog-title" hidden>
+    <div class="keyboard-dialog-backdrop" data-keyboard-close></div>
+    <div class="keyboard-dialog-panel">
+      <div class="keyboard-dialog-head">
+        <div>
+          <span class="kicker cyan">shortcuts</span>
+          <h2 id="keyboard-dialog-title">Keyboard control</h2>
+        </div>
+        <button type="button" class="keyboard-close" aria-label="Close keyboard shortcuts" data-keyboard-close></button>
+      </div>
+      <ul class="shortcut-list">
+        <li><span>Toggle this panel</span><kbd>?</kbd></li>
+        <li><span>Jump to release signal</span><kbd>g</kbd><em>then</em><kbd>n</kbd></li>
+        <li><span>Back to top</span><kbd>g</kbd><em>then</em><kbd>h</kbd></li>
+        <li><span>Scroll down</span><kbd>j</kbd></li>
+        <li><span>Scroll up</span><kbd>k</kbd></li>
+        <li><span>Close dialogs</span><kbd>Esc</kbd></li>
+      </ul>
+    </div>
+  </div>
+
   <main id="main">
     <section class="hero" id="intro" aria-labelledby="hero-title">
       <div class="hero-background" aria-hidden="true">
@@ -75,13 +106,16 @@
       </div>
       <div class="hero-cursor-glow" aria-hidden="true"></div>
       <div class="hero-mesh" aria-hidden="true">
-        <span class="mesh-line mesh-line-a"></span>
-        <span class="mesh-line mesh-line-b"></span>
-        <span class="mesh-line mesh-line-c"></span>
-        <span class="mesh-node mesh-node-a"></span>
-        <span class="mesh-node mesh-node-b"></span>
-        <span class="mesh-node mesh-node-c"></span>
-        <span class="mesh-node mesh-node-d"></span>
+        <canvas class="hero-mesh-canvas"></canvas>
+        <div class="hero-mesh-fallback">
+          <span class="mesh-line mesh-line-a"></span>
+          <span class="mesh-line mesh-line-b"></span>
+          <span class="mesh-line mesh-line-c"></span>
+          <span class="mesh-node mesh-node-a"></span>
+          <span class="mesh-node mesh-node-b"></span>
+          <span class="mesh-node mesh-node-c"></span>
+          <span class="mesh-node mesh-node-d"></span>
+        </div>
       </div>
 
       <div class="hero-inner">
@@ -179,25 +213,35 @@
           <div class="small-proof"><span></span> Included in the free T1 release target.</div>
         </div>
 
-        <div class="mode-card" aria-label="INSTNCT reasoning modes">
+        <div class="mode-card" data-mode="exact" aria-label="INSTNCT reasoning modes">
           <div class="mode-card-top">
-            <span>mode boundary</span>
-            <strong>exact by default</strong>
+            <div class="mode-state-icon" aria-hidden="true"></div>
+            <div>
+              <span>mode boundary</span>
+              <strong data-mode-state>exact by default</strong>
+            </div>
+            <button class="mode-switch" type="button" role="switch" aria-checked="false" aria-label="Toggle imagination mode">
+              <span></span>
+            </button>
           </div>
           <div class="toggle-visual" aria-hidden="true">
-            <span>exact recall</span>
-            <span>imagination</span>
+            <span data-mode-tab="exact">exact recall</span>
+            <span data-mode-tab="imagination">imagination</span>
           </div>
-          <div class="mode-split">
-            <article>
-              <small>Default</small>
+          <div class="mode-panels">
+            <article class="mode-panel is-active" data-mode-panel="exact">
+              <small>behavior</small>
               <h3>Refuse invention</h3>
-              <p>Unsupported query returns a boundary instead of a fabricated answer.</p>
+              <p>Only seen-and-approved pattern transformations are emitted. No approved path means the fabric returns a boundary instead of a fabricated answer.</p>
+              <code>query -> selector -> approved path -> bounded output</code>
+              <span>no approved path -> "i don't have this"</span>
             </article>
-            <article>
-              <small>Opt-in</small>
+            <article class="mode-panel" data-mode-panel="imagination">
+              <small>behavior</small>
               <h3>Bounded drift</h3>
-              <p>Creative composition is separate and marked, never smuggled into exact mode.</p>
+              <p>Imagination is opt-in. The fabric may compose beyond seen patterns, but the output is visibly creative and keeps an inspectable trace.</p>
+              <code>query -> selector -> composed path -> bounded output</code>
+              <span>drift budget enforced, trace stays inspectable</span>
             </article>
           </div>
         </div>
@@ -242,7 +286,7 @@
           </article>
         </div>
 
-        <div class="benchmark-card">
+        <div class="benchmark-card" data-benchmark>
           <div class="benchmark-head">
             <span class="pulse-dot"></span>
             <strong>benchmark / 16k mixed-unique workload</strong>
@@ -250,12 +294,16 @@
           <div class="bar-row">
             <span>INSTNCT selector</span>
             <div><i class="bar-fast"></i></div>
-            <strong>5 us</strong>
+            <strong><span data-count-to="5">5</span> us</strong>
           </div>
           <div class="bar-row">
             <span>linear scan baseline</span>
             <div><i class="bar-slow"></i></div>
-            <strong>261 us</strong>
+            <strong><span data-count-to="261">261</span> us</strong>
+          </div>
+          <div class="speedup-row">
+            <span>selector speedup</span>
+            <strong>~<span data-count-to="52">52</span>x</strong>
           </div>
           <p>Scoped claim: warm exact selector p50, not universal end-to-end latency.</p>
         </div>
@@ -277,8 +325,23 @@
     </section>
 
     <section class="manifesto section-dark" aria-label="INSTNCT manifesto">
-      <div class="shell manifesto-inner">
-        <p>Not a model. Not a wrapper. <span>A reflex.</span></p>
+      <div class="shell manifesto-inner" data-manifesto>
+        <div class="manifesto-panel">
+          <span class="corner corner-tl"></span>
+          <span class="corner corner-tr"></span>
+          <span class="corner corner-bl"></span>
+          <span class="corner corner-br"></span>
+          <div class="manifesto-head">
+            <span class="pulse-dot"></span>
+            <span>manifesto / founder</span>
+          </div>
+          <p class="manifesto-line" data-manifesto-line>we did not build a better ai.</p>
+          <p class="manifesto-line" data-manifesto-line>we built something else.</p>
+          <p class="manifesto-line muted" data-manifesto-line>grounded. traceable. bounded.</p>
+          <p class="manifesto-line muted" data-manifesto-line>no weights. no probabilities.</p>
+          <p class="manifesto-line" data-manifesto-line>a fabric that reasons, not guesses.</p>
+          <div class="manifesto-signature">daniel kenessy <span>/</span> founder, vraxion</div>
+        </div>
       </div>
     </section>
 
@@ -294,6 +357,7 @@
         </div>
 
         <div class="fabric-diagram" aria-label="INSTNCT fabric diagram">
+          <canvas class="fabric-flow-canvas" aria-hidden="true"></canvas>
           <article>
             <small>01</small>
             <h3>Prismion</h3>
@@ -329,12 +393,12 @@
           </ul>
         </div>
 
-        <div class="terminal-panel" aria-label="Static INSTNCT verification preview">
+        <div class="terminal-panel" aria-label="INSTNCT CLI verification preview">
           <div class="terminal-bar">
             <span></span><span></span><span></span>
-            <strong>instnct local verification preview</strong>
+            <strong>instnct - bash - 80x24</strong>
           </div>
-          <pre><code>$ instnct --mode exact --offline
+          <pre data-cli-demo><code>$ instnct --mode exact --offline
 network: disabled
 surface: t1-reflex-preview
 selector.p50: 5 us
@@ -342,6 +406,12 @@ baseline.p50: 261 us
 speedup: 52x
 unsupported-query: refused, no invention
 mode: exact recall</code></pre>
+          <div class="terminal-actions" aria-label="Copy INSTNCT commands">
+            <span>try:</span>
+            <button type="button" data-copy-command="instnct --version">instnct --version</button>
+            <button type="button" data-copy-command="instnct run --mode exact-recall">instnct run --mode exact-recall</button>
+            <button type="button" data-copy-command="instnct toggle --imagination on">toggle imagination</button>
+          </div>
         </div>
       </div>
     </section>
@@ -448,23 +518,70 @@ mode: exact recall</code></pre>
           <p>Skepticism is the correct response. These are the honest answers the public page can give now.</p>
         </div>
 
-        <div class="faq-list">
-          <details open>
-            <summary>Is INSTNCT an LLM wrapper?</summary>
-            <p>No. The public positioning is deliberately not AI in the hosted-neural-model sense. The release story is local verification.</p>
-          </details>
-          <details>
-            <summary>What does symbol grounding mean here?</summary>
-            <p>Publicly, it means results should stay tied to bounded anchors and checkable paths. Internal mechanism details stay limited until release artifacts make the claims testable.</p>
-          </details>
-          <details>
-            <summary>Can it hallucinate?</summary>
-            <p>Exact mode should refuse unsupported answers. Creative or speculative output belongs in an explicit imagination mode, not hidden inside default answers.</p>
-          </details>
-          <details>
-            <summary>When can people run it?</summary>
-            <p>T1 is still a release target, not a finished public binary claim. The next honest milestone is a local artifact with benchmark and refusal behavior people can reproduce.</p>
-          </details>
+        <div class="faq-list" data-faq-list>
+          <article class="faq-item is-open">
+            <button type="button" aria-expanded="true">
+              <span>position</span>
+              Is INSTNCT really not AI?
+            </button>
+            <div class="faq-panel">
+              <p>Correct. There is no neural network inside the public claim. INSTNCT is positioned as a structural reasoning substrate: local, bounded, and measured by behavior people can test.</p>
+            </div>
+          </article>
+          <article class="faq-item">
+            <button type="button" aria-expanded="false">
+              <span>trust</span>
+              How do I verify it actually runs locally?
+            </button>
+            <div class="faq-panel">
+              <p>The release proof path is simple: run the artifact locally, disable the network, and measure the same benchmark/refusal behavior without a hosted service.</p>
+            </div>
+          </article>
+          <article class="faq-item">
+            <button type="button" aria-expanded="false">
+              <span>the claim</span>
+              What does symbol grounding mean here?
+            </button>
+            <div class="faq-panel">
+              <p>Publicly, it means outputs should stay tied to bounded anchors and checkable paths. Private mechanism details stay limited until release artifacts make the claim testable.</p>
+            </div>
+          </article>
+          <article class="faq-item">
+            <button type="button" aria-expanded="false">
+              <span>mode</span>
+              Can it hallucinate?
+            </button>
+            <div class="faq-panel">
+              <p>Exact mode should refuse unsupported answers. Creative or speculative output belongs in an explicit imagination mode, not hidden inside default answers.</p>
+            </div>
+          </article>
+          <article class="faq-item">
+            <button type="button" aria-expanded="false">
+              <span>privacy</span>
+              Do you collect any data from my machine?
+            </button>
+            <div class="faq-panel">
+              <p>The public T1 target is local-first and no-telemetry by default. Any future networked tier needs a separate opt-in boundary and cannot be implied by this page.</p>
+            </div>
+          </article>
+          <article class="faq-item">
+            <button type="button" aria-expanded="false">
+              <span>capability</span>
+              What can it actually do right now?
+            </button>
+            <div class="faq-panel">
+              <p>T1 is intentionally bounded. The honest current story is a local release target with exact recall, refusal behavior, and measured selector performance before broader capability claims.</p>
+            </div>
+          </article>
+          <article class="faq-item">
+            <button type="button" aria-expanded="false">
+              <span>availability</span>
+              When can people run it?
+            </button>
+            <div class="faq-panel">
+              <p>The binary is not ready yet. The repo remains the source of truth for release boundaries, benchmark notes, and the first runnable artifact.</p>
+            </div>
+          </article>
         </div>
       </div>
     </section>
