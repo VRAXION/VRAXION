@@ -828,7 +828,7 @@
       { type: "trace", text: "VRAXION SymGround fabric - local-only - no telemetry" },
       { type: "prompt", text: "$ instnct run --mode exact-recall" },
       { type: "ok", text: "ok fabric warm - selector p50 = 5 us" },
-      { type: "ok", text: "ok hallucination: OFF (only approved patterns)" },
+      { type: "ok", text: "ok exact/refusal contract: ON (approved paths only)" },
       { type: "query", text: '$ "What is the capital of Hungary?"' },
       { type: "output", text: "Budapest" },
       { type: "trace", text: "[trace: selector -> approved path - 1 hop - grounded]" },

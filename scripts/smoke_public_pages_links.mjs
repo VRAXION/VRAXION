@@ -103,7 +103,7 @@ if (
 }
 if (
   instnct &&
-  /source-available|source available|source snapshot|source archive|public source archive|page source|boundary snapshot|boundary archive|P11 SDK boundary|binary boundary|release boundary|boundary text versioned in repo|boundary and release target|release boundaries|mode boundary|returns a boundary|public mark boundary|opt-in boundary|>boundary<\/span>/i.test(
+  /Not AI|Not ever|Runs locally|microsecond-class reasoning core|Hallucination,|hallucination, toggleable|fabric that reasons|decentralized intelligence|Scales by dimension|No weights|No probabilities|T1 is coming|local runnable|source-available|source available|source snapshot|source archive|public source archive|page source|boundary snapshot|boundary archive|P11 SDK boundary|binary boundary|release boundary|boundary text versioned in repo|boundary and release target|release boundaries|mode boundary|returns a boundary|public mark boundary|opt-in boundary|>boundary<\/span>/i.test(
     instnct
   )
 ) {

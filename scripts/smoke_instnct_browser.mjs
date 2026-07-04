@@ -31,7 +31,7 @@ const latestReleasePath = `releases/tag/${latestRelease}`;
 const latestArchivePath = `archive/refs/tags/${latestRelease}.zip`;
 const criticalResourceTypes = new Set(["document", "stylesheet", "script", "image", "font"]);
 const unsafePublicCopyPatternSource =
-  String.raw`source-available|source available|source snapshot|source archive|public source archive|page source|boundary snapshot|boundary archive|P11 SDK boundary|\bboundary\b`;
+  String.raw`Not AI|Not ever|Runs locally|microsecond-class reasoning core|Hallucination,|hallucination, toggleable|fabric that reasons|decentralized intelligence|Scales by dimension|No weights|No probabilities|T1 is coming|local runnable|source-available|source available|source snapshot|source archive|public source archive|page source|boundary snapshot|boundary archive|P11 SDK boundary|\bboundary\b`;
 
 function trackPageFailures(page, origin, label) {
   const errors = [];
@@ -210,7 +210,7 @@ async function probeHome(browser, origin) {
     releaseHrefs: [...document.querySelectorAll("a")].map((a) => a.href),
     oldReleaseHref: [...document.querySelectorAll("a")].some((a) => a.href.includes("releases/tag/v6.1.7")),
     capabilitiesHref: [...document.querySelectorAll("a")].some((a) => a.href.includes("CURRENT_CAPABILITIES.md")),
-    instnctLive: document.body.textContent.includes("INSTNCT live"),
+    instnctLive: document.body.textContent.includes("INSTNCT preview live"),
   }), latestRelease);
   await page.close();
 
@@ -239,7 +239,7 @@ async function probeInstnctDesktop(browser, origin) {
     heroGlowDisplay: getComputedStyle(document.querySelector(".hero-cursor-glow")).display,
     boundaryHrefs: [...document.querySelectorAll("a")].map((a) => a.href),
     boundaryNote: document.querySelector(".notify-note")?.textContent.includes(
-      "not the private engine source, private repo, or a runnable T1 binary"
+      "not the private engine source, non-public engine materials, or a runnable T1 binary"
     ),
     unsafePublicCopy: new RegExp(unsafeCopyPattern, "i").test(document.body.textContent),
     logoAsset: document.querySelector(".wordmark img")?.getAttribute("src") || "",

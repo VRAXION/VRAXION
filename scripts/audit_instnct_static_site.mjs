@@ -128,6 +128,13 @@ for (const required of [
   "planned local flow",
   "planned commands:",
   "../INSTNCT_BENCHMARK_NOTES.md",
+  "No LLM dependency",
+  "No hosted model wrapper",
+  "No public runnable binary yet",
+  "founder-led, not committee-built",
+  "ai-assisted, human-owned",
+  "claims ship with evidence, not vibes",
+  "local artifact target",
 ]) {
   if (!html.includes(required)) fail(`missing INSTNCT markup: ${required}`);
 }
@@ -287,10 +294,23 @@ if (instnctAssetVersion) {
 if (!html.includes("not the private engine source")) {
   fail("INSTNCT GitHub tag ZIP note must state the private-engine boundary");
 }
-if (!html.includes("not the private engine source, private repo, or a runnable T1 binary")) {
-  fail("INSTNCT GitHub tag ZIP note must state the private repo and runnable-binary boundary");
+if (!html.includes("not the private engine source, non-public engine materials, or a runnable T1 binary")) {
+  fail("INSTNCT GitHub tag ZIP note must state the non-public engine material and runnable-binary scope");
 }
 for (const forbiddenCopy of [
+  "Not AI",
+  "Not ever",
+  "Runs locally",
+  "microsecond-class reasoning core",
+  "Hallucination,",
+  "hallucination, toggleable",
+  "fabric that reasons",
+  "decentralized intelligence",
+  "Scales by dimension",
+  "No weights",
+  "No probabilities",
+  "T1 is coming",
+  "local runnable",
   "source-available",
   "source available",
   "Source snapshot",
@@ -364,7 +384,7 @@ if (!jsonLdMatch) {
     if (data["@type"] !== "WebPage") fail("JSON-LD @type must be WebPage");
     if (data.name !== "INSTNCT") fail("JSON-LD name must be INSTNCT");
     if (!String(data.description || "").includes("No public runnable T1 binary")) {
-      fail("JSON-LD description must state the public T1 binary boundary");
+      fail("JSON-LD description must state the public T1 binary scope");
     }
     if ("offers" in data) fail("JSON-LD must not expose an offer before a runnable artifact exists");
   } catch (err) {
