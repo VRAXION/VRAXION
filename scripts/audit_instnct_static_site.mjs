@@ -61,6 +61,8 @@ try {
 
 for (const required of [
   "hero-mesh-canvas",
+  "icon-sprite",
+  "#icon-terminal",
   "mode-switch",
   "data-cli-demo",
   "data-manifesto",
@@ -91,6 +93,8 @@ for (const required of [
 for (const required of [
   ".fabric-flow-panel",
   ".source-snapshot-pill",
+  ".button-icon",
+  ".card-icon",
   ".has-js [data-reveal]",
   ".terminal-line[data-line-type=\"ok\"]",
   ".terminal-bar em",
@@ -218,6 +222,9 @@ if (/\.hero-mesh\s*\{[^}]*display:\s*none/i.test(css)) {
 }
 if (/\.fabric-diagram::before/.test(css)) {
   fail("old fabric-diagram connector pseudo-element should not remain");
+}
+if (/\.icon-dot\b/.test(css) || html.includes("icon-dot")) {
+  fail("old dot-only card icon language should not remain");
 }
 
 if (failures.length > 0) {

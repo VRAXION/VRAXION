@@ -31,6 +31,18 @@
 <body>
   <a class="skip-link" href="#main">Skip to content</a>
   <div class="scroll-progress" aria-hidden="true"><span></span></div>
+  <svg class="icon-sprite" aria-hidden="true" focusable="false">
+    <symbol id="icon-arrow-right" viewBox="0 0 24 24"><path d="M5 12h14"></path><path d="m13 6 6 6-6 6"></path></symbol>
+    <symbol id="icon-repo" viewBox="0 0 24 24"><path d="M6 3v12"></path><circle cx="6" cy="18" r="3"></circle><circle cx="6" cy="6" r="3"></circle><path d="M9 6h5a4 4 0 0 1 4 4v2"></path><circle cx="18" cy="15" r="3"></circle></symbol>
+    <symbol id="icon-network" viewBox="0 0 24 24"><circle cx="6" cy="6" r="3"></circle><circle cx="18" cy="6" r="3"></circle><circle cx="12" cy="18" r="3"></circle><path d="m8.5 8.5 2.5 6"></path><path d="m15.5 8.5-2.5 6"></path><path d="M9 6h6"></path></symbol>
+    <symbol id="icon-trace" viewBox="0 0 24 24"><path d="M4 7h6"></path><path d="M14 7h6"></path><path d="M4 17h6"></path><path d="M14 17h6"></path><path d="M10 7c2 0 2 10 4 10"></path></symbol>
+    <symbol id="icon-lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path></symbol>
+    <symbol id="icon-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"></path></symbol>
+    <symbol id="icon-cpu" viewBox="0 0 24 24"><rect x="7" y="7" width="10" height="10" rx="2"></rect><path d="M4 10h3"></path><path d="M4 14h3"></path><path d="M17 10h3"></path><path d="M17 14h3"></path><path d="M10 4v3"></path><path d="M14 4v3"></path><path d="M10 17v3"></path><path d="M14 17v3"></path></symbol>
+    <symbol id="icon-wifi-off" viewBox="0 0 24 24"><path d="m3 3 18 18"></path><path d="M8.5 16.5a5 5 0 0 1 7 0"></path><path d="M2 8.8a16 16 0 0 1 11.3-3.7"></path><path d="M17.8 6.2A16 16 0 0 1 22 8.8"></path><path d="M5.8 12.3a10 10 0 0 1 3.1-1.8"></path><path d="M12 20h.01"></path></symbol>
+    <symbol id="icon-shield" viewBox="0 0 24 24"><path d="M12 3 5 6v5c0 5 3.2 8.2 7 10 3.8-1.8 7-5 7-10V6l-7-3Z"></path><path d="m9 12 2 2 4-4"></path></symbol>
+    <symbol id="icon-terminal" viewBox="0 0 24 24"><path d="m4 17 6-5-6-5"></path><path d="M12 19h8"></path></symbol>
+  </svg>
 
   <header class="site-header">
     <a class="brand" href="../" aria-label="VRAXION homepage">
@@ -149,8 +161,8 @@
         </p>
 
         <div class="hero-actions" aria-label="INSTNCT actions">
-          <a class="button button-primary" href="#get-notified">Track T1 release</a>
-          <a class="button button-secondary" href="https://github.com/VRAXION/VRAXION" target="_blank" rel="noopener noreferrer">Open repo</a>
+          <a class="button button-primary" href="#get-notified"><svg class="button-icon" aria-hidden="true"><use href="#icon-terminal"></use></svg><span>Track T1 release</span></a>
+          <a class="button button-secondary" href="https://github.com/VRAXION/VRAXION" target="_blank" rel="noopener noreferrer"><svg class="button-icon" aria-hidden="true"><use href="#icon-repo"></use></svg><span>Open repo</span></a>
           <div class="live-readout" aria-label="Warm selector benchmark">
             <span class="pulse-dot"></span>
             <div>
@@ -164,10 +176,10 @@
         </div>
 
         <ul class="principle-list" aria-label="Design principles">
-          <li><strong>Grounded</strong><span>observable anchors</span></li>
-          <li><strong>Traceable</strong><span>inspectable path</span></li>
-          <li><strong>Bounded</strong><span>explicit limits</span></li>
-          <li><strong>Testable</strong><span>repeatable checks</span></li>
+          <li><svg class="card-icon" aria-hidden="true"><use href="#icon-network"></use></svg><strong>Grounded</strong><span>observable anchors</span></li>
+          <li><svg class="card-icon" aria-hidden="true"><use href="#icon-trace"></use></svg><strong>Traceable</strong><span>inspectable path</span></li>
+          <li><svg class="card-icon" aria-hidden="true"><use href="#icon-lock"></use></svg><strong>Bounded</strong><span>explicit limits</span></li>
+          <li><svg class="card-icon" aria-hidden="true"><use href="#icon-check"></use></svg><strong>Testable</strong><span>repeatable checks</span></li>
         </ul>
       </div>
 
@@ -189,17 +201,17 @@
 
         <div class="pillar-grid">
           <article class="card pillar">
-            <span class="icon-dot"></span>
+            <svg class="card-icon" aria-hidden="true"><use href="#icon-network"></use></svg>
             <h3>Own fabric</h3>
             <p>The &alpha;-Sync substrate is a VRAXION surface, not someone else's remote model dependency.</p>
           </article>
           <article class="card pillar pillar-seal">
-            <span class="icon-dot"></span>
+            <svg class="card-icon card-icon-seal" aria-hidden="true"><use href="#icon-shield"></use></svg>
             <h3>Structural, not probabilistic</h3>
             <p>Exact mode belongs to bounded paths and refusal behavior, not sampled invention hidden inside default answers.</p>
           </article>
           <article class="card pillar">
-            <span class="icon-dot"></span>
+            <svg class="card-icon" aria-hidden="true"><use href="#icon-cpu"></use></svg>
             <h3>Scales by dimension</h3>
             <p>Capability grows through internal structure and curated skills, not through bigger neural weights.</p>
           </article>
@@ -263,6 +275,7 @@
 
         <div class="trust-grid">
           <article class="card trust-card">
+            <svg class="card-icon" aria-hidden="true"><use href="#icon-cpu"></use></svg>
             <span class="kicker cyan">footprint</span>
             <p>Designed for CPU and RAM baselines before larger accelerator paths matter.</p>
             <dl>
@@ -272,6 +285,7 @@
             </dl>
           </article>
           <article class="card trust-card trust-card-seal">
+            <svg class="card-icon card-icon-seal" aria-hidden="true"><use href="#icon-wifi-off"></use></svg>
             <span class="kicker seal">provable</span>
             <p>Local-first has to survive a disconnected network and a local timing check once the signed artifact ships.</p>
             <dl>
@@ -281,6 +295,7 @@
             </dl>
           </article>
           <article class="card trust-card">
+            <svg class="card-icon" aria-hidden="true"><use href="#icon-shield"></use></svg>
             <span class="kicker cyan">binary boundary</span>
             <p>The release boundary stays honest: the current public archive is an SDK/docs boundary snapshot, not a runnable T1 binary.</p>
             <dl>

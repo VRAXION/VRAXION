@@ -62,6 +62,23 @@ a {
   text-decoration: none;
 }
 
+.icon-sprite {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+}
+
+.button-icon,
+.card-icon {
+  flex: 0 0 auto;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2;
+}
+
 a:focus-visible,
 summary:focus-visible,
 button:focus-visible {
@@ -917,6 +934,7 @@ html.keyboard-dialog-open {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  gap: 9px;
   min-height: 48px;
   padding: 0 24px;
   border: 1px solid var(--line);
@@ -930,6 +948,11 @@ html.keyboard-dialog-open {
     color 160ms ease,
     transform 160ms ease,
     box-shadow 160ms ease;
+}
+
+.button-icon {
+  width: 18px;
+  height: 18px;
 }
 
 .button-primary {
@@ -1048,6 +1071,9 @@ html.keyboard-dialog-open {
 }
 
 .principle-list li {
+  display: grid;
+  align-content: start;
+  gap: 5px;
   min-height: 84px;
   padding: 16px;
   border: 1px solid var(--line);
@@ -1058,6 +1084,21 @@ html.keyboard-dialog-open {
     border-color 160ms ease,
     box-shadow 160ms ease,
     transform 160ms ease;
+}
+
+.card-icon {
+  width: 28px;
+  height: 28px;
+  margin-bottom: 5px;
+  color: var(--cyan);
+  filter: drop-shadow(0 0 12px rgba(0, 229, 255, 0.18));
+}
+
+.card-icon-seal,
+.pillar-seal .card-icon,
+.trust-card-seal .card-icon {
+  color: var(--seal-soft);
+  filter: drop-shadow(0 0 12px rgba(255, 61, 129, 0.18));
 }
 
 .principle-list li:hover {
@@ -1405,24 +1446,6 @@ html.keyboard-dialog-open {
   background:
     linear-gradient(135deg, rgba(255, 61, 129, 0.065), transparent 48%),
     rgba(255, 255, 255, 0.025);
-}
-
-.icon-dot {
-  display: inline-flex;
-  width: 36px;
-  height: 36px;
-  margin-bottom: 22px;
-  border: 1px solid rgba(0, 229, 255, 0.34);
-  border-radius: 8px;
-  background:
-    linear-gradient(135deg, rgba(0, 229, 255, 0.16), rgba(255, 255, 255, 0.02));
-  box-shadow: inset 0 0 18px rgba(0, 229, 255, 0.08);
-}
-
-.pillar-seal .icon-dot {
-  border-color: rgba(255, 61, 129, 0.36);
-  background:
-    linear-gradient(135deg, rgba(255, 61, 129, 0.16), rgba(255, 255, 255, 0.02));
 }
 
 .pillar h3,
