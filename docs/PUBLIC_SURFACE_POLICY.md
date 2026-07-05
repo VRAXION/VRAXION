@@ -13,6 +13,7 @@ Not allowed:
 
 - internal engine source
 - private data adapters
+- private workspace path families
 - operational run outputs
 - skill persistence
 - diagnostic tools

@@ -218,8 +218,25 @@ $forbiddenPublicPathFragments = @(
     ("golden_" + "legacy_parity"),
     ("alphasync-" + "selftrain"),
     ("alphasync-" + "skillstore"),
-    ("docs/" + "vn" + "gard")
+    ("vraxion-" + "runtime"),
+    ("docs/" + "research"),
+    ("tools/" + "private_data_adapters"),
+    ("docs/" + "van" + "guard"),
+    ("docs/" + "vn" + "gard"),
+    ("red" + "b")
 )
+$requiredForbiddenPublicPathFragments = @(
+    ("docs/" + "research"),
+    ("docs/" + "van" + "guard"),
+    ("tools/" + "private_data_adapters"),
+    ("vraxion-" + "runtime")
+)
+$forbiddenPublicPathFragmentSet = New-OrdinalSet -Items $forbiddenPublicPathFragments
+foreach ($fragment in $requiredForbiddenPublicPathFragments) {
+    if (-not $forbiddenPublicPathFragmentSet.Contains($fragment)) {
+        throw "forbidden public path fragment is not guarded: $fragment"
+    }
+}
 $maxPublicBinaryAssetBytes = 4MB
 $publicBinaryAssets = @(
     "docs/assets/vraxion-home-hero.jpg",
