@@ -1,0 +1,25 @@
+# Public repository ownership.
+# GitHub uses the last matching pattern. Keep explicit sections so release
+# review scope stays obvious when public artifacts or status claims change.
+
+* @Kenessy
+
+/.github/ @Kenessy
+/scripts/ @Kenessy
+/docs/ @Kenessy
+/workers/instnct-notify/ @Kenessy
+/crates/ @Kenessy
+
+/Cargo.lock @Kenessy
+/Cargo.toml @Kenessy
+/CHANGELOG.md @Kenessy
+/CODE_OF_CONDUCT.md @Kenessy
+/CONTRIBUTING.md @Kenessy
+/LICENSE_BOUNDARY.md @Kenessy
+/PACKAGE_BOUNDARY.md @Kenessy
+/PUBLIC_*.md @Kenessy
+/README.md @Kenessy
+/SECURITY.md @Kenessy
+/SUPPORT.md @Kenessy
+/TRADEMARK_POLICY.md @Kenessy
+/docs/VERSION.json @Kenessy
