@@ -47,6 +47,11 @@ const unsafePublicCopyPatternSource = [
   "local runnable",
   token("source", "-available"),
   token("source ", "available"),
+  token("open ", "source"),
+  token("open-", "source"),
+  "governed runtime frame",
+  "Founder-led runtime work",
+  "VRAXION runtime principles",
   token("source ", "snapshot"),
   token("source ", "archive"),
   token("public source ", "archive"),
@@ -406,6 +411,45 @@ async function probeInstnctDesktop(browser, origin) {
   });
   if (!indicator.hitIndicator || indicator.listOpacity < 0.8) {
     fail(`section indicator hover target is broken: ${JSON.stringify(indicator)}`);
+  }
+
+  await page.locator("#trust").scrollIntoViewIfNeeded();
+  await page.waitForTimeout(220);
+  const releasePillOverlap = await page.evaluate(() => {
+    const pill = document.querySelector(".release-snapshot-pill");
+    const pillStyle = pill ? getComputedStyle(pill) : null;
+    if (!pill || pillStyle.display === "none" || pillStyle.visibility === "hidden") {
+      return { visible: false, overlaps: [] };
+    }
+    const pillRect = pill.getBoundingClientRect();
+    const targets = [...document.querySelectorAll("#trust .trust-card, #trust .center-heading")];
+    const overlaps = targets
+      .map((target) => {
+        const rect = target.getBoundingClientRect();
+        const width = Math.max(0, Math.min(pillRect.right, rect.right) - Math.max(pillRect.left, rect.left));
+        const height = Math.max(0, Math.min(pillRect.bottom, rect.bottom) - Math.max(pillRect.top, rect.top));
+        return {
+          target: target.className,
+          area: Math.round(width * height),
+          pill: {
+            left: Math.round(pillRect.left),
+            top: Math.round(pillRect.top),
+            right: Math.round(pillRect.right),
+            bottom: Math.round(pillRect.bottom),
+          },
+          rect: {
+            left: Math.round(rect.left),
+            top: Math.round(rect.top),
+            right: Math.round(rect.right),
+            bottom: Math.round(rect.bottom),
+          },
+        };
+      })
+      .filter((entry) => entry.area > 0);
+    return { visible: true, overlaps };
+  });
+  if (releasePillOverlap.overlaps.length) {
+    fail(`release ZIP pill overlaps proof content: ${JSON.stringify(releasePillOverlap)}`);
   }
 
   await page.evaluate(() => document.activeElement?.blur());

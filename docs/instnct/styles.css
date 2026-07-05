@@ -501,8 +501,8 @@ pre {
 
 .release-snapshot-pill {
   position: fixed;
-  left: 82px;
-  bottom: 24px;
+  top: calc(var(--header-h) + 16px);
+  right: 24px;
   z-index: 39;
   display: inline-flex;
   align-items: center;
