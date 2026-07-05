@@ -2,6 +2,8 @@ const baseUrl = (process.env.PUBLIC_PAGES_BASE_URL || "https://vraxion.github.io
 const canonicalBaseUrl = (process.env.PUBLIC_PAGES_CANONICAL_BASE_URL || "https://vraxion.github.io/VRAXION").replace(/\/+$/, "");
 const hiddenSurfaceSlug = ["vn", "gard"].join("");
 const token = (...parts) => parts.join("");
+const defaultLinkTimeoutMs = positiveIntegerEnv("PUBLIC_PAGES_LINK_TIMEOUT_MS", 60000);
+const retryLinkTimeoutMs = positiveIntegerEnv("PUBLIC_PAGES_LINK_RETRY_TIMEOUT_MS", 90000);
 const unsafePublicCopyPattern = new RegExp(
   [
     "Not AI",
@@ -41,26 +43,44 @@ const unsafePublicCopyPattern = new RegExp(
 );
 const failures = [];
 
+function positiveIntegerEnv(name, fallback) {
+  const value = Number(process.env[name] || "");
+  return Number.isFinite(value) && value > 0 ? value : fallback;
+}
+
 function fail(message) {
   failures.push(message);
 }
 
 async function fetchWithTimeout(url, options = {}) {
+  const { timeoutMs = defaultLinkTimeoutMs, ...fetchOptions } = options;
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), Number(process.env.PUBLIC_PAGES_LINK_TIMEOUT_MS || 20000));
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
     return await fetch(url, {
       redirect: "follow",
-      ...options,
+      ...fetchOptions,
       signal: controller.signal,
       headers: {
         "user-agent": "VRAXION public-pages-smoke",
-        ...(options.headers || {}),
+        ...(fetchOptions.headers || {}),
       },
     });
   } finally {
     clearTimeout(timer);
   }
+}
+
+function isAbortError(error) {
+  return error?.name === "AbortError" || /aborted/i.test(String(error?.message || ""));
+}
+
+async function requestReachability(url, timeoutMs) {
+  let response = await fetchWithTimeout(url, { method: "HEAD", timeoutMs });
+  if (response.status === 405 || response.status === 403) {
+    response = await fetchWithTimeout(url, { headers: { range: "bytes=0-0" }, timeoutMs });
+  }
+  return response;
 }
 
 async function fetchText(url, label) {
@@ -79,13 +99,19 @@ async function fetchText(url, label) {
 
 async function assertReachable(url, label) {
   try {
-    let response = await fetchWithTimeout(url, { method: "HEAD" });
-    if (response.status === 405 || response.status === 403) {
-      response = await fetchWithTimeout(url, { headers: { range: "bytes=0-0" } });
-    }
+    const response = await requestReachability(url, defaultLinkTimeoutMs);
     if (!response.ok) fail(`${label} returned HTTP ${response.status}: ${url}`);
   } catch (err) {
-    fail(`${label} could not be reached: ${url} ${err.message}`);
+    if (!isAbortError(err)) {
+      fail(`${label} could not be reached: ${url} ${err.message}`);
+      return;
+    }
+    try {
+      const response = await requestReachability(url, retryLinkTimeoutMs);
+      if (!response.ok) fail(`${label} returned HTTP ${response.status} after retry: ${url}`);
+    } catch (retryErr) {
+      fail(`${label} could not be reached after retry: ${url} ${retryErr.message}`);
+    }
   }
 }
 

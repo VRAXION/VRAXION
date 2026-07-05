@@ -35,6 +35,8 @@
   pull requests, remote branches, default branch, and the latest GitHub release.
 - Extended public release verification to require live Pages source, build,
   URL, and `VERSION.json` checks before release publication.
+- Hardened the live public Pages smoke timeout and retry path for GitHub
+  archive redirects.
 
 ## 2026-06-29
 
