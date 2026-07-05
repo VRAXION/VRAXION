@@ -108,6 +108,32 @@ function collectUrls(html, pageUrl) {
   return urls;
 }
 
+function attr(tag, name) {
+  const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const pattern = new RegExp(`\\s${escaped}=(["'])(.*?)\\1`, "i");
+  return tag.match(pattern)?.[2] || "";
+}
+
+function metaContent(html, name) {
+  for (const match of html.matchAll(/<meta\b[^>]*>/gi)) {
+    const tag = match[0];
+    const metaName = attr(tag, "name") || attr(tag, "property") || attr(tag, "http-equiv");
+    if (metaName.toLowerCase() === name.toLowerCase()) return attr(tag, "content");
+  }
+  return "";
+}
+
+function assertCsp(html, label, requirements) {
+  const csp = metaContent(html, "Content-Security-Policy");
+  if (!csp) {
+    fail(`${label} is missing a Content-Security-Policy meta tag`);
+    return;
+  }
+  for (const required of requirements) {
+    if (!csp.includes(required)) fail(`${label} CSP is missing ${required}`);
+  }
+}
+
 const homeUrl = `${baseUrl}/`;
 const instnctUrl = `${baseUrl}/instnct/`;
 const hiddenSurfaceUrl = `${baseUrl}/${hiddenSurfaceSlug}/`;
@@ -127,6 +153,15 @@ try {
 }
 
 if (home && !home.includes(`releases/tag/${latestRelease}`)) fail("home does not expose the VERSION latest release");
+for (const required of [
+  "VRAXION / INSTNCT T1 Reflex Engine",
+  "solo-built, AI-assisted",
+  "Signed T1 Proof Pack pending",
+  "Meet INSTNCT, the first public VRAXION engine target.",
+  "The engine contract: answer on-path, refuse off-path.",
+]) {
+  if (home && !home.includes(required)) fail(`home live positioning copy is missing: ${required}`);
+}
 if (instnct && !instnct.includes(`archive/refs/tags/${latestRelease}.zip`)) {
   fail("INSTNCT does not expose the VERSION GitHub tag ZIP");
 }
@@ -142,6 +177,29 @@ if (
 }
 if (instnct && unsafePublicCopyPattern.test(instnct)) {
   fail("INSTNCT public copy exposes unsafe or internal release wording");
+}
+if (home && unsafePublicCopyPattern.test(home)) {
+  fail("home public copy exposes unsafe or internal release wording");
+}
+if (home) {
+  assertCsp(home, "home", [
+    "script-src 'none'",
+    "connect-src 'none'",
+    "form-action 'none'",
+    "upgrade-insecure-requests",
+  ]);
+  if (!home.includes(`<link rel="canonical" href="${homeUrl}">`)) fail("home canonical URL is missing or stale");
+}
+if (instnct) {
+  assertCsp(instnct, "INSTNCT", [
+    "script-src 'self'",
+    "connect-src 'none'",
+    "form-action 'none'",
+    "upgrade-insecure-requests",
+  ]);
+  if (!instnct.includes(`<link rel="canonical" href="${instnctUrl}">`)) {
+    fail("INSTNCT canonical URL is missing or stale");
+  }
 }
 if (instnct && !instnct.includes("artifact-status")) fail("INSTNCT artifact status block is missing on live Pages");
 if (instnct && /github\.com\/VRAXION\/VRAXION\/blob\/main\/(?:CURRENT_|PUBLIC_SURFACE_POLICY)/.test(instnct)) {
