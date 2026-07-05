@@ -169,13 +169,33 @@ REQUIRED_GITATTRIBUTES_ENTRIES = {
 }
 
 REQUIRED_GITIGNORE_ENTRIES = {
-    "target/",
     ".codex/",
-    "disabled-surfaces/",
+    ".dev.vars",
+    ".dev.vars.*",
     ".env",
     ".env.*",
+    ".envrc",
+    ".wrangler/",
     "!.env.example",
+    "*.crt",
+    "*.csr",
+    "*.db",
+    "*.db-*",
+    "*.key",
+    "*.log",
+    "*.p12",
+    "*.pem",
+    "*.pfx",
+    "*.sqlite",
+    "*.sqlite3",
+    "*.tmp",
+    "coverage/",
+    "disabled-surfaces/",
+    "dist/",
+    "node_modules/",
+    "target/",
     "workers/instnct-notify/wrangler.jsonc",
+    "workers/instnct-notify/wrangler.toml",
 }
 
 PUBLIC_BINARY_ASSETS = {
