@@ -16,6 +16,7 @@ Not allowed:
 - operational run outputs
 - skill persistence
 - diagnostic tools
+- generated local caches or virtual environments
 - stale research status pages
 - private engine binary internals
 
