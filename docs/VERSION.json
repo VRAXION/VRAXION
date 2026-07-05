@@ -1,7 +1,7 @@
 {
   "schema": "vraxion.public.version.v1",
   "status": "p11_public_delivery_scope",
-  "date": "2026-07-04",
+  "date": "2026-07-05",
   "public_surface": "sdk_release_scope",
   "pages_surface": "instnct_release_polish",
   "latest_public_release": "public-sdk-p11-20260629",
