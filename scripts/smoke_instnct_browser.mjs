@@ -906,7 +906,7 @@ async function probeResponsiveViewports(browser, origin) {
       document.body.style.scrollBehavior = "auto";
     });
     await page.locator("#trust").scrollIntoViewIfNeeded();
-    if (viewport.width <= 1500) {
+    if (viewport.width <= 1360) {
       await page
         .waitForFunction(() => {
           const readout = document.querySelector(".mobile-section-readout");
@@ -949,7 +949,7 @@ async function probeResponsiveViewports(browser, origin) {
         : [];
       return { railVisible, readoutVisible, overlaps };
     });
-    if (viewport.width <= 1500) {
+    if (viewport.width <= 1360) {
       if (sectionRailMode.railVisible || !sectionRailMode.readoutVisible) {
         fail(`INSTNCT ${label} should use compact section readout: ${JSON.stringify(sectionRailMode)}`);
       }
@@ -957,7 +957,7 @@ async function probeResponsiveViewports(browser, origin) {
       fail(`INSTNCT ${label} section rail is missing or overlaps content: ${JSON.stringify(sectionRailMode)}`);
     }
 
-    if (viewport.width <= 1500) {
+    if (viewport.width <= 1360) {
       await page.locator("#fabric").scrollIntoViewIfNeeded();
       await page.waitForTimeout(260);
       const fixedControls = await page.evaluate(() => {
