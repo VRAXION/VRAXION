@@ -2963,10 +2963,16 @@ html.keyboard-dialog-open {
   }
 
   .back-to-top {
+    display: none;
+  }
+
+  .has-js .mobile-section-readout,
+  .mobile-section-readout {
     right: 16px;
     bottom: 16px;
-    width: 40px;
-    height: 40px;
+    left: auto;
+    min-height: 40px;
+    padding: 0 12px;
   }
 
   .brand {
@@ -3393,9 +3399,13 @@ html.keyboard-dialog-open {
   }
 
   .mobile-section-readout {
-    right: auto;
-    left: 66px;
-    bottom: 10px;
+    right: 16px;
+    bottom: 16px;
+    left: auto;
+  }
+
+  .mobile-section-readout small {
+    display: none;
   }
 }
 
