@@ -3,16 +3,130 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; upgrade-insecure-requests">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'sha256-udc8kUxjHqAKe584/J4cOZeLvt+h2Otpzp3lcMPv1nQ='; script-src 'none'; img-src 'none'; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'; upgrade-insecure-requests">
   <title>Not Found - VRAXION</title>
   <meta name="robots" content="noindex,nofollow">
+  <style>
+    :root {
+      color-scheme: dark;
+      font-family: "Aptos", "Segoe UI Variable", "Segoe UI", ui-sans-serif, system-ui, sans-serif;
+      --bg: #05080a;
+      --panel: rgba(7, 13, 16, 0.82);
+      --ink: #ecfbff;
+      --muted: #9cc1c9;
+      --cyan: #00e5ff;
+      --seal: #ff2b68;
+    }
+
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+    }
+
+    body {
+      min-width: 320px;
+      min-height: 100svh;
+      margin: 0;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 18% 18%, rgba(0, 229, 255, 0.18), transparent 310px),
+        radial-gradient(circle at 84% 72%, rgba(255, 43, 104, 0.16), transparent 300px),
+        linear-gradient(135deg, #05080a, #071014 52%, #05080a);
+      line-height: 1.55;
+    }
+
+    main {
+      width: min(100%, 680px);
+      padding: clamp(28px, 7vw, 56px);
+      border: 1px solid rgba(0, 229, 255, 0.22);
+      border-radius: 8px;
+      background:
+        linear-gradient(135deg, rgba(0, 229, 255, 0.08), transparent 44%),
+        linear-gradient(315deg, rgba(255, 43, 104, 0.07), transparent 52%),
+        var(--panel);
+      box-shadow: 0 30px 80px rgba(0, 0, 0, 0.42);
+    }
+
+    .brand,
+    .eyebrow {
+      margin: 0 0 18px;
+      color: var(--cyan);
+      font-size: 0.76rem;
+      font-weight: 850;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .brand {
+      color: var(--ink);
+      font-size: clamp(1.6rem, 6vw, 3.2rem);
+      line-height: 0.95;
+      text-shadow:
+        0 0 24px rgba(0, 229, 255, 0.22),
+        0 0 28px rgba(255, 43, 104, 0.14);
+    }
+
+    h1 {
+      margin: 0;
+      max-width: 11ch;
+      font-size: clamp(2.5rem, 11vw, 5.6rem);
+      line-height: 0.92;
+      letter-spacing: 0;
+    }
+
+    p {
+      max-width: 54ch;
+      margin: 20px 0 0;
+      color: var(--muted);
+      font-size: clamp(1rem, 2.4vw, 1.12rem);
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 30px;
+    }
+
+    a {
+      min-height: 46px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 18px;
+      border: 1px solid rgba(0, 229, 255, 0.34);
+      border-radius: 7px;
+      color: var(--ink);
+      text-decoration: none;
+      font-weight: 760;
+    }
+
+    a:first-child {
+      color: #041013;
+      border-color: transparent;
+      background: var(--cyan);
+    }
+
+    a:focus-visible {
+      outline: 2px solid var(--cyan);
+      outline-offset: 4px;
+    }
+  </style>
 </head>
 <body>
   <main>
-    <p>VRAXION</p>
+    <p class="brand">VRAXION</p>
+    <p class="eyebrow">Public boundary</p>
     <h1>Page not found.</h1>
     <p>This public site only exposes the current VRAXION, INSTNCT, and AnchorCell surfaces.</p>
-    <p><a href="https://vraxion.github.io/VRAXION/">Open the public home page</a></p>
+    <div class="actions">
+      <a href="https://vraxion.github.io/VRAXION/">Open public home</a>
+      <a href="https://vraxion.github.io/VRAXION/CURRENT_STATUS.md">Review current status</a>
+    </div>
   </main>
 </body>
 </html>
