@@ -225,6 +225,10 @@ for (const required of [
 }
 
 for (const required of [
+  '<a class="skip-link" href="#main">Skip to content</a>',
+  '<main id="main" tabindex="-1">',
+  ".skip-link:focus,",
+  ".skip-link:focus-visible",
   "VRAXION / INSTNCT T1 Reflex Engine",
   "solo-built, AI-assisted",
   "Signed T1 Proof Pack pending",
@@ -305,6 +309,8 @@ for (const required of [
   "section indicator did not track fabric section",
   "mobile section readout did not track fabric section",
   "no-js JS-only controls should be hidden",
+  "skip link should exist offscreen before focus",
+  "skip link is not the first visible keyboard target",
   "totalBytes",
   "externalResources",
 ]) {

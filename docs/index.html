@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'none'; style-src 'self' 'sha256-zMSMXXONyhLbArBRZkMBUATi52W5ygQq4cPno3UWlIs='; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'; upgrade-insecure-requests">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'none'; style-src 'self' 'sha256-NrUiC7EE4pCDDb0whoqyDUJTGummqmU+PHb/e7a9zQ0='; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'; upgrade-insecure-requests">
   <title>VRAXION - INSTNCT T1 Reflex Engine</title>
   <meta name="description" content="VRAXION is the solo-built, AI-assisted project behind INSTNCT: a local reflex reasoning engine for known paths, Exact Mode refusal, and a pending T1 Proof Pack.">
   <meta name="theme-color" content="#05080a">
@@ -102,6 +102,30 @@
       outline: 2px solid var(--cyan);
       outline-offset: 4px;
       border-radius: 6px;
+    }
+
+    .skip-link {
+      position: fixed;
+      top: 12px;
+      left: 12px;
+      z-index: 50;
+      min-height: 44px;
+      display: inline-flex;
+      align-items: center;
+      padding: 0 14px;
+      border: 1px solid rgba(var(--cyan-rgb), 0.42);
+      border-radius: 7px;
+      color: var(--ink);
+      background: rgba(5, 8, 10, 0.94);
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.34);
+      font-weight: 760;
+      transform: translateY(-140%);
+      transition: transform 0.18s ease;
+    }
+
+    .skip-link:focus,
+    .skip-link:focus-visible {
+      transform: translateY(0);
     }
 
     .site-header {
@@ -715,6 +739,7 @@
   </style>
 </head>
 <body>
+  <a class="skip-link" href="#main">Skip to content</a>
   <header class="site-header">
     <a class="brand" href="#top" aria-label="VRAXION home">
       <img src="./assets/vraxion-wordmark.png?v=brand-pass-1" alt="VRAXION" width="1672" height="308" decoding="sync">
@@ -751,7 +776,7 @@
     </div>
   </section>
 
-  <main>
+  <main id="main" tabindex="-1">
     <section class="section" id="paths" aria-labelledby="paths-title">
       <div class="section-head">
         <div>

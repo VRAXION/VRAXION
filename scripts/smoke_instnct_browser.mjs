@@ -1094,23 +1094,49 @@ async function probeAccessibilitySemantics(browser, origin) {
     }
     if (result.brokenAriaRefs.length) fail(`${target.label} broken aria refs: ${result.brokenAriaRefs.join(", ")}`);
 
-    if (target.path === "/instnct/") {
-      await page.keyboard.press("Home");
-      await page.keyboard.press("Tab");
-      const skipFocus = await page.evaluate(() => document.activeElement?.classList.contains("skip-link"));
-      if (!skipFocus) fail("INSTNCT skip link is not the first keyboard target");
-      await page.keyboard.press("Enter");
-      await page.waitForTimeout(120);
-      const skipState = await page.evaluate(() => ({
-        hash: window.location.hash,
-        activeId: document.activeElement?.id || "",
-        mainTabIndex: document.querySelector("main")?.getAttribute("tabindex"),
-      }));
-      if (skipState.hash !== "#main" || skipState.activeId !== "main" || skipState.mainTabIndex !== "-1") {
-        fail(`INSTNCT skip link does not move focus to main: ${JSON.stringify(skipState)}`);
-      }
+    await page.keyboard.press("Home");
+    const skipBeforeFocus = await page.evaluate(() => {
+      const link = document.querySelector(".skip-link");
+      const rect = link?.getBoundingClientRect();
+      return {
+        exists: !!link,
+        href: link?.getAttribute("href") || "",
+        bottom: rect ? Math.round(rect.bottom) : 0,
+      };
+    });
+    if (!skipBeforeFocus.exists || skipBeforeFocus.href !== "#main" || skipBeforeFocus.bottom > 0) {
+      fail(`${target.label} skip link should exist offscreen before focus: ${JSON.stringify(skipBeforeFocus)}`);
+    }
+    await page.keyboard.press("Tab");
+    await page.waitForTimeout(500);
+    const skipFocus = await page.evaluate(() => {
+      const el = document.activeElement;
+      const rect = el?.getBoundingClientRect();
+      return {
+        isSkip: !!el?.classList.contains("skip-link"),
+        top: rect ? Math.round(rect.top) : 0,
+        bottom: rect ? Math.round(rect.bottom) : 0,
+        transform: el ? getComputedStyle(el).transform : "",
+        matchesFocus: !!el?.matches(":focus"),
+        matchesFocusVisible: !!el?.matches(":focus-visible"),
+      };
+    });
+    if (!skipFocus.isSkip || skipFocus.top < 0 || skipFocus.bottom <= 0) {
+      fail(`${target.label} skip link is not the first visible keyboard target: ${JSON.stringify(skipFocus)}`);
+    }
+    await page.keyboard.press("Enter");
+    await page.waitForTimeout(120);
+    const skipState = await page.evaluate(() => ({
+      hash: window.location.hash,
+      activeId: document.activeElement?.id || "",
+      mainTabIndex: document.querySelector("main")?.getAttribute("tabindex"),
+    }));
+    if (skipState.hash !== "#main" || skipState.activeId !== "main" || skipState.mainTabIndex !== "-1") {
+      fail(`${target.label} skip link does not move focus to main: ${JSON.stringify(skipState)}`);
     }
 
+    await page.goto(`${origin}${target.path}`, { waitUntil: "networkidle" });
+    await page.waitForTimeout(120);
     await page.keyboard.press("Home");
     const focusProblems = [];
     const focusableCount = await page.evaluate(() => {
