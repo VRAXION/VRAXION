@@ -695,7 +695,7 @@ try {
         Invoke-Checked "cargo package alphasync-core archive" {
             cargo package -p alphasync-core --allow-dirty --no-verify --target-dir $archiveTarget | Out-Null
         }
-        Invoke-Checked "create alphasync-runtime source archive" {
+        Invoke-Checked "create alphasync-runtime crate bundle" {
             $runtimeArchivePackageDir = Join-Path $archiveTarget "package"
             $runtimeArchiveStaging = Join-Path $archiveVerifyRoot "runtime_archive"
             $runtimeArchiveSource = Join-Path $runtimeArchiveStaging "alphasync-runtime-0.1.0"
