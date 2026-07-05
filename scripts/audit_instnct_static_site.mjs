@@ -42,6 +42,7 @@ const currentCapabilities = fs.readFileSync(currentCapabilitiesPath, "utf8");
 const benchmarkNotes = fs.readFileSync(benchmarkNotesPath, "utf8");
 const token = (...parts) => parts.join("");
 let latestRelease = "";
+let homeAssetVersion = "";
 let instnctAssetVersion = "";
 let anchorcellAssetVersion = "";
 const failures = [];
@@ -199,6 +200,10 @@ try {
   }
   latestRelease = String(version.latest_public_release || "");
   if (!latestRelease) fail("docs/VERSION.json must define latest_public_release");
+  homeAssetVersion = String(version.home_asset_version || "");
+  if (!/^home-hero-\d{8}$/.test(homeAssetVersion)) {
+    fail(`docs/VERSION.json home_asset_version is invalid: ${homeAssetVersion || "missing"}`);
+  }
   instnctAssetVersion = String(version.instnct_asset_version || "");
   if (!/^release-\d+$/.test(instnctAssetVersion)) {
     fail(`docs/VERSION.json instnct_asset_version is invalid: ${instnctAssetVersion || "missing"}`);
@@ -1040,6 +1045,15 @@ validateSocialImage({
   rootDir: docsRoot,
   expectedAlt: "AnchorCell training data research surface",
 });
+
+if (homeAssetVersion) {
+  if (!home.includes(`./assets/vraxion-home-hero.jpg?v=${homeAssetVersion}`)) {
+    fail("homepage hero image cache key must match docs/VERSION.json home_asset_version");
+  }
+  if (!anchorcell.includes(`../assets/vraxion-home-hero.jpg?v=${homeAssetVersion}`)) {
+    fail("AnchorCell hero image cache key must match docs/VERSION.json home_asset_version");
+  }
+}
 
 if (anchorcellAssetVersion) {
   if (!anchorcell.includes(`./styles.css?v=${anchorcellAssetVersion}`)) {
