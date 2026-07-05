@@ -5,8 +5,8 @@
   "public_surface": "sdk_release_scope",
   "pages_surface": "instnct_release_polish",
   "latest_public_release": "public-sdk-p11-20260629",
-  "instnct_asset_version": "release-14",
-  "anchorcell_asset_version": "research-3",
+  "instnct_asset_version": "release-15",
+  "anchorcell_asset_version": "research-4",
   "delivery_direction": "proof_materials_before_runtime_terms",
   "crates": [
     "alphasync-core",

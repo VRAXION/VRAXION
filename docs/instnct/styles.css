@@ -324,6 +324,7 @@ pre {
 }
 
 .section-indicator:hover ol,
+.section-indicator.is-indicator-open ol,
 .indicator-track:hover ~ ol,
 .section-indicator:focus-within ol {
   opacity: 1;

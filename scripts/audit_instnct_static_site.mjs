@@ -243,6 +243,9 @@ try {
   if (schema.properties?.branches?.minItems !== 4 || schema.properties?.branches?.maxItems !== 8) {
     fail("AnchorCell schema branch bounds must require 4..8 branches");
   }
+  if (schema.$defs?.branch?.properties?.evidence?.minItems !== 1) {
+    fail("AnchorCell branch evidence must require at least one evidence ref");
+  }
   for (const defName of ["contextPacket", "branch", "gold", "review", "security", "projection"]) {
     if (!schema.$defs?.[defName]) fail(`AnchorCell schema missing $defs.${defName}`);
   }
@@ -255,6 +258,9 @@ try {
     "public_full",
     "allow_training_export",
     "allow_public_export",
+    "Private or internal-only authoring records must not be marked as public exportable.",
+    "Training-exportable records must already be accepted, reviewed, and assigned to a training/public export state.",
+    "train_internal_only",
     "branch_role",
     "adversarial",
     "naive_bad",
@@ -287,6 +293,11 @@ try {
   const branchRoles = new Set((example.branches || []).map((branch) => branch.branch_role));
   for (const role of ["human", "assistant", "naive_bad", "adversarial"]) {
     if (!branchRoles.has(role)) fail(`AnchorCell example missing branch_role ${role}`);
+  }
+  for (const branch of example.branches || []) {
+    if (!Array.isArray(branch.evidence) || branch.evidence.length < 1) {
+      fail(`AnchorCell example branch ${branch.branch_id || "unknown"} must include evidence refs`);
+    }
   }
   if (example.gold?.decision !== "ESCALATE") fail("AnchorCell example gold decision must be ESCALATE");
   if (!example.gold?.forbidden_decisions?.includes("EXECUTE")) {
@@ -358,6 +369,9 @@ for (const required of [
   "public artifact terms",
   "Proof Pack pending",
   "Is the engine implementation public today?",
+  "The T1 Proof Pack target is concrete",
+  "The first runnable release is defined as a Proof Pack",
+  "Runtime telemetry claims belong with a signed artifact",
   "founder-led, not committee-built",
   "ai-assisted, human-owned",
   "claims ship with evidence, not vibes",
@@ -456,6 +470,7 @@ for (const required of [
   "dataset.lineType",
   "aria-hidden",
   "data-wallpaper-section",
+  "is-indicator-open",
 ]) {
   if (!js.includes(required)) fail(`missing INSTNCT enhancement: ${required}`);
 }
@@ -486,6 +501,7 @@ for (const required of [
   ".release-snapshot-pill",
   ".button-icon",
   ".card-icon",
+  ".section-indicator.is-indicator-open ol",
   "::-webkit-scrollbar-thumb",
   ".has-js [data-reveal]",
   "@keyframes readoutSwap",
@@ -670,6 +686,12 @@ for (const forbiddenCopy of [
   "terms pending",
   "final release terms",
   "What are the public release terms?",
+  "should eventually",
+  "should arrive",
+  "should ship",
+  "should be made",
+  "release-14",
+  "release-13",
   token("source", "-available"),
   token("source", " available"),
   token("open ", "source"),

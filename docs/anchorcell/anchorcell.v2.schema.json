@@ -392,6 +392,85 @@
       }
     },
     {
+      "$comment": "Private or internal-only authoring records must not be marked as public exportable.",
+      "if": {
+        "properties": {
+          "public_export_status": {
+            "enum": [
+              "private_authoring_only",
+              "internal_review_only",
+              "train_internal_only"
+            ]
+          }
+        },
+        "required": [
+          "public_export_status"
+        ]
+      },
+      "then": {
+        "properties": {
+          "security": {
+            "properties": {
+              "allow_public_export": {
+                "const": false
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "$comment": "Training-exportable records must already be accepted, reviewed, and assigned to a training/public export state.",
+      "if": {
+        "properties": {
+          "security": {
+            "properties": {
+              "allow_training_export": {
+                "const": true
+              }
+            },
+            "required": [
+              "allow_training_export"
+            ]
+          }
+        },
+        "required": [
+          "security"
+        ]
+      },
+      "then": {
+        "properties": {
+          "status": {
+            "const": "accepted"
+          },
+          "public_export_status": {
+            "enum": [
+              "train_internal_only",
+              "public_redacted",
+              "public_full"
+            ]
+          },
+          "review": {
+            "properties": {
+              "status": {
+                "const": "approved"
+              }
+            }
+          },
+          "security": {
+            "properties": {
+              "prompt_injection_tested": {
+                "const": true
+              },
+              "poisoning_risk_reviewed": {
+                "const": true
+              }
+            }
+          }
+        }
+      }
+    },
+    {
       "$comment": "Full public export is only allowed if the record itself contains no PII, no secrets, and needs no redaction.",
       "if": {
         "properties": {
@@ -833,7 +912,7 @@
         },
         "evidence": {
           "type": "array",
-          "minItems": 0,
+          "minItems": 1,
           "maxItems": 16,
           "uniqueItems": true,
           "items": {

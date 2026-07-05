@@ -14,7 +14,7 @@ This is an internal selector-only preview measurement for a 16k mixed-unique wor
 
 ## Release Scope
 
-No public runnable T1 binary is published yet. Planned proof materials should include:
+No public runnable T1 binary is published yet. Planned proof materials:
 
 - the signed artifact and checksums
 - the exact benchmark harness
@@ -23,7 +23,7 @@ No public runnable T1 binary is published yet. Planned proof materials should in
 - raw timing output
 - refusal-mode examples
 
-Until those are published, the numbers should be read as a scoped internal preview signal only.
+Until those are published, read the numbers as a scoped internal preview signal only.
 
 ## Intended Public Reproduction
 
