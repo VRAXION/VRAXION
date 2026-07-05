@@ -360,19 +360,19 @@ async function probeInstnctDesktop(browser, origin) {
   ) {
     fail(`INSTNCT desktop hero first impression is too slow or hidden: ${JSON.stringify(top.heroFirstImpression)}`);
   }
-  if (!top.engineScopeWallpaper.includes("engine-scope-bg.jpg")) {
+  if (!top.engineScopeWallpaper.includes("engine-scope-bg.webp")) {
     fail(`INSTNCT engine scope wallpaper is missing: ${top.engineScopeWallpaper}`);
   }
-  if (!top.exactModeWallpaper.includes("exact-mode-bg.jpg")) {
+  if (!top.exactModeWallpaper.includes("exact-mode-bg.webp")) {
     fail(`INSTNCT exact mode wallpaper is missing: ${top.exactModeWallpaper}`);
   }
-  if (!top.proofPackWallpaper.includes("proof-pack-bg.jpg")) {
+  if (!top.proofPackWallpaper.includes("proof-pack-bg.webp")) {
     fail(`INSTNCT proof pack wallpaper is missing: ${top.proofPackWallpaper}`);
   }
-  if (!top.releaseClaimWallpaper.includes("release-claim-bg.jpg")) {
+  if (!top.releaseClaimWallpaper.includes("release-claim-bg.webp")) {
     fail(`INSTNCT release claim wallpaper is missing: ${top.releaseClaimWallpaper}`);
   }
-  if (!top.cliProofWallpaper.includes("cli-proof-bg.jpg")) {
+  if (!top.cliProofWallpaper.includes("cli-proof-bg.webp")) {
     fail(`INSTNCT CLI proof wallpaper is missing: ${top.cliProofWallpaper}`);
   }
   if (top.wallpaperSectionCount !== 7 || top.proofPackHeight < 940 || top.releaseClaimHeight < 660) {

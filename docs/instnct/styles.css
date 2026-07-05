@@ -1475,28 +1475,28 @@ html.keyboard-dialog-open {
 
 #not-ai::after {
   opacity: 0.28;
-  background-image: url("./assets/engine-scope-bg.jpg");
+  background-image: url("./assets/engine-scope-bg.webp");
   background-position: right center;
   mask-image: linear-gradient(90deg, transparent, transparent 24%, black 56%, black);
 }
 
 #hallucination::after {
   opacity: 0.28;
-  background-image: url("./assets/exact-mode-bg.jpg");
+  background-image: url("./assets/exact-mode-bg.webp");
   background-position: right center;
   mask-image: linear-gradient(90deg, transparent, transparent 28%, black 58%, black);
 }
 
 #trust::after {
   opacity: 0.3;
-  background-image: url("./assets/proof-pack-bg.jpg");
+  background-image: url("./assets/proof-pack-bg.webp");
   background-position: right center;
   mask-image: linear-gradient(90deg, transparent, transparent 25%, black 58%, black);
 }
 
 #grounding::after {
   opacity: 0.3;
-  background-image: url("./assets/release-claim-bg.jpg");
+  background-image: url("./assets/release-claim-bg.webp");
   background-position: right center;
   mask-image: linear-gradient(90deg, transparent, transparent 30%, black 62%, black);
 }
@@ -1507,14 +1507,14 @@ html.keyboard-dialog-open {
 
 #fabric::after {
   opacity: 0.22;
-  background-image: url("./assets/fabric-result-bg.jpg");
+  background-image: url("./assets/fabric-result-bg.webp");
   background-position: center;
   mask-image: radial-gradient(ellipse at center, black 0 46%, transparent 82%);
 }
 
 #dev-trail::after {
   opacity: 0.34;
-  background-image: url("./assets/cli-proof-bg.jpg?v=cli-wallpaper-pass-3");
+  background-image: url("./assets/cli-proof-bg.webp");
   background-position: center bottom;
   mask-image: linear-gradient(90deg, black, black);
 }
@@ -1533,7 +1533,7 @@ html.keyboard-dialog-open {
 
 #vraxion-note::after {
   opacity: 0.24;
-  background-image: url("./assets/vraxion-note-bg.jpg");
+  background-image: url("./assets/vraxion-note-bg.webp");
   background-position: center;
 }
 
@@ -2197,7 +2197,7 @@ html.keyboard-dialog-open {
 
 .manifesto-panel::before {
   z-index: 0;
-  background: url("./assets/constraints-founder-bg.jpg") center / cover no-repeat;
+  background: url("./assets/constraints-founder-bg.webp") center / cover no-repeat;
   opacity: 0.88;
   transform: scale(1.015);
 }
