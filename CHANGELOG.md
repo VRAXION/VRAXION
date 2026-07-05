@@ -33,6 +33,8 @@
   and added audit coverage for workflow permission drift.
 - Added a live public GitHub state audit for pre-release checks against open
   pull requests, remote branches, default branch, and the latest GitHub release.
+- Extended public release verification to require live Pages source, build,
+  URL, and `VERSION.json` checks before release publication.
 
 ## 2026-06-29
 

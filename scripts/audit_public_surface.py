@@ -156,6 +156,7 @@ REQUIRED_GITHUB_STATE_MARKERS = {
     "latest public release: `public-sdk-p11-20260629`",
     "non-public training data",
     "node scripts\\audit_public_github_state.mjs",
+    "latest Pages build",
     "public manifests and GitHub",
     "release metadata and assets",
     "releases/public-release-manifest.schema.json",
@@ -496,6 +497,10 @@ def main() -> int:
     verification = release_manifest_example.get("verification")
     commands = verification.get("commands") if isinstance(verification, dict) else None
     if not isinstance(commands, list) or not any(
+        "scripts\\audit_public_github_state.mjs" in command for command in commands
+    ):
+        failures.append("release manifest example must include the live GitHub state audit command")
+    if not isinstance(commands, list) or not any(
         "scripts\\check_public_export.ps1" in command for command in commands
     ):
         failures.append("release manifest example must include the public export guard command")
@@ -513,6 +518,10 @@ def main() -> int:
         "scripts\\audit_public_secrets.mjs" in command for command in commands
     ):
         failures.append("release manifest example must include the public secret scan command")
+    if not isinstance(commands, list) or not any(
+        "scripts\\smoke_public_pages_links.mjs" in command for command in commands
+    ):
+        failures.append("release manifest example must include the live public Pages smoke command")
 
     index_html = read_text(ROOT / "docs" / "index.html")
     expected_release_url = "https://github.com/VRAXION/VRAXION/releases/tag/" + str(

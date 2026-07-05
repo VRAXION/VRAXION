@@ -8,11 +8,17 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const VERSION_PATH = "docs/VERSION.json";
 const EXPECTED_REPOSITORY = "VRAXION/VRAXION";
 const EXPECTED_DEFAULT_BRANCH = "main";
+const EXPECTED_PAGES_URL = "https://vraxion.github.io/VRAXION/";
+const EXPECTED_PAGES_SOURCE_BRANCH = "main";
+const EXPECTED_PAGES_SOURCE_PATH = "/docs";
 const ALLOWED_REMOTE_BRANCHES = new Set(["origin", "origin/HEAD", "origin/main"]);
+const PUBLIC_URL_TIMEOUT_MS = 20000;
 const args = new Set(process.argv.slice(2));
 
 if (args.has("--help")) {
-  console.log("Usage: node scripts/audit_public_github_state.mjs [--allow-open-prs] [--allow-extra-remote-branches]");
+  console.log(
+    "Usage: node scripts/audit_public_github_state.mjs [--allow-open-prs] [--allow-extra-remote-branches]",
+  );
   process.exit(0);
 }
 
@@ -62,6 +68,52 @@ function readJsonFile(relativePath) {
   } catch (error) {
     fail(`${relativePath}: invalid JSON: ${error.message}`);
     return null;
+  }
+}
+
+function normalizeTrailingSlash(value) {
+  return value.endsWith("/") ? value : `${value}/`;
+}
+
+function getRemoteMainCommit() {
+  const output = runCommand("git remote main commit", "git", ["ls-remote", "origin", "refs/heads/main"]);
+  const commit = output?.split(/\s+/)[0] || "";
+  if (!/^[a-f0-9]{40}$/i.test(commit)) {
+    fail(`origin/main remote commit could not be resolved: ${commit || "missing"}`);
+    return "unknown";
+  }
+  return commit.toLowerCase();
+}
+
+async function fetchWithTimeout(url, options = {}) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), PUBLIC_URL_TIMEOUT_MS);
+  try {
+    return await fetch(url, {
+      redirect: "follow",
+      ...options,
+      signal: controller.signal,
+      headers: {
+        "user-agent": "VRAXION public GitHub state audit",
+        ...(options.headers || {}),
+      },
+    });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function fetchText(url, label) {
+  try {
+    const response = await fetchWithTimeout(url);
+    if (!response.ok) {
+      fail(`${label} returned HTTP ${response.status}: ${url}`);
+      return { status: response.status, text: "" };
+    }
+    return { status: response.status, text: await response.text() };
+  } catch (error) {
+    fail(`${label} could not be fetched: ${url} ${error.message}`);
+    return { status: "error", text: "" };
   }
 }
 
@@ -203,19 +255,105 @@ function validateRelease(version) {
   return { latestPublicRelease, latestReleaseTag };
 }
 
+async function validatePagesState(version, remoteMainCommit) {
+  const pages = runJson("GitHub Pages config", "gh", ["api", `repos/${EXPECTED_REPOSITORY}/pages`]);
+  const latestBuild = runJson("GitHub Pages latest build", "gh", [
+    "api",
+    `repos/${EXPECTED_REPOSITORY}/pages/builds/latest`,
+  ]);
+  let pagesStatus = pages?.status || "unknown";
+  let pagesBuildStatus = latestBuild?.status || "unknown";
+  let pagesBuildCommit = latestBuild?.commit || "unknown";
+  let publicPagesHttpStatus = "unknown";
+  let liveVersionRelease = "unknown";
+
+  if (pages !== null) {
+    const pagesUrl = normalizeTrailingSlash(String(pages.html_url || ""));
+    if (pagesUrl !== EXPECTED_PAGES_URL) {
+      fail(`GitHub Pages URL must be ${EXPECTED_PAGES_URL}, got ${pages.html_url || "missing"}`);
+    }
+    if (pages.status !== "built") {
+      fail(`GitHub Pages status must be built, got ${pages.status || "missing"}`);
+    }
+    if (pages.public !== true) {
+      fail("GitHub Pages must be public");
+    }
+    if (pages.https_enforced !== true) {
+      fail("GitHub Pages must enforce HTTPS");
+    }
+    if (pages.source?.branch !== EXPECTED_PAGES_SOURCE_BRANCH || pages.source?.path !== EXPECTED_PAGES_SOURCE_PATH) {
+      fail(
+        `GitHub Pages source must be ${EXPECTED_PAGES_SOURCE_BRANCH}:${EXPECTED_PAGES_SOURCE_PATH}, got ${
+          pages.source?.branch || "missing"
+        }:${pages.source?.path || "missing"}`,
+      );
+    }
+  }
+
+  if (latestBuild !== null) {
+    if (latestBuild.status !== "built") {
+      fail(`latest GitHub Pages build must be built, got ${latestBuild.status || "missing"}`);
+    }
+    if (latestBuild.error?.message) {
+      fail(`latest GitHub Pages build reports an error: ${latestBuild.error.message}`);
+    }
+    if (remoteMainCommit !== "unknown" && latestBuild.commit?.toLowerCase() !== remoteMainCommit) {
+      fail(`latest GitHub Pages build commit must match origin/main ${remoteMainCommit}, got ${latestBuild.commit}`);
+    }
+  }
+
+  const homeFetch = await fetchText(EXPECTED_PAGES_URL, "public Pages home");
+  publicPagesHttpStatus = String(homeFetch.status);
+  const versionFetch = await fetchText(`${EXPECTED_PAGES_URL}VERSION.json`, "public Pages VERSION.json");
+  if (versionFetch.text) {
+    try {
+      const liveVersion = JSON.parse(versionFetch.text);
+      liveVersionRelease = String(liveVersion.latest_public_release || "");
+      if (version?.latest_public_release && liveVersionRelease !== version.latest_public_release) {
+        fail(
+          `live Pages VERSION latest_public_release must be ${version.latest_public_release}, got ${
+            liveVersionRelease || "missing"
+          }`,
+        );
+      }
+      if (version?.date && liveVersion.date !== version.date) {
+        fail(`live Pages VERSION date must be ${version.date}, got ${liveVersion.date || "missing"}`);
+      }
+    } catch (error) {
+      fail(`public Pages VERSION.json is invalid JSON: ${error.message}`);
+    }
+  }
+
+  return {
+    pagesStatus,
+    pagesBuildStatus,
+    pagesBuildCommit,
+    publicPagesHttpStatus,
+    liveVersionRelease: liveVersionRelease || "unknown",
+  };
+}
+
 runCommand("GitHub auth status", "gh", ["auth", "status"]);
 validateOriginRemote();
 const remoteBranches = validateRemoteBranches();
+const remoteMainCommit = getRemoteMainCommit();
 const repository = validateRepository();
 const openPullRequests = validateOpenPullRequests();
 const version = readJsonFile(VERSION_PATH);
 const { latestPublicRelease, latestReleaseTag } = validateRelease(version);
+const pagesState = await validatePagesState(version, remoteMainCommit);
 
 console.log("PUBLIC_GITHUB_STATE_AUDIT");
 console.log(`repository=${repository?.nameWithOwner || "unknown"}`);
 console.log(`default_branch=${repository?.defaultBranchRef?.name || "unknown"}`);
+console.log(`origin_main_commit=${remoteMainCommit}`);
 console.log(`latest_public_release=${latestPublicRelease}`);
 console.log(`github_latest_release=${latestReleaseTag}`);
+console.log(`pages_status=${pagesState.pagesStatus}`);
+console.log(`pages_latest_build_status=${pagesState.pagesBuildStatus}`);
+console.log(`pages_latest_build_commit=${pagesState.pagesBuildCommit}`);
+console.log(`pages_live_version_release=${pagesState.liveVersionRelease}`);
+console.log(`public_pages_http_status=${pagesState.publicPagesHttpStatus}`);
 console.log(`open_pull_request_count=${openPullRequests.length}`);
 console.log(`remote_branch_count=${remoteBranches.length}`);
 console.log(`failure_count=${failures.length}`);

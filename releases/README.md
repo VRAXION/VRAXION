@@ -14,9 +14,14 @@ public files, public URLs, public checks, and public artifact metadata.
 Validate manifests before review:
 
 ```powershell
+node scripts\audit_public_github_state.mjs
+node scripts\sync_public_release_links.mjs --check
 node scripts\validate_public_release_manifests.mjs
 node scripts\validate_public_release_state.mjs
 node scripts\audit_public_secrets.mjs
+python scripts\audit_public_surface.py
+node scripts\smoke_public_pages_links.mjs
+powershell -ExecutionPolicy Bypass -File scripts\check_public_export.ps1
 ```
 
 Do not include:

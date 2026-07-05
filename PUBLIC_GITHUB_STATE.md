@@ -33,6 +33,7 @@ Before creating or updating a public release, review:
 - CODEOWNERS routing for public boundary, release, workflow, and docs changes
 - Dependabot or dependency-update PRs that may affect the public build
 - Pages deployment target
+- latest Pages build status and live `VERSION.json`
 - public status docs and release links
 - public release manifest entries under `releases/`, when artifacts or claims
   change
@@ -67,17 +68,21 @@ gh pr list --state open --limit 50
 gh release list --limit 20
 node scripts\audit_public_github_state.mjs
 node scripts\sync_public_release_links.mjs --check
+node scripts\validate_public_release_manifests.mjs
 node scripts\validate_public_release_state.mjs
 node scripts\audit_public_secrets.mjs
 python scripts\audit_public_surface.py
+node scripts\smoke_public_pages_links.mjs
 powershell -ExecutionPolicy Bypass -File scripts\check_public_export.ps1
 ```
 
 Run `node scripts\audit_public_github_state.mjs` before opening the final
 release PR, and run it again after merge before publishing or marking a GitHub
 release as current. The live audit intentionally fails when open pull requests
-or extra remote branches are present, because the public release state should be
-settled before it becomes the current public truth.
+or extra remote branches are present, or when the GitHub Pages source, latest
+Pages build, live Pages URL, or live `VERSION.json` do not match the reviewed
+public state. The public release state should be settled before it becomes the
+current public truth.
 
 The public release PR should state which GitHub release, tag, status doc,
 manifest, and artifact entry are the source of truth.
