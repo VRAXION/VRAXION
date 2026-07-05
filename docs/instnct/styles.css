@@ -1514,7 +1514,7 @@ html.keyboard-dialog-open {
 
 #dev-trail::after {
   opacity: 0.34;
-  background-image: url("./assets/cli-proof-bg.jpg?v=cli-wallpaper-pass-2");
+  background-image: url("./assets/cli-proof-bg.jpg?v=cli-wallpaper-pass-3");
   background-position: center bottom;
   mask-image: linear-gradient(90deg, black, black);
 }
