@@ -306,6 +306,7 @@ for (const required of [
   ".wallpaper-section",
   "--wallpaper-scroll-y",
   ".has-js .section-indicator",
+  ".indicator-track:hover ~ ol",
   ".has-js .keyboard-help-trigger",
   "@media (max-width: 1500px)",
   ".has-js .faq-panel",

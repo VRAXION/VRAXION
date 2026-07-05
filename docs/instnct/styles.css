@@ -321,6 +321,7 @@ pre {
 }
 
 .section-indicator:hover ol,
+.indicator-track:hover ~ ol,
 .section-indicator:focus-within ol {
   opacity: 1;
   pointer-events: auto;
