@@ -41,6 +41,7 @@ const browserSmoke = fs.readFileSync(browserSmokePath, "utf8");
 const currentCapabilities = fs.readFileSync(currentCapabilitiesPath, "utf8");
 const benchmarkNotes = fs.readFileSync(benchmarkNotesPath, "utf8");
 const token = (...parts) => parts.join("");
+let versionDate = "";
 let latestRelease = "";
 let homeAssetVersion = "";
 let instnctAssetVersion = "";
@@ -67,6 +68,14 @@ function isLocalOrDataRef(value) {
     value.startsWith("#") ||
     value.startsWith("data:image/")
   );
+}
+
+function escapeRegExp(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function sitemapHasDatedUrl(sitemap, url, date) {
+  return new RegExp(`<loc>${escapeRegExp(url)}</loc>\\s*<lastmod>${escapeRegExp(date)}</lastmod>`).test(sitemap);
 }
 
 function parseCsp(content) {
@@ -194,7 +203,7 @@ try {
 
 try {
   const version = JSON.parse(fs.readFileSync(versionPath, "utf8"));
-  const versionDate = String(version.date || "");
+  versionDate = String(version.date || "");
   if (versionDate !== "2026-07-05") {
     fail(`docs/VERSION.json date must match the current public site release date: ${versionDate || "missing"}`);
   }
@@ -1094,6 +1103,9 @@ else {
     "https://vraxion.github.io/VRAXION/anchorcell/",
   ]) {
     if (!sitemap.includes(`<loc>${url}</loc>`)) fail(`sitemap missing ${url}`);
+    if (versionDate && !sitemapHasDatedUrl(sitemap, url, versionDate)) {
+      fail(`sitemap ${url} lastmod must match docs/VERSION.json date ${versionDate}`);
+    }
   }
   if (sitemap.includes(`/${hiddenSurfaceSlug}/`)) fail("sitemap must not expose hidden roadmap surface");
 }
