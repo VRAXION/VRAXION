@@ -273,6 +273,8 @@ async function probeInstnctDesktop(browser, origin) {
     unsafePublicCopy: new RegExp(unsafeCopyPattern, "i").test(document.body.textContent),
     logoAsset: document.querySelector(".wordmark img")?.getAttribute("src") || "",
     schemaType: JSON.parse(document.querySelector('script[type="application/ld+json"]').textContent)["@type"],
+    engineScopeWallpaper: getComputedStyle(document.querySelector("#not-ai"), "::after").backgroundImage,
+    exactModeWallpaper: getComputedStyle(document.querySelector("#hallucination"), "::after").backgroundImage,
   }), { unsafeCopyPattern: unsafePublicCopyPatternSource, assetVersion: instnctAssetVersion });
   if (top.overflow) fail("INSTNCT desktop has horizontal overflow");
   if (!top.currentAssetVersion) fail(`INSTNCT desktop is not loading VERSION asset version ${instnctAssetVersion}`);
@@ -285,6 +287,12 @@ async function probeInstnctDesktop(browser, origin) {
   if (top.unsafePublicCopy) fail("INSTNCT desktop copy exposes unsafe or internal release wording");
   if (!top.logoAsset.includes("instnct-logo.png")) fail("INSTNCT hero is not using the GLM final logo asset");
   if (top.schemaType !== "WebPage") fail(`INSTNCT JSON-LD should be WebPage, found ${top.schemaType}`);
+  if (!top.engineScopeWallpaper.includes("engine-scope-bg.jpg")) {
+    fail(`INSTNCT engine scope wallpaper is missing: ${top.engineScopeWallpaper}`);
+  }
+  if (!top.exactModeWallpaper.includes("exact-mode-bg.jpg")) {
+    fail(`INSTNCT exact mode wallpaper is missing: ${top.exactModeWallpaper}`);
+  }
 
   const heroRect = await page.locator(".hero").boundingBox();
   if (!heroRect) {

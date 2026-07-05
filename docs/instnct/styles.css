@@ -1417,6 +1417,8 @@ html.keyboard-dialog-open {
   transform: none;
 }
 
+#not-ai::after,
+#hallucination::after,
 #t1-reflex-class::after,
 #vraxion-note::after {
   content: "";
@@ -1429,6 +1431,20 @@ html.keyboard-dialog-open {
   background-size: cover;
   mix-blend-mode: screen;
   mask-image: linear-gradient(90deg, transparent, black 54%, transparent);
+}
+
+#not-ai::after {
+  opacity: 0.2;
+  background-image: url("./assets/engine-scope-bg.jpg");
+  background-position: right center;
+  mask-image: linear-gradient(90deg, transparent, transparent 24%, black 56%, black);
+}
+
+#hallucination::after {
+  opacity: 0.2;
+  background-image: url("./assets/exact-mode-bg.jpg");
+  background-position: right center;
+  mask-image: linear-gradient(90deg, transparent, transparent 28%, black 58%, black);
 }
 
 #t1-reflex-class::after {

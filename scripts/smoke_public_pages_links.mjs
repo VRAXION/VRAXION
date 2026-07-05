@@ -1,11 +1,3 @@
-import fs from "node:fs/promises";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
-
-const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const version = JSON.parse(await fs.readFile(path.join(root, "docs", "VERSION.json"), "utf8"));
-const latestRelease = String(version.latest_public_release || "");
-const instnctAssetVersion = String(version.instnct_asset_version || "");
 const baseUrl = (process.env.PUBLIC_PAGES_BASE_URL || "https://vraxion.github.io/VRAXION").replace(/\/+$/, "");
 const hiddenSurfaceSlug = ["vn", "gard"].join("");
 const token = (...parts) => parts.join("");
@@ -139,11 +131,24 @@ const instnctUrl = `${baseUrl}/instnct/`;
 const hiddenSurfaceUrl = `${baseUrl}/${hiddenSurfaceSlug}/`;
 const robotsUrl = `${baseUrl}/robots.txt`;
 const sitemapUrl = `${baseUrl}/sitemap.xml`;
+const versionUrl = `${baseUrl}/VERSION.json`;
 
 const home = await fetchText(homeUrl, "home");
 const instnct = await fetchText(instnctUrl, "INSTNCT");
 const robots = await fetchText(robotsUrl, "robots.txt");
 const sitemap = await fetchText(sitemapUrl, "sitemap.xml");
+const versionText = await fetchText(versionUrl, "VERSION.json");
+let latestRelease = "";
+let instnctAssetVersion = "";
+if (versionText) {
+  try {
+    const version = JSON.parse(versionText);
+    latestRelease = String(version.latest_public_release || "");
+    instnctAssetVersion = String(version.instnct_asset_version || "");
+  } catch (err) {
+    fail(`live VERSION.json is invalid JSON: ${err.message}`);
+  }
+}
 let hiddenSurfaceStatus = 0;
 try {
   const hiddenSurfaceResponse = await fetchWithTimeout(hiddenSurfaceUrl, { redirect: "manual" });
@@ -152,7 +157,12 @@ try {
   fail(`hidden roadmap surface URL could not be checked: ${hiddenSurfaceUrl} ${err.message}`);
 }
 
-if (home && !home.includes(`releases/tag/${latestRelease}`)) fail("home does not expose the VERSION latest release");
+if (!/^public-sdk-p\d+-\d{8}$/.test(latestRelease)) {
+  fail(`live VERSION latest_public_release is invalid: ${latestRelease || "missing"}`);
+}
+if (home && latestRelease && !home.includes(`releases/tag/${latestRelease}`)) {
+  fail("home does not expose the VERSION latest release");
+}
 for (const required of [
   "VRAXION / INSTNCT T1 Reflex Engine",
   "solo-built, AI-assisted",
@@ -162,7 +172,7 @@ for (const required of [
 ]) {
   if (home && !home.includes(required)) fail(`home live positioning copy is missing: ${required}`);
 }
-if (instnct && !instnct.includes(`archive/refs/tags/${latestRelease}.zip`)) {
+if (instnct && latestRelease && !instnct.includes(`archive/refs/tags/${latestRelease}.zip`)) {
   fail("INSTNCT does not expose the VERSION GitHub tag ZIP");
 }
 if (!/^release-\d+$/.test(instnctAssetVersion)) {
@@ -221,8 +231,12 @@ const urls = new Set([
   ...collectUrls(instnct, instnctUrl),
   `${baseUrl}/robots.txt`,
   `${baseUrl}/sitemap.xml`,
-  `https://github.com/VRAXION/VRAXION/releases/tag/${latestRelease}`,
-  `https://github.com/VRAXION/VRAXION/archive/refs/tags/${latestRelease}.zip`,
+  ...(latestRelease
+    ? [
+        `https://github.com/VRAXION/VRAXION/releases/tag/${latestRelease}`,
+        `https://github.com/VRAXION/VRAXION/archive/refs/tags/${latestRelease}.zip`,
+      ]
+    : []),
 ]);
 
 for (const url of urls) {

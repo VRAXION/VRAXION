@@ -281,6 +281,10 @@ for (const required of [
 
 for (const required of [
   ".fabric-flow-panel",
+  "#not-ai::after",
+  "engine-scope-bg.jpg",
+  "#hallucination::after",
+  "exact-mode-bg.jpg",
   ".release-snapshot-pill",
   ".button-icon",
   ".card-icon",
