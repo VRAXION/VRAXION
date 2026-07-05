@@ -22,6 +22,7 @@ jobs:
         run: |
           node --check scripts/audit_instnct_static_site.mjs
           node --check scripts/audit_instnct_notify_worker.mjs
+          node --check scripts/audit_public_github_state.mjs
           node --check scripts/audit_public_secrets.mjs
           node --check scripts/sync_public_release_links.mjs
           node --check scripts/validate_public_release_manifests.mjs

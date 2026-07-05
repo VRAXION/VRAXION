@@ -31,6 +31,8 @@
   including release-state validation and secret scanning.
 - Locked public GitHub Actions workflows to read-only repository permissions
   and added audit coverage for workflow permission drift.
+- Added a live public GitHub state audit for pre-release checks against open
+  pull requests, remote branches, default branch, and the latest GitHub release.
 
 ## 2026-06-29
 

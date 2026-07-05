@@ -84,9 +84,11 @@ If an artifact is not added:
 
 ## Required Gates
 
-Run these before opening or merging the release PR:
+Run the live GitHub state audit before opening the final release PR. Run the
+remaining gates before opening and before merging the release PR:
 
 ```powershell
+node scripts\audit_public_github_state.mjs
 node scripts\sync_public_release_links.mjs --check
 node scripts\validate_public_release_manifests.mjs
 node scripts\validate_public_release_state.mjs
@@ -97,6 +99,11 @@ python scripts\audit_public_surface.py
 node scripts\smoke_public_pages_links.mjs
 powershell -ExecutionPolicy Bypass -File scripts\check_public_export.ps1
 ```
+
+Run the live GitHub state audit before opening the final release PR, and run it
+again after merge before publishing or marking a GitHub release as current. It
+checks that the public repository, default branch, open pull requests, remote
+branches, and latest GitHub release agree with `docs/VERSION.json`.
 
 For Worker changes, also run the notify live smoke against the intended target
 environment before enabling any public form path.
