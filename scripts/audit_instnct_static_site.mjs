@@ -57,6 +57,39 @@ function attr(tag, name) {
   return match ? match[1] : "";
 }
 
+function tags(markup, tagName) {
+  return [...markup.matchAll(new RegExp(`<${tagName}\\s+[^>]*>`, "gi"))].map((match) => match[0]);
+}
+
+function requirePreload({ label, markup, href, as, type = "", fetchpriority = "", crossorigin = false }) {
+  const tag = tags(markup, "link").find((candidate) =>
+    /\srel="preload"/i.test(candidate) && attr(candidate, "href") === href
+  );
+  if (!tag) {
+    fail(`${label} critical preload is missing: ${href}`);
+    return;
+  }
+  if (attr(tag, "as") !== as) fail(`${label} preload ${href} must use as="${as}"`);
+  if (type && attr(tag, "type") !== type) fail(`${label} preload ${href} must use type="${type}"`);
+  if (fetchpriority && attr(tag, "fetchpriority") !== fetchpriority) {
+    fail(`${label} preload ${href} must use fetchpriority="${fetchpriority}"`);
+  }
+  if (crossorigin && !/\scrossorigin(?:\s|>|=)/i.test(tag)) {
+    fail(`${label} preload ${href} must include crossorigin`);
+  }
+}
+
+function requireImageDimensions({ label, markup, src, width, height }) {
+  const tag = tags(markup, "img").find((candidate) => attr(candidate, "src") === src);
+  if (!tag) {
+    fail(`${label} image is missing: ${src}`);
+    return;
+  }
+  if (attr(tag, "width") !== String(width) || attr(tag, "height") !== String(height)) {
+    fail(`${label} image ${src} must declare intrinsic dimensions ${width}x${height}`);
+  }
+}
+
 function isExternalRef(value) {
   return /^(?:https?:)?\/\//i.test(value);
 }
@@ -1056,12 +1089,42 @@ validateSocialImage({
 });
 
 if (homeAssetVersion) {
-  if (!home.includes(`./assets/vraxion-home-hero.webp?v=${homeAssetVersion}`)) {
+  const homeHeroRef = `./assets/vraxion-home-hero.webp?v=${homeAssetVersion}`;
+  const anchorcellHeroRef = `../assets/vraxion-home-hero.webp?v=${homeAssetVersion}`;
+  if (!home.includes(homeHeroRef)) {
     fail("homepage hero image cache key must match docs/VERSION.json home_asset_version");
   }
-  if (!anchorcell.includes(`../assets/vraxion-home-hero.webp?v=${homeAssetVersion}`)) {
+  if (!anchorcell.includes(anchorcellHeroRef)) {
     fail("AnchorCell hero image cache key must match docs/VERSION.json home_asset_version");
   }
+  requirePreload({
+    label: "homepage",
+    markup: home,
+    href: homeHeroRef,
+    as: "image",
+    fetchpriority: "high",
+  });
+  requirePreload({
+    label: "AnchorCell",
+    markup: anchorcell,
+    href: anchorcellHeroRef,
+    as: "image",
+    fetchpriority: "high",
+  });
+  requireImageDimensions({
+    label: "homepage hero",
+    markup: home,
+    src: homeHeroRef,
+    width: 1672,
+    height: 941,
+  });
+  requireImageDimensions({
+    label: "AnchorCell hero",
+    markup: anchorcell,
+    src: anchorcellHeroRef,
+    width: 1672,
+    height: 941,
+  });
 }
 
 if (anchorcellAssetVersion) {
@@ -1072,6 +1135,65 @@ if (anchorcellAssetVersion) {
     fail("AnchorCell script cache key must match docs/VERSION.json anchorcell_asset_version");
   }
 }
+
+for (const { label, markup, fontRef, wordmarkRef } of [
+  {
+    label: "homepage",
+    markup: home,
+    fontRef: "./assets/fonts/geist-sans-variable.woff2",
+    wordmarkRef: "./assets/vraxion-wordmark.webp?v=brand-pass-2",
+  },
+  {
+    label: "INSTNCT",
+    markup: html,
+    fontRef: "../assets/fonts/geist-sans-variable.woff2",
+    wordmarkRef: "../assets/vraxion-wordmark.webp?v=brand-pass-2",
+  },
+  {
+    label: "AnchorCell",
+    markup: anchorcell,
+    fontRef: "../assets/fonts/geist-sans-variable.woff2",
+    wordmarkRef: "../assets/vraxion-wordmark.webp?v=brand-pass-2",
+  },
+]) {
+  requirePreload({
+    label,
+    markup,
+    href: fontRef,
+    as: "font",
+    type: "font/woff2",
+    crossorigin: true,
+  });
+  requirePreload({
+    label,
+    markup,
+    href: wordmarkRef,
+    as: "image",
+    fetchpriority: "high",
+  });
+}
+
+requirePreload({
+  label: "INSTNCT",
+  markup: html,
+  href: "./assets/instnct-hero-bg.webp?v=background-pass-2",
+  as: "image",
+  fetchpriority: "high",
+});
+requirePreload({
+  label: "INSTNCT",
+  markup: html,
+  href: "./assets/instnct-logo.webp?v=logo-pass-2",
+  as: "image",
+  fetchpriority: "high",
+});
+requireImageDimensions({
+  label: "INSTNCT hero",
+  markup: html,
+  src: "./assets/instnct-hero-bg.webp?v=background-pass-2",
+  width: 1672,
+  height: 941,
+});
 
 if (/\.hero-mesh\s*\{[^}]*display:\s*none/i.test(css)) {
   fail("hero mesh should not be fully disabled in responsive CSS");
