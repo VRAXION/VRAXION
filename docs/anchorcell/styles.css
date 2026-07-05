@@ -199,7 +199,7 @@ p {
   align-items: center;
   transform: translateY(-50%);
   color: var(--muted);
-  pointer-events: none;
+  pointer-events: auto;
 }
 
 .indicator-current {
@@ -213,6 +213,19 @@ p {
   background: rgba(5, 8, 10, 0.68);
   font: 820 0.72rem/1 "SFMono-Regular", Consolas, "Liberation Mono", monospace;
   box-shadow: 0 0 30px rgba(var(--cyan-rgb), 0.12);
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    transform 160ms ease;
+}
+
+.section-indicator:hover .indicator-current,
+.section-indicator:focus-within .indicator-current {
+  border-color: rgba(var(--cyan-rgb), 0.58);
+  box-shadow:
+    0 0 30px rgba(var(--cyan-rgb), 0.2),
+    0 0 0 6px rgba(var(--cyan-rgb), 0.04);
+  transform: translateX(-2px);
 }
 
 .section-indicator ol {
@@ -224,6 +237,22 @@ p {
   pointer-events: auto;
 }
 
+.has-js .section-indicator ol {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(7px);
+  transition:
+    opacity 160ms ease,
+    transform 160ms ease;
+}
+
+.has-js .section-indicator:hover ol,
+.has-js .section-indicator:focus-within ol {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateX(0);
+}
+
 .section-indicator a {
   min-height: 44px;
   display: flex;
@@ -231,8 +260,7 @@ p {
   justify-content: flex-end;
   padding: 0 6px;
   color: rgba(165, 195, 203, 0.72);
-  font: 760 0.62rem/1 "SFMono-Regular", Consolas, "Liberation Mono", monospace;
-  text-transform: uppercase;
+  font: 760 0.74rem/1.08 "Geist", "Aptos", "Segoe UI Variable", "Segoe UI", ui-sans-serif, system-ui, sans-serif;
   transition: color 160ms ease;
 }
 
