@@ -690,6 +690,8 @@ for (const required of [
   "Page not found.",
   "This public site only exposes the current VRAXION, INSTNCT, and AnchorCell surfaces.",
   "default-src 'none'",
+  "Open public home",
+  "Review current status",
   "noindex,nofollow",
 ]) {
   if (!notFound.includes(required)) fail(`404 page is missing public-safe marker: ${required}`);
@@ -818,6 +820,44 @@ if (!html.includes("connect-src 'none'")) fail("CSP must keep connect-src 'none'
 if (!html.includes("form-action 'none'")) fail("CSP must keep form-action 'none'");
 if (!anchorcell.includes("connect-src 'none'")) fail("AnchorCell CSP must keep connect-src 'none'");
 if (!anchorcell.includes("form-action 'none'")) fail("AnchorCell CSP must keep form-action 'none'");
+
+const notFoundCspTag = notFound.match(/<meta\s+[^>]*http-equiv="Content-Security-Policy"[^>]*>/i)?.[0] || "";
+const notFoundCsp = attr(notFoundCspTag, "content");
+if (!notFoundCsp) fail("404 page missing Content-Security-Policy meta");
+const notFoundCspDirectives = parseCsp(notFoundCsp);
+const notFoundStyleMatch = notFound.match(/<style>([\s\S]*?)<\/style>/i);
+if (!notFoundStyleMatch) {
+  fail("404 page inline style block is missing");
+} else {
+  const notFoundStyleHash = createHash("sha256").update(notFoundStyleMatch[1].replace(/\r\n/g, "\n")).digest("base64");
+  if (!notFoundCsp.includes(`'sha256-${notFoundStyleHash}'`)) {
+    fail(`404 page CSP style hash mismatch: expected 'sha256-${notFoundStyleHash}'`);
+  }
+}
+for (const [name, expected] of [
+  ["default-src", ["'none'"]],
+  ["script-src", ["'none'"]],
+  ["img-src", ["'none'"]],
+  ["connect-src", ["'none'"]],
+  ["object-src", ["'none'"]],
+  ["base-uri", ["'none'"]],
+  ["form-action", ["'none'"]],
+]) {
+  const actual = notFoundCspDirectives.get(name) || [];
+  if (actual.join(" ") !== expected.join(" ")) {
+    fail(`404 page CSP ${name} mismatch: ${actual.join(" ") || "missing"}`);
+  }
+}
+const notFoundStyleSrc = notFoundCspDirectives.get("style-src") || [];
+if (notFoundStyleSrc.length !== 1 || !/^'sha256-[^']+'$/.test(notFoundStyleSrc[0])) {
+  fail(`404 page CSP style-src mismatch: ${notFoundStyleSrc.join(" ") || "missing"}`);
+}
+if (!notFoundCspDirectives.has("upgrade-insecure-requests")) {
+  fail("404 page CSP missing upgrade-insecure-requests");
+}
+if (notFoundCsp.includes("'unsafe-inline'") || notFoundCsp.includes("'unsafe-eval'")) {
+  fail("404 page CSP must not allow unsafe inline/eval");
+}
 
 const homeCspTag = home.match(/<meta\s+[^>]*http-equiv="Content-Security-Policy"[^>]*>/i)?.[0] || "";
 const homeCsp = attr(homeCspTag, "content");
