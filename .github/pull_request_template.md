@@ -16,6 +16,7 @@
 ## Required Public Gates
 
 - [ ] `node scripts\sync_public_release_links.mjs --check`
+- [ ] `node scripts\validate_public_release_manifests.mjs`
 - [ ] `node scripts\audit_instnct_static_site.mjs`
 - [ ] `node scripts\audit_instnct_notify_worker.mjs`
 - [ ] `python scripts\audit_public_surface.py`

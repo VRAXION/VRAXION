@@ -102,6 +102,7 @@ REQUIRED_TRACKED_FILES = {
     "releases/README.md",
     "releases/public-release-manifest.example.json",
     "releases/public-release-manifest.schema.json",
+    "scripts/validate_public_release_manifests.mjs",
     "LICENSE_BOUNDARY.md",
     "SUPPORT.md",
 }
@@ -113,6 +114,7 @@ REQUIRED_PR_TEMPLATE_MARKERS = {
     "PUBLIC_RELEASE_CHECKLIST.md",
     "Release manifest checked:",
     "releases/public-release-manifest.schema.json",
+    "node scripts\\validate_public_release_manifests.mjs",
     "workers/instnct-notify/wrangler.jsonc",
     "powershell -ExecutionPolicy Bypass -File scripts\\check_public_export.ps1",
 }
@@ -157,6 +159,7 @@ REQUIRED_RELEASE_MANIFEST_README_MARKERS = {
     "public-release-manifest.example.json",
     "public-release-manifest.schema.json",
     "releases/<release-slug>.manifest.json",
+    "node scripts\\validate_public_release_manifests.mjs",
     "private engine source",
     "non-public training data",
     "raw operator output",
@@ -454,6 +457,11 @@ def main() -> int:
         "scripts\\check_public_export.ps1" in command for command in commands
     ):
         failures.append("release manifest example must include the public export guard command")
+    if not isinstance(commands, list) or not any(
+        "scripts\\validate_public_release_manifests.mjs" in command
+        for command in commands
+    ):
+        failures.append("release manifest example must include the release manifest validator command")
 
     index_html = read_text(ROOT / "docs" / "index.html")
     expected_release_url = "https://github.com/VRAXION/VRAXION/releases/tag/" + str(

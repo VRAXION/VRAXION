@@ -12,8 +12,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "22"
       - uses: actions/setup-python@v6
         with:
           python-version: "3.x"
+      - name: Validate public release manifests
+        run: node scripts/validate_public_release_manifests.mjs
       - name: Audit public surface
         run: python scripts/audit_public_surface.py

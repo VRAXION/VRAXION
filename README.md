@@ -56,6 +56,7 @@ cargo test --workspace --all-features
 cargo test --doc --workspace --all-features
 cargo clippy --workspace --all-targets --all-features -- -D warnings
 cargo doc --workspace --no-deps
+node scripts/validate_public_release_manifests.mjs
 python scripts/audit_public_surface.py
 powershell -ExecutionPolicy Bypass -File scripts/check_public_export.ps1
 ```
