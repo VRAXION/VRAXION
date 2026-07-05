@@ -26,3 +26,8 @@ became public and what stayed private in the PR body.
 
 Use the GitHub pull request template. Do not delete the public scope,
 release-intake, or required-gates sections from release or public-surface PRs.
+
+Use the GitHub issue form for public reports. Do not put secrets, private code,
+non-public training data, local machine paths, raw operator output, production
+config, or private dashboards in public issues. Use `SECURITY.md` for
+vulnerabilities or reports with security impact.
