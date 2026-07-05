@@ -94,7 +94,7 @@ PUBLIC_BINARY_ASSETS = {
     "docs/instnct/assets/cli-proof-bg.jpg",
     "docs/instnct/assets/constraints-founder-bg.jpg",
     "docs/instnct/assets/fabric-result-bg.jpg",
-    "docs/instnct/assets/instnct-hero-bg.png",
+    "docs/instnct/assets/instnct-hero-bg.jpg",
     "docs/instnct/assets/instnct-logo.png",
     "docs/instnct/assets/proof-pack-bg.jpg",
     "docs/instnct/assets/release-claim-bg.jpg",
