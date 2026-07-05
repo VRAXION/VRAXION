@@ -221,6 +221,16 @@ REQUIRED_RELEASE_MANIFEST_README_MARKERS = {
     "raw operator output",
 }
 
+REQUIRED_RELEASE_LINK_SYNC_MARKERS = {
+    "requiredCurrentStateFiles",
+    "README.md",
+    "PUBLIC_GITHUB_STATE.md",
+    "docs/CURRENT_STATUS.md",
+    "docs/CURRENT_CAPABILITIES.md",
+    "current-state release link file is not scanned",
+    "public_release_link_files",
+}
+
 REQUIRED_RELEASE_MANIFEST_EXCLUSIONS = {
     "private_engine_source",
     "non_public_training_data",
@@ -445,6 +455,11 @@ def main() -> int:
     for required in sorted(REQUIRED_RELEASE_MANIFEST_README_MARKERS):
         if required not in release_manifest_readme:
             failures.append(f"release manifest readme missing marker: {required}")
+
+    release_link_sync = read_text(ROOT / "scripts" / "sync_public_release_links.mjs")
+    for required in sorted(REQUIRED_RELEASE_LINK_SYNC_MARKERS):
+        if required not in release_link_sync:
+            failures.append(f"release link sync missing coverage marker: {required}")
 
     gitattributes_path = ROOT / ".gitattributes"
     gitattributes_entries = {
