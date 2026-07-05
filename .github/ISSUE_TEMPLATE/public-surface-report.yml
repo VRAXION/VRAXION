@@ -7,7 +7,7 @@ body:
       value: |
         Use this form only for the visible public surface: docs, GitHub Pages, public crates, examples, release notes, and public workflow behavior.
 
-        Do not paste secrets, tokens, private code, non-public training data, raw operator output, local machine paths, production config, or private dashboards. If the report has security impact, use SECURITY.md instead of a public issue.
+        Do not paste secrets, tokens, private code, non-public training data, raw operator output, absolute local or UNC machine paths, production config, or private dashboards. If the report has security impact, use SECURITY.md instead of a public issue.
   - type: dropdown
     id: public_area
     attributes:
@@ -51,7 +51,7 @@ body:
     attributes:
       label: Public-safety confirmation
       options:
-        - label: I did not include secrets, tokens, private code, non-public training data, local machine paths, raw operator output, production config, or private dashboards.
+        - label: I did not include secrets, tokens, private code, non-public training data, absolute local or UNC machine paths, raw operator output, production config, or private dashboards.
           required: true
         - label: I will use SECURITY.md instead of a public issue if this has security impact.
           required: true

@@ -142,6 +142,7 @@ function Assert-NoTextPattern {
 
         $relative = $fileFullName.Substring($scanRootFullName.Length).TrimStart("\", "/") -replace "\\", "/"
         if (
+            $relative -eq ".git" -or
             $relative.StartsWith(".git/", [System.StringComparison]::Ordinal) -or
             $relative.StartsWith("target/", [System.StringComparison]::Ordinal) -or
             $excludeSet.Contains($relative) -or
@@ -290,7 +291,9 @@ $privateTextLiteralFragments = @(
     ("GITHUB_" + "TOKEN")
 )
 $privateTextRegexFragments = @(
-    ("BEGIN " + ".*PRIVATE" + " KEY")
+    ("BEGIN " + ".*PRIVATE" + " KEY"),
+    ('(^|[^A-Za-z0-9_])' + '[A-Za-z]' + ':[\\/]' + '[^\s"''<>|]+'),
+    ('\\\\' + '[A-Za-z0-9_.-]+' + '\\' + '[A-Za-z0-9_.-]+')
 )
 $privateTextPatternParts = @()
 $privateTextPatternParts += $privateTextLiteralFragments | ForEach-Object {

@@ -46,6 +46,17 @@ FORBIDDEN_TEXT = [
     marker("C:", "\\"),
 ]
 
+FORBIDDEN_TEXT_REGEX = [
+    (
+        "absolute_drive_path",
+        re.compile(r"(?:^|[^A-Za-z0-9_])[A-Za-z]:[\\/][^\s\"'<>|]+"),
+    ),
+    (
+        "unc_local_path",
+        re.compile(r"\\\\[A-Za-z0-9_.-]+\\[A-Za-z0-9_.-]+"),
+    ),
+]
+
 LEGAL_TEXT_FILES = {
     "LICENSE",
     "crates/alphasync-core/LICENSE",
@@ -116,6 +127,7 @@ REQUIRED_PR_TEMPLATE_MARKERS = {
     "What exactly becomes public?",
     "What stays private?",
     "PUBLIC_RELEASE_CHECKLIST.md",
+    "absolute local or UNC paths",
     "Release manifest checked:",
     "releases/public-release-manifest.schema.json",
     "node scripts\\validate_public_release_manifests.mjs",
@@ -188,9 +200,9 @@ REQUIRED_RELEASE_MANIFEST_EXCLUSIONS = {
 }
 
 REQUIRED_ISSUE_TEMPLATE_MARKERS = {
+    "absolute local or UNC machine paths",
     "Do not paste secrets",
     "SECURITY.md",
-    "local machine paths",
     "non-public training data",
     "public surface",
     "raw operator output",
@@ -210,6 +222,7 @@ REQUIRED_SUPPORT_MARKERS = {
     "non-public training data",
     "public files and public releases",
     "raw operator output",
+    "absolute local or UNC machine paths",
 }
 
 REQUIRED_WORKFLOW_PERMISSION_MARKERS = {
@@ -430,6 +443,12 @@ def main() -> int:
             for needle in FORBIDDEN_TEXT:
                 if needle in text:
                     failures.append(f"forbidden text marker {needle!r}: {relative}")
+            for label, pattern in FORBIDDEN_TEXT_REGEX:
+                match = pattern.search(text)
+                if match:
+                    failures.append(
+                        f"forbidden text regex {label!r}: {relative}"
+                    )
             if (
                 normalized not in LEGAL_TEXT_FILES
                 and normalized.endswith(PUBLIC_COPY_SUFFIXES)

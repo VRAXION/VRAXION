@@ -2,8 +2,8 @@
 
 Use this checklist before adding any new public release material to this
 repository. The goal is simple: publish only reviewed public artifacts and keep
-private engine work, non-public training data, local paths, secrets, and raw
-operator output out of the public tree.
+private engine work, non-public training data, absolute local or UNC paths,
+secrets, and raw operator output out of the public tree.
 
 ## Intake Scope
 
@@ -49,7 +49,7 @@ The release PR must not include:
 - private engine source or internals
 - non-public training data
 - raw experiment logs or operator run output
-- local machine paths
+- absolute local or UNC machine paths
 - secrets, tokens, keys, or filled production config
 - private data adapters
 - skill persistence stores
