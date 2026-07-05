@@ -1,4 +1,5 @@
 const baseUrl = (process.env.PUBLIC_PAGES_BASE_URL || "https://vraxion.github.io/VRAXION").replace(/\/+$/, "");
+const canonicalBaseUrl = (process.env.PUBLIC_PAGES_CANONICAL_BASE_URL || "https://vraxion.github.io/VRAXION").replace(/\/+$/, "");
 const hiddenSurfaceSlug = ["vn", "gard"].join("");
 const token = (...parts) => parts.join("");
 const unsafePublicCopyPattern = new RegExp(
@@ -128,6 +129,7 @@ function assertCsp(html, label, requirements) {
 
 const homeUrl = `${baseUrl}/`;
 const instnctUrl = `${baseUrl}/instnct/`;
+const anchorcellUrl = `${baseUrl}/anchorcell/`;
 const hiddenSurfaceUrl = `${baseUrl}/${hiddenSurfaceSlug}/`;
 const robotsUrl = `${baseUrl}/robots.txt`;
 const sitemapUrl = `${baseUrl}/sitemap.xml`;
@@ -135,16 +137,19 @@ const versionUrl = `${baseUrl}/VERSION.json`;
 
 const home = await fetchText(homeUrl, "home");
 const instnct = await fetchText(instnctUrl, "INSTNCT");
+const anchorcell = await fetchText(anchorcellUrl, "AnchorCell");
 const robots = await fetchText(robotsUrl, "robots.txt");
 const sitemap = await fetchText(sitemapUrl, "sitemap.xml");
 const versionText = await fetchText(versionUrl, "VERSION.json");
 let latestRelease = "";
 let instnctAssetVersion = "";
+let anchorcellAssetVersion = "";
 if (versionText) {
   try {
     const version = JSON.parse(versionText);
     latestRelease = String(version.latest_public_release || "");
     instnctAssetVersion = String(version.instnct_asset_version || "");
+    anchorcellAssetVersion = String(version.anchorcell_asset_version || "");
   } catch (err) {
     fail(`live VERSION.json is invalid JSON: ${err.message}`);
   }
@@ -169,14 +174,27 @@ for (const required of [
   "Signed T1 Proof Pack pending",
   "Meet INSTNCT, the first public VRAXION engine target.",
   "The engine contract: answer on-path, refuse off-path.",
+  "AnchorCell studies the format before the model.",
 ]) {
   if (home && !home.includes(required)) fail(`home live positioning copy is missing: ${required}`);
+}
+for (const required of [
+  "Training data with its trust boundaries intact.",
+  "AnchorCell is a Vraxion research direction",
+  "candidate_primary",
+  "public_redacted",
+  "The proof is not rhetoric. It is a validator stack.",
+]) {
+  if (anchorcell && !anchorcell.includes(required)) fail(`AnchorCell live copy is missing: ${required}`);
 }
 if (instnct && latestRelease && !instnct.includes(`archive/refs/tags/${latestRelease}.zip`)) {
   fail("INSTNCT does not expose the VERSION GitHub tag ZIP");
 }
 if (!/^release-\d+$/.test(instnctAssetVersion)) {
   fail(`VERSION instnct_asset_version is invalid: ${instnctAssetVersion || "missing"}`);
+}
+if (!/^research-\d+$/.test(anchorcellAssetVersion)) {
+  fail(`VERSION anchorcell_asset_version is invalid: ${anchorcellAssetVersion || "missing"}`);
 }
 if (
   instnct &&
@@ -185,11 +203,21 @@ if (
 ) {
   fail("INSTNCT live page does not load the VERSION asset cache key");
 }
+if (
+  anchorcell &&
+  (!anchorcell.includes(`styles.css?v=${anchorcellAssetVersion}`) ||
+    !anchorcell.includes(`anchorcell.js?v=${anchorcellAssetVersion}`))
+) {
+  fail("AnchorCell live page does not load the VERSION asset cache key");
+}
 if (instnct && unsafePublicCopyPattern.test(instnct)) {
   fail("INSTNCT public copy exposes unsafe or internal release wording");
 }
 if (home && unsafePublicCopyPattern.test(home)) {
   fail("home public copy exposes unsafe or internal release wording");
+}
+if (anchorcell && unsafePublicCopyPattern.test(anchorcell)) {
+  fail("AnchorCell public copy exposes unsafe or internal release wording");
 }
 if (home) {
   assertCsp(home, "home", [
@@ -198,7 +226,7 @@ if (home) {
     "form-action 'none'",
     "upgrade-insecure-requests",
   ]);
-  if (!home.includes(`<link rel="canonical" href="${homeUrl}">`)) fail("home canonical URL is missing or stale");
+  if (!home.includes(`<link rel="canonical" href="${canonicalBaseUrl}/">`)) fail("home canonical URL is missing or stale");
 }
 if (instnct) {
   assertCsp(instnct, "INSTNCT", [
@@ -207,8 +235,20 @@ if (instnct) {
     "form-action 'none'",
     "upgrade-insecure-requests",
   ]);
-  if (!instnct.includes(`<link rel="canonical" href="${instnctUrl}">`)) {
+  if (!instnct.includes(`<link rel="canonical" href="${canonicalBaseUrl}/instnct/">`)) {
     fail("INSTNCT canonical URL is missing or stale");
+  }
+}
+if (anchorcell) {
+  assertCsp(anchorcell, "AnchorCell", [
+    "script-src 'self'",
+    "style-src 'self'",
+    "connect-src 'none'",
+    "form-action 'none'",
+    "upgrade-insecure-requests",
+  ]);
+  if (!anchorcell.includes(`<link rel="canonical" href="${canonicalBaseUrl}/anchorcell/">`)) {
+    fail("AnchorCell canonical URL is missing or stale");
   }
 }
 if (instnct && !instnct.includes("artifact-status")) fail("INSTNCT artifact status block is missing on live Pages");
@@ -222,13 +262,15 @@ if (instnct && new RegExp(`href=["'][^"']*${hiddenSurfaceSlug}/|hidden roadmap`,
   fail("INSTNCT page exposes hidden roadmap surface");
 }
 if (hiddenSurfaceStatus !== 404) fail(`hidden roadmap surface URL must be absent from Pages, got HTTP ${hiddenSurfaceStatus}`);
-if (robots && !robots.includes(`${baseUrl}/sitemap.xml`)) fail("robots.txt does not point at the live sitemap");
-if (sitemap && !sitemap.includes(`${baseUrl}/instnct/`)) fail("sitemap.xml does not include INSTNCT");
-if (sitemap && sitemap.includes(`${baseUrl}/${hiddenSurfaceSlug}/`)) fail("sitemap.xml exposes hidden roadmap surface");
+if (robots && !robots.includes(`${canonicalBaseUrl}/sitemap.xml`)) fail("robots.txt does not point at the live sitemap");
+if (sitemap && !sitemap.includes(`${canonicalBaseUrl}/instnct/`)) fail("sitemap.xml does not include INSTNCT");
+if (sitemap && !sitemap.includes(`${canonicalBaseUrl}/anchorcell/`)) fail("sitemap.xml does not include AnchorCell");
+if (sitemap && sitemap.includes(`${canonicalBaseUrl}/${hiddenSurfaceSlug}/`)) fail("sitemap.xml exposes hidden roadmap surface");
 
 const urls = new Set([
   ...collectUrls(home, homeUrl),
   ...collectUrls(instnct, instnctUrl),
+  ...collectUrls(anchorcell, anchorcellUrl),
   `${baseUrl}/robots.txt`,
   `${baseUrl}/sitemap.xml`,
   ...(latestRelease

@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'; upgrade-insecure-requests">
+  <title>AnchorCell - VRAXION Training Data Research</title>
+  <meta name="description" content="AnchorCell is a Vraxion research direction for structured training-data authoring: scoped decision cells with trust separation, evidence links, adversarial branches, and tested export views.">
+  <meta name="theme-color" content="#05080a">
+  <meta name="robots" content="index,follow">
+  <link rel="canonical" href="https://vraxion.github.io/VRAXION/anchorcell/">
+  <meta property="og:title" content="AnchorCell - VRAXION">
+  <meta property="og:description" content="Training data format research for decision-shaped examples with explicit trust separation, evidence, failure modes, and export checks.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://vraxion.github.io/VRAXION/anchorcell/">
+  <meta property="og:site_name" content="VRAXION">
+  <meta property="og:image" content="https://vraxion.github.io/VRAXION/assets/vraxion-home-hero.jpg">
+  <meta property="og:image:alt" content="AnchorCell training data research surface">
+  <meta property="og:image:width" content="1672">
+  <meta property="og:image:height" content="941">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="AnchorCell - VRAXION">
+  <meta name="twitter:description" content="A research direction for training data examples that preserve trust, evidence, and export rules.">
+  <meta name="twitter:image" content="https://vraxion.github.io/VRAXION/assets/vraxion-home-hero.jpg">
+  <meta name="twitter:image:alt" content="AnchorCell training data research surface">
+  <link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="./styles.css?v=research-1">
+  <script src="./anchorcell.js?v=research-1" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="site-header">
+    <a class="brand" href="../" aria-label="VRAXION home">
+      <img src="../assets/vraxion-wordmark.png?v=brand-pass-1" alt="VRAXION" width="1672" height="308" decoding="sync">
+    </a>
+    <nav class="nav" aria-label="Primary">
+      <a href="../">Home</a>
+      <a href="../instnct/">INSTNCT</a>
+      <a aria-current="page" href="./">AnchorCell</a>
+      <a href="../CURRENT_STATUS.md">Status</a>
+    </nav>
+    <a class="header-action" href="https://github.com/VRAXION/VRAXION" target="_blank" rel="noopener noreferrer">GitHub</a>
+  </header>
+
+  <aside class="section-indicator" aria-label="AnchorCell section map">
+    <span class="indicator-current" data-indicator-current>01</span>
+    <ol>
+      <li><a href="#thesis" data-section-link="Thesis">Thesis</a></li>
+      <li><a href="#cell" data-section-link="Cell">Cell</a></li>
+      <li><a href="#context" data-section-link="Context">Context</a></li>
+      <li><a href="#branches" data-section-link="Branches">Branches</a></li>
+      <li><a href="#exports" data-section-link="Exports">Exports</a></li>
+      <li><a href="#proof" data-section-link="Proof">Proof</a></li>
+    </ol>
+  </aside>
+  <div class="mobile-section-readout" aria-hidden="true">
+    <span data-mobile-current>01</span>
+    <strong data-mobile-label>Thesis</strong>
+  </div>
+
+  <section class="hero" id="top" aria-labelledby="hero-title">
+    <div class="hero-background" aria-hidden="true">
+      <img src="../assets/vraxion-home-hero.jpg" alt="" decoding="sync" loading="eager" fetchpriority="high">
+    </div>
+    <div class="hero-cursor-glow" aria-hidden="true"></div>
+    <div class="hero-inner">
+      <div class="badge-row" aria-label="AnchorCell status">
+        <span>VRAXION research</span>
+        <span>Training data format</span>
+        <span>Specification draft</span>
+      </div>
+      <p class="kicker">AnchorCell</p>
+      <h1 id="hero-title">Training data with its trust boundaries intact.</h1>
+      <p class="lead">
+        AnchorCell is a Vraxion research direction for decision-shaped training data: one cell per decision, with trusted policy separated from untrusted input, facts tied to evidence, shortcuts made explicit, and export views tested before anything public ships.
+      </p>
+      <div class="hero-actions">
+        <a class="button primary" href="#cell">Inspect the method</a>
+        <a class="button secondary" href="../ANCHORCELL_RESEARCH_BRIEF.md">Read research brief</a>
+      </div>
+      <dl class="hero-metrics" aria-label="AnchorCell working scope">
+        <div><dt>Unit</dt><dd>decision cell</dd></div>
+        <div><dt>Goal</dt><dd>format quality</dd></div>
+        <div><dt>Claim</dt><dd>research draft</dd></div>
+      </dl>
+    </div>
+  </section>
+
+  <main id="main" tabindex="-1">
+    <section class="section thesis-section" id="thesis" tabindex="-1" aria-labelledby="thesis-title" data-section>
+      <div class="section-heading">
+        <p class="section-label">Research thesis</p>
+        <h2 id="thesis-title">A training example should be inspectable before it teaches anything.</h2>
+        <p>
+          Plain prompt-answer-label records are easy to generate and hard to trust. AnchorCell starts from the opposite direction: the record should show what it trusts, what it refuses, what evidence supports it, what could fool it, and what can safely leave the authoring environment.
+        </p>
+      </div>
+      <div class="thesis-grid">
+        <article class="large-card">
+          <span>Problem</span>
+          <h3>Good labels can still teach bad habits.</h3>
+          <p>Shortcut cues, hidden target leakage, injected instructions, and poisoned trigger phrases can make a dataset look clean while teaching the wrong rule.</p>
+        </article>
+        <article class="large-card accent">
+          <span>Direction</span>
+          <h3>Make the decision structure part of the record.</h3>
+          <p>The format should expose trusted policy, untrusted input, grounded facts, uncertainty, forbidden assumptions, candidate branches, and tested export views.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="section" id="cell" tabindex="-1" aria-labelledby="cell-title" data-section>
+      <div class="section-heading compact">
+        <p class="section-label">The unit</p>
+        <h2 id="cell-title">One AnchorCell is one scoped decision object.</h2>
+      </div>
+      <div class="cell-diagram" aria-label="AnchorCell record anatomy">
+        <article><span>01</span><strong>Identity</strong><p>Stable cell id, family id, version, lifecycle state.</p></article>
+        <article><span>02</span><strong>Provenance</strong><p>Created by, transformed by, source refs, canonical hash.</p></article>
+        <article><span>03</span><strong>Task</strong><p>One decision question and a tight scope boundary.</p></article>
+        <article><span>04</span><strong>Context</strong><p>Trusted policy, untrusted inputs, facts, uncertainty.</p></article>
+        <article><span>05</span><strong>Branches</strong><p>Primary path, tempting shortcut, adversarial interpretation.</p></article>
+        <article><span>06</span><strong>Review</strong><p>Tests, invariants, human signoff, export readiness.</p></article>
+      </div>
+    </section>
+
+    <section class="section split-section" id="context" tabindex="-1" aria-labelledby="context-title" data-section>
+      <div>
+        <p class="section-label">Trust separation</p>
+        <h2 id="context-title">The context packet is not a blended summary.</h2>
+        <p>
+          The central design rule is that instructions and data do not share one undifferentiated channel. An input can be quoted, analyzed, hashed, or redacted without becoming policy.
+        </p>
+      </div>
+      <div class="lane-stack" aria-label="Segregated context packet lanes">
+        <div><span>trusted_policy</span><strong>What the reviewer accepts as rules.</strong></div>
+        <div><span>untrusted_inputs</span><strong>What the record received but does not obey by default.</strong></div>
+        <div><span>extracted_facts</span><strong>Claims grounded to explicit support.</strong></div>
+        <div><span>uncertainties</span><strong>What is unknown and decision-relevant.</strong></div>
+        <div><span>forbidden_assumptions</span><strong>What the model must not silently fill in.</strong></div>
+      </div>
+    </section>
+
+    <section class="section" id="branches" tabindex="-1" aria-labelledby="branches-title" data-section>
+      <div class="section-heading">
+        <p class="section-label">Anti-shortcut design</p>
+        <h2 id="branches-title">The wrong answers should be modeled on purpose.</h2>
+        <p>AnchorCell records should include branches that show the decision boundary, not just the final label.</p>
+      </div>
+      <div class="branch-grid">
+        <article>
+          <span>candidate_primary</span>
+          <h3>Supported path</h3>
+          <p>The answer that follows verified facts and scoped policy.</p>
+        </article>
+        <article>
+          <span>naive_bad</span>
+          <h3>Tempting shortcut</h3>
+          <p>The plausible bad answer caused by urgency, authority, formatting, or metadata cues.</p>
+        </article>
+        <article>
+          <span>adversarial</span>
+          <h3>Attack-shaped path</h3>
+          <p>The response that checks whether injected or obfuscated text can bend the record.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="section split-section" id="exports" tabindex="-1" aria-labelledby="exports-title" data-section>
+      <div>
+        <p class="section-label">Export views</p>
+        <h2 id="exports-title">One authoring record, several compiled views.</h2>
+        <p>
+          Public material should be produced by an export compiler, not by hand-cleaning a rich internal record. The page claim stays narrow: the method is being shaped so training input, target output, review material, and public redactions are separate artifacts.
+        </p>
+      </div>
+      <ol class="export-list">
+        <li><strong>author_full</strong><span>controlled authoring record</span></li>
+        <li><strong>review_packet</strong><span>human audit view</span></li>
+        <li><strong>train_input</strong><span>model-facing input</span></li>
+        <li><strong>train_target</strong><span>supervision target</span></li>
+        <li><strong>public_redacted</strong><span>public-safe explanation</span></li>
+      </ol>
+    </section>
+
+    <section class="section proof-section" id="proof" tabindex="-1" aria-labelledby="proof-title" data-section>
+      <div class="section-heading">
+        <p class="section-label">What would prove it</p>
+        <h2 id="proof-title">The proof is not rhetoric. It is a validator stack.</h2>
+      </div>
+      <div class="proof-grid">
+        <article><span>Schema</span><p>Normative schema plus compatibility profile.</p></article>
+        <article><span>Semantic lint</span><p>Cross-field checks for refs, relations, and forbidden assumptions.</p></article>
+        <article><span>Adversarial pack</span><p>Injection, trigger, shortcut, and leakage probes.</p></article>
+        <article><span>Export gate</span><p>Zero known public leakage before publishing any public view.</p></article>
+      </div>
+      <div class="closing-panel">
+        <p>
+          This is not a finished model claim. The release-ready direction is a visible research surface, followed by a specification, validators, example cells, adversarial tests, and public-safe exports.
+        </p>
+        <a class="button primary" href="../ANCHORCELL_RESEARCH_BRIEF.md">Open the brief</a>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+      <span>VRAXION / AnchorCell research surface</span>
+      <a href="../">Home</a>
+      <a href="../instnct/">INSTNCT</a>
+      <a href="https://github.com/VRAXION/VRAXION" target="_blank" rel="noopener noreferrer">GitHub</a>
+    </div>
+  </footer>
+</body>
+</html>

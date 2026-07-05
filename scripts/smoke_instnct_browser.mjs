@@ -240,6 +240,7 @@ async function probeHome(browser, origin) {
     oldReleaseHref: [...document.querySelectorAll("a")].some((a) => a.href.includes("releases/tag/v6.1.7")),
     capabilitiesHref: [...document.querySelectorAll("a")].some((a) => a.href.includes("CURRENT_CAPABILITIES.md")),
     instnctPublished: document.body.textContent.includes("INSTNCT T1 Reflex Engine preview"),
+    anchorcellPublished: document.body.textContent.includes("AnchorCell studies the format before the model."),
   }), latestRelease);
   await page.close();
 
@@ -251,6 +252,7 @@ async function probeHome(browser, origin) {
   if (result.oldReleaseHref) fail("home page still links to old v6.1.7 release");
   if (!result.capabilitiesHref) fail("home page current capabilities link is missing");
   if (!result.instnctPublished) fail("home page does not frame INSTNCT as the T1 Reflex Engine preview");
+  if (!result.anchorcellPublished) fail("home page does not expose the AnchorCell research path");
 }
 
 async function probeInstnctDesktop(browser, origin) {
@@ -610,7 +612,15 @@ async function probeInstnctDesktop(browser, origin) {
   }
 
   await page.locator("#fabric").scrollIntoViewIfNeeded();
-  await page.waitForTimeout(300);
+  await page
+    .waitForFunction(() => {
+      const active = document.querySelector(".section-indicator a.is-active");
+      const fill = document.querySelector(".indicator-track span");
+      const track = document.querySelector(".indicator-track");
+      if (!active || !fill || !track || active.getAttribute("href") !== "#fabric") return false;
+      return Number.parseFloat(getComputedStyle(fill).height) >= Number.parseFloat(getComputedStyle(track).height) * 0.45;
+    }, null, { timeout: 1600 })
+    .catch(() => {});
   const sectionState = await page.evaluate(() => {
     const fill = document.querySelector(".indicator-track span");
     const active = document.querySelector(".section-indicator a.is-active");
@@ -1246,10 +1256,123 @@ async function probeInstnctPerformanceBudget(browser, origin) {
   if (errors.length) fail(`INSTNCT performance browser errors: ${errors.join(" | ")}`);
 }
 
+async function probeAnchorCell(browser, origin) {
+  const viewports = [
+    { width: 390, height: 844 },
+    { width: 768, height: 1024 },
+    { width: 1440, height: 900 },
+  ];
+
+  for (const viewport of viewports) {
+    const label = `${viewport.width}x${viewport.height}`;
+    const page = await browser.newPage({ viewport, reducedMotion: "no-preference" });
+    const errors = trackPageFailures(page, origin, `AnchorCell ${label}`);
+    await page.goto(`${origin}/anchorcell/`, { waitUntil: "networkidle" });
+    await page.waitForTimeout(350);
+
+    const first = await page.evaluate(() => {
+      const visibleTarget = (el) => {
+        const style = getComputedStyle(el);
+        const rect = el.getBoundingClientRect();
+        return (
+          style.display !== "none" &&
+          style.visibility !== "hidden" &&
+          Number(style.opacity || 1) !== 0 &&
+          rect.width > 0 &&
+          rect.height > 0
+        );
+      };
+      const hero = document.querySelector(".hero");
+      const heroRect = hero?.getBoundingClientRect();
+      const nextSignal = [...(hero?.nextElementSibling?.querySelectorAll(".section-label, h2") || [])].find((candidate) => {
+        const rect = candidate.getBoundingClientRect();
+        return rect.top <= document.documentElement.clientHeight - 12 && rect.bottom > 0;
+      });
+      const nextSignalRect = nextSignal?.getBoundingClientRect();
+      const nextSignalStyle = nextSignal ? getComputedStyle(nextSignal) : null;
+      const rail = document.querySelector(".section-indicator");
+      const readout = document.querySelector(".mobile-section-readout");
+      const railStyle = rail ? getComputedStyle(rail) : null;
+      const readoutStyle = readout ? getComputedStyle(readout) : null;
+      return {
+        overflow: document.documentElement.scrollWidth > document.documentElement.clientWidth,
+        h1Count: [...document.querySelectorAll("h1")].filter(visibleTarget).length,
+        copyOk:
+          document.body.textContent.includes("Training data with its trust boundaries intact.") &&
+          document.body.textContent.includes("not a finished model claim"),
+        booted: hero?.classList.contains("is-booted"),
+        heroHeight: heroRect ? Math.round(heroRect.height) : 0,
+        heroNextSignalVisible: nextSignalRect
+          ? nextSignalRect.top <= document.documentElement.clientHeight - 12 &&
+            Number(nextSignalStyle.opacity) > 0.75 &&
+            nextSignalStyle.visibility !== "hidden"
+          : false,
+        railVisible: !!rail && railStyle.display !== "none" && railStyle.visibility !== "hidden",
+        readoutVisible:
+          !!readout &&
+          readoutStyle.display !== "none" &&
+          readoutStyle.visibility !== "hidden" &&
+          Number(readoutStyle.opacity || 1) > 0.25,
+        shortTargets: [...document.querySelectorAll('a[href], button, [role="button"]')]
+          .filter(visibleTarget)
+          .map((el) => {
+            const rect = el.getBoundingClientRect();
+            return {
+              text: (el.textContent || el.getAttribute("aria-label") || el.getAttribute("href") || "")
+                .trim()
+                .replace(/\s+/g, " ")
+                .slice(0, 80),
+              width: Math.round(rect.width),
+              height: Math.round(rect.height),
+            };
+          })
+          .filter((target) => target.width < 44 || target.height < 44),
+      };
+    });
+
+    if (first.overflow) fail(`AnchorCell ${label} has horizontal overflow`);
+    if (first.h1Count !== 1) fail(`AnchorCell ${label} must expose one visible h1: ${JSON.stringify(first)}`);
+    if (!first.copyOk) fail(`AnchorCell ${label} required copy is missing`);
+    if (!first.booted) fail(`AnchorCell ${label} hero did not boot`);
+    if (!first.heroNextSignalVisible) {
+      fail(`AnchorCell ${label} hero does not reveal next-section content in the first viewport: ${JSON.stringify(first)}`);
+    }
+    if (viewport.width <= 420 && first.heroHeight > Math.max(920, viewport.height * 1.2)) {
+      fail(`AnchorCell ${label} mobile hero is too tall: ${JSON.stringify(first)}`);
+    }
+    if (viewport.width <= 1360) {
+      if (first.railVisible || !first.readoutVisible) fail(`AnchorCell ${label} should use compact section readout: ${JSON.stringify(first)}`);
+    } else if (!first.railVisible || first.readoutVisible) {
+      fail(`AnchorCell ${label} desktop section rail/readout mode is wrong: ${JSON.stringify(first)}`);
+    }
+    if (first.shortTargets.length) {
+      fail(`AnchorCell ${label} visible action targets are too small: ${JSON.stringify(first.shortTargets)}`);
+    }
+
+    await page.locator("#branches").scrollIntoViewIfNeeded();
+    await page.waitForTimeout(260);
+    const tracking = await page.evaluate(() => ({
+      active: document.querySelector(".section-indicator a.is-active")?.textContent.trim() || "",
+      mobileLabel: document.querySelector("[data-mobile-label]")?.textContent.trim() || "",
+      revealed: [...document.querySelectorAll(".section")].filter((section) => section.classList.contains("is-revealed")).length,
+    }));
+    if (!tracking.active.includes("Branches") && !tracking.mobileLabel.includes("Branches")) {
+      fail(`AnchorCell ${label} section tracking did not follow scroll: ${JSON.stringify(tracking)}`);
+    }
+    if (tracking.revealed < 2) {
+      fail(`AnchorCell ${label} scroll reveal did not mark sections: ${JSON.stringify(tracking)}`);
+    }
+
+    await page.close();
+    if (errors.length) fail(`AnchorCell ${label} browser errors: ${errors.join(" | ")}`);
+  }
+}
+
 async function probeAccessibilitySemantics(browser, origin) {
   const targets = [
     { path: "/", label: "home" },
     { path: "/instnct/", label: "INSTNCT" },
+    { path: "/anchorcell/", label: "AnchorCell" },
   ];
 
   for (const target of targets) {
@@ -1474,6 +1597,7 @@ try {
   await probeResponsiveViewports(browser, server.origin);
   await probeInstnctScrollReveals(browser, server.origin);
   await probeInstnctPerformanceBudget(browser, server.origin);
+  await probeAnchorCell(browser, server.origin);
   await probeAccessibilitySemantics(browser, server.origin);
 } finally {
   if (browser) await browser.close();

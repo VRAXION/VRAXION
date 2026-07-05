@@ -6,10 +6,13 @@ import vm from "node:vm";
 const root = process.cwd();
 const homePath = path.join(root, "docs", "index.html");
 const htmlPath = path.join(root, "docs", "instnct", "index.html");
+const anchorcellPath = path.join(root, "docs", "anchorcell", "index.html");
 const hiddenSurfaceSlug = ["vn", "gard"].join("");
 const publishedHiddenSurfacePath = path.join(root, "docs", hiddenSurfaceSlug);
 const jsPath = path.join(root, "docs", "instnct", "instnct.js");
 const cssPath = path.join(root, "docs", "instnct", "styles.css");
+const anchorcellJsPath = path.join(root, "docs", "anchorcell", "anchorcell.js");
+const anchorcellCssPath = path.join(root, "docs", "anchorcell", "styles.css");
 const browserSmokePath = path.join(root, "scripts", "smoke_instnct_browser.mjs");
 const versionPath = path.join(root, "docs", "VERSION.json");
 const robotsPath = path.join(root, "docs", "robots.txt");
@@ -21,14 +24,18 @@ const siteRoot = path.join(root, "docs", "instnct");
 
 const html = fs.readFileSync(htmlPath, "utf8");
 const home = fs.readFileSync(homePath, "utf8");
+const anchorcell = fs.readFileSync(anchorcellPath, "utf8");
 const js = fs.readFileSync(jsPath, "utf8");
 const css = fs.readFileSync(cssPath, "utf8");
+const anchorcellJs = fs.readFileSync(anchorcellJsPath, "utf8");
+const anchorcellCss = fs.readFileSync(anchorcellCssPath, "utf8");
 const browserSmoke = fs.readFileSync(browserSmokePath, "utf8");
 const currentCapabilities = fs.readFileSync(currentCapabilitiesPath, "utf8");
 const benchmarkNotes = fs.readFileSync(benchmarkNotesPath, "utf8");
 const token = (...parts) => parts.join("");
 let latestRelease = "";
 let instnctAssetVersion = "";
+let anchorcellAssetVersion = "";
 const failures = [];
 
 function fail(message) {
@@ -170,6 +177,11 @@ try {
 } catch (err) {
   fail(`INSTNCT JS syntax error: ${err.message}`);
 }
+try {
+  new vm.Script(anchorcellJs, { filename: anchorcellJsPath });
+} catch (err) {
+  fail(`AnchorCell JS syntax error: ${err.message}`);
+}
 
 try {
   const version = JSON.parse(fs.readFileSync(versionPath, "utf8"));
@@ -178,6 +190,10 @@ try {
   instnctAssetVersion = String(version.instnct_asset_version || "");
   if (!/^release-\d+$/.test(instnctAssetVersion)) {
     fail(`docs/VERSION.json instnct_asset_version is invalid: ${instnctAssetVersion || "missing"}`);
+  }
+  anchorcellAssetVersion = String(version.anchorcell_asset_version || "");
+  if (!/^research-\d+$/.test(anchorcellAssetVersion)) {
+    fail(`docs/VERSION.json anchorcell_asset_version is invalid: ${anchorcellAssetVersion || "missing"}`);
   }
   for (const [field, value] of Object.entries(version)) {
     if (typeof value === "string" && /\bboundary\b/i.test(value)) {
@@ -242,12 +258,37 @@ for (const required of [
   "Signed T1 Proof Pack pending",
   "Meet INSTNCT, the first public VRAXION engine target.",
   "The engine contract: answer on-path, refuse off-path.",
+  "AnchorCell studies the format before the model.",
+  "This path is not a model announcement.",
+  "./anchorcell/",
+  "./ANCHORCELL_RESEARCH_BRIEF.md",
   "Path Selector",
   "Exact Mode",
   "Proof Pack",
   "local reflex reasoning engine that says yes inside known paths and no outside them",
 ]) {
   if (!home.includes(required)) fail(`missing homepage positioning copy: ${required}`);
+}
+
+for (const required of [
+  '<a class="skip-link" href="#main">Skip to content</a>',
+  '<main id="main" tabindex="-1">',
+  '<link rel="canonical" href="https://vraxion.github.io/VRAXION/anchorcell/">',
+  "AnchorCell is a Vraxion research direction",
+  "Training data with its trust boundaries intact.",
+  "one cell per decision",
+  "trusted policy separated from untrusted input",
+  "section-indicator",
+  "mobile-section-readout",
+  "hero-cursor-glow",
+  "candidate_primary",
+  "naive_bad",
+  "adversarial",
+  "public_redacted",
+  "not a finished model claim",
+  "../ANCHORCELL_RESEARCH_BRIEF.md",
+]) {
+  if (!anchorcell.includes(required)) fail(`missing AnchorCell markup: ${required}`);
 }
 
 const keyboardTrigger = html.match(/<button class="keyboard-help-trigger"[^>]*>/)?.[0] || "";
@@ -288,6 +329,19 @@ for (const required of [
 }
 
 for (const required of [
+  "data-section-link",
+  "is-pointer-active",
+  "is-revealed",
+  "prefers-reduced-motion",
+  "--hero-bg-x",
+  "--hero-glow-x",
+  "data-indicator-current",
+  "data-mobile-label",
+]) {
+  if (!anchorcellJs.includes(required)) fail(`missing AnchorCell enhancement: ${required}`);
+}
+
+for (const required of [
   ".fabric-flow-panel",
   "#not-ai::after",
   "engine-scope-bg.jpg",
@@ -323,6 +377,22 @@ for (const required of [
 }
 
 for (const required of [
+  ".section-indicator",
+  ".mobile-section-readout",
+  ".hero-cursor-glow",
+  ".hero-background img",
+  ".cell-diagram",
+  ".branch-grid",
+  ".export-list",
+  ".proof-grid",
+  ".has-js .hero.is-booted",
+  "@media (max-width: 1360px)",
+  "@media (prefers-reduced-motion: reduce)",
+]) {
+  if (!anchorcellCss.includes(required)) fail(`missing AnchorCell style: ${required}`);
+}
+
+for (const required of [
   "byteSizeForServedPath",
   "probeInstnctPerformanceBudget",
   "probeInstnctNoJs",
@@ -351,6 +421,17 @@ for (const forbidden of [
   /\bnew\s+Function\b/,
 ]) {
   if (forbidden.test(js)) fail(`forbidden client API in INSTNCT JS: ${forbidden}`);
+}
+for (const forbidden of [
+  /\bfetch\s*\(/,
+  /\bXMLHttpRequest\b/,
+  /\bsendBeacon\b/,
+  /\blocalStorage\b/,
+  /\bsessionStorage\b/,
+  /\beval\s*\(/,
+  /\bnew\s+Function\b/,
+]) {
+  if (forbidden.test(anchorcellJs)) fail(`forbidden client API in AnchorCell JS: ${forbidden}`);
 }
 
 for (const forbidden of [
@@ -485,6 +566,8 @@ for (const forbiddenCopy of [
   if (html.includes(forbiddenCopy)) fail(`unsafe or internal public copy is visible: ${forbiddenCopy}`);
   if (home.includes(forbiddenCopy)) fail(`unsafe or internal public homepage copy is visible: ${forbiddenCopy}`);
   if (js.includes(forbiddenCopy)) fail(`unsafe or internal public JS copy is visible: ${forbiddenCopy}`);
+  if (anchorcell.includes(forbiddenCopy)) fail(`unsafe or internal AnchorCell copy is visible: ${forbiddenCopy}`);
+  if (anchorcellJs.includes(forbiddenCopy)) fail(`unsafe or internal AnchorCell JS copy is visible: ${forbiddenCopy}`);
   if (currentCapabilities.includes(forbiddenCopy)) {
     fail(`unsafe or internal public capabilities copy is visible: ${forbiddenCopy}`);
   }
@@ -495,6 +578,8 @@ for (const forbiddenCopy of [
 
 if (!html.includes("connect-src 'none'")) fail("CSP must keep connect-src 'none'");
 if (!html.includes("form-action 'none'")) fail("CSP must keep form-action 'none'");
+if (!anchorcell.includes("connect-src 'none'")) fail("AnchorCell CSP must keep connect-src 'none'");
+if (!anchorcell.includes("form-action 'none'")) fail("AnchorCell CSP must keep form-action 'none'");
 
 const homeCspTag = home.match(/<meta\s+[^>]*http-equiv="Content-Security-Policy"[^>]*>/i)?.[0] || "";
 const homeCsp = attr(homeCspTag, "content");
@@ -554,6 +639,27 @@ for (const [name, expected] of [
 }
 if (!cspDirectives.has("upgrade-insecure-requests")) fail("CSP missing upgrade-insecure-requests");
 
+const anchorcellCspTag = anchorcell.match(/<meta\s+[^>]*http-equiv="Content-Security-Policy"[^>]*>/i)?.[0] || "";
+const anchorcellCsp = attr(anchorcellCspTag, "content");
+if (!anchorcellCsp) fail("AnchorCell missing Content-Security-Policy meta");
+const anchorcellCspDirectives = parseCsp(anchorcellCsp);
+for (const [name, expected] of [
+  ["default-src", ["'self'"]],
+  ["script-src", ["'self'"]],
+  ["style-src", ["'self'"]],
+  ["img-src", ["'self'", "data:"]],
+  ["connect-src", ["'none'"]],
+  ["object-src", ["'none'"]],
+  ["base-uri", ["'none'"]],
+  ["form-action", ["'none'"]],
+]) {
+  const actual = anchorcellCspDirectives.get(name) || [];
+  if (actual.join(" ") !== expected.join(" ")) {
+    fail(`AnchorCell CSP ${name} mismatch: ${actual.join(" ") || "missing"}`);
+  }
+}
+if (!anchorcellCspDirectives.has("upgrade-insecure-requests")) fail("AnchorCell CSP missing upgrade-insecure-requests");
+
 const jsonLdMatch = html.match(/<script\s+type="application\/ld\+json">([\s\S]*?)<\/script>/i);
 if (!jsonLdMatch) {
   fail("missing JSON-LD script");
@@ -586,6 +692,17 @@ for (const scriptTag of html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi)
     fail(`external script source is not allowed: ${src}`);
   }
 }
+for (const scriptTag of anchorcell.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi)) {
+  const tag = scriptTag[0];
+  const type = attr(tag, "type");
+  const src = attr(tag, "src");
+  if (!src && type !== "application/ld+json") {
+    fail("AnchorCell unexpected inline script without JSON-LD type");
+  }
+  if (src && (!isLocalOrDataRef(src) || isExternalRef(src))) {
+    fail(`AnchorCell external script source is not allowed: ${src}`);
+  }
+}
 
 for (const tagMatch of html.matchAll(/<(img|source|video|audio|iframe|object)\b[^>]*>/gi)) {
   const tag = tagMatch[0];
@@ -606,6 +723,25 @@ for (const tagMatch of html.matchAll(/<(img|source|video|audio|iframe|object)\b[
     }
   }
 }
+for (const tagMatch of anchorcell.matchAll(/<(img|source|video|audio|iframe|object)\b[^>]*>/gi)) {
+  const tag = tagMatch[0];
+  const tagName = tagMatch[1].toLowerCase();
+  for (const name of ["src", "poster", "data"]) {
+    const value = attr(tag, name);
+    if (value && (!isLocalOrDataRef(value) || isExternalRef(value))) {
+      fail(`AnchorCell external ${tagName} ${name} is not allowed: ${value}`);
+    }
+  }
+  const srcset = attr(tag, "srcset");
+  if (srcset) {
+    for (const candidate of srcset.split(",")) {
+      const value = candidate.trim().split(/\s+/)[0] || "";
+      if (value && (!isLocalOrDataRef(value) || isExternalRef(value))) {
+        fail(`AnchorCell external ${tagName} srcset is not allowed: ${value}`);
+      }
+    }
+  }
+}
 
 for (const linkTag of html.matchAll(/<link\b[^>]*>/gi)) {
   const tag = linkTag[0];
@@ -615,6 +751,16 @@ for (const linkTag of html.matchAll(/<link\b[^>]*>/gi)) {
   const isSubresource = /\b(?:stylesheet|preload|modulepreload|icon|apple-touch-icon|manifest)\b/.test(rel);
   if (isSubresource && (!isLocalOrDataRef(href) || isExternalRef(href))) {
     fail(`external link subresource is not allowed: ${href}`);
+  }
+}
+for (const linkTag of anchorcell.matchAll(/<link\b[^>]*>/gi)) {
+  const tag = linkTag[0];
+  const rel = attr(tag, "rel").toLowerCase();
+  const href = attr(tag, "href");
+  if (!href) continue;
+  const isSubresource = /\b(?:stylesheet|preload|modulepreload|icon|apple-touch-icon|manifest)\b/.test(rel);
+  if (isSubresource && (!isLocalOrDataRef(href) || isExternalRef(href))) {
+    fail(`AnchorCell external link subresource is not allowed: ${href}`);
   }
 }
 
@@ -631,9 +777,16 @@ for (const urlMatch of css.matchAll(/url\(["']?([^"')]+)["']?\)/gi)) {
     fail(`external CSS url is not allowed: ${value}`);
   }
 }
+for (const urlMatch of anchorcellCss.matchAll(/url\(["']?([^"')]+)["']?\)/gi)) {
+  const value = urlMatch[1];
+  if (!isLocalOrDataRef(value) || isExternalRef(value)) {
+    fail(`AnchorCell external CSS url is not allowed: ${value}`);
+  }
+}
 
 validateDocumentRefs("homepage", home);
 validateDocumentRefs("INSTNCT", html);
+validateDocumentRefs("AnchorCell", anchorcell);
 
 const sectionLinks = [...html.matchAll(/data-section-link="/g)].length;
 const initialTotal = html.match(/data-indicator-total>\s*\/\s*(\d+)/)?.[1];
@@ -668,6 +821,20 @@ for (const ref of refs) {
   }
 }
 
+const anchorcellRefs = [
+  ...anchorcell.matchAll(/\s(?:src|href)="(\.{1,2}\/[^"#?]+)(?:[?#][^"]*)?"/g),
+  ...anchorcellCss.matchAll(/url\("(\.{1,2}\/[^"#?]+)(?:[?#][^"]*)?"\)/g),
+].map((match) => match[1]);
+
+for (const ref of anchorcellRefs) {
+  const target = path.resolve(path.dirname(anchorcellPath), ref);
+  if (!target.startsWith(docsRoot + path.sep)) {
+    fail(`AnchorCell asset escapes docs: ${ref}`);
+  } else if (!fs.existsSync(target)) {
+    fail(`AnchorCell missing local asset: ${ref}`);
+  }
+}
+
 validateSocialImage({
   label: "homepage",
   markup: home,
@@ -682,6 +849,22 @@ validateSocialImage({
   rootDir: siteRoot,
   expectedAlt: "INSTNCT local reflex reasoning hero surface",
 });
+validateSocialImage({
+  label: "AnchorCell",
+  markup: anchorcell,
+  prefix: "https://vraxion.github.io/VRAXION/",
+  rootDir: docsRoot,
+  expectedAlt: "AnchorCell training data research surface",
+});
+
+if (anchorcellAssetVersion) {
+  if (!anchorcell.includes(`./styles.css?v=${anchorcellAssetVersion}`)) {
+    fail("AnchorCell stylesheet cache key must match docs/VERSION.json anchorcell_asset_version");
+  }
+  if (!anchorcell.includes(`./anchorcell.js?v=${anchorcellAssetVersion}`)) {
+    fail("AnchorCell script cache key must match docs/VERSION.json anchorcell_asset_version");
+  }
+}
 
 if (/\.hero-mesh\s*\{[^}]*display:\s*none/i.test(css)) {
   fail("hero mesh should not be fully disabled in responsive CSS");
@@ -710,6 +893,7 @@ else {
   for (const url of [
     "https://vraxion.github.io/VRAXION/",
     "https://vraxion.github.io/VRAXION/instnct/",
+    "https://vraxion.github.io/VRAXION/anchorcell/",
   ]) {
     if (!sitemap.includes(`<loc>${url}</loc>`)) fail(`sitemap missing ${url}`);
   }
