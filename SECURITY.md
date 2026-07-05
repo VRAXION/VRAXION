@@ -1,7 +1,9 @@
 # Security Policy
 
 Report security issues privately by opening a GitHub security advisory or by
-contacting the project maintainers through the repository owner profile.
+contacting the project maintainers through the repository owner profile. Do not
+open a public issue for vulnerabilities, suspected secret exposure, or reports
+that require private material to explain the impact.
 
 Please do not publish exploit details before maintainers have had time to
 investigate and respond.
@@ -17,6 +19,12 @@ This public repository currently includes:
 
 The private engine implementation, non-public training data, private run
 infrastructure, and operator-only workspace are outside this repository.
+
+Security reports should use only public reproduction material unless a private
+review path has been opened. Do not paste secrets, tokens, private code,
+non-public training data, raw operator output, absolute local or UNC machine
+paths, production config, private dashboards, or credential values into public
+issues, pull requests, comments, or discussions.
 
 ## Reporting Checklist
 
@@ -40,3 +48,6 @@ increase risk before users can update.
 
 Run `node scripts\audit_public_secrets.mjs` before release PRs that touch
 configuration, Worker code, release artifacts, or generated files.
+For release-state or GitHub release changes, also run
+`node scripts\audit_public_github_state.mjs` before opening the final PR and
+again after merge.

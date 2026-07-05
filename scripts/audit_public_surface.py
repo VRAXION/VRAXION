@@ -148,6 +148,7 @@ REQUIRED_TRACKED_FILES = {
     "scripts/validate_public_release_state.mjs",
     "scripts/sync_public_release_links.mjs",
     "LICENSE_BOUNDARY.md",
+    "SECURITY.md",
     "SUPPORT.md",
 }
 
@@ -188,6 +189,24 @@ REQUIRED_CONTRIBUTING_MARKERS = {
     "powershell -ExecutionPolicy Bypass -File scripts/check_public_export.ps1",
     "non-public training data",
     "absolute local or UNC paths",
+}
+
+REQUIRED_SECURITY_MARKERS = {
+    "GitHub security advisory",
+    "open a public issue",
+    "vulnerabilities, suspected secret exposure",
+    "private material to explain the impact",
+    "Public Scope",
+    "non-public training data",
+    "raw operator output",
+    "absolute local or UNC machine",
+    "production config",
+    "private dashboards",
+    "PUBLIC_RELEASE_CHECKLIST.md",
+    "node scripts\\audit_public_secrets.mjs",
+    "node scripts\\audit_public_github_state.mjs",
+    "before opening the final PR and",
+    "again after merge",
 }
 
 REQUIRED_DEPENDABOT_MARKERS = {
@@ -449,6 +468,11 @@ def main() -> int:
     for required in sorted(REQUIRED_CONTRIBUTING_MARKERS):
         if required not in contributing_doc:
             failures.append(f"contributing doc missing public-gate marker: {required}")
+
+    security_doc = read_text(ROOT / "SECURITY.md")
+    for required in sorted(REQUIRED_SECURITY_MARKERS):
+        if required not in security_doc:
+            failures.append(f"security doc missing public-security marker: {required}")
 
     dependabot_config = read_text(ROOT / ".github" / "dependabot.yml")
     for required in sorted(REQUIRED_DEPENDABOT_MARKERS):
