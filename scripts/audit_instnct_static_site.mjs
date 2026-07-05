@@ -322,6 +322,8 @@ for (const forbiddenCopy of [
   "local runnable",
   token("source", "-available"),
   token("source", " available"),
+  token("open ", "source"),
+  token("open-", "source"),
   token("Source ", "snapshot"),
   token("source ", "snapshot"),
   token("source ", "archive"),

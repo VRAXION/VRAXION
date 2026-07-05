@@ -24,6 +24,6 @@ Brand names and marks:
   rights reserved
 ```
 
-Use precise wording. VRAXION Community Source or noncommercial code is not the
-same as OSI open source. The private engine is not source-distributed by this
-package.
+Use precise wording. VRAXION Community Source or noncommercial code is not an
+OSI-approved permissive public license. The private engine is not distributed
+by this package.

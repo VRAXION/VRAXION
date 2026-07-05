@@ -57,6 +57,8 @@ PUBLIC_COPY_SUFFIXES = (".md", ".html", ".cff")
 FORBIDDEN_PUBLIC_COPY = [
     marker("source", "-available"),
     marker("source ", "available"),
+    marker("open ", "source"),
+    marker("open-", "source"),
     marker("source ", "snapshot"),
     marker("source ", "archive"),
     marker("public source ", "archive"),
