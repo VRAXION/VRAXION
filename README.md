@@ -40,7 +40,8 @@ Before any new public release is added, the release should have:
 3. a reviewed `releases/<release-slug>.manifest.json` when public artifacts,
    checksums, signatures, or status claims change
 4. an updated `docs/VERSION.json` and matching public page links
-5. no private engine code, private data, local paths, secrets, or internal run output
+5. no private engine code, private data, absolute local or UNC paths, secrets,
+   or internal run output
 6. green CI and a passing public export guard
 
 Use `PUBLIC_RELEASE_CHECKLIST.md` as the release PR checklist before adding a

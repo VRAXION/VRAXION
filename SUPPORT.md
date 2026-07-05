@@ -15,9 +15,9 @@ workflow behavior, and public documentation.
 ## Do Not Include
 
 Do not put secrets, tokens, private code, internal implementation excerpts,
-non-public training data, raw operator output, local machine paths, production
-config, private dashboards, or credential values in public issues, pull
-requests, comments, or discussions.
+non-public training data, raw operator output, absolute local or UNC machine paths,
+production config, private dashboards, or credential values in public issues,
+pull requests, comments, or discussions.
 
 If a report needs private material to explain the impact, do not open a public
 issue. Use the security route or contact the repository owner profile instead.
