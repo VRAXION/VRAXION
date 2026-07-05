@@ -660,7 +660,7 @@ for (const [name, expected] of [
 }
 if (!anchorcellCspDirectives.has("upgrade-insecure-requests")) fail("AnchorCell CSP missing upgrade-insecure-requests");
 
-const jsonLdMatch = html.match(/<script\s+type="application\/ld\+json">([\s\S]*?)<\/script>/i);
+const jsonLdMatch = html.match(/<script\s+type="application\/ld\+json">([\s\S]*?)<\/script\s*>/i);
 if (!jsonLdMatch) {
   fail("missing JSON-LD script");
 } else {
@@ -681,7 +681,7 @@ if (!jsonLdMatch) {
   }
 }
 
-for (const scriptTag of html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi)) {
+for (const scriptTag of html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script\s*>/gi)) {
   const tag = scriptTag[0];
   const type = attr(tag, "type");
   const src = attr(tag, "src");
@@ -692,7 +692,7 @@ for (const scriptTag of html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi)
     fail(`external script source is not allowed: ${src}`);
   }
 }
-for (const scriptTag of anchorcell.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi)) {
+for (const scriptTag of anchorcell.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script\s*>/gi)) {
   const tag = scriptTag[0];
   const type = attr(tag, "type");
   const src = attr(tag, "src");
