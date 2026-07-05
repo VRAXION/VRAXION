@@ -59,18 +59,25 @@ Before creating or updating a public release, review:
 
 ## Pre-Release GitHub Check
 
-For any future public artifact or training-result release, verify the public
-GitHub state before merge:
+For any future public artifact or training-result release, verify the live
+GitHub state before opening the final release PR and again after merge:
 
 ```powershell
 gh pr list --state open --limit 50
 gh release list --limit 20
+node scripts\audit_public_github_state.mjs
 node scripts\sync_public_release_links.mjs --check
 node scripts\validate_public_release_state.mjs
 node scripts\audit_public_secrets.mjs
 python scripts\audit_public_surface.py
 powershell -ExecutionPolicy Bypass -File scripts\check_public_export.ps1
 ```
+
+Run `node scripts\audit_public_github_state.mjs` before opening the final
+release PR, and run it again after merge before publishing or marking a GitHub
+release as current. The live audit intentionally fails when open pull requests
+or extra remote branches are present, because the public release state should be
+settled before it becomes the current public truth.
 
 The public release PR should state which GitHub release, tag, status doc,
 manifest, and artifact entry are the source of truth.
