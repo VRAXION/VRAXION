@@ -297,6 +297,7 @@ async function probeInstnctDesktop(browser, origin) {
     exactModeWallpaper: getComputedStyle(document.querySelector("#hallucination"), "::after").backgroundImage,
     proofPackWallpaper: getComputedStyle(document.querySelector("#trust"), "::after").backgroundImage,
     releaseClaimWallpaper: getComputedStyle(document.querySelector("#grounding"), "::after").backgroundImage,
+    cliProofWallpaper: getComputedStyle(document.querySelector("#dev-trail"), "::after").backgroundImage,
     wallpaperSectionCount: document.querySelectorAll("[data-wallpaper-section]").length,
     proofPackHeight: Math.round(document.querySelector("#trust").getBoundingClientRect().height),
     releaseClaimHeight: Math.round(document.querySelector("#grounding").getBoundingClientRect().height),
@@ -360,7 +361,10 @@ async function probeInstnctDesktop(browser, origin) {
   if (!top.releaseClaimWallpaper.includes("release-claim-bg.jpg")) {
     fail(`INSTNCT release claim wallpaper is missing: ${top.releaseClaimWallpaper}`);
   }
-  if (top.wallpaperSectionCount !== 6 || top.proofPackHeight < 940 || top.releaseClaimHeight < 660) {
+  if (!top.cliProofWallpaper.includes("cli-proof-bg.jpg")) {
+    fail(`INSTNCT CLI proof wallpaper is missing: ${top.cliProofWallpaper}`);
+  }
+  if (top.wallpaperSectionCount !== 7 || top.proofPackHeight < 940 || top.releaseClaimHeight < 660) {
     fail(`INSTNCT wallpaper scene sections are not expanded: ${JSON.stringify(top)}`);
   }
 
@@ -1380,8 +1384,10 @@ async function probeAnchorCell(browser, origin) {
       const nextSignalStyle = nextSignal ? getComputedStyle(nextSignal) : null;
       const rail = document.querySelector(".section-indicator");
       const readout = document.querySelector(".mobile-section-readout");
+      const railList = document.querySelector(".section-indicator ol");
       const railStyle = rail ? getComputedStyle(rail) : null;
       const readoutStyle = readout ? getComputedStyle(readout) : null;
+      const railListStyle = railList ? getComputedStyle(railList) : null;
       return {
         overflow: document.documentElement.scrollWidth > document.documentElement.clientWidth,
         h1Count: [...document.querySelectorAll("h1")].filter(visibleTarget).length,
@@ -1398,6 +1404,8 @@ async function probeAnchorCell(browser, origin) {
             nextSignalStyle.visibility !== "hidden"
           : false,
         railVisible: !!rail && railStyle.display !== "none" && railStyle.visibility !== "hidden",
+        railListCollapsed:
+          !!railListStyle && Number(railListStyle.opacity || 1) < 0.15 && railListStyle.pointerEvents === "none",
         readoutVisible:
           !!readout &&
           readoutStyle.display !== "none" &&
@@ -1436,9 +1444,28 @@ async function probeAnchorCell(browser, origin) {
       if (first.railVisible || !first.readoutVisible) fail(`AnchorCell ${label} should use compact section readout: ${JSON.stringify(first)}`);
     } else if (!first.railVisible || first.readoutVisible) {
       fail(`AnchorCell ${label} desktop section rail/readout mode is wrong: ${JSON.stringify(first)}`);
+    } else if (!first.railListCollapsed) {
+      fail(`AnchorCell ${label} desktop section rail labels should be collapsed by default: ${JSON.stringify(first)}`);
     }
     if (first.shortTargets.length) {
       fail(`AnchorCell ${label} visible action targets are too small: ${JSON.stringify(first.shortTargets)}`);
+    }
+
+    if (viewport.width > 1360) {
+      await page.hover(".section-indicator");
+      await page.waitForTimeout(220);
+      const hoverState = await page.evaluate(() => {
+        const list = document.querySelector(".section-indicator ol");
+        const style = list ? getComputedStyle(list) : null;
+        return {
+          opacity: style ? Number(style.opacity || 0) : 0,
+          pointerEvents: style?.pointerEvents || "",
+          transform: style?.transform || "",
+        };
+      });
+      if (hoverState.opacity < 0.75 || hoverState.pointerEvents === "none") {
+        fail(`AnchorCell ${label} desktop section rail labels should open on hover: ${JSON.stringify(hoverState)}`);
+      }
     }
 
     await page.locator("#branches").scrollIntoViewIfNeeded();

@@ -504,6 +504,7 @@ for (const required of [
   "release-claim-bg.jpg",
   "constraints-founder-bg.jpg",
   "fabric-result-bg.jpg",
+  "cli-proof-bg.jpg",
   ".release-snapshot-pill",
   ".button-icon",
   ".card-icon",
