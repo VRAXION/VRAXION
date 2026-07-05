@@ -309,6 +309,7 @@ try {
     Write-Host "==> public export root shape"
     Assert-NoReparsePoints -Root $exportPath
     $requiredRootEntries = @(
+        ".github\dependabot.yml",
         ".github\ISSUE_TEMPLATE\config.yml",
         ".github\ISSUE_TEMPLATE\public-surface-report.yml",
         ".github\pull_request_template.md",
@@ -417,6 +418,7 @@ try {
 
     Write-Host "==> public export exact path allowlist"
     $allowedPublicFiles = @(
+        ".github/dependabot.yml",
         ".github/ISSUE_TEMPLATE/config.yml",
         ".github/ISSUE_TEMPLATE/public-surface-report.yml",
         ".github/pull_request_template.md",

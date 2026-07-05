@@ -32,3 +32,7 @@ non-public training data, local machine paths, raw operator output, production
 config, or private dashboards in public issues. Use `SECURITY.md` for
 vulnerabilities or reports with security impact. Support routing is summarized
 in `SUPPORT.md`.
+
+Dependency update PRs are public-surface PRs. Keep them limited to the public
+Cargo workspace and GitHub Actions unless a separate release review adds a new
+public manifest or ecosystem.
