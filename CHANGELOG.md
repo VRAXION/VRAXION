@@ -12,6 +12,8 @@
 - Added `PUBLIC_RELEASE_CHECKLIST.md` for future release PRs.
 - Added a public issue intake form and guard checks that keep reports inside
   the visible public surface.
+- Added `SUPPORT.md` to route public reports, release questions, and security
+  reports without exposing private material.
 
 ## 2026-06-29
 
