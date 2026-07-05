@@ -1,0 +1,1040 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://vraxion.github.io/VRAXION/anchorcell/anchorcell.v2.schema.json",
+  "title": "AnchorCell Finalized Authoring Schema",
+  "type": "object",
+  "$comment": "Normative AnchorCell authoring schema. Cross-record checks such as parent existence, parent != self, branch_id uniqueness-by-key, and evidence-ref resolution across a corpus SHOULD be enforced by semantic lint in addition to this schema.",
+  "required": [
+    "schema_version",
+    "schema_revision",
+    "cell_id",
+    "status",
+    "synthetic",
+    "public_export_status",
+    "created_by",
+    "created_at",
+    "updated_at",
+    "variant_family",
+    "parent_cell_id",
+    "expected_relation_to_parent",
+    "scenario",
+    "context_packet",
+    "branches",
+    "gold",
+    "invariants",
+    "adversarial_notes",
+    "review",
+    "security"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "alphasync.anchorcell.v2",
+      "$comment": "Major-format identifier. Keep stable across compatible v2 revisions."
+    },
+    "schema_revision": {
+      "type": "string",
+      "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-[0-9A-Za-z.-]+)?(?:\\+[0-9A-Za-z.-]+)?$",
+      "$comment": "Semantic version for this schema family."
+    },
+    "cell_id": {
+      "type": "string",
+      "pattern": "^ac_[a-z0-9][a-z0-9._-]{7,127}$",
+      "minLength": 10,
+      "maxLength": 130,
+      "$comment": "Canonical stable identifier. Lowercase only."
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "review",
+        "accepted",
+        "rejected",
+        "deprecated",
+        "archived"
+      ]
+    },
+    "synthetic": {
+      "type": "boolean"
+    },
+    "public_export_status": {
+      "type": "string",
+      "enum": [
+        "private_authoring_only",
+        "internal_review_only",
+        "train_internal_only",
+        "public_redacted",
+        "public_full"
+      ]
+    },
+    "created_by": {
+      "$ref": "#/$defs/actor"
+    },
+    "created_at": {
+      "$ref": "#/$defs/rfc3339DateTime"
+    },
+    "updated_at": {
+      "$ref": "#/$defs/rfc3339DateTime"
+    },
+    "variant_family": {
+      "$ref": "#/$defs/variantFamily"
+    },
+    "parent_cell_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^ac_[a-z0-9][a-z0-9._-]{7,127}$"
+    },
+    "expected_relation_to_parent": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "allOf": [
+        {
+          "$ref": "#/$defs/parentRelationOrNull"
+        }
+      ]
+    },
+    "scenario": {
+      "$ref": "#/$defs/scenario"
+    },
+    "context_packet": {
+      "$ref": "#/$defs/contextPacket"
+    },
+    "branches": {
+      "type": "array",
+      "minItems": 4,
+      "maxItems": 8,
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/branch"
+      }
+    },
+    "gold": {
+      "$ref": "#/$defs/gold"
+    },
+    "invariants": {
+      "type": "array",
+      "minItems": 0,
+      "maxItems": 16,
+      "items": {
+        "$ref": "#/$defs/invariant"
+      }
+    },
+    "adversarial_notes": {
+      "type": "array",
+      "minItems": 0,
+      "maxItems": 24,
+      "items": {
+        "type": "string",
+        "minLength": 8,
+        "maxLength": 400
+      }
+    },
+    "projection": {
+      "$ref": "#/$defs/projection"
+    },
+    "review": {
+      "$ref": "#/$defs/review"
+    },
+    "security": {
+      "$ref": "#/$defs/security"
+    },
+    "extensions": {
+      "type": "object",
+      "$comment": "Reserved extension namespace. Only x-* keys are allowed so the core schema can stay closed and predictable.",
+      "propertyNames": {
+        "pattern": "^x-[a-z0-9][a-z0-9._-]{1,63}$"
+      },
+      "additionalProperties": true
+    }
+  },
+  "not": {
+    "anyOf": [
+      {
+        "required": [
+          "chain_of_thought"
+        ]
+      },
+      {
+        "required": [
+          "cot"
+        ]
+      },
+      {
+        "required": [
+          "raw_prompt"
+        ]
+      },
+      {
+        "required": [
+          "system_prompt"
+        ]
+      },
+      {
+        "required": [
+          "hidden_reasoning"
+        ]
+      },
+      {
+        "required": [
+          "raw_context_dump"
+        ]
+      }
+    ]
+  },
+  "allOf": [
+    {
+      "$comment": "Require canonical branch roles so every accepted cell contains a human branch, an assistant/reference branch, a naive shortcut branch, and an adversarial branch.",
+      "properties": {
+        "branches": {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "branch_role": {
+                "const": "human"
+              }
+            },
+            "required": [
+              "branch_role"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "properties": {
+        "branches": {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "branch_role": {
+                "const": "assistant"
+              }
+            },
+            "required": [
+              "branch_role"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "properties": {
+        "branches": {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "branch_role": {
+                "const": "naive_bad"
+              }
+            },
+            "required": [
+              "branch_role"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "properties": {
+        "branches": {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "branch_role": {
+                "const": "adversarial"
+              }
+            },
+            "required": [
+              "branch_role"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "$comment": "Base cells must not claim a parent.",
+      "if": {
+        "properties": {
+          "variant_family": {
+            "const": "base"
+          }
+        },
+        "required": [
+          "variant_family"
+        ]
+      },
+      "then": {
+        "properties": {
+          "parent_cell_id": {
+            "type": "null"
+          },
+          "expected_relation_to_parent": {
+            "type": "null"
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "parent_cell_id": {
+            "type": "string",
+            "pattern": "^ac_[a-z0-9][a-z0-9._-]{7,127}$"
+          },
+          "expected_relation_to_parent": {
+            "type": "string",
+            "allOf": [
+              {
+                "$ref": "#/$defs/parentRelation"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "$comment": "Accepted cells must be fully reviewed and must not keep gold or branch decisions unresolved.",
+      "if": {
+        "properties": {
+          "status": {
+            "const": "accepted"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "then": {
+        "properties": {
+          "gold": {
+            "properties": {
+              "decision": {
+                "not": {
+                  "const": "UNRESOLVED"
+                }
+              }
+            }
+          },
+          "branches": {
+            "items": {
+              "properties": {
+                "decision": {
+                  "not": {
+                    "const": "UNRESOLVED"
+                  }
+                }
+              }
+            }
+          },
+          "invariants": {
+            "minItems": 1
+          },
+          "adversarial_notes": {
+            "minItems": 1
+          },
+          "review": {
+            "properties": {
+              "status": {
+                "const": "approved"
+              },
+              "reviewed_at": {
+                "$ref": "#/$defs/rfc3339DateTime"
+              }
+            },
+            "required": [
+              "reviewed_at"
+            ]
+          },
+          "security": {
+            "properties": {
+              "prompt_injection_tested": {
+                "const": true
+              },
+              "poisoning_risk_reviewed": {
+                "const": true
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "$comment": "Publicly exportable authoring records must already be accepted and explicitly allowed for public export.",
+      "if": {
+        "properties": {
+          "public_export_status": {
+            "enum": [
+              "public_redacted",
+              "public_full"
+            ]
+          }
+        },
+        "required": [
+          "public_export_status"
+        ]
+      },
+      "then": {
+        "properties": {
+          "status": {
+            "const": "accepted"
+          },
+          "security": {
+            "properties": {
+              "allow_public_export": {
+                "const": true
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "$comment": "Full public export is only allowed if the record itself contains no PII, no secrets, and needs no redaction.",
+      "if": {
+        "properties": {
+          "public_export_status": {
+            "const": "public_full"
+          }
+        },
+        "required": [
+          "public_export_status"
+        ]
+      },
+      "then": {
+        "properties": {
+          "security": {
+            "properties": {
+              "contains_pii": {
+                "const": false
+              },
+              "contains_secrets": {
+                "const": false
+              },
+              "requires_redaction": {
+                "const": false
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "$comment": "If PII or secrets exist in the authoring record, full public export is forbidden.",
+      "if": {
+        "properties": {
+          "security": {
+            "properties": {
+              "contains_pii": {
+                "const": true
+              }
+            },
+            "required": [
+              "contains_pii"
+            ]
+          }
+        },
+        "required": [
+          "security"
+        ]
+      },
+      "then": {
+        "properties": {
+          "public_export_status": {
+            "not": {
+              "const": "public_full"
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "security": {
+            "properties": {
+              "contains_secrets": {
+                "const": true
+              }
+            },
+            "required": [
+              "contains_secrets"
+            ]
+          }
+        },
+        "required": [
+          "security"
+        ]
+      },
+      "then": {
+        "properties": {
+          "public_export_status": {
+            "not": {
+              "const": "public_full"
+            }
+          }
+        }
+      }
+    }
+  ],
+  "unevaluatedProperties": false,
+  "$defs": {
+    "rfc3339DateTime": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d{1,6})?(?:Z|[+-]\\d{2}:\\d{2})$"
+    },
+    "decision": {
+      "type": "string",
+      "enum": [
+        "EXECUTE",
+        "INSPECT",
+        "DEFER",
+        "ESCALATE",
+        "ROLLBACK",
+        "REJECT",
+        "ABSTAIN",
+        "UNRESOLVED"
+      ]
+    },
+    "variantFamily": {
+      "anyOf": [
+        {
+          "type": "string",
+          "enum": [
+            "base",
+            "decoy_flip",
+            "urgency_pressure",
+            "conflict_inject",
+            "policy_block",
+            "branch_disagree",
+            "unknown_high_harm",
+            "text_injection",
+            "backdoor_trigger",
+            "evidence_removed",
+            "authority_spoof",
+            "label_leak_probe",
+            "shortcut_probe",
+            "privacy_flip"
+          ]
+        },
+        {
+          "type": "string",
+          "pattern": "^x-[a-z0-9][a-z0-9_-]{2,63}$"
+        }
+      ]
+    },
+    "parentRelation": {
+      "anyOf": [
+        {
+          "type": "string",
+          "enum": [
+            "decision_preserved",
+            "more_conservative",
+            "less_conservative",
+            "requires_escalation",
+            "decision_flipped_due_to_new_evidence",
+            "decision_flipped_due_to_missing_evidence",
+            "scope_narrowed",
+            "scope_widened"
+          ]
+        },
+        {
+          "type": "string",
+          "pattern": "^x-[a-z0-9][a-z0-9_-]{2,63}$"
+        }
+      ]
+    },
+    "parentRelationOrNull": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/parentRelation"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "actor": {
+      "type": "object",
+      "required": [
+        "actor_type",
+        "actor_id"
+      ],
+      "properties": {
+        "actor_type": {
+          "type": "string",
+          "enum": [
+            "human",
+            "assistant",
+            "pipeline"
+          ]
+        },
+        "actor_id": {
+          "type": "string",
+          "pattern": "^(human|assistant|pipeline):[A-Za-z0-9._@-]{3,128}$",
+          "minLength": 10,
+          "maxLength": 140
+        },
+        "display_name": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1,
+          "maxLength": 120
+        }
+      },
+      "unevaluatedProperties": false
+    },
+    "scenario": {
+      "type": "object",
+      "required": [
+        "summary",
+        "decision_question"
+      ],
+      "properties": {
+        "summary": {
+          "type": "string",
+          "minLength": 16,
+          "maxLength": 1200
+        },
+        "decision_question": {
+          "type": "string",
+          "minLength": 12,
+          "maxLength": 500
+        }
+      },
+      "unevaluatedProperties": false
+    },
+    "salientFact": {
+      "type": "object",
+      "required": [
+        "fact_id",
+        "statement"
+      ],
+      "properties": {
+        "fact_id": {
+          "type": "string",
+          "pattern": "^fact_[a-z0-9][a-z0-9._-]{1,63}$",
+          "maxLength": 70
+        },
+        "statement": {
+          "type": "string",
+          "minLength": 8,
+          "maxLength": 500
+        },
+        "source_type": {
+          "type": "string",
+          "enum": [
+            "trusted_policy",
+            "provided_context",
+            "untrusted_input",
+            "derived",
+            "unspecified"
+          ],
+          "default": "unspecified"
+        },
+        "verified": {
+          "type": "boolean",
+          "default": false
+        }
+      },
+      "unevaluatedProperties": false
+    },
+    "knownUnknown": {
+      "type": "object",
+      "required": [
+        "unknown_id",
+        "statement"
+      ],
+      "properties": {
+        "unknown_id": {
+          "type": "string",
+          "pattern": "^unknown_[a-z0-9][a-z0-9._-]{1,63}$",
+          "maxLength": 74
+        },
+        "statement": {
+          "type": "string",
+          "minLength": 8,
+          "maxLength": 500
+        },
+        "impact": {
+          "type": "string",
+          "enum": [
+            "low",
+            "medium",
+            "high"
+          ],
+          "default": "medium"
+        }
+      },
+      "unevaluatedProperties": false
+    },
+    "forbiddenAssumption": {
+      "type": "object",
+      "required": [
+        "assumption_id",
+        "statement"
+      ],
+      "properties": {
+        "assumption_id": {
+          "type": "string",
+          "pattern": "^assumption_[a-z0-9][a-z0-9._-]{1,63}$",
+          "maxLength": 77
+        },
+        "statement": {
+          "type": "string",
+          "minLength": 8,
+          "maxLength": 300
+        }
+      },
+      "unevaluatedProperties": false
+    },
+    "contextPacket": {
+      "type": "object",
+      "required": [
+        "summary",
+        "salient_facts",
+        "known_unknowns",
+        "forbidden_assumptions",
+        "prompt_boundary"
+      ],
+      "properties": {
+        "summary": {
+          "type": "string",
+          "minLength": 16,
+          "maxLength": 2000
+        },
+        "salient_facts": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 24,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/salientFact"
+          }
+        },
+        "known_unknowns": {
+          "type": "array",
+          "minItems": 0,
+          "maxItems": 16,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/knownUnknown"
+          }
+        },
+        "forbidden_assumptions": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 16,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/forbiddenAssumption"
+          }
+        },
+        "prompt_boundary": {
+          "type": "string",
+          "minLength": 12,
+          "maxLength": 800
+        }
+      },
+      "unevaluatedProperties": false
+    },
+    "evidenceRef": {
+      "anyOf": [
+        {
+          "type": "object",
+          "required": [
+            "kind",
+            "ref_id"
+          ],
+          "properties": {
+            "kind": {
+              "const": "salient_fact"
+            },
+            "ref_id": {
+              "type": "string",
+              "pattern": "^fact_[a-z0-9][a-z0-9._-]{1,63}$"
+            }
+          },
+          "unevaluatedProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "kind",
+            "ref_id"
+          ],
+          "properties": {
+            "kind": {
+              "const": "known_unknown"
+            },
+            "ref_id": {
+              "type": "string",
+              "pattern": "^unknown_[a-z0-9][a-z0-9._-]{1,63}$"
+            }
+          },
+          "unevaluatedProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "kind",
+            "ref_id"
+          ],
+          "properties": {
+            "kind": {
+              "const": "forbidden_assumption"
+            },
+            "ref_id": {
+              "type": "string",
+              "pattern": "^assumption_[a-z0-9][a-z0-9._-]{1,63}$"
+            }
+          },
+          "unevaluatedProperties": false
+        }
+      ]
+    },
+    "branch": {
+      "type": "object",
+      "required": [
+        "branch_id",
+        "branch_role",
+        "decision",
+        "summary",
+        "evidence"
+      ],
+      "properties": {
+        "branch_id": {
+          "type": "string",
+          "pattern": "^branch_[a-z0-9][a-z0-9._-]{2,63}$",
+          "maxLength": 70
+        },
+        "branch_role": {
+          "type": "string",
+          "enum": [
+            "human",
+            "assistant",
+            "naive_bad",
+            "adversarial",
+            "alternative"
+          ]
+        },
+        "decision": {
+          "$ref": "#/$defs/decision"
+        },
+        "summary": {
+          "type": "string",
+          "minLength": 12,
+          "maxLength": 800
+        },
+        "evidence": {
+          "type": "array",
+          "minItems": 0,
+          "maxItems": 16,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/evidenceRef"
+          }
+        },
+        "confidence": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 1
+        }
+      },
+      "unevaluatedProperties": false
+    },
+    "gold": {
+      "type": "object",
+      "required": [
+        "decision",
+        "forbidden_decisions",
+        "rationale_short"
+      ],
+      "properties": {
+        "decision": {
+          "$ref": "#/$defs/decision"
+        },
+        "forbidden_decisions": {
+          "type": "array",
+          "minItems": 0,
+          "maxItems": 7,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/decision"
+          }
+        },
+        "rationale_short": {
+          "type": "string",
+          "minLength": 16,
+          "maxLength": 600,
+          "$comment": "Short rationale only. Full hidden reasoning must not be stored here."
+        }
+      },
+      "unevaluatedProperties": false
+    },
+    "invariant": {
+      "type": "object",
+      "required": [
+        "name",
+        "must_hold"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9._-]{2,63}$",
+          "maxLength": 64
+        },
+        "must_hold": {
+          "type": "string",
+          "minLength": 10,
+          "maxLength": 400
+        }
+      },
+      "unevaluatedProperties": false
+    },
+    "projection": {
+      "type": "object",
+      "required": [
+        "status"
+      ],
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": [
+            "not_projected",
+            "candidate",
+            "projected",
+            "retired"
+          ]
+        },
+        "target_view": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "enum": [
+            "train_input",
+            "train_target",
+            "review_packet",
+            "public_redacted",
+            "public_full",
+            null
+          ]
+        },
+        "last_projected_at": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/rfc3339DateTime"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "notes": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1,
+          "maxLength": 500
+        }
+      },
+      "unevaluatedProperties": false
+    },
+    "review": {
+      "type": "object",
+      "required": [
+        "status",
+        "reviewer_ids",
+        "notes"
+      ],
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": [
+            "unreviewed",
+            "needs_revision",
+            "approved",
+            "rejected"
+          ]
+        },
+        "reviewer_ids": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 5,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^(human|assistant|pipeline):[A-Za-z0-9._@-]{3,128}$",
+            "maxLength": 140
+          }
+        },
+        "reviewed_at": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/rfc3339DateTime"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "notes": {
+          "type": "string",
+          "minLength": 4,
+          "maxLength": 1000
+        }
+      },
+      "unevaluatedProperties": false
+    },
+    "security": {
+      "type": "object",
+      "required": [
+        "contains_pii",
+        "contains_secrets",
+        "contains_untrusted_input",
+        "requires_redaction",
+        "allow_training_export",
+        "allow_public_export",
+        "prompt_injection_tested",
+        "poisoning_risk_reviewed"
+      ],
+      "properties": {
+        "contains_pii": {
+          "type": "boolean"
+        },
+        "contains_secrets": {
+          "type": "boolean"
+        },
+        "contains_untrusted_input": {
+          "type": "boolean"
+        },
+        "requires_redaction": {
+          "type": "boolean"
+        },
+        "allow_training_export": {
+          "type": "boolean"
+        },
+        "allow_public_export": {
+          "type": "boolean"
+        },
+        "prompt_injection_tested": {
+          "type": "boolean"
+        },
+        "poisoning_risk_reviewed": {
+          "type": "boolean"
+        }
+      },
+      "unevaluatedProperties": false
+    }
+  }
+}
