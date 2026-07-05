@@ -11,6 +11,7 @@ The current public status is defined by:
 - version record: `docs/VERSION.json`
 - latest public release: `public-sdk-p11-20260629`
 - release URL: `https://github.com/VRAXION/VRAXION/releases/tag/public-sdk-p11-20260629`
+- release manifest: `releases/public-sdk-p11-20260629.manifest.json`
 - Pages URL: `https://vraxion.github.io/VRAXION/`
 
 If older GitHub tags or release records disagree with these files, treat the

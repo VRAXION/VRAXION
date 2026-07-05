@@ -1,9 +1,11 @@
 # Public Release Manifests
 
-This directory defines the manifest shape for future public release PRs.
+This directory defines the manifest shape for current and future public release
+PRs.
 
 Use `public-release-manifest.schema.json` as the review contract and
-`public-release-manifest.example.json` as the copy-start example. A future
+`public-release-manifest.example.json` as the copy-start example. The current
+public release is recorded in `public-sdk-p11-20260629.manifest.json`. A future
 release that adds a public artifact should include a reviewed manifest with the
 release slug, public claim, public files, artifact checksums or signatures,
 verification commands, and explicit exclusions.

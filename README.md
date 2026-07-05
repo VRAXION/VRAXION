@@ -46,7 +46,8 @@ Before any new public release is added, the release should have:
 Use `PUBLIC_RELEASE_CHECKLIST.md` as the release PR checklist before adding a
 new artifact, status claim, or public download path. Use
 `releases/public-release-manifest.schema.json` as the public artifact manifest
-contract.
+contract. The current public release manifest is
+`releases/public-sdk-p11-20260629.manifest.json`.
 
 ## Build
 

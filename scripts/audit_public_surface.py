@@ -100,6 +100,7 @@ REQUIRED_TRACKED_FILES = {
     "PUBLIC_GITHUB_STATE.md",
     "PUBLIC_RELEASE_CHECKLIST.md",
     "releases/README.md",
+    "releases/public-sdk-p11-20260629.manifest.json",
     "releases/public-release-manifest.example.json",
     "releases/public-release-manifest.schema.json",
     "scripts/audit_public_secrets.mjs",
@@ -154,6 +155,7 @@ REQUIRED_GITHUB_STATE_MARKERS = {
     "docs/VERSION.json",
     "gh release list --limit 20",
     "latest public release: `public-sdk-p11-20260629`",
+    "release manifest: `releases/public-sdk-p11-20260629.manifest.json`",
     "non-public training data",
     "node scripts\\audit_public_github_state.mjs",
     "latest Pages build",
@@ -165,6 +167,7 @@ REQUIRED_GITHUB_STATE_MARKERS = {
 }
 
 REQUIRED_RELEASE_MANIFEST_README_MARKERS = {
+    "public-sdk-p11-20260629.manifest.json",
     "public-release-manifest.example.json",
     "public-release-manifest.schema.json",
     "releases/<release-slug>.manifest.json",
@@ -529,6 +532,10 @@ def main() -> int:
     )
     if latest_release and expected_release_url not in index_html:
         failures.append("docs/index.html does not link to the latest public release")
+
+    latest_manifest_path = f"releases/{latest_release}.manifest.json"
+    if latest_release and latest_manifest_path not in file_set:
+        failures.append(f"latest public release manifest is missing: {latest_manifest_path}")
 
     for match in re.finditer(
         r"https://github\.com/VRAXION/VRAXION/blob/main/([^\"#?]+)",
