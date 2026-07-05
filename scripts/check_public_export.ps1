@@ -234,7 +234,7 @@ $publicBinaryAssets = @(
     "docs/instnct/assets/proof-pack-bg.jpg",
     "docs/instnct/assets/release-claim-bg.jpg",
     "docs/instnct/assets/t1-reflex-bg.jpg",
-    "docs/instnct/assets/vraxion-note-bg.png"
+    "docs/instnct/assets/vraxion-note-bg.jpg"
 )
 $publicBinaryAssetSet = New-OrdinalSet -Items $publicBinaryAssets
 $privatePersistenceCrate = "alphasync-" + "skillstore"
@@ -346,7 +346,7 @@ try {
         "docs\instnct\assets\proof-pack-bg.jpg",
         "docs\instnct\assets\release-claim-bg.jpg",
         "docs\instnct\assets\t1-reflex-bg.jpg",
-        "docs\instnct\assets\vraxion-note-bg.png",
+        "docs\instnct\assets\vraxion-note-bg.jpg",
         "docs\instnct\index.html",
         "docs\instnct\instnct.js",
         "docs\instnct\styles.css",
@@ -429,7 +429,7 @@ try {
         "docs/instnct/assets/proof-pack-bg.jpg",
         "docs/instnct/assets/release-claim-bg.jpg",
         "docs/instnct/assets/t1-reflex-bg.jpg",
-        "docs/instnct/assets/vraxion-note-bg.png",
+        "docs/instnct/assets/vraxion-note-bg.jpg",
         "docs/assets/fonts/geist-license.txt",
         "docs/assets/fonts/geist-sans-variable.woff2",
         "docs/ANCHORCELL_RESEARCH_BRIEF.md",
