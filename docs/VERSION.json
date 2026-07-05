@@ -6,7 +6,7 @@
   "pages_surface": "instnct_release_polish",
   "latest_public_release": "public-sdk-p11-20260629",
   "instnct_asset_version": "release-13",
-  "anchorcell_asset_version": "research-2",
+  "anchorcell_asset_version": "research-3",
   "delivery_direction": "proof_materials_before_runtime_terms",
   "crates": [
     "alphasync-core",

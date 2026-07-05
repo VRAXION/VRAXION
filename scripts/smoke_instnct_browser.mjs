@@ -242,6 +242,9 @@ async function probeHome(browser, origin) {
     anchorcellSchemaHref: [...document.querySelectorAll("a")].some((a) =>
       a.href.endsWith("/anchorcell/anchorcell.v2.schema.json")
     ),
+    anchorcellExampleHref: [...document.querySelectorAll("a")].some((a) =>
+      a.href.endsWith("/anchorcell/anchorcell.v2.example.json")
+    ),
     instnctPublished: document.body.textContent.includes("INSTNCT T1 Reflex Engine preview"),
     anchorcellPublished: document.body.textContent.includes("AnchorCell studies the format before the model."),
   }), latestRelease);
@@ -255,6 +258,7 @@ async function probeHome(browser, origin) {
   if (result.oldReleaseHref) fail("home page still links to old v6.1.7 release");
   if (!result.capabilitiesHref) fail("home page current capabilities link is missing");
   if (!result.anchorcellSchemaHref) fail("home page AnchorCell v2 schema link is missing");
+  if (!result.anchorcellExampleHref) fail("home page AnchorCell v2 example link is missing");
   if (!result.instnctPublished) fail("home page does not frame INSTNCT as the T1 Reflex Engine preview");
   if (!result.anchorcellPublished) fail("home page does not expose the AnchorCell research path");
 }
@@ -1305,6 +1309,7 @@ async function probeAnchorCell(browser, origin) {
           document.body.textContent.includes("Training data with its trust boundaries intact.") &&
           document.body.textContent.includes("not a finished model claim"),
         schemaHref: [...document.querySelectorAll("a")].some((a) => a.href.endsWith("/anchorcell/anchorcell.v2.schema.json")),
+        exampleHref: [...document.querySelectorAll("a")].some((a) => a.href.endsWith("/anchorcell/anchorcell.v2.example.json")),
         booted: hero?.classList.contains("is-booted"),
         heroHeight: heroRect ? Math.round(heroRect.height) : 0,
         heroNextSignalVisible: nextSignalRect
@@ -1339,6 +1344,7 @@ async function probeAnchorCell(browser, origin) {
     if (first.h1Count !== 1) fail(`AnchorCell ${label} must expose one visible h1: ${JSON.stringify(first)}`);
     if (!first.copyOk) fail(`AnchorCell ${label} required copy is missing`);
     if (!first.schemaHref) fail(`AnchorCell ${label} schema CTA is missing: ${JSON.stringify(first)}`);
+    if (!first.exampleHref) fail(`AnchorCell ${label} example CTA is missing: ${JSON.stringify(first)}`);
     if (!first.booted) fail(`AnchorCell ${label} hero did not boot`);
     if (!first.heroNextSignalVisible) {
       fail(`AnchorCell ${label} hero does not reveal next-section content in the first viewport: ${JSON.stringify(first)}`);
