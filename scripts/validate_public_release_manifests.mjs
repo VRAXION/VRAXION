@@ -193,6 +193,27 @@ function assertDate(file, releaseDate, releaseSlug) {
   }
 }
 
+function includesEvery(actual, expected) {
+  return expected.every((item) => Array.isArray(actual) && actual.includes(item));
+}
+
+function findReleaseKindRule(schema, releaseKind) {
+  const rules = Array.isArray(schema?.allOf) ? schema.allOf : [];
+  return rules.find((rule) => rule?.if?.properties?.release_kind?.const === releaseKind);
+}
+
+function findPublishedArtifactRule(schema, requiredKinds, thenProperty) {
+  const rules = Array.isArray(schema?.$defs?.artifact?.allOf) ? schema.$defs.artifact.allOf : [];
+  return rules.find((rule) => {
+    const kindEnum = rule?.if?.properties?.kind?.enum;
+    return (
+      rule?.if?.properties?.status?.const === "published" &&
+      includesEvery(kindEnum, requiredKinds) &&
+      isPlainObject(rule?.then?.properties?.[thenProperty])
+    );
+  });
+}
+
 function validateSchemaContract(schema) {
   const file = "releases/public-release-manifest.schema.json";
   if (!schema) {
@@ -211,6 +232,59 @@ function validateSchemaContract(schema) {
     if (exclusions?.[exclusion]?.const !== false) {
       fail(file, `exclusion must be const false: ${exclusion}`);
     }
+  }
+
+  const artifactReleaseRule = findReleaseKindRule(schema, "artifact_release");
+  const artifactReleaseContains = artifactReleaseRule?.then?.properties?.artifacts?.contains;
+  if (artifactReleaseRule?.then?.properties?.artifacts?.minItems !== 1) {
+    fail(file, "artifact_release schema rule must require at least one artifact");
+  }
+  if (artifactReleaseContains?.properties?.status?.const !== "published") {
+    fail(file, "artifact_release schema rule must require a published artifact");
+  }
+  if (
+    !includesEvery(
+      artifactReleaseContains?.properties?.kind?.enum,
+      [...PUBLISHED_ARTIFACT_KINDS_REQUIRING_SHA256],
+    )
+  ) {
+    fail(file, "artifact_release schema rule must require a published non-documentation artifact kind");
+  }
+
+  const proofPackRule = findReleaseKindRule(schema, "proof_pack");
+  const proofPackContains = proofPackRule?.then?.properties?.artifacts?.contains;
+  if (proofPackRule?.then?.properties?.artifacts?.minItems !== 1) {
+    fail(file, "proof_pack schema rule must require at least one artifact");
+  }
+  if (
+    proofPackContains?.properties?.kind?.const !== "proof_pack" ||
+    proofPackContains?.properties?.status?.const !== "published"
+  ) {
+    fail(file, "proof_pack schema rule must require a published proof_pack artifact");
+  }
+
+  const sha256Rule = findPublishedArtifactRule(
+    schema,
+    [...PUBLISHED_ARTIFACT_KINDS_REQUIRING_SHA256],
+    "sha256",
+  );
+  if (
+    sha256Rule?.then?.properties?.sha256?.type !== "string" ||
+    sha256Rule?.then?.properties?.sha256?.pattern !== "^[a-f0-9]{64}$"
+  ) {
+    fail(file, "published non-documentation artifact schema rule must require lowercase SHA-256");
+  }
+
+  const signatureRule = findPublishedArtifactRule(
+    schema,
+    [...PUBLISHED_ARTIFACT_KINDS_REQUIRING_SIGNATURE],
+    "signature_path_or_url",
+  );
+  if (
+    signatureRule?.then?.properties?.signature_path_or_url?.type !== "string" ||
+    signatureRule?.then?.properties?.signature_path_or_url?.minLength !== 1
+  ) {
+    fail(file, "published proof_pack/binary artifact schema rule must require signature_path_or_url");
   }
 }
 

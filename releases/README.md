@@ -24,6 +24,10 @@ Artifact-bearing releases have stricter gates:
 - Published `proof_pack` and `binary` artifacts must also include
   `signature_path_or_url`.
 
+`validate_public_release_manifests.mjs` checks both manifest content and the
+schema contract, so these artifact gates must stay encoded in
+`public-release-manifest.schema.json`.
+
 Validate manifests before review:
 
 ```powershell

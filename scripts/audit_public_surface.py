@@ -190,6 +190,7 @@ REQUIRED_RELEASE_MANIFEST_README_MARKERS = {
     "published `proof_pack`",
     "published non-documentation artifact",
     "signature_path_or_url",
+    "schema contract",
     "private engine source",
     "non-public training data",
     "raw operator output",
