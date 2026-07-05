@@ -3,6 +3,9 @@ name: Deploy INSTNCT Notify Worker
 on:
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   deploy:
     runs-on: ubuntu-latest

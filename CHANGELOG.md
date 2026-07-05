@@ -29,6 +29,8 @@
 - Added a public secret scan guard for tracked files before release intake.
 - Required release manifests to list the full public guard command set,
   including release-state validation and secret scanning.
+- Locked public GitHub Actions workflows to read-only repository permissions
+  and added audit coverage for workflow permission drift.
 
 ## 2026-06-29
 

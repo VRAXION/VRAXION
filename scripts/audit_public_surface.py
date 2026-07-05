@@ -206,6 +206,29 @@ REQUIRED_SUPPORT_MARKERS = {
     "raw operator output",
 }
 
+REQUIRED_WORKFLOW_PERMISSION_MARKERS = {
+    ".github/workflows/ci.yml": "permissions:\n  contents: read",
+    ".github/workflows/deploy-instnct-notify.yml": "permissions:\n  contents: read",
+    ".github/workflows/public-pages-smoke.yml": "permissions:\n  contents: read",
+    ".github/workflows/public-surface-audit.yml": "permissions:\n  contents: read",
+}
+
+FORBIDDEN_WORKFLOW_PERMISSION_MARKERS = {
+    "actions: write",
+    "checks: write",
+    "contents: write",
+    "deployments: write",
+    "discussions: write",
+    "id-token: write",
+    "issues: write",
+    "packages: write",
+    "pages: write",
+    "pull-requests: write",
+    "repository-projects: write",
+    "security-events: write",
+    "statuses: write",
+}
+
 REQUIRED_GITATTRIBUTES_ENTRIES = {
     "* text=auto eol=lf",
     "*.jpg binary",
@@ -336,6 +359,17 @@ def main() -> int:
     for required in sorted(REQUIRED_SUPPORT_MARKERS):
         if required not in support_doc:
             failures.append(f"support doc missing public-support marker: {required}")
+
+    for relative_path, required in sorted(REQUIRED_WORKFLOW_PERMISSION_MARKERS.items()):
+        workflow_text = read_text(ROOT / relative_path)
+        if required not in workflow_text:
+            failures.append(f"workflow missing read-only permission marker: {relative_path}")
+        workflow_lower = workflow_text.lower()
+        for forbidden in sorted(FORBIDDEN_WORKFLOW_PERMISSION_MARKERS):
+            if forbidden in workflow_lower:
+                failures.append(
+                    f"workflow contains forbidden write permission {forbidden!r}: {relative_path}"
+                )
 
     release_manifest_readme = read_text(ROOT / "releases" / "README.md")
     for required in sorted(REQUIRED_RELEASE_MANIFEST_README_MARKERS):
