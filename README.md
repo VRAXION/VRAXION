@@ -41,6 +41,9 @@ Before any new public release is added, the release should have:
 4. no private engine code, private data, local paths, secrets, or internal run output
 5. green CI and a passing public export guard
 
+Use `PUBLIC_RELEASE_CHECKLIST.md` as the release PR checklist before adding a
+new artifact, status claim, or public download path.
+
 ## Build
 
 ```powershell
@@ -58,7 +61,8 @@ powershell -ExecutionPolicy Bypass -File scripts/check_public_export.ps1
 The public surface is documented in `PUBLIC_BOUNDARY.md` and
 `PACKAGE_BOUNDARY.md`. The public delivery direction is documented in
 `PUBLIC_DELIVERY_MODEL.md`, with license and mark boundaries in
-`LICENSE_BOUNDARY.md` and `TRADEMARK_POLICY.md`.
+`LICENSE_BOUNDARY.md` and `TRADEMARK_POLICY.md`. Release intake rules are in
+`PUBLIC_RELEASE_CHECKLIST.md`.
 
 Current status is tracked by the latest public GitHub release:
 [`public-sdk-p11-20260629`](https://github.com/VRAXION/VRAXION/releases/tag/public-sdk-p11-20260629).

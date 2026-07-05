@@ -1,5 +1,16 @@
 # Changelog
 
+## 2026-07-05
+
+- Polished the public Pages surface and 404 fallback while keeping unreleased
+  routes hidden.
+- Added repo hygiene rules for local build output, local Codex state, secret
+  env files, and generated Cloudflare config.
+- Added `.gitattributes` and stronger public surface audit checks for tracked
+  repo hygiene files.
+- Reworked the root README into a clearer public release intake entrypoint.
+- Added `PUBLIC_RELEASE_CHECKLIST.md` for future release PRs.
+
 ## 2026-06-29
 
 - Added public P11 delivery, license, and trademark boundary summaries.
