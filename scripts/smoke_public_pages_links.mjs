@@ -186,7 +186,7 @@ if (!/^home-hero-\d{8}$/.test(homeAssetVersion)) {
 if (home && latestRelease && !home.includes(`releases/tag/${latestRelease}`)) {
   fail("home does not expose the VERSION latest release");
 }
-if (home && homeAssetVersion && !home.includes(`vraxion-home-hero.jpg?v=${homeAssetVersion}`)) {
+if (home && homeAssetVersion && !home.includes(`vraxion-home-hero.webp?v=${homeAssetVersion}`)) {
   fail("home does not load the VERSION home hero asset cache key");
 }
 for (const required of [
@@ -231,7 +231,7 @@ if (
 ) {
   fail("AnchorCell live page does not load the VERSION asset cache key");
 }
-if (anchorcell && homeAssetVersion && !anchorcell.includes(`vraxion-home-hero.jpg?v=${homeAssetVersion}`)) {
+if (anchorcell && homeAssetVersion && !anchorcell.includes(`vraxion-home-hero.webp?v=${homeAssetVersion}`)) {
   fail("AnchorCell does not load the VERSION home hero asset cache key");
 }
 if (instnct && unsafePublicCopyPattern.test(instnct)) {

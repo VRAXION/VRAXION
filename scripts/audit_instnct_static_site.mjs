@@ -1056,10 +1056,10 @@ validateSocialImage({
 });
 
 if (homeAssetVersion) {
-  if (!home.includes(`./assets/vraxion-home-hero.jpg?v=${homeAssetVersion}`)) {
+  if (!home.includes(`./assets/vraxion-home-hero.webp?v=${homeAssetVersion}`)) {
     fail("homepage hero image cache key must match docs/VERSION.json home_asset_version");
   }
-  if (!anchorcell.includes(`../assets/vraxion-home-hero.jpg?v=${homeAssetVersion}`)) {
+  if (!anchorcell.includes(`../assets/vraxion-home-hero.webp?v=${homeAssetVersion}`)) {
     fail("AnchorCell hero image cache key must match docs/VERSION.json home_asset_version");
   }
 }

@@ -222,6 +222,7 @@ $forbiddenPublicPathFragments = @(
 $maxPublicBinaryAssetBytes = 4MB
 $publicBinaryAssets = @(
     "docs/assets/vraxion-home-hero.jpg",
+    "docs/assets/vraxion-home-hero.webp",
     "docs/assets/vraxion-wordmark.webp",
     "docs/assets/fonts/geist-sans-variable.woff2",
     "docs/instnct/assets/engine-scope-bg.jpg",
@@ -324,6 +325,7 @@ try {
         "docs\_redirects",
         "docs\assets\favicon.svg",
         "docs\assets\vraxion-home-hero.jpg",
+        "docs\assets\vraxion-home-hero.webp",
         "docs\assets\vraxion-wordmark.webp",
         "docs\assets\fonts\geist-license.txt",
         "docs\assets\fonts\geist-sans-variable.woff2",
@@ -415,6 +417,7 @@ try {
         "docs/404.html",
         "docs/_redirects",
         "docs/assets/vraxion-home-hero.jpg",
+        "docs/assets/vraxion-home-hero.webp",
         "docs/assets/vraxion-wordmark.webp",
         "docs/CURRENT_CAPABILITIES.md",
         "docs/CURRENT_STATUS.md",
