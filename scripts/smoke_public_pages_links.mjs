@@ -101,6 +101,14 @@ function collectUrls(html, pageUrl) {
   return urls;
 }
 
+function escapeRegExp(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function sitemapHasDatedUrl(sitemap, url, date) {
+  return new RegExp(`<loc>${escapeRegExp(url)}</loc>\\s*<lastmod>${escapeRegExp(date)}</lastmod>`).test(sitemap);
+}
+
 function attr(tag, name) {
   const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   const pattern = new RegExp(`\\s${escaped}=(["'])(.*?)\\1`, "i");
@@ -142,12 +150,16 @@ const robots = await fetchText(robotsUrl, "robots.txt");
 const sitemap = await fetchText(sitemapUrl, "sitemap.xml");
 const versionText = await fetchText(versionUrl, "VERSION.json");
 let latestRelease = "";
+let versionDate = "";
+let homeAssetVersion = "";
 let instnctAssetVersion = "";
 let anchorcellAssetVersion = "";
 if (versionText) {
   try {
     const version = JSON.parse(versionText);
     latestRelease = String(version.latest_public_release || "");
+    versionDate = String(version.date || "");
+    homeAssetVersion = String(version.home_asset_version || "");
     instnctAssetVersion = String(version.instnct_asset_version || "");
     anchorcellAssetVersion = String(version.anchorcell_asset_version || "");
   } catch (err) {
@@ -165,8 +177,17 @@ try {
 if (!/^public-sdk-p\d+-\d{8}$/.test(latestRelease)) {
   fail(`live VERSION latest_public_release is invalid: ${latestRelease || "missing"}`);
 }
+if (!/^\d{4}-\d{2}-\d{2}$/.test(versionDate)) {
+  fail(`live VERSION date is invalid: ${versionDate || "missing"}`);
+}
+if (!/^home-hero-\d{8}$/.test(homeAssetVersion)) {
+  fail(`VERSION home_asset_version is invalid: ${homeAssetVersion || "missing"}`);
+}
 if (home && latestRelease && !home.includes(`releases/tag/${latestRelease}`)) {
   fail("home does not expose the VERSION latest release");
+}
+if (home && homeAssetVersion && !home.includes(`vraxion-home-hero.jpg?v=${homeAssetVersion}`)) {
+  fail("home does not load the VERSION home hero asset cache key");
 }
 for (const required of [
   "VRAXION / INSTNCT T1 Reflex Engine",
@@ -209,6 +230,9 @@ if (
     !anchorcell.includes(`anchorcell.js?v=${anchorcellAssetVersion}`))
 ) {
   fail("AnchorCell live page does not load the VERSION asset cache key");
+}
+if (anchorcell && homeAssetVersion && !anchorcell.includes(`vraxion-home-hero.jpg?v=${homeAssetVersion}`)) {
+  fail("AnchorCell does not load the VERSION home hero asset cache key");
 }
 if (instnct && unsafePublicCopyPattern.test(instnct)) {
   fail("INSTNCT public copy exposes unsafe or internal release wording");
@@ -263,8 +287,12 @@ if (instnct && new RegExp(`href=["'][^"']*${hiddenSurfaceSlug}/|hidden roadmap`,
 }
 if (hiddenSurfaceStatus !== 404) fail(`hidden roadmap surface URL must be absent from Pages, got HTTP ${hiddenSurfaceStatus}`);
 if (robots && !robots.includes(`${canonicalBaseUrl}/sitemap.xml`)) fail("robots.txt does not point at the live sitemap");
-if (sitemap && !sitemap.includes(`${canonicalBaseUrl}/instnct/`)) fail("sitemap.xml does not include INSTNCT");
-if (sitemap && !sitemap.includes(`${canonicalBaseUrl}/anchorcell/`)) fail("sitemap.xml does not include AnchorCell");
+for (const url of [`${canonicalBaseUrl}/`, `${canonicalBaseUrl}/instnct/`, `${canonicalBaseUrl}/anchorcell/`]) {
+  if (sitemap && !sitemap.includes(`<loc>${url}</loc>`)) fail(`sitemap.xml does not include ${url}`);
+  if (sitemap && versionDate && !sitemapHasDatedUrl(sitemap, url, versionDate)) {
+    fail(`sitemap.xml lastmod for ${url} does not match live VERSION date ${versionDate}`);
+  }
+}
 if (sitemap && sitemap.includes(`${canonicalBaseUrl}/${hiddenSurfaceSlug}/`)) fail("sitemap.xml exposes hidden roadmap surface");
 
 const urls = new Set([
