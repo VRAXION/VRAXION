@@ -99,7 +99,7 @@ PUBLIC_BINARY_ASSETS = {
     "docs/instnct/assets/proof-pack-bg.jpg",
     "docs/instnct/assets/release-claim-bg.jpg",
     "docs/instnct/assets/t1-reflex-bg.jpg",
-    "docs/instnct/assets/vraxion-note-bg.png",
+    "docs/instnct/assets/vraxion-note-bg.jpg",
 }
 
 MAX_PUBLIC_BINARY_ASSET_BYTES = 4 * 1024 * 1024

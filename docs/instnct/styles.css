@@ -319,8 +319,8 @@ pre {
   pointer-events: none;
   transform: translateX(6px);
   transition:
-    opacity 160ms ease,
-    transform 160ms ease;
+    opacity 100ms ease,
+    transform 100ms ease;
 }
 
 .section-indicator:hover ol,
@@ -1533,7 +1533,7 @@ html.keyboard-dialog-open {
 
 #vraxion-note::after {
   opacity: 0.24;
-  background-image: url("./assets/vraxion-note-bg.png");
+  background-image: url("./assets/vraxion-note-bg.jpg");
   background-position: center;
 }
 
