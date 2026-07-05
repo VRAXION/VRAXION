@@ -85,6 +85,16 @@ FORBIDDEN_PUBLIC_COPY = [
 
 EXPECTED_CRATES = {"alphasync-core", "alphasync-runtime"}
 
+REQUIRED_GITIGNORE_ENTRIES = {
+    "target/",
+    ".codex/",
+    "disabled-surfaces/",
+    ".env",
+    ".env.*",
+    "!.env.example",
+    "workers/instnct-notify/wrangler.jsonc",
+}
+
 PUBLIC_BINARY_ASSETS = {
     "docs/assets/vraxion-home-hero.jpg",
     "docs/assets/vraxion-home-hero.webp",
@@ -135,6 +145,16 @@ def main() -> int:
     warnings: list[str] = []
     files = tracked_files()
     file_set = {relative.replace("\\", "/") for relative in files}
+
+    gitignore_path = ROOT / ".gitignore"
+    gitignore_entries = {
+        line.strip()
+        for line in read_text(gitignore_path).splitlines()
+        if line.strip() and not line.lstrip().startswith("#")
+    }
+    for required in sorted(REQUIRED_GITIGNORE_ENTRIES):
+        if required not in gitignore_entries:
+            failures.append(f".gitignore missing public hygiene entry: {required}")
 
     crate_root = ROOT / "crates"
     crates = {

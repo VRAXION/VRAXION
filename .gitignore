@@ -1,1 +1,7 @@
+target/
+.codex/
 disabled-surfaces/
+.env
+.env.*
+!.env.example
+workers/instnct-notify/wrangler.jsonc
