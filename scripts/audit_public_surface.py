@@ -86,6 +86,7 @@ FORBIDDEN_PUBLIC_COPY = [
 EXPECTED_CRATES = {"alphasync-core", "alphasync-runtime"}
 
 REQUIRED_TRACKED_FILES = {
+    ".github/pull_request_template.md",
     ".gitattributes",
     ".gitignore",
     "README.md",
@@ -94,6 +95,14 @@ REQUIRED_TRACKED_FILES = {
     "PUBLIC_DELIVERY_MODEL.md",
     "PUBLIC_RELEASE_CHECKLIST.md",
     "LICENSE_BOUNDARY.md",
+}
+
+REQUIRED_PR_TEMPLATE_MARKERS = {
+    "What exactly becomes public?",
+    "What stays private?",
+    "PUBLIC_RELEASE_CHECKLIST.md",
+    "workers/instnct-notify/wrangler.jsonc",
+    "powershell -ExecutionPolicy Bypass -File scripts\\check_public_export.ps1",
 }
 
 REQUIRED_GITATTRIBUTES_ENTRIES = {
@@ -169,6 +178,11 @@ def main() -> int:
     for required in sorted(REQUIRED_TRACKED_FILES):
         if required not in file_set:
             failures.append(f"required public repo file is missing: {required}")
+
+    pr_template = read_text(ROOT / ".github" / "pull_request_template.md")
+    for required in sorted(REQUIRED_PR_TEMPLATE_MARKERS):
+        if required not in pr_template:
+            failures.append(f"pull request template missing release guard marker: {required}")
 
     gitattributes_path = ROOT / ".gitattributes"
     gitattributes_entries = {

@@ -23,3 +23,6 @@ tools to this repository.
 Release PRs must also follow `PUBLIC_RELEASE_CHECKLIST.md`. If a release
 changes public status, artifacts, downloads, or claims, state exactly what
 became public and what stayed private in the PR body.
+
+Use the GitHub pull request template. Do not delete the public scope,
+release-intake, or required-gates sections from release or public-surface PRs.
