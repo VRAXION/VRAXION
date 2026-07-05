@@ -95,17 +95,30 @@ REQUIRED_TRACKED_FILES = {
     "PUBLIC_BOUNDARY.md",
     "PACKAGE_BOUNDARY.md",
     "PUBLIC_DELIVERY_MODEL.md",
+    "PUBLIC_GITHUB_STATE.md",
     "PUBLIC_RELEASE_CHECKLIST.md",
     "LICENSE_BOUNDARY.md",
     "SUPPORT.md",
 }
 
 REQUIRED_PR_TEMPLATE_MARKERS = {
+    "PUBLIC_GITHUB_STATE.md",
     "What exactly becomes public?",
     "What stays private?",
     "PUBLIC_RELEASE_CHECKLIST.md",
     "workers/instnct-notify/wrangler.jsonc",
     "powershell -ExecutionPolicy Bypass -File scripts\\check_public_export.ps1",
+}
+
+REQUIRED_GITHUB_STATE_MARKERS = {
+    "## Current Public Truth",
+    "## Historical GitHub Records",
+    "PUBLIC_RELEASE_CHECKLIST.md",
+    "docs/VERSION.json",
+    "gh release list --limit 20",
+    "latest public release: `public-sdk-p11-20260629`",
+    "non-public training data",
+    "release metadata and assets",
 }
 
 REQUIRED_ISSUE_TEMPLATE_MARKERS = {
@@ -211,6 +224,11 @@ def main() -> int:
     for required in sorted(REQUIRED_PR_TEMPLATE_MARKERS):
         if required not in pr_template:
             failures.append(f"pull request template missing release guard marker: {required}")
+
+    github_state_doc = read_text(ROOT / "PUBLIC_GITHUB_STATE.md")
+    for required in sorted(REQUIRED_GITHUB_STATE_MARKERS):
+        if required not in github_state_doc:
+            failures.append(f"github state doc missing public-state marker: {required}")
 
     issue_template = read_text(
         ROOT / ".github" / "ISSUE_TEMPLATE" / "public-surface-report.yml"
