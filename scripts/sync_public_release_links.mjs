@@ -7,6 +7,15 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const versionPath = path.join(root, "docs", "VERSION.json");
 const releaseSlugPattern = /public-sdk-p\d+-\d{8}/g;
 const publicTextExtensions = new Set([".html", ".md", ".json", ".txt", ".xml"]);
+const requiredCurrentStateFiles = new Set([
+  "README.md",
+  "PUBLIC_GITHUB_STATE.md",
+  "docs/CURRENT_STATUS.md",
+  "docs/CURRENT_CAPABILITIES.md",
+  "docs/index.html",
+  "docs/instnct/index.html",
+]);
+const extraCurrentStateFiles = new Set(["LICENSE_BOUNDARY.md", "PUBLIC_DELIVERY_MODEL.md"]);
 const args = new Set(process.argv.slice(2));
 const write = args.has("--write");
 
@@ -25,7 +34,7 @@ function trackedFiles() {
 }
 
 function isPublicTextFile(relative) {
-  if (!relative.startsWith("docs/") && !["LICENSE_BOUNDARY.md", "PUBLIC_DELIVERY_MODEL.md"].includes(relative)) {
+  if (!relative.startsWith("docs/") && !extraCurrentStateFiles.has(relative) && !requiredCurrentStateFiles.has(relative)) {
     return false;
   }
   return publicTextExtensions.has(path.extname(relative).toLowerCase());
@@ -46,6 +55,11 @@ const files = trackedFiles();
 const fileSet = new Set(files);
 const releaseFiles = files.filter(isPublicTextFile);
 const changed = [];
+
+for (const required of requiredCurrentStateFiles) {
+  if (!fileSet.has(required)) fail(`required current-state release link file is missing: ${required}`);
+  if (!releaseFiles.includes(required)) fail(`current-state release link file is not scanned: ${required}`);
+}
 
 for (const relative of releaseFiles) {
   const absolute = path.join(root, relative);
@@ -82,5 +96,6 @@ if (write) {
 } else if (process.exitCode) {
   process.exit(process.exitCode);
 } else {
+  console.log(`public_release_link_files=${releaseFiles.length}`);
   console.log("public_release_links=pass");
 }
