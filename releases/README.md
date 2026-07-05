@@ -13,6 +13,17 @@ verification commands, and explicit exclusions.
 The manifest is intentionally public-safe. It should describe only reviewed
 public files, public URLs, public checks, and public artifact metadata.
 
+Artifact-bearing releases have stricter gates:
+
+- `artifact_release` manifests must include at least one published
+  non-documentation artifact.
+- `proof_pack` manifests must include at least one published `proof_pack`
+  artifact.
+- Every published non-documentation artifact must include a lowercase SHA-256
+  checksum.
+- Published `proof_pack` and `binary` artifacts must also include
+  `signature_path_or_url`.
+
 Validate manifests before review:
 
 ```powershell
@@ -31,7 +42,7 @@ Do not include:
 - private engine source
 - non-public training data
 - raw operator output
-- local machine paths
+- absolute local or UNC machine paths
 - secrets or filled production config
 - private dashboard links
 

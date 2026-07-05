@@ -66,6 +66,13 @@ If a public artifact is added:
 
 - name it with a stable release slug
 - include checksum or signature material when applicable
+- use `artifact_release` only when the manifest includes a published
+  non-documentation artifact
+- use `proof_pack` only when the manifest includes a published `proof_pack`
+  artifact
+- include SHA-256 for every published non-documentation artifact
+- include `signature_path_or_url` for every published `proof_pack` or `binary`
+  artifact
 - add a public release manifest that follows
   `releases/public-release-manifest.schema.json`
 - document how the artifact was produced at a public-safe level

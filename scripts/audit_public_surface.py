@@ -128,6 +128,8 @@ REQUIRED_PR_TEMPLATE_MARKERS = {
     "What stays private?",
     "PUBLIC_RELEASE_CHECKLIST.md",
     "absolute local or UNC paths",
+    "artifact_release",
+    "required published artifact",
     "Release manifest checked:",
     "releases/public-release-manifest.schema.json",
     "node scripts\\validate_public_release_manifests.mjs",
@@ -179,11 +181,15 @@ REQUIRED_GITHUB_STATE_MARKERS = {
 }
 
 REQUIRED_RELEASE_MANIFEST_README_MARKERS = {
+    "artifact_release",
     "public-sdk-p11-20260629.manifest.json",
     "public-release-manifest.example.json",
     "public-release-manifest.schema.json",
     "releases/<release-slug>.manifest.json",
     "node scripts\\validate_public_release_manifests.mjs",
+    "published `proof_pack`",
+    "published non-documentation artifact",
+    "signature_path_or_url",
     "private engine source",
     "non-public training data",
     "raw operator output",
