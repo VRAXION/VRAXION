@@ -309,6 +309,8 @@ try {
     Write-Host "==> public export root shape"
     Assert-NoReparsePoints -Root $exportPath
     $requiredRootEntries = @(
+        ".github\ISSUE_TEMPLATE\config.yml",
+        ".github\ISSUE_TEMPLATE\public-surface-report.yml",
         ".github\pull_request_template.md",
         ".github\workflows\ci.yml",
         ".github\workflows\deploy-instnct-notify.yml",
@@ -413,6 +415,8 @@ try {
 
     Write-Host "==> public export exact path allowlist"
     $allowedPublicFiles = @(
+        ".github/ISSUE_TEMPLATE/config.yml",
+        ".github/ISSUE_TEMPLATE/public-surface-report.yml",
         ".github/pull_request_template.md",
         ".github/workflows/ci.yml",
         ".github/workflows/deploy-instnct-notify.yml",

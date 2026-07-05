@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security report
+    url: https://github.com/VRAXION/VRAXION/security/policy
+    about: Use SECURITY.md for vulnerabilities or reports with security impact.
+  - name: Public release checklist
+    url: https://github.com/VRAXION/VRAXION/blob/main/PUBLIC_RELEASE_CHECKLIST.md
+    about: Review the release intake rules before proposing a public artifact or claim change.

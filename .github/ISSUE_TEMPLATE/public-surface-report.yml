@@ -1,0 +1,57 @@
+name: Public surface report
+description: Report a public docs, site, crate, or worker example issue without private material.
+title: "[public surface] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this form only for the visible public surface: docs, GitHub Pages, public crates, examples, release notes, and public workflow behavior.
+
+        Do not paste secrets, tokens, private code, non-public training data, raw operator output, local machine paths, production config, or private dashboards. If the report has security impact, use SECURITY.md instead of a public issue.
+  - type: dropdown
+    id: public_area
+    attributes:
+      label: Public area
+      description: Which public surface needs attention?
+      options:
+        - Root docs or policy
+        - GitHub Pages site
+        - Public crate or package metadata
+        - Worker example or deployment docs
+        - Release notes, checksum, or artifact docs
+        - Public workflow or guard script
+    validations:
+      required: true
+  - type: textarea
+    id: observed
+    attributes:
+      label: What is wrong?
+      description: Describe only public behavior or public files.
+      placeholder: The public page, docs file, crate metadata, or release note says...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected public result
+      description: State the public-safe correction or expected behavior.
+      placeholder: It should instead say, link to, or validate...
+    validations:
+      required: true
+  - type: textarea
+    id: public_refs
+    attributes:
+      label: Public references
+      description: Add only public URLs, issue links, release links, or repo-relative paths.
+      placeholder: README.md, docs/index.html, a public release tag, or a public page URL.
+    validations:
+      required: false
+  - type: checkboxes
+    id: safety
+    attributes:
+      label: Public-safety confirmation
+      options:
+        - label: I did not include secrets, tokens, private code, non-public training data, local machine paths, raw operator output, production config, or private dashboards.
+          required: true
+        - label: I will use SECURITY.md instead of a public issue if this has security impact.
+          required: true

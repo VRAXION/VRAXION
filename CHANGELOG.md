@@ -10,6 +10,8 @@
   repo hygiene files.
 - Reworked the root README into a clearer public release intake entrypoint.
 - Added `PUBLIC_RELEASE_CHECKLIST.md` for future release PRs.
+- Added a public issue intake form and guard checks that keep reports inside
+  the visible public surface.
 
 ## 2026-06-29
 

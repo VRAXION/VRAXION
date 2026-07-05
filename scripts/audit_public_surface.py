@@ -86,6 +86,8 @@ FORBIDDEN_PUBLIC_COPY = [
 EXPECTED_CRATES = {"alphasync-core", "alphasync-runtime"}
 
 REQUIRED_TRACKED_FILES = {
+    ".github/ISSUE_TEMPLATE/config.yml",
+    ".github/ISSUE_TEMPLATE/public-surface-report.yml",
     ".github/pull_request_template.md",
     ".gitattributes",
     ".gitignore",
@@ -103,6 +105,21 @@ REQUIRED_PR_TEMPLATE_MARKERS = {
     "PUBLIC_RELEASE_CHECKLIST.md",
     "workers/instnct-notify/wrangler.jsonc",
     "powershell -ExecutionPolicy Bypass -File scripts\\check_public_export.ps1",
+}
+
+REQUIRED_ISSUE_TEMPLATE_MARKERS = {
+    "Do not paste secrets",
+    "SECURITY.md",
+    "local machine paths",
+    "non-public training data",
+    "public surface",
+    "raw operator output",
+}
+
+REQUIRED_ISSUE_CONFIG_MARKERS = {
+    "PUBLIC_RELEASE_CHECKLIST.md",
+    "blank_issues_enabled: false",
+    "security/policy",
 }
 
 REQUIRED_GITATTRIBUTES_ENTRIES = {
@@ -183,6 +200,18 @@ def main() -> int:
     for required in sorted(REQUIRED_PR_TEMPLATE_MARKERS):
         if required not in pr_template:
             failures.append(f"pull request template missing release guard marker: {required}")
+
+    issue_template = read_text(
+        ROOT / ".github" / "ISSUE_TEMPLATE" / "public-surface-report.yml"
+    )
+    for required in sorted(REQUIRED_ISSUE_TEMPLATE_MARKERS):
+        if required not in issue_template:
+            failures.append(f"issue template missing public-safety marker: {required}")
+
+    issue_config = read_text(ROOT / ".github" / "ISSUE_TEMPLATE" / "config.yml")
+    for required in sorted(REQUIRED_ISSUE_CONFIG_MARKERS):
+        if required not in issue_config:
+            failures.append(f"issue template config missing intake marker: {required}")
 
     gitattributes_path = ROOT / ".gitattributes"
     gitattributes_entries = {
