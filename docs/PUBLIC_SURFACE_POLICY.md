@@ -20,3 +20,6 @@ Not allowed:
 - private engine binary internals
 
 The audit script is a hard gate for this public surface.
+It also guards against stale public-copy terms that would imply a released
+archive, live availability, hosted service, or public runtime beyond the
+reviewed SDK/docs state.
