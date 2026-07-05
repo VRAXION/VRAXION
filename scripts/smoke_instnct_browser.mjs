@@ -348,7 +348,7 @@ async function probeInstnctDesktop(browser, origin) {
     fail("INSTNCT GitHub tag ZIP CTA is missing");
   }
   if (top.unsafePublicCopy) fail("INSTNCT desktop copy exposes unsafe or internal release wording");
-  if (!top.logoAsset.includes("instnct-logo.png")) fail("INSTNCT hero is not using the GLM final logo asset");
+  if (!top.logoAsset.includes("instnct-logo.webp")) fail("INSTNCT hero is not using the optimized GLM final logo asset");
   if (top.schemaType !== "WebPage") fail(`INSTNCT JSON-LD should be WebPage, found ${top.schemaType}`);
   if (
     !top.heroFirstImpression.booted ||
