@@ -189,6 +189,8 @@ REQUIRED_RELEASE_MANIFEST_README_MARKERS = {
     "node scripts\\validate_public_release_manifests.mjs",
     "published `proof_pack`",
     "published non-documentation artifact",
+    "policy_self_tests",
+    "policy self-tests",
     "signature_path_or_url",
     "schema contract",
     "private engine source",
