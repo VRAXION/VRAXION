@@ -124,6 +124,13 @@
       letter-spacing: 0;
     }
 
+    .brand img {
+      display: block;
+      width: 126px;
+      height: auto;
+      filter: drop-shadow(0 0 18px rgba(var(--cyan-rgb), 0.12));
+    }
+
     .nav {
       display: flex;
       align-items: center;
@@ -293,7 +300,7 @@
     main {
       display: grid;
       gap: 86px;
-      padding: 72px 0 84px;
+      padding: 62px 0 84px;
     }
 
     .section {
@@ -588,6 +595,10 @@
         font-size: 0.78rem;
       }
 
+      .nav a:not(:nth-child(2)) {
+        display: none;
+      }
+
       .hero {
         grid-template-columns: 18px minmax(0, 1fr) 18px;
         min-height: 86svh;
@@ -599,15 +610,18 @@
 
       .hero-content {
         width: 100%;
-        padding: calc(var(--header-h) + 42px) 0 50px;
+        padding: calc(var(--header-h) + 30px) 0 28px;
       }
 
       h1 {
-        font-size: clamp(3.25rem, 18vw, 5.1rem);
+        margin-bottom: 16px;
+        font-size: clamp(3rem, 17vw, 4.8rem);
       }
 
       .lead {
+        margin-bottom: 22px;
         font-size: 1.02rem;
+        line-height: 1.38;
       }
 
       .button,
@@ -615,13 +629,36 @@
         width: 100%;
       }
 
+      .actions {
+        margin-bottom: 24px;
+      }
+
+      .actions .button.ghost {
+        display: none;
+      }
+
       .hero-status {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
         gap: 8px;
+      }
+
+      .hero-status .status-chip:last-child {
+        grid-column: 1 / -1;
+      }
+
+      .status-chip {
+        min-height: 52px;
+        padding: 10px 12px;
+        font-size: 0.66rem;
+      }
+
+      .status-chip strong {
+        font-size: 0.86rem;
       }
 
       main {
         gap: 62px;
-        padding: 56px 0 64px;
+        padding: 34px 0 64px;
       }
 
       .section {
@@ -661,12 +698,22 @@
       .nav a:nth-child(4) {
         display: none;
       }
+
+      .hero-content {
+        padding: calc(var(--header-h) + 24px) 0 22px;
+      }
+
+      .hero-status {
+        display: none;
+      }
     }
   </style>
 </head>
 <body>
   <header class="site-header">
-    <a class="brand" href="#top" aria-label="VRAXION home">VRAXION</a>
+    <a class="brand" href="#top" aria-label="VRAXION home">
+      <img src="./assets/vraxion-wordmark.png?v=brand-pass-1" alt="VRAXION" width="1672" height="308" decoding="sync">
+    </a>
     <nav class="nav" aria-label="Primary">
       <a href="#paths">Paths</a>
       <a href="./instnct/">INSTNCT</a>
@@ -684,7 +731,7 @@
       <p class="eyebrow">VRAXION / private engine, public proof path</p>
       <h1 id="hero-title">VRAXION</h1>
       <p class="lead">
-        VRAXION is a founder-built Rust runtime for governed Operators: scoped capability, auditable state changes, and public claims tied to release evidence. The private engine is not published. The public path starts with INSTNCT, status docs, and versioned release artifacts.
+        Founder-built Rust runtime for governed Operators: scoped capability, auditable state changes, and public claims tied to release evidence. Public today: SDK/docs, status records, and the INSTNCT preview.
       </p>
       <div class="actions" aria-label="Primary actions">
         <a class="button primary" href="./instnct/">Open INSTNCT preview</a>

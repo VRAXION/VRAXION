@@ -753,6 +753,11 @@ async function probeResponsiveViewports(browser, origin) {
     const home = await page.evaluate(() => {
       const nav = document.querySelector(".nav");
       const navRect = nav.getBoundingClientRect();
+      const hero = document.querySelector(".hero");
+      const heroRect = hero?.getBoundingClientRect();
+      const nextSignal = hero?.nextElementSibling?.querySelector(".system-label, h2");
+      const nextSignalRect = nextSignal?.getBoundingClientRect();
+      const nextSignalStyle = nextSignal ? getComputedStyle(nextSignal) : null;
       const clippedLinks = [...nav.querySelectorAll("a")]
         .filter((link) => {
           const style = getComputedStyle(link);
@@ -766,9 +771,23 @@ async function probeResponsiveViewports(browser, origin) {
         navDisplay: getComputedStyle(nav).display,
         navText: nav.textContent,
         clippedLinks,
+        brandImage: document.querySelector(".brand img")?.getAttribute("src") || "",
+        heroHeight: heroRect ? Math.round(heroRect.height) : 0,
+        heroNextSignalTop: nextSignalRect ? Math.round(nextSignalRect.top) : null,
+        heroNextSignalVisible: nextSignalRect
+          ? nextSignalRect.top <= document.documentElement.clientHeight - 12 &&
+            Number(nextSignalStyle.opacity) > 0.8 &&
+            nextSignalStyle.visibility !== "hidden"
+          : false,
       };
     });
     if (home.overflow) fail(`home ${label} has horizontal overflow`);
+    if (!home.brandImage.includes("vraxion-wordmark.png")) {
+      fail(`home ${label} header brand does not use the VRAXION wordmark asset: ${JSON.stringify(home)}`);
+    }
+    if (!home.heroNextSignalVisible) {
+      fail(`home ${label} hero does not reveal next-section content in the first viewport: ${JSON.stringify(home)}`);
+    }
     if (viewport.width <= 980 && (home.navDisplay === "none" || !home.navText.includes("INSTNCT"))) {
       fail(`home ${label} mobile nav does not expose INSTNCT: ${JSON.stringify(home)}`);
     }
