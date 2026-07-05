@@ -49,6 +49,12 @@ const unsafePublicCopyPatternSource = [
   "terms pending",
   "final release terms",
   "What are the public release terms?",
+  "should eventually",
+  "should arrive",
+  "should ship",
+  "should be made",
+  "release-14",
+  "release-13",
   token("source", "-available"),
   token("source ", "available"),
   token("open ", "source"),
@@ -1141,11 +1147,34 @@ async function probeResponsiveViewports(browser, origin) {
         .map((link) => ({ text: link.textContent.trim(), rect: link.getBoundingClientRect() }))
         .filter(({ rect }) => rect.left < navRect.left - 1 || rect.right > navRect.right + 1)
         .map(({ text, rect }) => ({ text, left: Math.round(rect.left), right: Math.round(rect.right) }));
+      const visibleAction = (el) => {
+        const style = getComputedStyle(el);
+        const rect = el.getBoundingClientRect();
+        return (
+          style.display !== "none" &&
+          style.visibility !== "hidden" &&
+          Number(style.opacity || 1) > 0.25 &&
+          rect.width > 0 &&
+          rect.height > 0
+        );
+      };
+      const shortHeaderTargets = [...document.querySelectorAll(".site-header a")]
+        .filter(visibleAction)
+        .map((el) => {
+          const rect = el.getBoundingClientRect();
+          return {
+            text: el.textContent.trim().replace(/\s+/g, " "),
+            width: Math.round(rect.width),
+            height: Math.round(rect.height),
+          };
+        })
+        .filter((target) => target.width < 44 || target.height < 44);
       return {
         overflow: document.documentElement.scrollWidth > document.documentElement.clientWidth,
         navDisplay: getComputedStyle(nav).display,
         navText: nav.textContent,
         clippedLinks,
+        shortHeaderTargets,
         brandImage: document.querySelector(".brand img")?.getAttribute("src") || "",
         heroHeight: heroRect ? Math.round(heroRect.height) : 0,
         heroNextSignalTop: nextSignalRect ? Math.round(nextSignalRect.top) : null,
@@ -1168,6 +1197,9 @@ async function probeResponsiveViewports(browser, origin) {
     }
     if (home.clippedLinks.length) {
       fail(`home ${label} mobile nav links clip outside nav: ${JSON.stringify(home)}`);
+    }
+    if (home.shortHeaderTargets.length) {
+      fail(`home ${label} header action targets are too small: ${JSON.stringify(home.shortHeaderTargets)}`);
     }
 
     await page.close();

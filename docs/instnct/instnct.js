@@ -212,6 +212,21 @@
   });
   updateScrollState();
 
+  if (indicator) {
+    const setIndicatorOpen = (open) => {
+      indicator.classList.toggle("is-indicator-open", open);
+    };
+
+    indicator.addEventListener("pointerenter", () => setIndicatorOpen(true), { passive: true });
+    indicator.addEventListener("mouseenter", () => setIndicatorOpen(true), { passive: true });
+    indicator.addEventListener("focusin", () => setIndicatorOpen(true));
+    indicator.addEventListener("pointerleave", () => setIndicatorOpen(false), { passive: true });
+    indicator.addEventListener("mouseleave", () => setIndicatorOpen(false), { passive: true });
+    indicator.addEventListener("focusout", (event) => {
+      if (!event.relatedTarget || !indicator.contains(event.relatedTarget)) setIndicatorOpen(false);
+    });
+  }
+
   if (hero) {
     raf(() => hero.classList.add("is-booted"));
   }

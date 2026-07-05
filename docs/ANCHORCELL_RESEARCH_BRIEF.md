@@ -80,7 +80,7 @@ The public view should be a product of the export compiler, not a manually clean
 
 ## Validation Standard
 
-The current public baseline is `docs/anchorcell/anchorcell.v2.schema.json`: a JSON Schema Draft 2020-12 authoring schema for `alphasync.anchorcell.v2` records. It is strict by default: top-level records are closed, important fields are bounded, IDs and timestamps are canonicalized, branch roles are required, and accepted/public-export states are gated by review and security flags.
+The current public baseline is `docs/anchorcell/anchorcell.v2.schema.json`: a JSON Schema Draft 2020-12 authoring schema for `alphasync.anchorcell.v2` records. It is strict by default: top-level records are closed, important fields are bounded, IDs and timestamps are canonicalized, branch roles are required, every branch carries at least one evidence reference, and accepted/training/public-export states are gated by review and security flags.
 
 The companion example is `docs/anchorcell/anchorcell.v2.example.json`: a synthetic access-control decision cell that shows the intended shape of one accepted, public-redacted AnchorCell without exposing private repository data, secrets, or real user material.
 
