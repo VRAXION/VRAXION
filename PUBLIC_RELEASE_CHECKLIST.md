@@ -30,11 +30,13 @@ Before merging a release PR, update or verify:
 - `docs/VERSION.json`
 - `docs/CURRENT_STATUS.md`
 - `docs/CURRENT_CAPABILITIES.md`
+- `PUBLIC_GITHUB_STATE.md`
 - `PUBLIC_BOUNDARY.md`
 - `PACKAGE_BOUNDARY.md`
 - `PUBLIC_DELIVERY_MODEL.md`
 - relevant Pages copy under `docs/`
 - release notes on GitHub, when a GitHub release is created
+- GitHub tag, release body, release assets, and Pages deployment state
 
 If a file is intentionally unchanged, note why in the PR body.
 
@@ -99,6 +101,7 @@ The final PR review should answer:
 - Which user-facing claim changed?
 - Which tests or audits prove the public tree is clean?
 - Which artifact, checksum, or docs page is the source of truth?
+- Which GitHub release or tag is the current public source of truth?
 
 Do not merge if any answer depends on memory, local-only files, or unpublished
 private workspace state.

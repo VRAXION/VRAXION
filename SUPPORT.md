@@ -32,5 +32,7 @@ types and impact without pasting live credential values.
 
 Use `PUBLIC_RELEASE_CHECKLIST.md` before proposing a new public artifact,
 download path, release status change, checksum update, or public claim change.
+Use `PUBLIC_GITHUB_STATE.md` before relying on a GitHub release, tag, asset, or
+Pages deployment as current public status.
 Maintainers can answer support questions only from public files and public
 releases unless a separate private review path has been opened.

@@ -14,6 +14,8 @@
   the visible public surface.
 - Added `SUPPORT.md` to route public reports, release questions, and security
   reports without exposing private material.
+- Added `PUBLIC_GITHUB_STATE.md` to define current public GitHub release, tag,
+  asset, and Pages review rules.
 
 ## 2026-06-29
 
