@@ -154,8 +154,11 @@ pre {
   top: -96px;
   left: 12px;
   z-index: 100;
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
   transform: none;
-  padding: 10px 16px;
+  padding: 0 16px;
   border: 1px solid rgba(0, 229, 255, 0.4);
   border-radius: 8px;
   color: var(--cyan-soft);
@@ -195,10 +198,10 @@ pre {
 .section-indicator {
   position: fixed;
   top: 50%;
-  right: 18px;
+  right: 0;
   z-index: 34;
   display: none;
-  grid-template-columns: auto minmax(0, 78px);
+  grid-template-columns: auto minmax(0, 86px);
   gap: 12px;
   align-items: center;
   color: var(--metal);
@@ -308,8 +311,8 @@ pre {
   grid-column: 2;
   grid-row: 1;
   display: grid;
-  gap: 4px;
-  margin: 52px 0 0;
+  gap: 0;
+  margin: 46px 0 0;
   padding: 0;
   list-style: none;
   opacity: 0;
@@ -330,9 +333,11 @@ pre {
 
 .section-indicator a {
   display: flex;
+  align-items: center;
   justify-content: flex-end;
   gap: 7px;
-  min-height: 24px;
+  min-height: 44px;
+  padding: 0 4px;
   color: rgba(138, 147, 164, 0.72);
   font-family: "SFMono-Regular", "Cascadia Code", Consolas, "Liberation Mono", ui-monospace, monospace;
   font-size: 0.62rem;
@@ -509,7 +514,7 @@ pre {
   display: inline-flex;
   align-items: center;
   gap: 9px;
-  min-height: 42px;
+  min-height: 44px;
   padding: 0 14px;
   border: 1px solid rgba(0, 229, 255, 0.24);
   border-radius: 999px;
@@ -744,7 +749,9 @@ html.keyboard-dialog-open {
 .nav a {
   display: inline-flex;
   align-items: center;
-  min-height: 38px;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
   color: var(--muted);
   font-size: 0.94rem;
   font-weight: 650;
@@ -1348,9 +1355,9 @@ html.keyboard-dialog-open {
   display: flex;
   align-items: flex-start;
   justify-content: center;
-  width: 22px;
-  height: 38px;
-  padding-top: 7px;
+  width: 44px;
+  height: 44px;
+  padding-top: 9px;
   border: 1px solid var(--line-strong);
   border-radius: 999px;
   transform: translateX(-50%);
@@ -1389,7 +1396,7 @@ html.keyboard-dialog-open {
   display: flex;
   align-items: center;
   min-height: clamp(680px, 78svh, 920px);
-  overflow: clip;
+  overflow: hidden;
   padding-top: clamp(112px, 12svh, 164px);
   padding-bottom: clamp(112px, 12svh, 164px);
 }
@@ -1503,7 +1510,7 @@ html.keyboard-dialog-open {
 }
 
 .wallpaper-section::after {
-  inset: -8%;
+  inset: 0;
   background-size: cover;
   transform:
     translate3d(
@@ -1808,8 +1815,8 @@ html.keyboard-dialog-open {
   position: relative;
   display: none;
   flex: 0 0 auto;
-  width: 64px;
-  height: 34px;
+  width: 72px;
+  height: 44px;
   padding: 0;
   border: 1px solid rgba(0, 229, 255, 0.48);
   border-radius: 999px;
@@ -1828,10 +1835,10 @@ html.keyboard-dialog-open {
 
 .mode-switch span {
   position: absolute;
-  top: 4px;
-  left: 4px;
-  width: 24px;
-  height: 24px;
+  top: 5px;
+  left: 5px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   background: var(--cyan);
   box-shadow: 0 0 18px rgba(0, 229, 255, 0.34);
@@ -2105,8 +2112,12 @@ html.keyboard-dialog-open {
 }
 
 .benchmark-card p a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
   color: var(--cyan-soft);
   font-weight: 760;
+  vertical-align: middle;
 }
 
 .statement-panel {
@@ -2480,7 +2491,7 @@ html.keyboard-dialog-open {
 }
 
 .terminal-actions button {
-  min-height: 40px;
+  min-height: 44px;
   padding: 0 14px;
   border: 1px solid rgba(0, 229, 255, 0.2);
   border-radius: 8px;
@@ -2829,7 +2840,7 @@ html.keyboard-dialog-open {
 .footer-inner a {
   display: inline-flex;
   align-items: center;
-  min-height: 36px;
+  min-height: 44px;
 }
 
 .footer-inner a:not(:first-child) {
@@ -2971,7 +2982,7 @@ html.keyboard-dialog-open {
   }
 
   .nav a {
-    min-height: 36px;
+    min-height: 44px;
     font-size: 0.82rem;
   }
 
@@ -3167,7 +3178,7 @@ html.keyboard-dialog-open {
   }
 
   .terminal-actions button {
-    min-height: 42px;
+    min-height: 44px;
   }
 
   .faq-item button {

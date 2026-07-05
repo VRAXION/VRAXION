@@ -858,6 +858,17 @@ async function probeResponsiveViewports(browser, origin) {
       const heroLead = document.querySelector(".hero .lead");
       const nav = document.querySelector(".site-header .nav");
       const navRect = nav.getBoundingClientRect();
+      const visibleTarget = (el) => {
+        const style = getComputedStyle(el);
+        const rect = el.getBoundingClientRect();
+        return (
+          style.display !== "none" &&
+          style.visibility !== "hidden" &&
+          Number(style.opacity || 1) !== 0 &&
+          rect.width > 0 &&
+          rect.height > 0
+        );
+      };
       return {
         overflow: document.documentElement.scrollWidth > document.documentElement.clientWidth,
         activePanelClipped: active ? active.scrollHeight > active.clientHeight + 1 : true,
@@ -883,6 +894,20 @@ async function probeResponsiveViewports(browser, origin) {
           nav.scrollWidth > nav.clientWidth + 1 ||
           navRect.left < -1 ||
           navRect.right > document.documentElement.clientWidth + 1,
+        shortTargets: [...document.querySelectorAll('a[href], button, [role="button"], [role="switch"]')]
+          .filter(visibleTarget)
+          .map((el) => {
+            const rect = el.getBoundingClientRect();
+            return {
+              text: (el.textContent || el.getAttribute("aria-label") || el.getAttribute("href") || "")
+                .trim()
+                .replace(/\s+/g, " ")
+                .slice(0, 80),
+              width: Math.round(rect.width),
+              height: Math.round(rect.height),
+            };
+          })
+          .filter((target) => target.width < 44 || target.height < 44),
       };
     });
     if (instnct.overflow) fail(`INSTNCT ${label} has horizontal overflow`);
@@ -899,6 +924,9 @@ async function probeResponsiveViewports(browser, origin) {
     }
     if (viewport.width <= 420 && instnct.headerNavClipped) {
       fail(`INSTNCT ${label} header nav is clipped: ${JSON.stringify(instnct)}`);
+    }
+    if (instnct.shortTargets.length) {
+      fail(`INSTNCT ${label} visible action targets are too small: ${JSON.stringify(instnct.shortTargets)}`);
     }
 
     await page.evaluate(() => {
@@ -1017,10 +1045,10 @@ async function probeResponsiveViewports(browser, origin) {
       };
     });
     const shortTerminalTargets = actionTargets.terminalButtons.filter(
-      (button) => button.display === "none" || button.visibility === "hidden" || button.height < 38 || button.width < 44
+      (button) => button.display === "none" || button.visibility === "hidden" || button.height < 44 || button.width < 44
     );
     const shortFooterTargets = actionTargets.footerLinks.filter(
-      (link) => link.display === "none" || link.visibility === "hidden" || link.height < 34 || link.width < 40
+      (link) => link.display === "none" || link.visibility === "hidden" || link.height < 44 || link.width < 44
     );
     if (shortTerminalTargets.length || shortFooterTargets.length) {
       fail(`INSTNCT ${label} action targets are too small: ${JSON.stringify({ shortTerminalTargets, shortFooterTargets })}`);
