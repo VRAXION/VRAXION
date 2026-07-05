@@ -275,6 +275,8 @@ async function probeInstnctDesktop(browser, origin) {
     schemaType: JSON.parse(document.querySelector('script[type="application/ld+json"]').textContent)["@type"],
     engineScopeWallpaper: getComputedStyle(document.querySelector("#not-ai"), "::after").backgroundImage,
     exactModeWallpaper: getComputedStyle(document.querySelector("#hallucination"), "::after").backgroundImage,
+    proofPackWallpaper: getComputedStyle(document.querySelector("#trust"), "::after").backgroundImage,
+    releaseClaimWallpaper: getComputedStyle(document.querySelector("#grounding"), "::after").backgroundImage,
     heroFirstImpression: (() => {
       const hero = document.querySelector(".hero");
       const headline = document.querySelector(".hero-headline");
@@ -328,6 +330,12 @@ async function probeInstnctDesktop(browser, origin) {
   }
   if (!top.exactModeWallpaper.includes("exact-mode-bg.jpg")) {
     fail(`INSTNCT exact mode wallpaper is missing: ${top.exactModeWallpaper}`);
+  }
+  if (!top.proofPackWallpaper.includes("proof-pack-bg.jpg")) {
+    fail(`INSTNCT proof pack wallpaper is missing: ${top.proofPackWallpaper}`);
+  }
+  if (!top.releaseClaimWallpaper.includes("release-claim-bg.jpg")) {
+    fail(`INSTNCT release claim wallpaper is missing: ${top.releaseClaimWallpaper}`);
   }
 
   const heroRect = await page.locator(".hero").boundingBox();
@@ -831,6 +839,35 @@ async function probeResponsiveViewports(browser, origin) {
       if (fixedControls.overlap) {
         fail(`INSTNCT ${label} fixed controls overlap after scroll: ${JSON.stringify(fixedControls)}`);
       }
+    }
+
+    await page.locator("#dev-trail").scrollIntoViewIfNeeded();
+    await page.waitForTimeout(180);
+    const actionTargets = await page.evaluate(() => {
+      const rectFor = (el) => {
+        const rect = el.getBoundingClientRect();
+        const style = getComputedStyle(el);
+        return {
+          text: el.textContent.trim(),
+          width: Math.round(rect.width),
+          height: Math.round(rect.height),
+          display: style.display,
+          visibility: style.visibility,
+        };
+      };
+      return {
+        terminalButtons: [...document.querySelectorAll(".terminal-actions button")].map(rectFor),
+        footerLinks: [...document.querySelectorAll(".footer-inner a:not(:first-child)")].map(rectFor),
+      };
+    });
+    const shortTerminalTargets = actionTargets.terminalButtons.filter(
+      (button) => button.display === "none" || button.visibility === "hidden" || button.height < 38 || button.width < 44
+    );
+    const shortFooterTargets = actionTargets.footerLinks.filter(
+      (link) => link.display === "none" || link.visibility === "hidden" || link.height < 34 || link.width < 40
+    );
+    if (shortTerminalTargets.length || shortFooterTargets.length) {
+      fail(`INSTNCT ${label} action targets are too small: ${JSON.stringify({ shortTerminalTargets, shortFooterTargets })}`);
     }
 
     await page.locator("#hallucination").scrollIntoViewIfNeeded();

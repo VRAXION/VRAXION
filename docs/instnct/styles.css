@@ -1420,6 +1420,8 @@ html.keyboard-dialog-open {
 
 #not-ai::after,
 #hallucination::after,
+#trust::after,
+#grounding::after,
 #t1-reflex-class::after,
 #vraxion-note::after {
   content: "";
@@ -1446,6 +1448,20 @@ html.keyboard-dialog-open {
   background-image: url("./assets/exact-mode-bg.jpg");
   background-position: right center;
   mask-image: linear-gradient(90deg, transparent, transparent 28%, black 58%, black);
+}
+
+#trust::after {
+  opacity: 0.18;
+  background-image: url("./assets/proof-pack-bg.jpg");
+  background-position: right center;
+  mask-image: linear-gradient(90deg, transparent, transparent 25%, black 58%, black);
+}
+
+#grounding::after {
+  opacity: 0.18;
+  background-image: url("./assets/release-claim-bg.jpg");
+  background-position: right center;
+  mask-image: linear-gradient(90deg, transparent, transparent 30%, black 62%, black);
 }
 
 #t1-reflex-class::after {
@@ -2400,9 +2416,9 @@ html.keyboard-dialog-open {
 .terminal-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 10px;
   align-items: center;
-  padding: 13px 16px 16px;
+  padding: 14px 16px 16px;
   border-top: 1px solid var(--line);
   background: rgba(5, 5, 7, 0.32);
 }
@@ -2420,13 +2436,14 @@ html.keyboard-dialog-open {
 }
 
 .terminal-actions button {
-  min-height: 30px;
-  padding: 0 10px;
+  min-height: 40px;
+  padding: 0 14px;
   border: 1px solid rgba(0, 229, 255, 0.2);
-  border-radius: 6px;
+  border-radius: 8px;
   color: var(--cyan-soft);
   background: rgba(0, 229, 255, 0.045);
   cursor: pointer;
+  line-height: 1.1;
   transition:
     border-color 160ms ease,
     background 160ms ease,
@@ -2765,6 +2782,17 @@ html.keyboard-dialog-open {
   opacity: 0.78;
 }
 
+.footer-inner a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+}
+
+.footer-inner a:not(:first-child) {
+  padding: 0 10px;
+  border-radius: 8px;
+}
+
 .footer-inner a:last-child {
   color: var(--cyan-soft);
 }
@@ -3078,6 +3106,18 @@ html.keyboard-dialog-open {
 
   .terminal-bar em {
     display: none;
+  }
+
+  .terminal-actions {
+    align-items: stretch;
+  }
+
+  .terminal-actions span {
+    flex: 1 0 100%;
+  }
+
+  .terminal-actions button {
+    min-height: 42px;
   }
 
   .faq-item button {
