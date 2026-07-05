@@ -34,6 +34,8 @@ Before creating or updating a public release, review:
 - Dependabot or dependency-update PRs that may affect the public build
 - Pages deployment target
 - public status docs and release links
+- public release manifest entries under `releases/`, when artifacts or claims
+  change
 
 ## Public-State Rules
 
@@ -41,6 +43,9 @@ Before creating or updating a public release, review:
 - Keep `PUBLIC_RELEASE_CHECKLIST.md` as the release intake gate.
 - Keep `.github/CODEOWNERS` routing public boundary, workflow, docs, Worker, and
   crate changes to the public repo owner.
+- Keep public artifact metadata aligned with
+  `releases/public-release-manifest.schema.json` when a release publishes or
+  changes artifacts, checksums, signatures, or release status claims.
 - Keep dependency update automation limited to public manifests and GitHub
   Actions.
 - Keep private engine source, non-public training data, raw operator output,
@@ -65,5 +70,5 @@ python scripts\audit_public_surface.py
 powershell -ExecutionPolicy Bypass -File scripts\check_public_export.ps1
 ```
 
-The public release PR should state which GitHub release, tag, status doc, and
-artifact entry are the source of truth.
+The public release PR should state which GitHub release, tag, status doc,
+manifest, and artifact entry are the source of truth.

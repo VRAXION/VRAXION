@@ -37,6 +37,8 @@ Before merging a release PR, update or verify:
 - relevant Pages copy under `docs/`
 - release notes on GitHub, when a GitHub release is created
 - GitHub tag, release body, release assets, and Pages deployment state
+- `releases/<release-slug>.manifest.json` when artifacts, checksums,
+  signatures, or release status claims change
 
 If a file is intentionally unchanged, note why in the PR body.
 
@@ -64,6 +66,8 @@ If a public artifact is added:
 
 - name it with a stable release slug
 - include checksum or signature material when applicable
+- add a public release manifest that follows
+  `releases/public-release-manifest.schema.json`
 - document how the artifact was produced at a public-safe level
 - keep reproduction instructions limited to public inputs
 - verify archive contents before upload
@@ -72,6 +76,8 @@ If a public artifact is added:
 If an artifact is not added:
 
 - keep the release language as preview, compatibility, docs, or status only
+- either omit the release manifest or include one with an empty `artifacts`
+  list and a plain `public_claim` that says no runnable artifact is included
 - do not add download language
 - do not add benchmark-complete language
 - do not add production availability language
@@ -101,6 +107,7 @@ The final PR review should answer:
 - Which user-facing claim changed?
 - Which tests or audits prove the public tree is clean?
 - Which artifact, checksum, or docs page is the source of truth?
+- Which release manifest, if any, defines the public artifact set?
 - Which GitHub release or tag is the current public source of truth?
 
 Do not merge if any answer depends on memory, local-only files, or unpublished
