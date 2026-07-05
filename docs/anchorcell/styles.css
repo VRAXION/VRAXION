@@ -91,6 +91,11 @@ button:focus-visible {
   border-radius: 7px;
 }
 
+main:focus,
+.section:focus {
+  outline: none;
+}
+
 h1,
 h2,
 h3,
@@ -251,20 +256,19 @@ p {
 
 .mobile-section-readout {
   position: fixed;
-  left: 50%;
+  right: 12px;
   bottom: 12px;
   z-index: 45;
   display: none;
   align-items: center;
-  gap: 10px;
+  gap: 7px;
   min-height: 44px;
-  padding: 0 14px;
+  padding: 0 10px;
   border: 1px solid rgba(var(--cyan-rgb), 0.22);
   border-radius: 999px;
   color: var(--ink);
   background: rgba(5, 8, 10, 0.82);
   box-shadow: 0 18px 50px rgba(0, 0, 0, 0.32);
-  transform: translateX(-50%);
   backdrop-filter: blur(16px);
 }
 
@@ -274,7 +278,7 @@ p {
 }
 
 .mobile-section-readout strong {
-  font-size: 0.82rem;
+  font-size: 0.74rem;
   text-transform: uppercase;
 }
 
@@ -992,6 +996,21 @@ footer {
 
   .section {
     width: calc(100% - 36px);
+  }
+
+  .mobile-section-readout {
+    width: 44px;
+    padding: 0;
+    justify-content: center;
+  }
+
+  .mobile-section-readout strong {
+    display: none;
+  }
+
+  .branch-grid h3,
+  .branch-grid p {
+    max-width: calc(100% - 58px);
   }
 
   .section h2 {

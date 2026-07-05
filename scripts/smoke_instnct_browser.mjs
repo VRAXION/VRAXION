@@ -239,6 +239,9 @@ async function probeHome(browser, origin) {
     releaseHrefs: [...document.querySelectorAll("a")].map((a) => a.href),
     oldReleaseHref: [...document.querySelectorAll("a")].some((a) => a.href.includes("releases/tag/v6.1.7")),
     capabilitiesHref: [...document.querySelectorAll("a")].some((a) => a.href.includes("CURRENT_CAPABILITIES.md")),
+    anchorcellSchemaHref: [...document.querySelectorAll("a")].some((a) =>
+      a.href.endsWith("/anchorcell/anchorcell.v2.schema.json")
+    ),
     instnctPublished: document.body.textContent.includes("INSTNCT T1 Reflex Engine preview"),
     anchorcellPublished: document.body.textContent.includes("AnchorCell studies the format before the model."),
   }), latestRelease);
@@ -251,6 +254,7 @@ async function probeHome(browser, origin) {
   }
   if (result.oldReleaseHref) fail("home page still links to old v6.1.7 release");
   if (!result.capabilitiesHref) fail("home page current capabilities link is missing");
+  if (!result.anchorcellSchemaHref) fail("home page AnchorCell v2 schema link is missing");
   if (!result.instnctPublished) fail("home page does not frame INSTNCT as the T1 Reflex Engine preview");
   if (!result.anchorcellPublished) fail("home page does not expose the AnchorCell research path");
 }
@@ -1300,6 +1304,7 @@ async function probeAnchorCell(browser, origin) {
         copyOk:
           document.body.textContent.includes("Training data with its trust boundaries intact.") &&
           document.body.textContent.includes("not a finished model claim"),
+        schemaHref: [...document.querySelectorAll("a")].some((a) => a.href.endsWith("/anchorcell/anchorcell.v2.schema.json")),
         booted: hero?.classList.contains("is-booted"),
         heroHeight: heroRect ? Math.round(heroRect.height) : 0,
         heroNextSignalVisible: nextSignalRect
@@ -1333,6 +1338,7 @@ async function probeAnchorCell(browser, origin) {
     if (first.overflow) fail(`AnchorCell ${label} has horizontal overflow`);
     if (first.h1Count !== 1) fail(`AnchorCell ${label} must expose one visible h1: ${JSON.stringify(first)}`);
     if (!first.copyOk) fail(`AnchorCell ${label} required copy is missing`);
+    if (!first.schemaHref) fail(`AnchorCell ${label} schema CTA is missing: ${JSON.stringify(first)}`);
     if (!first.booted) fail(`AnchorCell ${label} hero did not boot`);
     if (!first.heroNextSignalVisible) {
       fail(`AnchorCell ${label} hero does not reveal next-section content in the first viewport: ${JSON.stringify(first)}`);
@@ -1361,6 +1367,59 @@ async function probeAnchorCell(browser, origin) {
     }
     if (tracking.revealed < 2) {
       fail(`AnchorCell ${label} scroll reveal did not mark sections: ${JSON.stringify(tracking)}`);
+    }
+
+    if (viewport.width <= 420) {
+      await page.goto(`${origin}/anchorcell/#branches`, { waitUntil: "networkidle" });
+      await page.waitForTimeout(360);
+      const branchFragment = await page.evaluate(() => {
+        const section = document.querySelector("#branches");
+        const title = document.querySelector("#branches-title");
+        const readout = document.querySelector(".mobile-section-readout");
+        const sectionStyle = section ? getComputedStyle(section) : null;
+        const sectionRect = section?.getBoundingClientRect();
+        const titleRect = title?.getBoundingClientRect();
+        const readoutStyle = readout ? getComputedStyle(readout) : null;
+        const readoutRect =
+          readout &&
+          readoutStyle.display !== "none" &&
+          readoutStyle.visibility !== "hidden" &&
+          Number(readoutStyle.opacity || 1) > 0.25
+            ? readout.getBoundingClientRect()
+            : null;
+        const overlapsCritical = readoutRect
+          ? [...document.querySelectorAll("#branches h2, #branches h3, #branches p, #branches .section-label")]
+              .map((target) => {
+                const rect = target.getBoundingClientRect();
+                const width = Math.max(0, Math.min(readoutRect.right, rect.right) - Math.max(readoutRect.left, rect.left));
+                const height = Math.max(0, Math.min(readoutRect.bottom, rect.bottom) - Math.max(readoutRect.top, rect.top));
+                return {
+                  text: target.textContent.trim().replace(/\s+/g, " ").slice(0, 48),
+                  area: Math.round(width * height),
+                };
+              })
+              .filter((entry) => entry.area > 0)
+          : [];
+        return {
+          overflow: document.documentElement.scrollWidth > document.documentElement.clientWidth,
+          outlineStyle: sectionStyle?.outlineStyle || "",
+          outlineWidth: sectionStyle?.outlineWidth || "",
+          sectionLeft: sectionRect ? Math.round(sectionRect.left) : null,
+          titleLeft: titleRect ? Math.round(titleRect.left) : null,
+          titleTop: titleRect ? Math.round(titleRect.top) : null,
+          overlapsCritical,
+        };
+      });
+      if (
+        branchFragment.overflow ||
+        branchFragment.outlineStyle !== "none" ||
+        branchFragment.sectionLeft < 0 ||
+        branchFragment.titleLeft < 0 ||
+        branchFragment.titleTop < 0 ||
+        branchFragment.overlapsCritical.length
+      ) {
+        fail(`AnchorCell ${label} branch fragment target is visually clipped: ${JSON.stringify(branchFragment)}`);
+      }
     }
 
     await page.close();

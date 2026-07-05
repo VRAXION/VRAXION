@@ -205,7 +205,7 @@ pre {
   gap: 12px;
   align-items: center;
   color: var(--metal);
-  pointer-events: none;
+  pointer-events: auto;
   transform: translateY(-50%);
 }
 

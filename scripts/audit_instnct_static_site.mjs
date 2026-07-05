@@ -13,6 +13,7 @@ const jsPath = path.join(root, "docs", "instnct", "instnct.js");
 const cssPath = path.join(root, "docs", "instnct", "styles.css");
 const anchorcellJsPath = path.join(root, "docs", "anchorcell", "anchorcell.js");
 const anchorcellCssPath = path.join(root, "docs", "anchorcell", "styles.css");
+const anchorcellSchemaPath = path.join(root, "docs", "anchorcell", "anchorcell.v2.schema.json");
 const browserSmokePath = path.join(root, "scripts", "smoke_instnct_browser.mjs");
 const versionPath = path.join(root, "docs", "VERSION.json");
 const robotsPath = path.join(root, "docs", "robots.txt");
@@ -29,6 +30,7 @@ const js = fs.readFileSync(jsPath, "utf8");
 const css = fs.readFileSync(cssPath, "utf8");
 const anchorcellJs = fs.readFileSync(anchorcellJsPath, "utf8");
 const anchorcellCss = fs.readFileSync(anchorcellCssPath, "utf8");
+const anchorcellSchemaText = fs.readFileSync(anchorcellSchemaPath, "utf8");
 const browserSmoke = fs.readFileSync(browserSmokePath, "utf8");
 const currentCapabilities = fs.readFileSync(currentCapabilitiesPath, "utf8");
 const benchmarkNotes = fs.readFileSync(benchmarkNotesPath, "utf8");
@@ -204,6 +206,63 @@ try {
   fail(`invalid docs/VERSION.json: ${err.message}`);
 }
 
+try {
+  const schema = JSON.parse(anchorcellSchemaText);
+  const serialized = JSON.stringify(schema);
+  if (schema.$schema !== "https://json-schema.org/draft/2020-12/schema") {
+    fail(`AnchorCell schema must use JSON Schema Draft 2020-12, found ${schema.$schema || "missing"}`);
+  }
+  if (schema.$id !== "https://vraxion.github.io/VRAXION/anchorcell/anchorcell.v2.schema.json") {
+    fail(`AnchorCell schema $id must use the public VRAXION URL, found ${schema.$id || "missing"}`);
+  }
+  if (schema.title !== "AnchorCell Finalized Authoring Schema") {
+    fail(`AnchorCell schema title mismatch: ${schema.title || "missing"}`);
+  }
+  if (schema.unevaluatedProperties !== false) {
+    fail("AnchorCell schema must close unevaluated top-level properties");
+  }
+  if (schema.properties?.schema_version?.const !== "alphasync.anchorcell.v2") {
+    fail("AnchorCell schema_version const must be alphasync.anchorcell.v2");
+  }
+  const requiredTop = new Set(schema.required || []);
+  for (const required of [
+    "schema_version",
+    "schema_revision",
+    "cell_id",
+    "public_export_status",
+    "context_packet",
+    "branches",
+    "gold",
+    "review",
+    "security",
+  ]) {
+    if (!requiredTop.has(required)) fail(`AnchorCell schema missing required top-level field: ${required}`);
+  }
+  if (schema.properties?.branches?.minItems !== 4 || schema.properties?.branches?.maxItems !== 8) {
+    fail("AnchorCell schema branch bounds must require 4..8 branches");
+  }
+  for (const defName of ["contextPacket", "branch", "gold", "review", "security", "projection"]) {
+    if (!schema.$defs?.[defName]) fail(`AnchorCell schema missing $defs.${defName}`);
+  }
+  for (const requiredText of [
+    "chain_of_thought",
+    "hidden_reasoning",
+    "raw_prompt",
+    "system_prompt",
+    "public_redacted",
+    "public_full",
+    "allow_training_export",
+    "allow_public_export",
+    "branch_role",
+    "adversarial",
+    "naive_bad",
+  ]) {
+    if (!serialized.includes(requiredText)) fail(`AnchorCell schema missing invariant text: ${requiredText}`);
+  }
+} catch (err) {
+  fail(`invalid AnchorCell schema JSON: ${err.message}`);
+}
+
 for (const required of [
   "hero-mesh-canvas",
   "icon-sprite",
@@ -260,8 +319,10 @@ for (const required of [
   "The engine contract: answer on-path, refuse off-path.",
   "AnchorCell studies the format before the model.",
   "This path is not a model announcement.",
+  "v2 authoring schema baseline",
   "./anchorcell/",
   "./ANCHORCELL_RESEARCH_BRIEF.md",
+  "./anchorcell/anchorcell.v2.schema.json",
   "Path Selector",
   "Exact Mode",
   "Proof Pack",
@@ -285,8 +346,11 @@ for (const required of [
   "naive_bad",
   "adversarial",
   "public_redacted",
+  "JSON Schema Draft 2020-12 authoring baseline",
   "not a finished model claim",
   "../ANCHORCELL_RESEARCH_BRIEF.md",
+  "./anchorcell.v2.schema.json",
+  "Inspect v2 schema",
 ]) {
   if (!anchorcell.includes(required)) fail(`missing AnchorCell markup: ${required}`);
 }
