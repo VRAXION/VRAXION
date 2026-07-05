@@ -491,6 +491,144 @@ function validateManifest(file, manifest) {
   }
 }
 
+function cloneJson(value) {
+  return JSON.parse(JSON.stringify(value));
+}
+
+function captureValidationFailures(callback) {
+  const start = failures.length;
+  callback();
+  return failures.splice(start);
+}
+
+function selfTestReleaseManifest(baseManifest, slug, releaseKind) {
+  const releaseDate = slug.slice(-8).replace(/^([0-9]{4})([0-9]{2})([0-9]{2})$/, "$1-$2-$3");
+  const manifest = cloneJson(baseManifest);
+  manifest.release_slug = slug;
+  manifest.release_date = releaseDate;
+  manifest.release_kind = releaseKind;
+  manifest.public_claim = "In-memory validator self-test only; never a public release.";
+  manifest.source_of_truth.github_release = `https://github.com/VRAXION/VRAXION/releases/tag/${slug}`;
+  manifest.artifacts = [];
+  return manifest;
+}
+
+function selfTestArtifact(slug, kind, overrides = {}) {
+  return {
+    name: `${kind}-self-test.zip`,
+    kind,
+    status: "published",
+    path_or_url: `https://github.com/VRAXION/VRAXION/releases/download/${slug}/${kind}-self-test.zip`,
+    sha256: "a".repeat(64),
+    signature_path_or_url: `https://github.com/VRAXION/VRAXION/releases/download/${slug}/${kind}-self-test.zip.sig`,
+    notes: "In-memory validator self-test artifact metadata.",
+    ...overrides,
+  };
+}
+
+function runManifestNegativeSelfTest(name, expectedText, callback) {
+  const captured = captureValidationFailures(callback);
+  if (!captured.some((failure) => failure.includes(expectedText))) {
+    fail(
+      "scripts/validate_public_release_manifests.mjs",
+      `policy self-test ${name} did not fail with ${JSON.stringify(expectedText)}; got ${captured.length ? captured.join(" | ") : "no failures"}`,
+    );
+  }
+}
+
+function runManifestPositiveSelfTest(name, callback) {
+  const captured = captureValidationFailures(callback);
+  if (captured.length > 0) {
+    fail(
+      "scripts/validate_public_release_manifests.mjs",
+      `policy self-test ${name} should pass; got ${captured.join(" | ")}`,
+    );
+  }
+}
+
+function runPolicySelfTests(schema, baseManifest) {
+  if (!schema || !baseManifest) {
+    return 0;
+  }
+
+  const tests = [
+    () => {
+      const slug = "public-selftest-proof-20990101";
+      const manifest = selfTestReleaseManifest(baseManifest, slug, "proof_pack");
+      manifest.artifacts = [selfTestArtifact(slug, "proof_pack")];
+      runManifestPositiveSelfTest("valid_proof_pack_manifest", () => {
+        validateManifest(`releases/${slug}.manifest.json`, manifest);
+      });
+    },
+    () => {
+      const slug = "public-selftest-empty-artifact-20990101";
+      const manifest = selfTestReleaseManifest(baseManifest, slug, "artifact_release");
+      runManifestNegativeSelfTest(
+        "artifact_release_without_published_artifact",
+        "artifact_release manifests must include at least one published non-documentation artifact",
+        () => validateManifest(`releases/${slug}.manifest.json`, manifest),
+      );
+    },
+    () => {
+      const slug = "public-selftest-proof-missing-20990101";
+      const manifest = selfTestReleaseManifest(baseManifest, slug, "proof_pack");
+      manifest.artifacts = [selfTestArtifact(slug, "binary")];
+      runManifestNegativeSelfTest(
+        "proof_pack_without_published_proof_pack_artifact",
+        "proof_pack manifests must include at least one published proof_pack artifact",
+        () => validateManifest(`releases/${slug}.manifest.json`, manifest),
+      );
+    },
+    () => {
+      const slug = "public-selftest-binary-sha-20990101";
+      const manifest = selfTestReleaseManifest(baseManifest, slug, "artifact_release");
+      manifest.artifacts = [selfTestArtifact(slug, "binary", { sha256: null })];
+      runManifestNegativeSelfTest(
+        "published_binary_without_sha256",
+        "is published and must include sha256",
+        () => validateManifest(`releases/${slug}.manifest.json`, manifest),
+      );
+    },
+    () => {
+      const slug = "public-selftest-proof-sig-20990101";
+      const manifest = selfTestReleaseManifest(baseManifest, slug, "proof_pack");
+      manifest.artifacts = [selfTestArtifact(slug, "proof_pack", { signature_path_or_url: null })];
+      runManifestNegativeSelfTest(
+        "published_proof_pack_without_signature",
+        "is published and must include signature_path_or_url",
+        () => validateManifest(`releases/${slug}.manifest.json`, manifest),
+      );
+    },
+    () => {
+      const driftedSchema = cloneJson(schema);
+      driftedSchema.allOf = (driftedSchema.allOf || []).filter(
+        (rule) => rule?.if?.properties?.release_kind?.const !== "artifact_release",
+      );
+      runManifestNegativeSelfTest(
+        "schema_without_artifact_release_rule",
+        "artifact_release schema rule must require at least one artifact",
+        () => validateSchemaContract(driftedSchema),
+      );
+    },
+    () => {
+      const driftedSchema = cloneJson(schema);
+      driftedSchema.$defs.artifact.allOf = (driftedSchema.$defs.artifact.allOf || []).filter(
+        (rule) => !isPlainObject(rule?.then?.properties?.signature_path_or_url),
+      );
+      runManifestNegativeSelfTest(
+        "schema_without_signature_rule",
+        "published proof_pack/binary artifact schema rule must require signature_path_or_url",
+        () => validateSchemaContract(driftedSchema),
+      );
+    },
+  ];
+
+  for (const run of tests) {
+    run();
+  }
+  return tests.length;
+}
+
 const schema = readJson("releases/public-release-manifest.schema.json");
 validateSchemaContract(schema);
 
@@ -515,8 +653,14 @@ for (const manifestFile of manifestFiles) {
   validateManifest(manifestFile, readJson(manifestFile));
 }
 
+const policySelfTests = runPolicySelfTests(
+  schema,
+  readJson("releases/public-release-manifest.example.json"),
+);
+
 console.log("PUBLIC_RELEASE_MANIFEST_VALIDATION");
 console.log(`manifest_files=${manifestFiles.length}`);
+console.log(`policy_self_tests=${policySelfTests}`);
 console.log(`failure_count=${failures.length}`);
 for (const failure of failures) {
   console.log(`failure: ${failure}`);

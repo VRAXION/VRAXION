@@ -26,7 +26,9 @@ Artifact-bearing releases have stricter gates:
 
 `validate_public_release_manifests.mjs` checks both manifest content and the
 schema contract, so these artifact gates must stay encoded in
-`public-release-manifest.schema.json`.
+`public-release-manifest.schema.json`. It also runs in-memory policy self-tests
+that must reject representative bad `artifact_release`, `proof_pack`, checksum,
+signature, and schema-drift cases before reporting `policy_self_tests`.
 
 Validate manifests before review:
 
