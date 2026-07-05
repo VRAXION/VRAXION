@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'none'; style-src 'self' 'sha256-NrUiC7EE4pCDDb0whoqyDUJTGummqmU+PHb/e7a9zQ0='; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'; upgrade-insecure-requests">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'none'; style-src 'self' 'sha256-QbKG/l/6tFhQwrzEr4gBSyivi2rteOHRUjzlel21iJw='; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'; upgrade-insecure-requests">
   <title>VRAXION - INSTNCT T1 Reflex Engine</title>
   <meta name="description" content="VRAXION is the solo-built, AI-assisted project behind INSTNCT: a local reflex reasoning engine for known paths, Exact Mode refusal, and a pending T1 Proof Pack.">
   <meta name="theme-color" content="#05080a">
@@ -16,8 +16,8 @@
   <meta property="og:site_name" content="VRAXION">
   <meta property="og:image" content="https://vraxion.github.io/VRAXION/assets/vraxion-home-hero.jpg">
   <meta property="og:image:alt" content="VRAXION local reflex reasoning hero surface">
-  <meta property="og:image:width" content="1520">
-  <meta property="og:image:height" content="1014">
+  <meta property="og:image:width" content="1672">
+  <meta property="og:image:height" content="941">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="VRAXION">
   <meta name="twitter:description" content="INSTNCT is the first VRAXION engine line: local path selection, Exact Mode refusal, and a pending T1 Proof Pack.">
@@ -25,6 +25,14 @@
   <meta name="twitter:image:alt" content="VRAXION local reflex reasoning hero surface">
   <link rel="icon" href="./assets/favicon.svg" type="image/svg+xml">
   <style>
+    @font-face {
+      font-family: "Geist";
+      src: url("./assets/fonts/geist-sans-variable.woff2") format("woff2");
+      font-weight: 100 900;
+      font-style: normal;
+      font-display: swap;
+    }
+
     :root {
       color-scheme: dark;
       --void-950: #05080a;
@@ -45,7 +53,7 @@
       --amber: #f5c15f;
       --max: 1180px;
       --header-h: 64px;
-      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-family: "Geist", "Aptos", "Segoe UI Variable", "Segoe UI", ui-sans-serif, system-ui, sans-serif;
     }
 
     *,
@@ -64,8 +72,8 @@
       margin: 0;
       color: var(--ink);
       background:
-        radial-gradient(circle at 76% 10%, rgba(var(--cyan-rgb), 0.1), transparent 340px),
-        radial-gradient(circle at 12% 58%, rgba(var(--green-rgb), 0.07), transparent 360px),
+        linear-gradient(122deg, rgba(var(--cyan-rgb), 0.08), transparent 42%),
+        linear-gradient(294deg, rgba(var(--seal-rgb), 0.07), transparent 48%),
         linear-gradient(180deg, #05080a, #071014 62%, #05080a);
       line-height: 1.55;
       overflow-x: hidden;
@@ -127,6 +135,18 @@
     .skip-link:focus,
     .skip-link:focus-visible {
       transform: translateY(0);
+    }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
     }
 
     .site-header {
@@ -207,7 +227,7 @@
       height: 100%;
       object-fit: cover;
       object-position: 64% center;
-      filter: saturate(1.08) contrast(1.03) brightness(0.76);
+      filter: saturate(0.86) contrast(1.08) brightness(0.7) hue-rotate(8deg);
     }
 
     .hero-media::after {
@@ -215,6 +235,8 @@
       position: absolute;
       inset: 0;
       background:
+        linear-gradient(112deg, rgba(var(--cyan-rgb), 0.11), transparent 44%),
+        linear-gradient(286deg, rgba(var(--seal-rgb), 0.11), transparent 48%),
         linear-gradient(90deg, rgba(5, 8, 10, 0.95), rgba(5, 8, 10, 0.78) 44%, rgba(5, 8, 10, 0.38) 74%),
         linear-gradient(180deg, rgba(5, 8, 10, 0.1), rgba(5, 8, 10, 0.86));
     }
@@ -244,6 +266,39 @@
       font-weight: 780;
     }
 
+    .home-badge-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 9px;
+      margin: 0 0 18px;
+    }
+
+    .home-badge {
+      min-height: 30px;
+      display: inline-flex;
+      align-items: center;
+      padding: 0 12px;
+      border: 1px solid rgba(var(--cyan-rgb), 0.28);
+      border-radius: 999px;
+      color: #baf6ff;
+      background: rgba(var(--cyan-rgb), 0.055);
+      font: 820 0.7rem/1 "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+      text-transform: uppercase;
+      box-shadow: inset 0 1px 0 rgba(236, 251, 255, 0.08);
+    }
+
+    .home-badge.seal {
+      border-color: rgba(var(--seal-rgb), 0.34);
+      color: #ffd0df;
+      background: rgba(var(--seal-rgb), 0.075);
+    }
+
+    .home-badge.muted {
+      border-color: rgba(236, 251, 255, 0.12);
+      color: var(--muted);
+      background: rgba(236, 251, 255, 0.028);
+    }
+
     h1,
     h2,
     h3,
@@ -251,13 +306,27 @@
       margin-top: 0;
     }
 
-    h1 {
-      max-width: 780px;
-      margin-bottom: 22px;
-      font-size: clamp(4rem, 10vw, 8.2rem);
-      line-height: 0.86;
-      letter-spacing: 0;
-      text-shadow: 0 4px 38px rgba(0, 0, 0, 0.88);
+    .hero-wordmark {
+      width: min(900px, 92vw);
+      max-width: 100%;
+      margin: 0 0 24px;
+      line-height: 1;
+    }
+
+    .hero-wordmark img {
+      display: block;
+      width: 100%;
+      height: auto;
+      filter:
+        drop-shadow(0 0 24px rgba(var(--cyan-rgb), 0.24))
+        drop-shadow(0 8px 36px rgba(0, 0, 0, 0.9));
+    }
+
+    .hero-tagline {
+      margin: -2px 0 18px;
+      color: #baf6ff;
+      font: 780 0.78rem/1.3 "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+      text-transform: uppercase;
     }
 
     .lead {
@@ -288,6 +357,12 @@
       background: rgba(7, 12, 14, 0.72);
       font-weight: 720;
       box-shadow: inset 0 1px 0 rgba(236, 251, 255, 0.08);
+      transition:
+        border-color 160ms ease,
+        background 160ms ease,
+        color 160ms ease,
+        transform 160ms ease,
+        box-shadow 160ms ease;
     }
 
     .button.primary {
@@ -299,6 +374,23 @@
 
     .button.ghost {
       color: #c8f8ff;
+    }
+
+    .button:hover,
+    .button:focus-visible {
+      transform: translateY(-1px);
+    }
+
+    .button.primary:hover,
+    .button.primary:focus-visible {
+      box-shadow: 0 0 34px rgba(var(--cyan-rgb), 0.32);
+      background: #72f1ff;
+    }
+
+    .button.ghost:hover,
+    .button.ghost:focus-visible {
+      border-color: rgba(var(--cyan-rgb), 0.42);
+      background: rgba(var(--cyan-rgb), 0.08);
     }
 
     .hero-status {
@@ -317,6 +409,16 @@
       color: #a7f4ff;
       font-size: 0.72rem;
       font-weight: 760;
+      transition:
+        border-color 160ms ease,
+        background 160ms ease,
+        transform 160ms ease;
+    }
+
+    .status-chip:hover {
+      border-color: rgba(var(--cyan-rgb), 0.3);
+      background: rgba(var(--cyan-rgb), 0.06);
+      transform: translateY(-1px);
     }
 
     .status-chip strong {
@@ -643,9 +745,9 @@
         padding: calc(var(--header-h) + 30px) 0 28px;
       }
 
-      h1 {
+      .hero-wordmark {
         margin-bottom: 16px;
-        font-size: clamp(3rem, 17vw, 4.8rem);
+        width: 100%;
       }
 
       .lead {
@@ -733,6 +835,24 @@
         padding: calc(var(--header-h) + 24px) 0 22px;
       }
 
+      .home-badge-row {
+        margin-bottom: 12px;
+      }
+
+      .home-badge.seal,
+      .home-badge.muted {
+        display: none;
+      }
+
+      .hero-wordmark {
+        margin-bottom: 10px;
+      }
+
+      .hero-tagline {
+        margin: 0 0 12px;
+        font-size: 0.68rem;
+      }
+
       .hero-status {
         display: none;
       }
@@ -759,8 +879,16 @@
       <img src="./assets/vraxion-home-hero.jpg" alt="" decoding="sync" loading="eager" fetchpriority="high">
     </div>
     <div class="hero-content">
-      <p class="eyebrow">VRAXION / INSTNCT T1 Reflex Engine</p>
-      <h1 id="hero-title">VRAXION</h1>
+      <div class="home-badge-row" aria-label="VRAXION engine status">
+        <span class="home-badge">VRAXION / INSTNCT T1 Reflex Engine</span>
+        <span class="home-badge seal">Exact Mode refusal</span>
+        <span class="home-badge muted">Proof Pack pending</span>
+      </div>
+      <h1 id="hero-title" class="hero-wordmark">
+        <span class="sr-only">VRAXION</span>
+        <img src="./assets/vraxion-wordmark.png?v=brand-pass-1" alt="" width="1672" height="308" decoding="sync" loading="eager" fetchpriority="high">
+      </h1>
+      <p class="hero-tagline">Founder-built. AI-assisted. Evidence-gated.</p>
       <p class="lead">
         VRAXION is the solo-built, AI-assisted project behind INSTNCT: a local reflex engine for known paths. It is being built to move fast where support exists, refuse where it does not, and ship proof before big claims.
       </p>
