@@ -85,6 +85,25 @@ FORBIDDEN_PUBLIC_COPY = [
 
 EXPECTED_CRATES = {"alphasync-core", "alphasync-runtime"}
 
+REQUIRED_TRACKED_FILES = {
+    ".gitattributes",
+    ".gitignore",
+    "README.md",
+    "PUBLIC_BOUNDARY.md",
+    "PACKAGE_BOUNDARY.md",
+    "PUBLIC_DELIVERY_MODEL.md",
+    "LICENSE_BOUNDARY.md",
+}
+
+REQUIRED_GITATTRIBUTES_ENTRIES = {
+    "* text=auto eol=lf",
+    "*.jpg binary",
+    "*.jpeg binary",
+    "*.png binary",
+    "*.webp binary",
+    "*.woff2 binary",
+}
+
 REQUIRED_GITIGNORE_ENTRIES = {
     "target/",
     ".codex/",
@@ -145,6 +164,20 @@ def main() -> int:
     warnings: list[str] = []
     files = tracked_files()
     file_set = {relative.replace("\\", "/") for relative in files}
+
+    for required in sorted(REQUIRED_TRACKED_FILES):
+        if required not in file_set:
+            failures.append(f"required public repo file is missing: {required}")
+
+    gitattributes_path = ROOT / ".gitattributes"
+    gitattributes_entries = {
+        line.strip()
+        for line in read_text(gitattributes_path).splitlines()
+        if line.strip() and not line.lstrip().startswith("#")
+    }
+    for required in sorted(REQUIRED_GITATTRIBUTES_ENTRIES):
+        if required not in gitattributes_entries:
+            failures.append(f".gitattributes missing public hygiene entry: {required}")
 
     gitignore_path = ROOT / ".gitignore"
     gitignore_entries = {
