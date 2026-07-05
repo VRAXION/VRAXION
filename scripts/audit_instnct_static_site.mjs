@@ -193,6 +193,10 @@ try {
 
 try {
   const version = JSON.parse(fs.readFileSync(versionPath, "utf8"));
+  const versionDate = String(version.date || "");
+  if (versionDate !== "2026-07-05") {
+    fail(`docs/VERSION.json date must match the current public site release date: ${versionDate || "missing"}`);
+  }
   latestRelease = String(version.latest_public_release || "");
   if (!latestRelease) fail("docs/VERSION.json must define latest_public_release");
   instnctAssetVersion = String(version.instnct_asset_version || "");
