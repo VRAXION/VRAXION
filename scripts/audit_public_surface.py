@@ -103,6 +103,7 @@ REQUIRED_TRACKED_FILES = {
     "releases/public-release-manifest.example.json",
     "releases/public-release-manifest.schema.json",
     "scripts/validate_public_release_manifests.mjs",
+    "scripts/validate_public_release_state.mjs",
     "LICENSE_BOUNDARY.md",
     "SUPPORT.md",
 }
@@ -115,6 +116,7 @@ REQUIRED_PR_TEMPLATE_MARKERS = {
     "Release manifest checked:",
     "releases/public-release-manifest.schema.json",
     "node scripts\\validate_public_release_manifests.mjs",
+    "node scripts\\validate_public_release_state.mjs",
     "workers/instnct-notify/wrangler.jsonc",
     "powershell -ExecutionPolicy Bypass -File scripts\\check_public_export.ps1",
 }
@@ -153,6 +155,7 @@ REQUIRED_GITHUB_STATE_MARKERS = {
     "public manifests and GitHub",
     "release metadata and assets",
     "releases/public-release-manifest.schema.json",
+    "node scripts\\validate_public_release_state.mjs",
 }
 
 REQUIRED_RELEASE_MANIFEST_README_MARKERS = {

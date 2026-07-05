@@ -394,6 +394,7 @@ try {
         "scripts\audit_public_surface.py",
         "scripts\check_public_export.ps1",
         "scripts\validate_public_release_manifests.mjs",
+        "scripts\validate_public_release_state.mjs",
         "scripts\smoke_instnct_notify_live.mjs",
         "scripts\smoke_public_pages_links.mjs",
         "scripts\smoke_instnct_browser.mjs",
@@ -506,6 +507,7 @@ try {
         "scripts/audit_public_surface.py",
         "scripts/check_public_export.ps1",
         "scripts/validate_public_release_manifests.mjs",
+        "scripts/validate_public_release_state.mjs",
         "scripts/smoke_instnct_notify_live.mjs",
         "scripts/smoke_public_pages_links.mjs",
         "scripts/smoke_instnct_browser.mjs",
@@ -594,12 +596,14 @@ try {
     Invoke-NativeChecked "node check audit_instnct_notify_worker" "node" @("--check", "scripts/audit_instnct_notify_worker.mjs")
     Invoke-NativeChecked "node check sync_public_release_links" "node" @("--check", "scripts/sync_public_release_links.mjs")
     Invoke-NativeChecked "node check validate_public_release_manifests" "node" @("--check", "scripts/validate_public_release_manifests.mjs")
+    Invoke-NativeChecked "node check validate_public_release_state" "node" @("--check", "scripts/validate_public_release_state.mjs")
     Invoke-NativeChecked "node check smoke_public_pages_links" "node" @("--check", "scripts/smoke_public_pages_links.mjs")
     Invoke-NativeChecked "node check smoke_instnct_notify_live" "node" @("--check", "scripts/smoke_instnct_notify_live.mjs")
     Invoke-NativeChecked "node check smoke_instnct_browser" "node" @("--check", "scripts/smoke_instnct_browser.mjs")
     Invoke-NativeChecked "node check instnct client JS" "node" @("--check", "docs/instnct/instnct.js")
     Invoke-NativeChecked "sync public release links" "node" @("scripts/sync_public_release_links.mjs", "--check")
     Invoke-NativeChecked "validate public release manifests" "node" @("scripts/validate_public_release_manifests.mjs")
+    Invoke-NativeChecked "validate public release state" "node" @("scripts/validate_public_release_state.mjs")
     Invoke-NativeChecked "INSTNCT static audit" "node" @("scripts/audit_instnct_static_site.mjs")
     Invoke-NativeChecked "INSTNCT notify Worker audit" "node" @("scripts/audit_instnct_notify_worker.mjs")
     Invoke-NativeChecked "public surface audit" "python" @("scripts/audit_public_surface.py")

@@ -24,6 +24,8 @@
   future artifact/checksum/signature intake.
 - Added a public release manifest validator and CI gate for future release
   artifact intake.
+- Added a public release state validator and CI gate to keep the public version
+  record, GitHub release pointer, status docs, and Pages copy aligned.
 
 ## 2026-06-29
 
