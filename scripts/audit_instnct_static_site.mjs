@@ -83,6 +83,23 @@ function pngSize(filePath) {
   };
 }
 
+function validateDocumentRefs(label, markup) {
+  const ids = new Set([...markup.matchAll(/\sid="([^"]+)"/g)].map((match) => match[1]));
+  for (const tagMatch of markup.matchAll(/<[^>]+>/g)) {
+    const tag = tagMatch[0];
+    for (const attrName of ["aria-controls", "aria-labelledby", "aria-describedby"]) {
+      const value = attr(tag, attrName);
+      if (!value) continue;
+      for (const id of value.split(/\s+/).filter(Boolean)) {
+        if (!ids.has(id)) fail(`${label} broken ${attrName} reference: #${id}`);
+      }
+    }
+  }
+  for (const match of markup.matchAll(/\shref="#([^"]+)"/g)) {
+    if (!ids.has(match[1])) fail(`${label} broken hash link: #${match[1]}`);
+  }
+}
+
 try {
   new vm.Script(js, { filename: jsPath });
 } catch (err) {
@@ -142,6 +159,20 @@ for (const required of [
   "local artifact target",
 ]) {
   if (!html.includes(required)) fail(`missing INSTNCT markup: ${required}`);
+}
+
+for (const required of [
+  "VRAXION / INSTNCT T1 Reflex Engine",
+  "solo-built, AI-assisted",
+  "Signed T1 Proof Pack pending",
+  "Meet INSTNCT, the first public VRAXION engine target.",
+  "The engine contract: answer on-path, refuse off-path.",
+  "Path Selector",
+  "Exact Mode",
+  "Proof Pack",
+  "local reflex reasoning engine that says yes inside known paths and no outside them",
+]) {
+  if (!home.includes(required)) fail(`missing homepage positioning copy: ${required}`);
 }
 
 const keyboardTrigger = html.match(/<button class="keyboard-help-trigger"[^>]*>/)?.[0] || "";
@@ -508,20 +539,8 @@ for (const urlMatch of css.matchAll(/url\(["']?([^"')]+)["']?\)/gi)) {
   }
 }
 
-const ids = new Set([...html.matchAll(/\sid="([^"]+)"/g)].map((match) => match[1]));
-for (const tagMatch of html.matchAll(/<[^>]+>/g)) {
-  const tag = tagMatch[0];
-  for (const attrName of ["aria-controls", "aria-labelledby", "aria-describedby"]) {
-    const value = attr(tag, attrName);
-    if (!value) continue;
-    for (const id of value.split(/\s+/).filter(Boolean)) {
-      if (!ids.has(id)) fail(`broken static ${attrName} reference: #${id}`);
-    }
-  }
-}
-for (const match of html.matchAll(/\shref="#([^"]+)"/g)) {
-  if (!ids.has(match[1])) fail(`broken hash link: #${match[1]}`);
-}
+validateDocumentRefs("homepage", home);
+validateDocumentRefs("INSTNCT", html);
 
 const sectionLinks = [...html.matchAll(/data-section-link="/g)].length;
 const initialTotal = html.match(/data-indicator-total>\s*\/\s*(\d+)/)?.[1];
