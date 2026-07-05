@@ -37,6 +37,8 @@
   URL, and `VERSION.json` checks before release publication.
 - Hardened the live public Pages smoke timeout and retry path for GitHub
   archive redirects.
+- Added a reviewed manifest for the current `public-sdk-p11-20260629` public
+  SDK/docs release and required latest-release manifest coverage.
 
 ## 2026-06-29
 

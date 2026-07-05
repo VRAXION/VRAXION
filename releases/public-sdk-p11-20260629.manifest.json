@@ -1,0 +1,69 @@
+{
+  "$schema": "./public-release-manifest.schema.json",
+  "schema": "vraxion.public.release-manifest.v1",
+  "release_slug": "public-sdk-p11-20260629",
+  "release_date": "2026-06-29",
+  "release_kind": "sdk_docs",
+  "public_claim": "Current public SDK/docs release tag. It publishes the public repository boundary only; no signed runnable T1 binary, hosted service, private engine source, or benchmark-complete artifact is included.",
+  "source_of_truth": {
+    "version_file": "docs/VERSION.json",
+    "github_release": "https://github.com/VRAXION/VRAXION/releases/tag/public-sdk-p11-20260629",
+    "status_docs": [
+      "README.md",
+      "docs/CURRENT_STATUS.md",
+      "docs/CURRENT_CAPABILITIES.md",
+      "PUBLIC_GITHUB_STATE.md"
+    ]
+  },
+  "public_files": [
+    "README.md",
+    "CHANGELOG.md",
+    "docs/VERSION.json",
+    "docs/CURRENT_STATUS.md",
+    "docs/CURRENT_CAPABILITIES.md",
+    "docs/index.html",
+    "docs/instnct/index.html",
+    "docs/INSTNCT_BENCHMARK_NOTES.md",
+    "PUBLIC_BOUNDARY.md",
+    "PACKAGE_BOUNDARY.md",
+    "PUBLIC_DELIVERY_MODEL.md",
+    "PUBLIC_GITHUB_STATE.md",
+    "PUBLIC_RELEASE_CHECKLIST.md",
+    "LICENSE_BOUNDARY.md",
+    "TRADEMARK_POLICY.md",
+    "crates/alphasync-core/Cargo.toml",
+    "crates/alphasync-core/README.md",
+    "crates/alphasync-runtime/Cargo.toml",
+    "crates/alphasync-runtime/README.md",
+    "releases/public-sdk-p11-20260629.manifest.json"
+  ],
+  "artifacts": [],
+  "exclusions": {
+    "private_engine_source": false,
+    "non_public_training_data": false,
+    "raw_operator_output": false,
+    "local_machine_paths": false,
+    "secrets_or_tokens": false,
+    "filled_production_config": false,
+    "private_dashboards": false
+  },
+  "verification": {
+    "commands": [
+      "node scripts\\audit_public_github_state.mjs",
+      "node scripts\\sync_public_release_links.mjs --check",
+      "node scripts\\validate_public_release_manifests.mjs",
+      "node scripts\\validate_public_release_state.mjs",
+      "node scripts\\audit_public_secrets.mjs",
+      "python scripts\\audit_public_surface.py",
+      "node scripts\\smoke_public_pages_links.mjs",
+      "powershell -ExecutionPolicy Bypass -File scripts\\check_public_export.ps1"
+    ],
+    "github_checks": [
+      "Public Surface Audit",
+      "Public SDK CI",
+      "CodeQL",
+      "Cloudflare Pages"
+    ],
+    "reviewer": "@Kenessy"
+  }
+}

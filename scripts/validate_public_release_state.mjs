@@ -171,6 +171,20 @@ function validateReleaseReferences(latestPublicRelease) {
     }
   }
 
+  const latestManifestPath = `releases/${latestPublicRelease}.manifest.json`;
+  const latestManifestAbsolutePath = path.join(ROOT, latestManifestPath);
+  if (!fs.existsSync(latestManifestAbsolutePath)) {
+    fail(`${latestManifestPath}: latest public release manifest is missing`);
+  } else {
+    const latestManifestText = readText(latestManifestPath);
+    if (!latestManifestText.includes(latestPublicRelease)) {
+      fail(`${latestManifestPath}: missing latest public release slug ${latestPublicRelease}`);
+    }
+    if (!latestManifestText.includes(releaseUrl)) {
+      fail(`${latestManifestPath}: missing latest public release URL ${releaseUrl}`);
+    }
+  }
+
   const indexHtml = readText("docs/index.html");
   if (!indexHtml.includes(`<strong>${latestPublicRelease}</strong>`)) {
     fail("docs/index.html: current artifact chip does not render the latest public release slug");

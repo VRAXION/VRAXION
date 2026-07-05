@@ -291,6 +291,11 @@ function validateManifest(file, manifest) {
   }
   if (typeof manifest.release_slug !== "string" || !RELEASE_SLUG_RE.test(manifest.release_slug)) {
     fail(file, `release_slug is invalid: ${manifest.release_slug}`);
+  } else if (
+    file !== "releases/public-release-manifest.example.json" &&
+    file !== `releases/${manifest.release_slug}.manifest.json`
+  ) {
+    fail(file, `manifest filename must be releases/${manifest.release_slug}.manifest.json`);
   }
   assertDate(file, manifest.release_date, manifest.release_slug);
   if (!RELEASE_KINDS.has(manifest.release_kind)) {
@@ -389,6 +394,17 @@ const manifestFiles = fs
   .filter((name) => name === "public-release-manifest.example.json" || name.endsWith(".manifest.json"))
   .sort()
   .map((name) => `releases/${name}`);
+
+const version = readJson("docs/VERSION.json");
+const latestPublicRelease = version?.latest_public_release;
+if (typeof latestPublicRelease !== "string" || !RELEASE_SLUG_RE.test(latestPublicRelease)) {
+  fail("docs/VERSION.json", `latest_public_release is invalid: ${latestPublicRelease}`);
+} else {
+  const latestManifestFile = `releases/${latestPublicRelease}.manifest.json`;
+  if (!manifestFiles.includes(latestManifestFile)) {
+    fail("docs/VERSION.json", `latest_public_release is missing release manifest: ${latestManifestFile}`);
+  }
+}
 
 for (const manifestFile of manifestFiles) {
   validateManifest(manifestFile, readJson(manifestFile));
