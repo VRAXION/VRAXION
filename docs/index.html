@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'none'; style-src 'self' 'sha256-MsWZx+/L1q78eNGRhTxOXIlB2kv3juDdczz+3JEnjCI='; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'; upgrade-insecure-requests">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'none'; style-src 'self' 'sha256-P+I66V69mUp+qpgUZXiqEAuT4J3xZnPKuJfXkBehgfU='; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'; upgrade-insecure-requests">
   <title>VRAXION - INSTNCT T1 Reflex Engine</title>
   <meta name="description" content="VRAXION is the solo-built, AI-assisted project behind INSTNCT: a local reflex reasoning engine for known paths, Exact Mode refusal, and a pending T1 Proof Pack.">
   <meta name="theme-color" content="#05080a">
@@ -227,7 +227,7 @@
       height: 100%;
       object-fit: cover;
       object-position: 64% center;
-      filter: saturate(0.92) contrast(1.08) brightness(0.76);
+      filter: saturate(1.02) contrast(1.02) brightness(0.98);
     }
 
     .hero-media::after {
@@ -235,19 +235,27 @@
       position: absolute;
       inset: 0;
       background:
-        linear-gradient(112deg, rgba(var(--cyan-rgb), 0.062), rgba(var(--cyan-rgb), 0.016) 34%, transparent 58%),
-        radial-gradient(circle at 94% 18%, rgba(var(--seal-rgb), 0.03), transparent 36%),
-        linear-gradient(246deg, rgba(var(--seal-rgb), 0.018), transparent 54%),
-        linear-gradient(90deg, rgba(5, 8, 10, 0.84), rgba(5, 8, 10, 0.58) 44%, rgba(5, 8, 10, 0.2) 74%),
-        linear-gradient(180deg, rgba(5, 8, 10, 0.04), rgba(5, 8, 10, 0.78));
+        linear-gradient(180deg, transparent 70%, rgba(5, 8, 10, 0.22));
     }
 
     .hero-content {
       position: relative;
       z-index: 1;
       grid-column: 2;
+      isolation: isolate;
       width: min(820px, 64vw);
       padding: calc(var(--header-h) + 64px) 0 72px;
+    }
+
+    .hero-content::before {
+      content: "";
+      position: absolute;
+      inset: 142px -46px 156px -46px;
+      z-index: -1;
+      pointer-events: none;
+      background:
+        radial-gradient(ellipse at 38% 38%, rgba(0, 0, 0, 0.58), rgba(0, 0, 0, 0.36) 36%, transparent 70%);
+      filter: blur(18px);
     }
 
     .eyebrow,
