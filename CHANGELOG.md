@@ -16,6 +16,8 @@
   reports without exposing private material.
 - Added `PUBLIC_GITHUB_STATE.md` to define current public GitHub release, tag,
   asset, and Pages review rules.
+- Added Dependabot maintenance for the public Cargo workspace and GitHub
+  Actions surface.
 
 ## 2026-06-29
 

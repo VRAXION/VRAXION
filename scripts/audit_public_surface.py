@@ -86,6 +86,7 @@ FORBIDDEN_PUBLIC_COPY = [
 EXPECTED_CRATES = {"alphasync-core", "alphasync-runtime"}
 
 REQUIRED_TRACKED_FILES = {
+    ".github/dependabot.yml",
     ".github/ISSUE_TEMPLATE/config.yml",
     ".github/ISSUE_TEMPLATE/public-surface-report.yml",
     ".github/pull_request_template.md",
@@ -110,6 +111,17 @@ REQUIRED_PR_TEMPLATE_MARKERS = {
     "powershell -ExecutionPolicy Bypass -File scripts\\check_public_export.ps1",
 }
 
+REQUIRED_DEPENDABOT_MARKERS = {
+    "directory: \"/\"",
+    "github-actions",
+    "open-pull-requests-limit: 5",
+    "package-ecosystem: \"cargo\"",
+    "public-github-actions",
+    "public-surface",
+    "rust-public-dependencies",
+    "timezone: \"Europe/Budapest\"",
+}
+
 REQUIRED_GITHUB_STATE_MARKERS = {
     "## Current Public Truth",
     "## Historical GitHub Records",
@@ -118,6 +130,7 @@ REQUIRED_GITHUB_STATE_MARKERS = {
     "gh release list --limit 20",
     "latest public release: `public-sdk-p11-20260629`",
     "non-public training data",
+    "public manifests and GitHub",
     "release metadata and assets",
 }
 
@@ -224,6 +237,11 @@ def main() -> int:
     for required in sorted(REQUIRED_PR_TEMPLATE_MARKERS):
         if required not in pr_template:
             failures.append(f"pull request template missing release guard marker: {required}")
+
+    dependabot_config = read_text(ROOT / ".github" / "dependabot.yml")
+    for required in sorted(REQUIRED_DEPENDABOT_MARKERS):
+        if required not in dependabot_config:
+            failures.append(f"dependabot config missing public dependency marker: {required}")
 
     github_state_doc = read_text(ROOT / "PUBLIC_GITHUB_STATE.md")
     for required in sorted(REQUIRED_GITHUB_STATE_MARKERS):
