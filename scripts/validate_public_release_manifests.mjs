@@ -58,6 +58,18 @@ const REQUIRED_GITHUB_CHECKS = [
   "CodeQL",
   "Cloudflare Pages",
 ];
+const PUBLISHED_ARTIFACT_KINDS_REQUIRING_SHA256 = new Set([
+  "repository_zip",
+  "proof_pack",
+  "checksum",
+  "signature",
+  "binary",
+  "other",
+]);
+const PUBLISHED_ARTIFACT_KINDS_REQUIRING_SIGNATURE = new Set([
+  "proof_pack",
+  "binary",
+]);
 
 const failures = [];
 const trackedFiles = new Set(
@@ -240,11 +252,17 @@ function validateArtifact(file, artifact, index) {
   }
   if (
     artifact.status === "published" &&
-    artifact.kind !== "documentation" &&
-    artifact.kind !== "signature" &&
+    PUBLISHED_ARTIFACT_KINDS_REQUIRING_SHA256.has(artifact.kind) &&
     artifact.sha256 === null
   ) {
     fail(file, `artifacts[${index}] is published and must include sha256`);
+  }
+  if (
+    artifact.status === "published" &&
+    PUBLISHED_ARTIFACT_KINDS_REQUIRING_SIGNATURE.has(artifact.kind) &&
+    artifact.signature_path_or_url === null
+  ) {
+    fail(file, `artifacts[${index}] is published and must include signature_path_or_url`);
   }
 
   if (artifact.signature_path_or_url !== null) {
@@ -342,6 +360,19 @@ function validateManifest(file, manifest) {
     fail(file, "artifacts must be an array");
   } else {
     manifest.artifacts.forEach((artifact, index) => validateArtifact(file, artifact, index));
+    const publishedArtifacts = manifest.artifacts.filter((artifact) => artifact?.status === "published");
+    if (
+      manifest.release_kind === "artifact_release" &&
+      !publishedArtifacts.some((artifact) => artifact?.kind !== "documentation")
+    ) {
+      fail(file, "artifact_release manifests must include at least one published non-documentation artifact");
+    }
+    if (
+      manifest.release_kind === "proof_pack" &&
+      !publishedArtifacts.some((artifact) => artifact?.kind === "proof_pack")
+    ) {
+      fail(file, "proof_pack manifests must include at least one published proof_pack artifact");
+    }
   }
 
   if (assertExactKeys(file, "exclusions", manifest.exclusions, REQUIRED_EXCLUSIONS)) {
