@@ -125,6 +125,10 @@ REQUIRED_TRACKED_FILES = {
     ".github/ISSUE_TEMPLATE/config.yml",
     ".github/ISSUE_TEMPLATE/public-surface-report.yml",
     ".github/pull_request_template.md",
+    ".github/workflows/ci.yml",
+    ".github/workflows/deploy-instnct-notify.yml",
+    ".github/workflows/public-pages-smoke.yml",
+    ".github/workflows/public-surface-audit.yml",
     ".gitattributes",
     ".gitignore",
     "README.md",
@@ -141,6 +145,7 @@ REQUIRED_TRACKED_FILES = {
     "scripts/audit_public_github_state.mjs",
     "scripts/validate_public_release_manifests.mjs",
     "scripts/validate_public_release_state.mjs",
+    "scripts/sync_public_release_links.mjs",
     "LICENSE_BOUNDARY.md",
     "SUPPORT.md",
 }
@@ -272,6 +277,15 @@ REQUIRED_WORKFLOW_PERMISSION_MARKERS = {
     ".github/workflows/deploy-instnct-notify.yml": "permissions:\n  contents: read",
     ".github/workflows/public-pages-smoke.yml": "permissions:\n  contents: read",
     ".github/workflows/public-surface-audit.yml": "permissions:\n  contents: read",
+}
+
+REQUIRED_PUBLIC_SURFACE_AUDIT_WORKFLOW_MARKERS = {
+    "Validate public release manifests",
+    "Validate public release state",
+    "Sync public release links",
+    "node scripts/sync_public_release_links.mjs --check",
+    "Audit public secrets",
+    "Audit public surface",
 }
 
 FORBIDDEN_WORKFLOW_PERMISSION_MARKERS = {
@@ -450,6 +464,13 @@ def main() -> int:
                 failures.append(
                     f"workflow contains forbidden write permission {forbidden!r}: {relative_path}"
                 )
+
+    public_surface_workflow = read_text(
+        ROOT / ".github" / "workflows" / "public-surface-audit.yml"
+    )
+    for required in sorted(REQUIRED_PUBLIC_SURFACE_AUDIT_WORKFLOW_MARKERS):
+        if required not in public_surface_workflow:
+            failures.append(f"public surface audit workflow missing marker: {required}")
 
     release_manifest_readme = read_text(ROOT / "releases" / "README.md")
     for required in sorted(REQUIRED_RELEASE_MANIFEST_README_MARKERS):
