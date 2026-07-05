@@ -139,12 +139,14 @@ function validateDocumentRefs(label, markup) {
 }
 
 function validateSocialImage({ label, markup, prefix, rootDir, expectedAlt }) {
+  const siteName = metaContentFor(label, markup, "og:site_name");
   const ogImage = metaContentFor(label, markup, "og:image");
   const twitterImage = metaContentFor(label, markup, "twitter:image");
   const ogAlt = metaContentFor(label, markup, "og:image:alt");
   const twitterAlt = metaContentFor(label, markup, "twitter:image:alt");
   const ogWidth = Number(metaContentFor(label, markup, "og:image:width"));
   const ogHeight = Number(metaContentFor(label, markup, "og:image:height"));
+  if (siteName !== "VRAXION") fail(`${label} og:site_name must be VRAXION`);
   if (twitterImage !== ogImage) fail(`${label} twitter:image must match og:image`);
   if (ogAlt !== expectedAlt) fail(`${label} og:image:alt mismatch: ${ogAlt}`);
   if (twitterAlt !== expectedAlt) fail(`${label} twitter:image:alt mismatch: ${twitterAlt}`);
