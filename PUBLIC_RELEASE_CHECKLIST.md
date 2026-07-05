@@ -103,7 +103,8 @@ powershell -ExecutionPolicy Bypass -File scripts\check_public_export.ps1
 Run the live GitHub state audit before opening the final release PR, and run it
 again after merge before publishing or marking a GitHub release as current. It
 checks that the public repository, default branch, open pull requests, remote
-branches, and latest GitHub release agree with `docs/VERSION.json`.
+branches, latest GitHub release, Pages source, latest Pages build, and live
+`VERSION.json` agree with `docs/VERSION.json`.
 
 For Worker changes, also run the notify live smoke against the intended target
 environment before enabling any public form path.
