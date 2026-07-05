@@ -571,11 +571,11 @@ try {
             throw "duplicate public export file path: $relative"
         }
         Assert-NoForbiddenPublicPath -RelativePath $relative
-        $totalBytes += $file.Length
-        Assert-PublicFileIsBounded -File $file -RelativePath $relative
         if (-not $allowedPublicFileSet.Contains($relative)) {
             throw "unexpected public export file: $relative"
         }
+        $totalBytes += $file.Length
+        Assert-PublicFileIsBounded -File $file -RelativePath $relative
     }
     Assert-ExactOrdinalSet -Actual $relativeFileSet -Expected $allowedPublicFileSet -Label "public export file"
     if ($totalBytes -gt 10MB) {
@@ -658,11 +658,11 @@ try {
             throw "duplicate final public export file path: $relative"
         }
         Assert-NoForbiddenPublicPath -RelativePath $relative
-        $finalTotalBytes += $file.Length
-        Assert-PublicFileIsBounded -File $file -RelativePath $relative
         if (-not $allowedPublicFileSet.Contains($relative)) {
             throw "unexpected final public export file: $relative"
         }
+        $finalTotalBytes += $file.Length
+        Assert-PublicFileIsBounded -File $file -RelativePath $relative
     }
     Assert-ExactOrdinalSet -Actual $finalRelativeFileSet -Expected $allowedPublicFileSet -Label "final public export file"
     if ($finalTotalBytes -gt 10MB) {
