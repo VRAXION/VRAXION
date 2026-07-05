@@ -22,5 +22,7 @@ jobs:
         run: node scripts/validate_public_release_manifests.mjs
       - name: Validate public release state
         run: node scripts/validate_public_release_state.mjs
+      - name: Audit public secrets
+        run: node scripts/audit_public_secrets.mjs
       - name: Audit public surface
         run: python scripts/audit_public_surface.py

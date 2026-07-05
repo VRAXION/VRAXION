@@ -37,3 +37,6 @@ Security-sensitive release changes should follow `PUBLIC_RELEASE_CHECKLIST.md`
 and keep filled production config files untracked. Public release notes should
 describe impact and remediation without exposing operational details that would
 increase risk before users can update.
+
+Run `node scripts\audit_public_secrets.mjs` before release PRs that touch
+configuration, Worker code, release artifacts, or generated files.

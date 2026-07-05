@@ -19,6 +19,7 @@ jobs:
         run: |
           node --check scripts/audit_instnct_static_site.mjs
           node --check scripts/audit_instnct_notify_worker.mjs
+          node --check scripts/audit_public_secrets.mjs
           node --check scripts/sync_public_release_links.mjs
           node --check scripts/validate_public_release_manifests.mjs
           node --check scripts/validate_public_release_state.mjs
@@ -29,6 +30,7 @@ jobs:
           node scripts/sync_public_release_links.mjs --check
           node scripts/validate_public_release_manifests.mjs
           node scripts/validate_public_release_state.mjs
+          node scripts/audit_public_secrets.mjs
           node scripts/audit_instnct_static_site.mjs
           node scripts/audit_instnct_notify_worker.mjs
       - name: INSTNCT browser smoke

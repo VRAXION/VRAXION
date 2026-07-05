@@ -67,6 +67,7 @@ gh pr list --state open --limit 50
 gh release list --limit 20
 node scripts\sync_public_release_links.mjs --check
 node scripts\validate_public_release_state.mjs
+node scripts\audit_public_secrets.mjs
 python scripts\audit_public_surface.py
 powershell -ExecutionPolicy Bypass -File scripts\check_public_export.ps1
 ```
