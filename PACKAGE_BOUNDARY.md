@@ -27,7 +27,6 @@ cargo test --workspace --all-features
 python scripts/audit_public_surface.py
 ```
 
-Any future delivery model that exposes a binary package, hosted API, or wrapper
-crate must go through a separate release review. The current public delivery
-direction is controlled early-access signed binary first, hosted API/SaaS
-later, and thin public SDK/docs/wrappers where useful.
+Any future delivery model that exposes a binary package, hosted API, SaaS path,
+or wrapper crate must go through a separate release review. The current public
+tree does not promise hosted availability or a runnable engine artifact.

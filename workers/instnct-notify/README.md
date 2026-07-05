@@ -1,6 +1,6 @@
 # INSTNCT notify Worker
 
-This Worker is the production backend target for the INSTNCT release signal form. It is kept separate from the static GitHub Pages site because GitHub Pages cannot serve `/api/notify`.
+This Worker is an operator-only deployment plan for an optional INSTNCT release-signal endpoint. The static public GitHub Pages site is not wired to this endpoint.
 
 ## Endpoints
 

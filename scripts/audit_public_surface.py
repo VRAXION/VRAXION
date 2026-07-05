@@ -67,6 +67,15 @@ FORBIDDEN_PUBLIC_COPY = [
     marker("zero-state ", "SDK"),
     marker("docs/", "vn", "gard"),
     marker("docs\\", "vn", "gard"),
+    "local reasoning runtime",
+    "runtime project",
+    "preview live",
+    "signed offline verification",
+    "hosted api / saas later",
+    "hosted api/saas later",
+    "skill libraries",
+    "make local intelligence",
+    "production backend target",
 ]
 
 EXPECTED_CRATES = {"alphasync-core", "alphasync-runtime"}

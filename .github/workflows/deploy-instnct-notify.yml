@@ -68,7 +68,7 @@ jobs:
           printf "%s" "$EMAIL_HASH_PEPPER" | npx wrangler@4.107.0 secret put EMAIL_HASH_PEPPER
           printf "%s" "$ADMIN_TOKEN" | npx wrangler@4.107.0 secret put ADMIN_TOKEN
 
-      - name: Deploy Worker
+      - name: Operator-only Worker deploy
         working-directory: workers/instnct-notify
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}

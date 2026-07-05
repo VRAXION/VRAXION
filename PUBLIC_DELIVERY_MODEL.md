@@ -10,13 +10,13 @@ contain the private engine source.
 The preferred public delivery sequence is:
 
 ```text
-1. controlled early-access signed binary
-2. hosted API / SaaS later
+1. controlled early-access signed artifact path after release review
+2. any API or hosted service path only after separate public review
 3. thin public SDK, docs, and wrapper glue where useful
 ```
 
-This is not a full engine source release and not an uncontrolled local
-assistant-style executable.
+This is not a full engine release, not a hosted availability promise, and not
+an uncontrolled local assistant-style executable.
 
 ## What This Repo Provides
 

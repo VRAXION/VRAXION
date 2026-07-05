@@ -299,6 +299,17 @@ for (const forbiddenCopy of [
   "Not AI",
   "Not ever",
   "Runs locally",
+  "Local Reasoning Runtime",
+  "runtime project",
+  "preview live",
+  "INSTNCT preview live",
+  "signed offline verification",
+  "T1 Reflex Engine",
+  "The demo should be a local command",
+  "Skill libraries",
+  "Node mesh",
+  "Make local intelligence",
+  "production backend target",
   "microsecond-class reasoning core",
   "Hallucination,",
   "hallucination, toggleable",
@@ -338,6 +349,7 @@ for (const forbiddenCopy of [
 ]) {
   if (html.includes(forbiddenCopy)) fail(`unsafe or internal public copy is visible: ${forbiddenCopy}`);
   if (home.includes(forbiddenCopy)) fail(`unsafe or internal public homepage copy is visible: ${forbiddenCopy}`);
+  if (js.includes(forbiddenCopy)) fail(`unsafe or internal public JS copy is visible: ${forbiddenCopy}`);
   if (currentCapabilities.includes(forbiddenCopy)) {
     fail(`unsafe or internal public capabilities copy is visible: ${forbiddenCopy}`);
   }

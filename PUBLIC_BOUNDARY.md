@@ -21,7 +21,7 @@ This repository excludes:
 - private engine binaries or internals
 
 The current public tree is not a complete product release and is not a claim of
-hosted service availability. The current delivery direction is controlled
-early-access signed binary first and hosted API/SaaS later. This repo remains
-the clean public SDK/docs surface used for review while private engine development
-continues elsewhere.
+hosted service availability. Any future signed binary, API, SaaS, or wrapper
+path requires separate release review. This repo remains the clean public
+SDK/docs surface used for review while private engine development continues
+elsewhere.

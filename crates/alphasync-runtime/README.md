@@ -9,9 +9,9 @@ skillstore persistence. It also does not include the private golden engine,
 training, mutation, skill registry, artifact writer internals, or diagnostic
 parity binaries.
 
-This crate remains a compatibility public-candidate source crate. Future
-golden-backed releases should follow the public delivery direction: controlled
-signed binary first, hosted API/SaaS later, and thin public SDK/docs/wrappers
-where useful. This crate is not the private engine source.
+This crate remains a compatibility public-candidate source crate. Any future
+golden-backed binary, API, SaaS, or wrapper path requires separate release
+review before it becomes public availability language. This crate is not the
+private engine source.
 
 See the workspace `LICENSE` notice copied into this package.

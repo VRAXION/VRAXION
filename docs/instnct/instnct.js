@@ -824,7 +824,7 @@
 
     const script = [
       { type: "prompt", text: "$ instnct --version" },
-      { type: "output", text: "INSTNCT T1 Reflex Engine - v0.1.0-preview" },
+      { type: "output", text: "INSTNCT T1 proof-target transcript - preview copy" },
       { type: "trace", text: "VRAXION local proof target - network disabled" },
       { type: "prompt", text: "$ instnct run --mode exact-recall" },
       { type: "ok", text: "ok selector timing: see signed benchmark notes" },

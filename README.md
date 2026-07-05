@@ -36,9 +36,10 @@ operational run logs, skill persistence, or diagnostic tools.
 Current status is tracked by the latest public GitHub release:
 [`public-sdk-p11-20260629`](https://github.com/VRAXION/VRAXION/releases/tag/public-sdk-p11-20260629).
 
-The delivery direction is controlled early-access signed binary first, hosted
-API/SaaS later, and thin public SDK/docs/wrappers where useful. The private
-engine source is not published here.
+The delivery direction is proof materials before broader runtime terms. Any
+future binary, API, SaaS, or wrapper path requires separate release review; no
+hosted availability is promised. The private engine implementation is not
+published here.
 
 ## License
 
