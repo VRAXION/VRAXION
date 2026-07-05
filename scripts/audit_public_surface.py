@@ -91,6 +91,7 @@ PUBLIC_BINARY_ASSETS = {
     "docs/assets/fonts/geist-sans-variable.woff2",
     "docs/instnct/assets/engine-scope-bg.jpg",
     "docs/instnct/assets/exact-mode-bg.jpg",
+    "docs/instnct/assets/cli-proof-bg.jpg",
     "docs/instnct/assets/constraints-founder-bg.jpg",
     "docs/instnct/assets/fabric-result-bg.jpg",
     "docs/instnct/assets/instnct-hero-bg.png",

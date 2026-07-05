@@ -297,6 +297,7 @@ async function probeInstnctDesktop(browser, origin) {
     exactModeWallpaper: getComputedStyle(document.querySelector("#hallucination"), "::after").backgroundImage,
     proofPackWallpaper: getComputedStyle(document.querySelector("#trust"), "::after").backgroundImage,
     releaseClaimWallpaper: getComputedStyle(document.querySelector("#grounding"), "::after").backgroundImage,
+    cliProofWallpaper: getComputedStyle(document.querySelector("#dev-trail"), "::after").backgroundImage,
     wallpaperSectionCount: document.querySelectorAll("[data-wallpaper-section]").length,
     proofPackHeight: Math.round(document.querySelector("#trust").getBoundingClientRect().height),
     releaseClaimHeight: Math.round(document.querySelector("#grounding").getBoundingClientRect().height),
@@ -360,7 +361,10 @@ async function probeInstnctDesktop(browser, origin) {
   if (!top.releaseClaimWallpaper.includes("release-claim-bg.jpg")) {
     fail(`INSTNCT release claim wallpaper is missing: ${top.releaseClaimWallpaper}`);
   }
-  if (top.wallpaperSectionCount !== 6 || top.proofPackHeight < 940 || top.releaseClaimHeight < 660) {
+  if (!top.cliProofWallpaper.includes("cli-proof-bg.jpg")) {
+    fail(`INSTNCT CLI proof wallpaper is missing: ${top.cliProofWallpaper}`);
+  }
+  if (top.wallpaperSectionCount !== 7 || top.proofPackHeight < 940 || top.releaseClaimHeight < 660) {
     fail(`INSTNCT wallpaper scene sections are not expanded: ${JSON.stringify(top)}`);
   }
 
