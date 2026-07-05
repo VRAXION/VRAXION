@@ -136,6 +136,13 @@ function metaContentFor(label, markup, name) {
   return match ? match[1] : "";
 }
 
+function validateMetaDescription({ label, markup }) {
+  const description = metaContentFor(label, markup, "description");
+  if (description.length < 80 || description.length > 180) {
+    fail(`${label} meta description should stay between 80 and 180 characters; got ${description.length}`);
+  }
+}
+
 function pngSize(filePath) {
   const buf = fs.readFileSync(filePath);
   const signature = "89504e470d0a1a0a";
@@ -1087,6 +1094,14 @@ validateSocialImage({
   rootDir: docsRoot,
   expectedAlt: "AnchorCell training data research surface",
 });
+
+for (const [label, markup] of [
+  ["homepage", home],
+  ["INSTNCT", html],
+  ["AnchorCell", anchorcell],
+]) {
+  validateMetaDescription({ label, markup });
+}
 
 if (homeAssetVersion) {
   const homeHeroRef = `./assets/vraxion-home-hero.webp?v=${homeAssetVersion}`;
