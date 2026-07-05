@@ -1444,9 +1444,18 @@ mod tests {
     }
 
     fn sha256_hex(payload: &str) -> String {
+        const HEX: &[u8; 16] = b"0123456789abcdef";
+
         let mut sha256 = Sha256::new();
         sha256.update(payload.as_bytes());
-        format!("{:x}", sha256.finalize())
+        let digest = sha256.finalize();
+        let bytes: &[u8] = digest.as_ref();
+        let mut encoded = String::with_capacity(bytes.len() * 2);
+        for byte in bytes {
+            encoded.push(char::from(HEX[usize::from(*byte >> 4)]));
+            encoded.push(char::from(HEX[usize::from(*byte & 0x0f)]));
+        }
+        encoded
     }
 
     fn checksum_record(name: &str, payload: &str) -> serde_json::Value {
