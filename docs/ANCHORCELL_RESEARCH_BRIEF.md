@@ -82,6 +82,8 @@ The public view should be a product of the export compiler, not a manually clean
 
 The current public baseline is `docs/anchorcell/anchorcell.v2.schema.json`: a JSON Schema Draft 2020-12 authoring schema for `alphasync.anchorcell.v2` records. It is strict by default: top-level records are closed, important fields are bounded, IDs and timestamps are canonicalized, branch roles are required, and accepted/public-export states are gated by review and security flags.
 
+The companion example is `docs/anchorcell/anchorcell.v2.example.json`: a synthetic access-control decision cell that shows the intended shape of one accepted, public-redacted AnchorCell without exposing private repository data, secrets, or real user material.
+
 The schema is intentionally syntactic. It can prove shape, required fields, enums, caps, forbidden hidden-reasoning fields, and many state gates. It should not pretend to prove graph facts by itself. Cross-record rules still belong in semantic lint: parent existence, parent-is-not-self, evidence references resolving to real facts, branch ID uniqueness by key, variant consistency, leakage checks, and export compiler checks.
 
 The report recommends a layered validation system:

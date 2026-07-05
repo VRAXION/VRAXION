@@ -14,6 +14,7 @@ const cssPath = path.join(root, "docs", "instnct", "styles.css");
 const anchorcellJsPath = path.join(root, "docs", "anchorcell", "anchorcell.js");
 const anchorcellCssPath = path.join(root, "docs", "anchorcell", "styles.css");
 const anchorcellSchemaPath = path.join(root, "docs", "anchorcell", "anchorcell.v2.schema.json");
+const anchorcellExamplePath = path.join(root, "docs", "anchorcell", "anchorcell.v2.example.json");
 const browserSmokePath = path.join(root, "scripts", "smoke_instnct_browser.mjs");
 const versionPath = path.join(root, "docs", "VERSION.json");
 const robotsPath = path.join(root, "docs", "robots.txt");
@@ -31,6 +32,7 @@ const css = fs.readFileSync(cssPath, "utf8");
 const anchorcellJs = fs.readFileSync(anchorcellJsPath, "utf8");
 const anchorcellCss = fs.readFileSync(anchorcellCssPath, "utf8");
 const anchorcellSchemaText = fs.readFileSync(anchorcellSchemaPath, "utf8");
+const anchorcellExampleText = fs.readFileSync(anchorcellExamplePath, "utf8");
 const browserSmoke = fs.readFileSync(browserSmokePath, "utf8");
 const currentCapabilities = fs.readFileSync(currentCapabilitiesPath, "utf8");
 const benchmarkNotes = fs.readFileSync(benchmarkNotesPath, "utf8");
@@ -263,6 +265,65 @@ try {
   fail(`invalid AnchorCell schema JSON: ${err.message}`);
 }
 
+try {
+  const example = JSON.parse(anchorcellExampleText);
+  if (example.schema_version !== "alphasync.anchorcell.v2") {
+    fail(`AnchorCell example schema_version mismatch: ${example.schema_version || "missing"}`);
+  }
+  if (example.schema_revision !== "2.0.0") {
+    fail(`AnchorCell example schema_revision mismatch: ${example.schema_revision || "missing"}`);
+  }
+  if (example.synthetic !== true) fail("AnchorCell example must remain explicitly synthetic");
+  if (example.status !== "accepted") fail(`AnchorCell example status must be accepted, found ${example.status || "missing"}`);
+  if (example.public_export_status !== "public_redacted") {
+    fail(`AnchorCell example must be public_redacted, found ${example.public_export_status || "missing"}`);
+  }
+  if (!/^ac_[a-z0-9_]+$/.test(example.cell_id || "")) {
+    fail(`AnchorCell example cell_id has unexpected format: ${example.cell_id || "missing"}`);
+  }
+  if (!Array.isArray(example.branches) || example.branches.length !== 4) {
+    fail("AnchorCell example must include exactly four branch records");
+  }
+  const branchRoles = new Set((example.branches || []).map((branch) => branch.branch_role));
+  for (const role of ["human", "assistant", "naive_bad", "adversarial"]) {
+    if (!branchRoles.has(role)) fail(`AnchorCell example missing branch_role ${role}`);
+  }
+  if (example.gold?.decision !== "ESCALATE") fail("AnchorCell example gold decision must be ESCALATE");
+  if (!example.gold?.forbidden_decisions?.includes("EXECUTE")) {
+    fail("AnchorCell example must explicitly forbid EXECUTE");
+  }
+  for (const [field, expected] of Object.entries({
+    contains_pii: false,
+    contains_secrets: false,
+    requires_redaction: false,
+    allow_training_export: true,
+    allow_public_export: true,
+    prompt_injection_tested: true,
+    poisoning_risk_reviewed: true,
+  })) {
+    if (example.security?.[field] !== expected) {
+      fail(`AnchorCell example security.${field} must be ${expected}`);
+    }
+  }
+  const riskyStrings = [];
+  const scanStrings = (value, pathParts = []) => {
+    if (Array.isArray(value)) {
+      value.forEach((item, index) => scanStrings(item, pathParts.concat(index)));
+    } else if (value && typeof value === "object") {
+      for (const [key, item] of Object.entries(value)) scanStrings(item, pathParts.concat(key));
+    } else if (
+      typeof value === "string" &&
+      /((?:^|[\s"'(])(?:C|S):[\\/]|github\.com|VRAXION_DEV|private|secret|token|api[_-]?key|kenes|kenessy|localhost|127\.0\.0\.1|filecite|turn\d+)/i.test(value)
+    ) {
+      riskyStrings.push(`${pathParts.join(".")}: ${value.slice(0, 120)}`);
+    }
+  };
+  scanStrings(example);
+  if (riskyStrings.length) fail(`AnchorCell example contains public-risk strings: ${riskyStrings.join("; ")}`);
+} catch (err) {
+  fail(`invalid AnchorCell example JSON: ${err.message}`);
+}
+
 for (const required of [
   "hero-mesh-canvas",
   "icon-sprite",
@@ -323,6 +384,7 @@ for (const required of [
   "./anchorcell/",
   "./ANCHORCELL_RESEARCH_BRIEF.md",
   "./anchorcell/anchorcell.v2.schema.json",
+  "./anchorcell/anchorcell.v2.example.json",
   "Path Selector",
   "Exact Mode",
   "Proof Pack",
@@ -350,7 +412,9 @@ for (const required of [
   "not a finished model claim",
   "../ANCHORCELL_RESEARCH_BRIEF.md",
   "./anchorcell.v2.schema.json",
+  "./anchorcell.v2.example.json",
   "Inspect v2 schema",
+  "Open example cell",
 ]) {
   if (!anchorcell.includes(required)) fail(`missing AnchorCell markup: ${required}`);
 }
