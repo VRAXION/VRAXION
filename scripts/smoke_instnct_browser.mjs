@@ -275,6 +275,32 @@ async function probeInstnctDesktop(browser, origin) {
     schemaType: JSON.parse(document.querySelector('script[type="application/ld+json"]').textContent)["@type"],
     engineScopeWallpaper: getComputedStyle(document.querySelector("#not-ai"), "::after").backgroundImage,
     exactModeWallpaper: getComputedStyle(document.querySelector("#hallucination"), "::after").backgroundImage,
+    heroFirstImpression: (() => {
+      const hero = document.querySelector(".hero");
+      const headline = document.querySelector(".hero-headline");
+      const actions = document.querySelector(".hero-actions");
+      const principles = document.querySelector(".principle-list");
+      const headlineRect = headline?.getBoundingClientRect();
+      const actionsRect = actions?.getBoundingClientRect();
+      return {
+        booted: !!hero?.classList.contains("is-booted"),
+        headlineOpacity: Number(getComputedStyle(headline).opacity),
+        actionsOpacity: Number(getComputedStyle(actions).opacity),
+        principlesOpacity: Number(getComputedStyle(principles).opacity),
+        headlineVisible:
+          !!headlineRect &&
+          headlineRect.top >= 0 &&
+          headlineRect.bottom <= window.innerHeight &&
+          headlineRect.width > 0 &&
+          headlineRect.height > 0,
+        actionsVisible:
+          !!actionsRect &&
+          actionsRect.top >= 0 &&
+          actionsRect.top < window.innerHeight &&
+          actionsRect.width > 0 &&
+          actionsRect.height > 0,
+      };
+    })(),
   }), { unsafeCopyPattern: unsafePublicCopyPatternSource, assetVersion: instnctAssetVersion });
   if (top.overflow) fail("INSTNCT desktop has horizontal overflow");
   if (!top.currentAssetVersion) fail(`INSTNCT desktop is not loading VERSION asset version ${instnctAssetVersion}`);
@@ -287,6 +313,16 @@ async function probeInstnctDesktop(browser, origin) {
   if (top.unsafePublicCopy) fail("INSTNCT desktop copy exposes unsafe or internal release wording");
   if (!top.logoAsset.includes("instnct-logo.png")) fail("INSTNCT hero is not using the GLM final logo asset");
   if (top.schemaType !== "WebPage") fail(`INSTNCT JSON-LD should be WebPage, found ${top.schemaType}`);
+  if (
+    !top.heroFirstImpression.booted ||
+    !top.heroFirstImpression.headlineVisible ||
+    !top.heroFirstImpression.actionsVisible ||
+    top.heroFirstImpression.headlineOpacity < 0.9 ||
+    top.heroFirstImpression.actionsOpacity < 0.55 ||
+    top.heroFirstImpression.principlesOpacity < 0.3
+  ) {
+    fail(`INSTNCT desktop hero first impression is too slow or hidden: ${JSON.stringify(top.heroFirstImpression)}`);
+  }
   if (!top.engineScopeWallpaper.includes("engine-scope-bg.jpg")) {
     fail(`INSTNCT engine scope wallpaper is missing: ${top.engineScopeWallpaper}`);
   }
