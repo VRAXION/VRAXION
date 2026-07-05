@@ -71,6 +71,13 @@ function metaContent(name, value) {
   return match ? match[1] : "";
 }
 
+function metaContentFor(label, markup, name) {
+  const pattern = new RegExp(`<meta\\s+[^>]*(?:name|property)="${name}"[^>]*content="([^"]*)"[^>]*>`, "i");
+  const match = markup.match(pattern);
+  if (!match) fail(`${label} missing meta: ${name}`);
+  return match ? match[1] : "";
+}
+
 function pngSize(filePath) {
   const buf = fs.readFileSync(filePath);
   const signature = "89504e470d0a1a0a";
@@ -81,6 +88,37 @@ function pngSize(filePath) {
     width: buf.readUInt32BE(16),
     height: buf.readUInt32BE(20),
   };
+}
+
+function jpegSize(filePath) {
+  const buf = fs.readFileSync(filePath);
+  if (buf[0] !== 0xff || buf[1] !== 0xd8) {
+    throw new Error(`${filePath} is not a JPEG`);
+  }
+  let offset = 2;
+  while (offset < buf.length) {
+    while (buf[offset] === 0xff) offset += 1;
+    const marker = buf[offset];
+    offset += 1;
+    if (marker === 0xd9 || marker === 0xda) break;
+    const length = buf.readUInt16BE(offset);
+    if (length < 2) throw new Error(`${filePath} has an invalid JPEG segment length`);
+    if ((marker >= 0xc0 && marker <= 0xc3) || (marker >= 0xc5 && marker <= 0xc7) || (marker >= 0xc9 && marker <= 0xcb) || (marker >= 0xcd && marker <= 0xcf)) {
+      return {
+        height: buf.readUInt16BE(offset + 3),
+        width: buf.readUInt16BE(offset + 5),
+      };
+    }
+    offset += length;
+  }
+  throw new Error(`${filePath} does not expose JPEG dimensions`);
+}
+
+function imageSize(filePath) {
+  const lower = filePath.toLowerCase();
+  if (lower.endsWith(".png")) return pngSize(filePath);
+  if (lower.endsWith(".jpg") || lower.endsWith(".jpeg")) return jpegSize(filePath);
+  throw new Error(`${filePath} is not a supported social image format`);
 }
 
 function validateDocumentRefs(label, markup) {
@@ -97,6 +135,31 @@ function validateDocumentRefs(label, markup) {
   }
   for (const match of markup.matchAll(/\shref="#([^"]+)"/g)) {
     if (!ids.has(match[1])) fail(`${label} broken hash link: #${match[1]}`);
+  }
+}
+
+function validateSocialImage({ label, markup, prefix, rootDir, expectedAlt }) {
+  const ogImage = metaContentFor(label, markup, "og:image");
+  const twitterImage = metaContentFor(label, markup, "twitter:image");
+  const ogAlt = metaContentFor(label, markup, "og:image:alt");
+  const twitterAlt = metaContentFor(label, markup, "twitter:image:alt");
+  const ogWidth = Number(metaContentFor(label, markup, "og:image:width"));
+  const ogHeight = Number(metaContentFor(label, markup, "og:image:height"));
+  if (twitterImage !== ogImage) fail(`${label} twitter:image must match og:image`);
+  if (ogAlt !== expectedAlt) fail(`${label} og:image:alt mismatch: ${ogAlt}`);
+  if (twitterAlt !== expectedAlt) fail(`${label} twitter:image:alt mismatch: ${twitterAlt}`);
+  if (!ogImage.startsWith(prefix)) {
+    fail(`${label} og:image must use Pages prefix: ${ogImage}`);
+    return;
+  }
+  const local = path.join(rootDir, ogImage.slice(prefix.length).replaceAll("/", path.sep));
+  if (!fs.existsSync(local)) {
+    fail(`${label} missing og:image asset: ${local}`);
+    return;
+  }
+  const size = imageSize(local);
+  if (size.width !== ogWidth || size.height !== ogHeight) {
+    fail(`${label} og:image dimensions ${ogWidth}x${ogHeight} do not match asset ${size.width}x${size.height}`);
   }
 }
 
@@ -575,23 +638,20 @@ for (const ref of refs) {
   }
 }
 
-const ogImage = metaContent("og:image", "");
-const ogWidth = Number(metaContent("og:image:width", ""));
-const ogHeight = Number(metaContent("og:image:height", ""));
-const expectedPrefix = "https://vraxion.github.io/VRAXION/instnct/";
-if (ogImage.startsWith(expectedPrefix)) {
-  const local = path.join(siteRoot, ogImage.slice(expectedPrefix.length).replaceAll("/", path.sep));
-  if (!fs.existsSync(local)) {
-    fail(`missing og:image asset: ${local}`);
-  } else if (local.toLowerCase().endsWith(".png")) {
-    const size = pngSize(local);
-    if (size.width !== ogWidth || size.height !== ogHeight) {
-      fail(`og:image dimensions ${ogWidth}x${ogHeight} do not match asset ${size.width}x${size.height}`);
-    }
-  }
-} else {
-  fail(`og:image must use INSTNCT Pages prefix: ${ogImage}`);
-}
+validateSocialImage({
+  label: "homepage",
+  markup: home,
+  prefix: "https://vraxion.github.io/VRAXION/",
+  rootDir: docsRoot,
+  expectedAlt: "VRAXION local reflex reasoning hero surface",
+});
+validateSocialImage({
+  label: "INSTNCT",
+  markup: html,
+  prefix: "https://vraxion.github.io/VRAXION/instnct/",
+  rootDir: siteRoot,
+  expectedAlt: "INSTNCT local reflex reasoning hero surface",
+});
 
 if (/\.hero-mesh\s*\{[^}]*display:\s*none/i.test(css)) {
   fail("hero mesh should not be fully disabled in responsive CSS");
