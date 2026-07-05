@@ -30,6 +30,7 @@ Before creating or updating a public release, review:
 - attached release assets, if any
 - tag name and target commit
 - default branch and branch list
+- CODEOWNERS routing for public boundary, release, workflow, and docs changes
 - Dependabot or dependency-update PRs that may affect the public build
 - Pages deployment target
 - public status docs and release links
@@ -38,6 +39,8 @@ Before creating or updating a public release, review:
 
 - Keep release metadata and assets aligned with `docs/VERSION.json`.
 - Keep `PUBLIC_RELEASE_CHECKLIST.md` as the release intake gate.
+- Keep `.github/CODEOWNERS` routing public boundary, workflow, docs, Worker, and
+  crate changes to the public repo owner.
 - Keep dependency update automation limited to public manifests and GitHub
   Actions.
 - Keep private engine source, non-public training data, raw operator output,

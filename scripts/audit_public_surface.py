@@ -86,6 +86,7 @@ FORBIDDEN_PUBLIC_COPY = [
 EXPECTED_CRATES = {"alphasync-core", "alphasync-runtime"}
 
 REQUIRED_TRACKED_FILES = {
+    ".github/CODEOWNERS",
     ".github/dependabot.yml",
     ".github/ISSUE_TEMPLATE/config.yml",
     ".github/ISSUE_TEMPLATE/public-surface-report.yml",
@@ -122,9 +123,21 @@ REQUIRED_DEPENDABOT_MARKERS = {
     "timezone: \"Europe/Budapest\"",
 }
 
+REQUIRED_CODEOWNERS_MARKERS = {
+    "* @Kenessy",
+    "/.github/ @Kenessy",
+    "/scripts/ @Kenessy",
+    "/docs/ @Kenessy",
+    "/workers/instnct-notify/ @Kenessy",
+    "/crates/ @Kenessy",
+    "/PUBLIC_*.md @Kenessy",
+    "/docs/VERSION.json @Kenessy",
+}
+
 REQUIRED_GITHUB_STATE_MARKERS = {
     "## Current Public Truth",
     "## Historical GitHub Records",
+    ".github/CODEOWNERS",
     "PUBLIC_RELEASE_CHECKLIST.md",
     "docs/VERSION.json",
     "gh release list --limit 20",
@@ -262,6 +275,11 @@ def main() -> int:
     for required in sorted(REQUIRED_DEPENDABOT_MARKERS):
         if required not in dependabot_config:
             failures.append(f"dependabot config missing public dependency marker: {required}")
+
+    codeowners = read_text(ROOT / ".github" / "CODEOWNERS")
+    for required in sorted(REQUIRED_CODEOWNERS_MARKERS):
+        if required not in codeowners:
+            failures.append(f"CODEOWNERS missing public ownership marker: {required}")
 
     github_state_doc = read_text(ROOT / "PUBLIC_GITHUB_STATE.md")
     for required in sorted(REQUIRED_GITHUB_STATE_MARKERS):
