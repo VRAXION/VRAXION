@@ -37,12 +37,16 @@ Before any new public release is added, the release should have:
 
 1. explicit release notes and versioned status docs
 2. reviewed artifact naming, checksums, or signatures when an artifact exists
-3. an updated `docs/VERSION.json` and matching public page links
-4. no private engine code, private data, local paths, secrets, or internal run output
-5. green CI and a passing public export guard
+3. a reviewed `releases/<release-slug>.manifest.json` when public artifacts,
+   checksums, signatures, or status claims change
+4. an updated `docs/VERSION.json` and matching public page links
+5. no private engine code, private data, local paths, secrets, or internal run output
+6. green CI and a passing public export guard
 
 Use `PUBLIC_RELEASE_CHECKLIST.md` as the release PR checklist before adding a
-new artifact, status claim, or public download path.
+new artifact, status claim, or public download path. Use
+`releases/public-release-manifest.schema.json` as the public artifact manifest
+contract.
 
 ## Build
 
@@ -63,7 +67,8 @@ The public surface is documented in `PUBLIC_BOUNDARY.md` and
 `PUBLIC_DELIVERY_MODEL.md`, with license and mark boundaries in
 `LICENSE_BOUNDARY.md` and `TRADEMARK_POLICY.md`. Release intake rules are in
 `PUBLIC_RELEASE_CHECKLIST.md`, public GitHub state rules are in
-`PUBLIC_GITHUB_STATE.md`, and public support routing is in `SUPPORT.md`.
+`PUBLIC_GITHUB_STATE.md`, public release manifest rules are in `releases/`,
+and public support routing is in `SUPPORT.md`.
 
 Current status is tracked by the latest public GitHub release:
 [`public-sdk-p11-20260629`](https://github.com/VRAXION/VRAXION/releases/tag/public-sdk-p11-20260629).

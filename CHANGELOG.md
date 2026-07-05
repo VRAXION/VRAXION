@@ -18,6 +18,10 @@
   asset, and Pages review rules.
 - Added Dependabot maintenance for the public Cargo workspace and GitHub
   Actions surface.
+- Added `.github/CODEOWNERS` routing for public boundary, workflow, docs,
+  Worker, and crate review.
+- Added a public release manifest schema and example under `releases/` for
+  future artifact/checksum/signature intake.
 
 ## 2026-06-29
 

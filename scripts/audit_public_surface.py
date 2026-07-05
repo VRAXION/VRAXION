@@ -99,6 +99,9 @@ REQUIRED_TRACKED_FILES = {
     "PUBLIC_DELIVERY_MODEL.md",
     "PUBLIC_GITHUB_STATE.md",
     "PUBLIC_RELEASE_CHECKLIST.md",
+    "releases/README.md",
+    "releases/public-release-manifest.example.json",
+    "releases/public-release-manifest.schema.json",
     "LICENSE_BOUNDARY.md",
     "SUPPORT.md",
 }
@@ -108,6 +111,8 @@ REQUIRED_PR_TEMPLATE_MARKERS = {
     "What exactly becomes public?",
     "What stays private?",
     "PUBLIC_RELEASE_CHECKLIST.md",
+    "Release manifest checked:",
+    "releases/public-release-manifest.schema.json",
     "workers/instnct-notify/wrangler.jsonc",
     "powershell -ExecutionPolicy Bypass -File scripts\\check_public_export.ps1",
 }
@@ -145,6 +150,26 @@ REQUIRED_GITHUB_STATE_MARKERS = {
     "non-public training data",
     "public manifests and GitHub",
     "release metadata and assets",
+    "releases/public-release-manifest.schema.json",
+}
+
+REQUIRED_RELEASE_MANIFEST_README_MARKERS = {
+    "public-release-manifest.example.json",
+    "public-release-manifest.schema.json",
+    "releases/<release-slug>.manifest.json",
+    "private engine source",
+    "non-public training data",
+    "raw operator output",
+}
+
+REQUIRED_RELEASE_MANIFEST_EXCLUSIONS = {
+    "private_engine_source",
+    "non_public_training_data",
+    "raw_operator_output",
+    "local_machine_paths",
+    "secrets_or_tokens",
+    "filled_production_config",
+    "private_dashboards",
 }
 
 REQUIRED_ISSUE_TEMPLATE_MARKERS = {
@@ -303,6 +328,11 @@ def main() -> int:
         if required not in support_doc:
             failures.append(f"support doc missing public-support marker: {required}")
 
+    release_manifest_readme = read_text(ROOT / "releases" / "README.md")
+    for required in sorted(REQUIRED_RELEASE_MANIFEST_README_MARKERS):
+        if required not in release_manifest_readme:
+            failures.append(f"release manifest readme missing marker: {required}")
+
     gitattributes_path = ROOT / ".gitattributes"
     gitattributes_entries = {
         line.strip()
@@ -370,6 +400,60 @@ def main() -> int:
     latest_release = version.get("latest_public_release")
     if not isinstance(latest_release, str) or not latest_release.startswith("public-sdk-"):
         failures.append(f"docs/VERSION.json latest_public_release is invalid: {latest_release!r}")
+
+    schema_path = ROOT / "releases" / "public-release-manifest.schema.json"
+    example_path = ROOT / "releases" / "public-release-manifest.example.json"
+    try:
+        release_manifest_schema = json.loads(read_text(schema_path))
+    except Exception as exc:  # noqa: BLE001 - audit should report the parse failure.
+        failures.append(f"invalid public release manifest schema: {exc}")
+        release_manifest_schema = {}
+
+    try:
+        release_manifest_example = json.loads(read_text(example_path))
+    except Exception as exc:  # noqa: BLE001 - audit should report the parse failure.
+        failures.append(f"invalid public release manifest example: {exc}")
+        release_manifest_example = {}
+
+    manifest_const = (
+        release_manifest_schema.get("properties", {})
+        .get("schema", {})
+        .get("const")
+    )
+    if manifest_const != "vraxion.public.release-manifest.v1":
+        failures.append("release manifest schema const is not vraxion.public.release-manifest.v1")
+    if release_manifest_example.get("schema") != "vraxion.public.release-manifest.v1":
+        failures.append("release manifest example uses the wrong schema id")
+    example_slug = release_manifest_example.get("release_slug")
+    if not isinstance(example_slug, str) or not re.fullmatch(
+        r"public-[a-z0-9][a-z0-9-]*-[0-9]{8}",
+        example_slug,
+    ):
+        failures.append(f"release manifest example slug is invalid: {example_slug!r}")
+    if not isinstance(release_manifest_example.get("artifacts"), list):
+        failures.append("release manifest example artifacts must be a list")
+
+    schema_exclusions = (
+        release_manifest_schema.get("properties", {})
+        .get("exclusions", {})
+        .get("properties", {})
+    )
+    example_exclusions = release_manifest_example.get("exclusions")
+    if not isinstance(example_exclusions, dict):
+        failures.append("release manifest example exclusions must be an object")
+        example_exclusions = {}
+    for exclusion in sorted(REQUIRED_RELEASE_MANIFEST_EXCLUSIONS):
+        if schema_exclusions.get(exclusion, {}).get("const") is not False:
+            failures.append(f"release manifest schema exclusion is not const false: {exclusion}")
+        if example_exclusions.get(exclusion) is not False:
+            failures.append(f"release manifest example exclusion is not false: {exclusion}")
+
+    verification = release_manifest_example.get("verification")
+    commands = verification.get("commands") if isinstance(verification, dict) else None
+    if not isinstance(commands, list) or not any(
+        "scripts\\check_public_export.ps1" in command for command in commands
+    ):
+        failures.append("release manifest example must include the public export guard command")
 
     index_html = read_text(ROOT / "docs" / "index.html")
     expected_release_url = "https://github.com/VRAXION/VRAXION/releases/tag/" + str(

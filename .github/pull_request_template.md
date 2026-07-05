@@ -10,6 +10,7 @@
 - [ ] `PUBLIC_RELEASE_CHECKLIST.md` was followed, or this PR does not change release status, artifacts, downloads, or public claims.
 - [ ] Any generated local config, including `workers/instnct-notify/wrangler.jsonc`, remains untracked.
 - [ ] Any new artifact has public-safe provenance, naming, and checksum or signature material where applicable.
+- [ ] Any artifact, checksum, signature, or release status claim change has a reviewed public manifest that follows `releases/public-release-manifest.schema.json`.
 - [ ] `PUBLIC_GITHUB_STATE.md` was checked for release, tag, asset, Pages, and branch-state changes, or this PR does not change public release state.
 
 ## Required Public Gates
@@ -24,5 +25,6 @@
 ## Notes
 
 - Source-of-truth release, artifact, checksum, or docs page:
+- Release manifest checked:
 - GitHub release or tag checked:
 - Intentional unchanged release files:
