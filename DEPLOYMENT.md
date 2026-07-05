@@ -13,7 +13,7 @@ Source:
 
 Not published:
 
-- `disabled-surfaces/vngard/` is retained in the repository as a disabled draft only. It must not be moved back under `docs/` until the surface is intentionally approved for public release.
+- Unreleased draft surfaces must remain outside `docs/` and the sitemap until each surface is intentionally approved for public release.
 
 Deployment target:
 

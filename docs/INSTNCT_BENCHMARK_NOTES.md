@@ -27,7 +27,7 @@ Until those are published, the numbers should be read as a scoped internal previ
 
 ## Intended Public Reproduction
 
-The target proof path is:
+The intended T1 Proof Pack path is:
 
 1. Download the signed T1 artifact.
 2. Verify checksums.

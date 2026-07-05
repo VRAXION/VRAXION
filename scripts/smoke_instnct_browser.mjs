@@ -239,7 +239,7 @@ async function probeHome(browser, origin) {
     releaseHrefs: [...document.querySelectorAll("a")].map((a) => a.href),
     oldReleaseHref: [...document.querySelectorAll("a")].some((a) => a.href.includes("releases/tag/v6.1.7")),
     capabilitiesHref: [...document.querySelectorAll("a")].some((a) => a.href.includes("CURRENT_CAPABILITIES.md")),
-    instnctPublished: document.body.textContent.includes("INSTNCT static preview online"),
+    instnctPublished: document.body.textContent.includes("INSTNCT T1 Reflex Engine preview"),
   }), latestRelease);
   await page.close();
 
@@ -250,7 +250,7 @@ async function probeHome(browser, origin) {
   }
   if (result.oldReleaseHref) fail("home page still links to old v6.1.7 release");
   if (!result.capabilitiesHref) fail("home page current capabilities link is missing");
-  if (!result.instnctPublished) fail("home page does not frame INSTNCT as a static preview online");
+  if (!result.instnctPublished) fail("home page does not frame INSTNCT as the T1 Reflex Engine preview");
 }
 
 async function probeInstnctDesktop(browser, origin) {

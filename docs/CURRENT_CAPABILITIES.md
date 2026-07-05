@@ -8,28 +8,29 @@ This public repository is a public SDK/docs surface, not a runnable engine relea
 - `alphasync-runtime`: runtime artifact writing, safe summaries, and public validation helpers.
 - Public docs for delivery, trademarks, current status, and Pages surfaces.
 - Public audit/export guards used by CI to keep private training and engine material out of the repository.
-- INSTNCT Pages preview: a static, local-first product surface describing the T1 release target and verification posture.
+- INSTNCT Pages preview: a static product surface describing the T1 Reflex Engine target, Exact Mode refusal, and Proof Pack posture.
 
 ## Publicly Not Included
 
 - Implementation internals and non-public release materials.
-- Private binary internals.
+- Non-public runtime materials.
 - Production hosted API or SaaS deployment.
 - Signed runnable T1 binary artifact.
-- Training service, mutation service, skill persistence store, or private diagnostic surfaces.
+- Non-public operational tooling or diagnostic surfaces.
 
 ## Current INSTNCT Claim Scope
 
-INSTNCT is presented publicly as a T1 Reflex Class release target:
+INSTNCT is presented publicly as the first VRAXION engine line, with the T1 Reflex Engine as the first concrete target:
 
 - local-first
 - scoped to avoid hosted LLM/model-wrapper dependencies
-- exact mode should refuse unsupported answers
+- Path Selector behavior should choose a supported path before answering
+- Exact Mode should refuse unsupported answers
 - imagination mode, when present, must be explicit and labeled
 - benchmark numbers are scoped selector claims, not universal latency claims
 
-The current public page is a release and verification surface. The binary is not
-yet published as a runnable public artifact.
+The current public page is an engine preview and verification surface. The T1
+Proof Pack is not yet published as a runnable public artifact.
 
 ## Current Public Release
 
