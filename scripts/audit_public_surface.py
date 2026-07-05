@@ -129,6 +129,7 @@ REQUIRED_TRACKED_FILES = {
     ".github/workflows/deploy-instnct-notify.yml",
     ".github/workflows/public-pages-smoke.yml",
     ".github/workflows/public-surface-audit.yml",
+    "CONTRIBUTING.md",
     ".gitattributes",
     ".gitignore",
     "README.md",
@@ -165,6 +166,28 @@ REQUIRED_PR_TEMPLATE_MARKERS = {
     "node scripts\\audit_public_secrets.mjs",
     "workers/instnct-notify/wrangler.jsonc",
     "powershell -ExecutionPolicy Bypass -File scripts\\check_public_export.ps1",
+}
+
+REQUIRED_CONTRIBUTING_MARKERS = {
+    "PUBLIC_RELEASE_CHECKLIST.md",
+    "SECURITY.md",
+    "SUPPORT.md",
+    "node scripts\\sync_public_release_links.mjs --check",
+    "node scripts\\validate_public_release_manifests.mjs",
+    "node scripts\\validate_public_release_state.mjs",
+    "node scripts\\audit_public_secrets.mjs",
+    "node scripts\\audit_instnct_static_site.mjs",
+    "node scripts\\audit_instnct_notify_worker.mjs",
+    "python scripts\\audit_public_surface.py",
+    "node scripts\\smoke_public_pages_links.mjs",
+    "node scripts\\audit_public_github_state.mjs",
+    "cargo fmt --all -- --check",
+    "cargo test --workspace --all-features",
+    "cargo test --doc --workspace --all-features",
+    "cargo clippy --workspace --all-targets --all-features -- -D warnings",
+    "powershell -ExecutionPolicy Bypass -File scripts/check_public_export.ps1",
+    "non-public training data",
+    "absolute local or UNC paths",
 }
 
 REQUIRED_DEPENDABOT_MARKERS = {
@@ -421,6 +444,11 @@ def main() -> int:
     for required in sorted(REQUIRED_PR_TEMPLATE_MARKERS):
         if required not in pr_template:
             failures.append(f"pull request template missing release guard marker: {required}")
+
+    contributing_doc = read_text(ROOT / "CONTRIBUTING.md")
+    for required in sorted(REQUIRED_CONTRIBUTING_MARKERS):
+        if required not in contributing_doc:
+            failures.append(f"contributing doc missing public-gate marker: {required}")
 
     dependabot_config = read_text(ROOT / ".github" / "dependabot.yml")
     for required in sorted(REQUIRED_DEPENDABOT_MARKERS):
