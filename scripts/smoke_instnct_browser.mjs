@@ -14,11 +14,16 @@ function fail(message) {
 }
 
 let latestRelease = "";
+let homeAssetVersion = "";
 let instnctAssetVersion = "";
 try {
   const version = JSON.parse(await fs.readFile(path.join(docsRoot, "VERSION.json"), "utf8"));
   latestRelease = String(version.latest_public_release || "");
   if (!latestRelease) fail("VERSION.json latest_public_release is missing");
+  homeAssetVersion = String(version.home_asset_version || "");
+  if (!/^home-hero-\d{8}$/.test(homeAssetVersion)) {
+    fail(`VERSION.json home_asset_version is invalid: ${homeAssetVersion || "missing"}`);
+  }
   instnctAssetVersion = String(version.instnct_asset_version || "");
   if (!/^release-\d+$/.test(instnctAssetVersion)) {
     fail(`VERSION.json instnct_asset_version is invalid: ${instnctAssetVersion || "missing"}`);
@@ -243,9 +248,10 @@ async function probeHome(browser, origin) {
   const page = await browser.newPage({ viewport: { width: 1280, height: 900 }, reducedMotion: "no-preference" });
   const errors = trackPageFailures(page, origin, "home");
   await page.goto(`${origin}/`, { waitUntil: "networkidle" });
-  const result = await page.evaluate((latestReleaseText) => ({
+  const result = await page.evaluate(({ latestReleaseText, expectedHomeAssetVersion }) => ({
     overflow: document.documentElement.scrollWidth > document.documentElement.clientWidth,
     latestRelease: document.body.textContent.includes(latestReleaseText),
+    heroImage: document.querySelector(".hero-media img")?.getAttribute("src") || "",
     releaseHrefs: [...document.querySelectorAll("a")].map((a) => a.href),
     oldReleaseHref: [...document.querySelectorAll("a")].some((a) => a.href.includes("releases/tag/v6.1.7")),
     capabilitiesHref: [...document.querySelectorAll("a")].some((a) => a.href.includes("CURRENT_CAPABILITIES.md")),
@@ -257,11 +263,15 @@ async function probeHome(browser, origin) {
     ),
     instnctPublished: document.body.textContent.includes("INSTNCT T1 Reflex Engine preview"),
     anchorcellPublished: document.body.textContent.includes("AnchorCell studies the format before the model."),
-  }), latestRelease);
+    currentHomeAssetVersion: document.querySelector(".hero-media img")?.getAttribute("src")?.includes(expectedHomeAssetVersion),
+  }), { latestReleaseText: latestRelease, expectedHomeAssetVersion: homeAssetVersion });
   await page.close();
 
   if (errors.length) fail(`home browser errors: ${errors.join(" | ")}`);
   if (result.overflow) fail("home page has horizontal overflow");
+  if (!result.currentHomeAssetVersion) {
+    fail(`home page hero image is not loading VERSION home_asset_version ${homeAssetVersion}: ${result.heroImage}`);
+  }
   if (!result.latestRelease || !result.releaseHrefs.some((href) => href.includes(latestReleasePath))) {
     fail("home page latest release link is missing");
   }
@@ -1180,6 +1190,8 @@ async function probeResponsiveViewports(browser, origin) {
         clippedLinks,
         shortHeaderTargets,
         brandImage: document.querySelector(".brand img")?.getAttribute("src") || "",
+        heroImage: document.querySelector(".hero-media img")?.getAttribute("src") || "",
+        homeAssetVersioned: document.querySelector(".hero-media img")?.getAttribute("src")?.includes("home-hero-"),
         heroHeight: heroRect ? Math.round(heroRect.height) : 0,
         heroNextSignalTop: nextSignalRect ? Math.round(nextSignalRect.top) : null,
         heroNextSignalVisible: nextSignalRect
@@ -1192,6 +1204,9 @@ async function probeResponsiveViewports(browser, origin) {
     if (home.overflow) fail(`home ${label} has horizontal overflow`);
     if (!home.brandImage.includes("vraxion-wordmark.png")) {
       fail(`home ${label} header brand does not use the VRAXION wordmark asset: ${JSON.stringify(home)}`);
+    }
+    if (!home.heroImage.includes(`v=${homeAssetVersion}`) || !home.homeAssetVersioned) {
+      fail(`home ${label} hero image is not cache-versioned from VERSION: ${JSON.stringify(home)}`);
     }
     if (!home.heroNextSignalVisible) {
       fail(`home ${label} hero does not reveal next-section content in the first viewport: ${JSON.stringify(home)}`);
@@ -1396,6 +1411,7 @@ async function probeAnchorCell(browser, origin) {
           document.body.textContent.includes("not a finished model claim"),
         schemaHref: [...document.querySelectorAll("a")].some((a) => a.href.endsWith("/anchorcell/anchorcell.v2.schema.json")),
         exampleHref: [...document.querySelectorAll("a")].some((a) => a.href.endsWith("/anchorcell/anchorcell.v2.example.json")),
+        heroImage: document.querySelector(".hero-background img")?.getAttribute("src") || "",
         booted: hero?.classList.contains("is-booted"),
         heroHeight: heroRect ? Math.round(heroRect.height) : 0,
         heroNextSignalVisible: nextSignalRect
@@ -1433,6 +1449,9 @@ async function probeAnchorCell(browser, origin) {
     if (!first.copyOk) fail(`AnchorCell ${label} required copy is missing`);
     if (!first.schemaHref) fail(`AnchorCell ${label} schema CTA is missing: ${JSON.stringify(first)}`);
     if (!first.exampleHref) fail(`AnchorCell ${label} example CTA is missing: ${JSON.stringify(first)}`);
+    if (!first.heroImage.includes(`v=${homeAssetVersion}`)) {
+      fail(`AnchorCell ${label} hero image is not cache-versioned from VERSION: ${JSON.stringify(first)}`);
+    }
     if (!first.booted) fail(`AnchorCell ${label} hero did not boot`);
     if (!first.heroNextSignalVisible) {
       fail(`AnchorCell ${label} hero does not reveal next-section content in the first viewport: ${JSON.stringify(first)}`);
