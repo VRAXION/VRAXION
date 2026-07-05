@@ -410,7 +410,7 @@ for (const required of [
   "VRAXION / INSTNCT T1 Reflex Engine",
   "home-badge-row",
   "hero-wordmark",
-  "./assets/vraxion-wordmark.png?v=brand-pass-1",
+  "./assets/vraxion-wordmark.webp?v=brand-pass-2",
   "Founder-built. AI-assisted. Evidence-gated.",
   "./assets/fonts/geist-sans-variable.woff2",
   "Exact Mode refusal",

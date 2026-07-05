@@ -164,6 +164,7 @@ function contentType(filePath) {
       ".png": "image/png",
       ".jpg": "image/jpeg",
       ".jpeg": "image/jpeg",
+      ".webp": "image/webp",
       ".svg": "image/svg+xml",
       ".woff2": "font/woff2",
     }[ext] || "application/octet-stream"
@@ -1202,7 +1203,7 @@ async function probeResponsiveViewports(browser, origin) {
       };
     });
     if (home.overflow) fail(`home ${label} has horizontal overflow`);
-    if (!home.brandImage.includes("vraxion-wordmark.png")) {
+    if (!home.brandImage.includes("vraxion-wordmark.webp")) {
       fail(`home ${label} header brand does not use the VRAXION wordmark asset: ${JSON.stringify(home)}`);
     }
     if (!home.heroImage.includes(`v=${homeAssetVersion}`) || !home.homeAssetVersioned) {
@@ -1276,7 +1277,7 @@ function resourceKind(pathname, resourceType) {
   if (resourceType === "script" || ext === ".js") return "script";
   if (resourceType === "stylesheet" || ext === ".css") return "style";
   if (resourceType === "font" || ext === ".woff2") return "font";
-  if (resourceType === "image" || [".png", ".jpg", ".jpeg", ".svg"].includes(ext)) return "image";
+  if (resourceType === "image" || [".png", ".jpg", ".jpeg", ".webp", ".svg"].includes(ext)) return "image";
   return resourceType || "resource";
 }
 
