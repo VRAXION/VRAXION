@@ -1380,6 +1380,32 @@ html.keyboard-dialog-open {
   padding-top: 10px;
 }
 
+.wallpaper-section {
+  --wallpaper-pointer-x: 0px;
+  --wallpaper-pointer-y: 0px;
+  --wallpaper-scroll-y: 0px;
+  --wallpaper-scale: 1.075;
+  display: flex;
+  align-items: center;
+  min-height: clamp(680px, 78svh, 920px);
+  overflow: clip;
+  padding-top: clamp(112px, 12svh, 164px);
+  padding-bottom: clamp(112px, 12svh, 164px);
+}
+
+.hero + .wallpaper-section {
+  min-height: clamp(640px, 72svh, 860px);
+  padding-top: clamp(4px, 1svh, 14px);
+}
+
+#trust.wallpaper-section {
+  min-height: clamp(980px, 118svh, 1220px);
+}
+
+#grounding.wallpaper-section {
+  min-height: clamp(700px, 82svh, 900px);
+}
+
 .section-dark {
   background:
     linear-gradient(180deg, rgba(10, 11, 14, 0.94), rgba(10, 11, 14, 0.72)),
@@ -1472,6 +1498,22 @@ html.keyboard-dialog-open {
 #vraxion-note::after {
   background-image: url("./assets/vraxion-note-bg.png");
   background-position: center;
+}
+
+.wallpaper-section::after {
+  inset: -8%;
+  background-size: cover;
+  transform:
+    translate3d(
+      var(--wallpaper-pointer-x),
+      calc(var(--wallpaper-scroll-y) + var(--wallpaper-pointer-y)),
+      0
+    )
+    scale(var(--wallpaper-scale));
+  transition:
+    opacity 220ms ease,
+    transform 420ms cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform;
 }
 
 .shell {
@@ -2797,7 +2839,7 @@ html.keyboard-dialog-open {
   color: var(--cyan-soft);
 }
 
-@media (max-width: 1020px) {
+@media (max-width: 1500px) {
   .section-indicator,
   .has-js .section-indicator {
     display: none;
@@ -2806,7 +2848,13 @@ html.keyboard-dialog-open {
   .has-js .mobile-section-readout {
     display: flex;
     right: auto;
-    left: 14px;
+    left: 82px;
+  }
+}
+
+@media (max-width: 1020px) {
+  .has-js .mobile-section-readout {
+    left: 72px;
   }
 
   .nav {
@@ -3332,7 +3380,8 @@ html.keyboard-dialog-open {
   }
 
   .mobile-section-readout {
-    right: 10px;
+    right: auto;
+    left: 66px;
     bottom: 10px;
   }
 }

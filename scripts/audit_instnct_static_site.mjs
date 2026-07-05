@@ -260,6 +260,7 @@ for (const required of [
   "installHeroMesh",
   "installFabricFlow",
   "installCliDemo",
+  "installWallpaperParallax",
   "animateReadout",
   "installReveals",
   "shouldAnimateMesh",
@@ -275,6 +276,7 @@ for (const required of [
   'keyboardTrigger?.setAttribute("aria-expanded", "false")',
   "dataset.lineType",
   "aria-hidden",
+  "data-wallpaper-section",
 ]) {
   if (!js.includes(required)) fail(`missing INSTNCT enhancement: ${required}`);
 }
@@ -301,8 +303,11 @@ for (const required of [
   ".terminal-note",
   ".artifact-status",
   ".mobile-section-readout",
+  ".wallpaper-section",
+  "--wallpaper-scroll-y",
   ".has-js .section-indicator",
   ".has-js .keyboard-help-trigger",
+  "@media (max-width: 1500px)",
   ".has-js .faq-panel",
   ".faq-item button[aria-expanded=\"true\"]::after",
   "@media (max-width: 420px) and (max-height: 700px)",
@@ -315,6 +320,8 @@ for (const required of [
   "probeInstnctPerformanceBudget",
   "probeInstnctNoJs",
   "hero pointer interaction did not update visual state",
+  "wallpaper parallax did not update visual state",
+  "section rail is missing or overlaps content",
   "hero scroll motion should move downward and fade",
   "section indicator did not track fabric section",
   "mobile section readout did not track fabric section",

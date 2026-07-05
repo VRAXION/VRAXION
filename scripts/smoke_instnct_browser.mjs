@@ -254,7 +254,7 @@ async function probeHome(browser, origin) {
 }
 
 async function probeInstnctDesktop(browser, origin) {
-  const page = await browser.newPage({ viewport: { width: 1280, height: 900 }, reducedMotion: "no-preference" });
+  const page = await browser.newPage({ viewport: { width: 1600, height: 940 }, reducedMotion: "no-preference" });
   const errors = trackPageFailures(page, origin, "INSTNCT desktop");
   await page.goto(`${origin}/instnct/`, { waitUntil: "networkidle" });
   await page.waitForTimeout(400);
@@ -277,6 +277,9 @@ async function probeInstnctDesktop(browser, origin) {
     exactModeWallpaper: getComputedStyle(document.querySelector("#hallucination"), "::after").backgroundImage,
     proofPackWallpaper: getComputedStyle(document.querySelector("#trust"), "::after").backgroundImage,
     releaseClaimWallpaper: getComputedStyle(document.querySelector("#grounding"), "::after").backgroundImage,
+    wallpaperSectionCount: document.querySelectorAll("[data-wallpaper-section]").length,
+    proofPackHeight: Math.round(document.querySelector("#trust").getBoundingClientRect().height),
+    releaseClaimHeight: Math.round(document.querySelector("#grounding").getBoundingClientRect().height),
     heroFirstImpression: (() => {
       const hero = document.querySelector(".hero");
       const headline = document.querySelector(".hero-headline");
@@ -336,6 +339,9 @@ async function probeInstnctDesktop(browser, origin) {
   }
   if (!top.releaseClaimWallpaper.includes("release-claim-bg.jpg")) {
     fail(`INSTNCT release claim wallpaper is missing: ${top.releaseClaimWallpaper}`);
+  }
+  if (top.wallpaperSectionCount !== 6 || top.proofPackHeight < 940 || top.releaseClaimHeight < 660) {
+    fail(`INSTNCT wallpaper scene sections are not expanded: ${JSON.stringify(top)}`);
   }
 
   const heroRect = await page.locator(".hero").boundingBox();
@@ -404,6 +410,45 @@ async function probeInstnctDesktop(browser, origin) {
   if (!(heroScroll.y > 32) || !(heroScroll.opacity < 0.78)) {
     fail(`hero scroll motion should move downward and fade: ${JSON.stringify(heroScroll)}`);
   }
+
+  await page.locator("#trust").scrollIntoViewIfNeeded();
+  await page.waitForTimeout(220);
+  const wallpaperBefore = await page.evaluate(() => {
+    const section = document.querySelector("#trust");
+    const style = getComputedStyle(section);
+    return {
+      pointerX: style.getPropertyValue("--wallpaper-pointer-x").trim(),
+      pointerY: style.getPropertyValue("--wallpaper-pointer-y").trim(),
+      scrollY: style.getPropertyValue("--wallpaper-scroll-y").trim(),
+      transform: getComputedStyle(section, "::after").transform,
+    };
+  });
+  const trustRect = await page.locator("#trust").boundingBox();
+  if (!trustRect) {
+    fail("INSTNCT proof section bounding box is missing");
+  } else {
+    await page.mouse.move(trustRect.x + trustRect.width * 0.24, trustRect.y + trustRect.height * 0.28);
+    await page.waitForTimeout(220);
+    await page.mouse.move(trustRect.x + trustRect.width * 0.76, trustRect.y + trustRect.height * 0.52);
+    await page.waitForTimeout(360);
+  }
+  const wallpaperAfter = await page.evaluate(() => {
+    const section = document.querySelector("#trust");
+    const style = getComputedStyle(section);
+    return {
+      pointerX: style.getPropertyValue("--wallpaper-pointer-x").trim(),
+      pointerY: style.getPropertyValue("--wallpaper-pointer-y").trim(),
+      scrollY: style.getPropertyValue("--wallpaper-scroll-y").trim(),
+      transform: getComputedStyle(section, "::after").transform,
+    };
+  });
+  if (
+    wallpaperBefore.pointerX === wallpaperAfter.pointerX &&
+    wallpaperBefore.pointerY === wallpaperAfter.pointerY &&
+    wallpaperBefore.transform === wallpaperAfter.transform
+  ) {
+    fail(`wallpaper parallax did not update visual state: ${JSON.stringify({ wallpaperBefore, wallpaperAfter })}`);
+  }
   await page.evaluate(() => window.scrollTo({ left: 0, top: 0, behavior: "auto" }));
   await page.waitForTimeout(120);
 
@@ -467,6 +512,30 @@ async function probeInstnctDesktop(browser, origin) {
 
   await page.locator("#trust").scrollIntoViewIfNeeded();
   await page.waitForTimeout(220);
+  const railOverlap = await page.evaluate(() => {
+    const rail = document.querySelector(".section-indicator");
+    const railStyle = rail ? getComputedStyle(rail) : null;
+    if (!rail || railStyle.display === "none" || railStyle.visibility === "hidden") {
+      return { railVisible: false, overlaps: [] };
+    }
+    const railRect = rail.getBoundingClientRect();
+    const targets = [...document.querySelectorAll("#trust .trust-card, #trust .center-heading, #trust .benchmark-card")];
+    const overlaps = targets
+      .map((target) => {
+        const rect = target.getBoundingClientRect();
+        const width = Math.max(0, Math.min(railRect.right, rect.right) - Math.max(railRect.left, rect.left));
+        const height = Math.max(0, Math.min(railRect.bottom, rect.bottom) - Math.max(railRect.top, rect.top));
+        return {
+          target: target.className,
+          area: Math.round(width * height),
+        };
+      })
+      .filter((entry) => entry.area > 0);
+    return { railVisible: true, overlaps };
+  });
+  if (!railOverlap.railVisible || railOverlap.overlaps.length) {
+    fail(`section rail is missing or overlaps content: ${JSON.stringify(railOverlap)}`);
+  }
   const releasePillOverlap = await page.evaluate(() => {
     const pill = document.querySelector(".release-snapshot-pill");
     const pillStyle = pill ? getComputedStyle(pill) : null;
@@ -683,18 +752,33 @@ async function probeInstnctMobile(browser, origin) {
   const mobileFixedControls = await page.evaluate(() => {
     const readout = document.querySelector(".mobile-section-readout");
     const top = document.querySelector(".back-to-top");
+    const help = document.querySelector(".keyboard-help-trigger");
     const visible = (el) => {
       if (!el) return false;
       const style = getComputedStyle(el);
       return style.display !== "none" && style.visibility !== "hidden" && Number(style.opacity) > 0.25;
     };
-    if (!visible(readout) || !visible(top)) return { overlap: false };
+    if (!visible(readout)) return { overlap: false, overlaps: [] };
     const a = readout.getBoundingClientRect();
-    const b = top.getBoundingClientRect();
+    const controls = [
+      ["top", top],
+      ["help", help],
+    ].filter(([, el]) => visible(el));
+    const overlaps = controls
+      .map(([name, el]) => {
+        const b = el.getBoundingClientRect();
+        const overlap = !(a.right <= b.left || a.left >= b.right || a.bottom <= b.top || a.top >= b.bottom);
+        return {
+          name,
+          overlap,
+          rect: { left: Math.round(b.left), right: Math.round(b.right), top: Math.round(b.top), bottom: Math.round(b.bottom) },
+        };
+      })
+      .filter((entry) => entry.overlap);
     return {
-      overlap: !(a.right <= b.left || a.left >= b.right || a.bottom <= b.top || a.top >= b.bottom),
+      overlap: overlaps.length > 0,
+      overlaps,
       readout: { left: Math.round(a.left), right: Math.round(a.right), top: Math.round(a.top), bottom: Math.round(a.bottom) },
-      top: { left: Math.round(b.left), right: Math.round(b.right), top: Math.round(b.top), bottom: Math.round(b.bottom) },
     };
   });
   if (mobileFixedControls.overlap) {
@@ -752,6 +836,7 @@ async function probeResponsiveViewports(browser, origin) {
     { width: 412, height: 915 },
     { width: 768, height: 1024 },
     { width: 1024, height: 768 },
+    { width: 1280, height: 900 },
     { width: 1440, height: 900 },
   ];
 
@@ -816,24 +901,95 @@ async function probeResponsiveViewports(browser, origin) {
       fail(`INSTNCT ${label} header nav is clipped: ${JSON.stringify(instnct)}`);
     }
 
-    if (viewport.width <= 1020) {
+    await page.evaluate(() => {
+      document.documentElement.style.scrollBehavior = "auto";
+      document.body.style.scrollBehavior = "auto";
+    });
+    await page.locator("#trust").scrollIntoViewIfNeeded();
+    if (viewport.width <= 1500) {
+      await page
+        .waitForFunction(() => {
+          const readout = document.querySelector(".mobile-section-readout");
+          if (!readout) return false;
+          const style = getComputedStyle(readout);
+          return (
+            style.display !== "none" &&
+            style.visibility !== "hidden" &&
+            Number(style.opacity) > 0.25 &&
+            !readout.classList.contains("is-hidden")
+          );
+        }, null, { timeout: 1500 })
+        .catch(() => {});
+    } else {
+      await page.waitForTimeout(260);
+    }
+    const sectionRailMode = await page.evaluate(() => {
+      const rail = document.querySelector(".section-indicator");
+      const readout = document.querySelector(".mobile-section-readout");
+      const railStyle = rail ? getComputedStyle(rail) : null;
+      const readoutStyle = readout ? getComputedStyle(readout) : null;
+      const railVisible = !!rail && railStyle.display !== "none" && railStyle.visibility !== "hidden";
+      const readoutVisible =
+        !!readout &&
+        readoutStyle.display !== "none" &&
+        readoutStyle.visibility !== "hidden" &&
+        Number(readoutStyle.opacity) > 0.25 &&
+        !readout.classList.contains("is-hidden");
+      const railRect = railVisible ? rail.getBoundingClientRect() : null;
+      const targets = [...document.querySelectorAll("#trust .trust-card, #trust .center-heading, #trust .benchmark-card")];
+      const overlaps = railRect
+        ? targets
+            .map((target) => {
+              const rect = target.getBoundingClientRect();
+              const width = Math.max(0, Math.min(railRect.right, rect.right) - Math.max(railRect.left, rect.left));
+              const height = Math.max(0, Math.min(railRect.bottom, rect.bottom) - Math.max(railRect.top, rect.top));
+              return { target: target.className, area: Math.round(width * height) };
+            })
+            .filter((entry) => entry.area > 0)
+        : [];
+      return { railVisible, readoutVisible, overlaps };
+    });
+    if (viewport.width <= 1500) {
+      if (sectionRailMode.railVisible || !sectionRailMode.readoutVisible) {
+        fail(`INSTNCT ${label} should use compact section readout: ${JSON.stringify(sectionRailMode)}`);
+      }
+    } else if (!sectionRailMode.railVisible || sectionRailMode.overlaps.length) {
+      fail(`INSTNCT ${label} section rail is missing or overlaps content: ${JSON.stringify(sectionRailMode)}`);
+    }
+
+    if (viewport.width <= 1500) {
       await page.locator("#fabric").scrollIntoViewIfNeeded();
       await page.waitForTimeout(260);
       const fixedControls = await page.evaluate(() => {
         const readout = document.querySelector(".mobile-section-readout");
         const top = document.querySelector(".back-to-top");
+        const help = document.querySelector(".keyboard-help-trigger");
         const visible = (el) => {
           if (!el) return false;
           const style = getComputedStyle(el);
           return style.display !== "none" && style.visibility !== "hidden" && Number(style.opacity) > 0.25;
         };
-        if (!visible(readout) || !visible(top)) return { overlap: false };
+        if (!visible(readout)) return { overlap: false, overlaps: [] };
         const a = readout.getBoundingClientRect();
-        const b = top.getBoundingClientRect();
+        const controls = [
+          ["top", top],
+          ["help", help],
+        ].filter(([, el]) => visible(el));
+        const overlaps = controls
+          .map(([name, el]) => {
+            const b = el.getBoundingClientRect();
+            const overlap = !(a.right <= b.left || a.left >= b.right || a.bottom <= b.top || a.top >= b.bottom);
+            return {
+              name,
+              overlap,
+              rect: { left: Math.round(b.left), right: Math.round(b.right), top: Math.round(b.top), bottom: Math.round(b.bottom) },
+            };
+          })
+          .filter((entry) => entry.overlap);
         return {
-          overlap: !(a.right <= b.left || a.left >= b.right || a.bottom <= b.top || a.top >= b.bottom),
+          overlap: overlaps.length > 0,
+          overlaps,
           readout: { left: Math.round(a.left), right: Math.round(a.right), top: Math.round(a.top), bottom: Math.round(a.bottom) },
-          top: { left: Math.round(b.left), right: Math.round(b.right), top: Math.round(b.top), bottom: Math.round(b.bottom) },
         };
       });
       if (fixedControls.overlap) {

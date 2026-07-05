@@ -71,6 +71,7 @@
   const sectionLinks = Array.from(document.querySelectorAll("[data-section-link]"));
   const hero = document.querySelector(".hero");
   const heroGlow = document.querySelector(".hero-cursor-glow");
+  const wallpaperSections = Array.from(document.querySelectorAll("[data-wallpaper-section]"));
 
   const sections = sectionLinks
     .map((link) => {
@@ -154,6 +155,18 @@
       hero.style.setProperty("--hero-scroll-opacity", reduceMotion ? "1" : heroOpacity.toFixed(3));
     }
 
+    wallpaperSections.forEach((section) => {
+      if (reduceMotion) {
+        section.style.setProperty("--wallpaper-scroll-y", "0px");
+        return;
+      }
+      const rect = section.getBoundingClientRect();
+      const centerOffset =
+        (rect.top + rect.height * 0.5 - window.innerHeight * 0.5) / Math.max(1, window.innerHeight + rect.height);
+      const y = Math.max(-46, Math.min(46, centerOffset * -92));
+      section.style.setProperty("--wallpaper-scroll-y", `${y.toFixed(2)}px`);
+    });
+
     if (indicator && sections.length > 0) {
       const trigger = window.innerHeight * 0.56;
       let nextIndex = 0;
@@ -186,6 +199,17 @@
 
   window.addEventListener("scroll", requestScrollUpdate, { passive: true });
   window.addEventListener("resize", requestScrollUpdate);
+  reduceMotionQuery.addEventListener("change", () => {
+    reduceMotion = reduceMotionQuery.matches;
+    if (reduceMotion) {
+      wallpaperSections.forEach((section) => {
+        section.style.setProperty("--wallpaper-pointer-x", "0px");
+        section.style.setProperty("--wallpaper-pointer-y", "0px");
+        section.style.setProperty("--wallpaper-scroll-y", "0px");
+      });
+    }
+    requestScrollUpdate();
+  });
   updateScrollState();
 
   if (hero) {
@@ -301,6 +325,36 @@
       { passive: true }
     );
   }
+
+  function installWallpaperParallax() {
+    if (!wallpaperSections.length || !finePointer) return;
+
+    wallpaperSections.forEach((section) => {
+      section.addEventListener(
+        "pointermove",
+        (event) => {
+          if (reduceMotion) return;
+          const rect = section.getBoundingClientRect();
+          const nx = (event.clientX - rect.left) / Math.max(1, rect.width) - 0.5;
+          const ny = (event.clientY - rect.top) / Math.max(1, rect.height) - 0.5;
+          section.style.setProperty("--wallpaper-pointer-x", `${(nx * 22).toFixed(2)}px`);
+          section.style.setProperty("--wallpaper-pointer-y", `${(ny * 14).toFixed(2)}px`);
+        },
+        { passive: true }
+      );
+
+      section.addEventListener(
+        "pointerleave",
+        () => {
+          section.style.setProperty("--wallpaper-pointer-x", "0px");
+          section.style.setProperty("--wallpaper-pointer-y", "0px");
+        },
+        { passive: true }
+      );
+    });
+  }
+
+  installWallpaperParallax();
 
   function installHeroMesh() {
     const canvas = document.querySelector(".hero-mesh-canvas");
