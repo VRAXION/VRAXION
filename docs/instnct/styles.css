@@ -1457,6 +1457,7 @@ html.keyboard-dialog-open {
 #hallucination::after,
 #trust::after,
 #grounding::after,
+#fabric::after,
 #t1-reflex-class::after,
 #vraxion-note::after {
   content: "";
@@ -1497,6 +1498,17 @@ html.keyboard-dialog-open {
   background-image: url("./assets/release-claim-bg.jpg");
   background-position: right center;
   mask-image: linear-gradient(90deg, transparent, transparent 30%, black 62%, black);
+}
+
+#fabric {
+  overflow: hidden;
+}
+
+#fabric::after {
+  opacity: 0.22;
+  background-image: url("./assets/fabric-result-bg.jpg");
+  background-position: center;
+  mask-image: radial-gradient(ellipse at center, black 0 46%, transparent 82%);
 }
 
 #t1-reflex-class::after {
@@ -2149,6 +2161,7 @@ html.keyboard-dialog-open {
   width: min(100%, 760px);
   min-height: 360px;
   padding: 38px;
+  overflow: hidden;
   border: 1px solid var(--line);
   border-radius: 8px;
   background:
@@ -2157,6 +2170,34 @@ html.keyboard-dialog-open {
     rgba(5, 5, 7, 0.38);
   box-shadow: 0 22px 70px rgba(0, 0, 0, 0.32);
   backdrop-filter: blur(14px);
+}
+
+.manifesto-panel::before,
+.manifesto-panel::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.manifesto-panel::before {
+  z-index: 0;
+  background: url("./assets/constraints-founder-bg.jpg") center / cover no-repeat;
+  opacity: 0.88;
+  transform: scale(1.015);
+}
+
+.manifesto-panel::after {
+  z-index: 1;
+  background:
+    radial-gradient(ellipse at 36% 46%, rgba(5, 5, 7, 0.3), rgba(5, 5, 7, 0.12) 48%, rgba(5, 5, 7, 0.04) 72%),
+    linear-gradient(135deg, rgba(0, 229, 255, 0.05), transparent 46%),
+    linear-gradient(315deg, rgba(255, 61, 129, 0.05), transparent 48%);
+}
+
+.manifesto-panel > * {
+  position: relative;
+  z-index: 2;
 }
 
 .corner {
@@ -2190,6 +2231,7 @@ html.keyboard-dialog-open {
   font-size: 1.52rem;
   font-weight: 760;
   line-height: 1.55;
+  text-shadow: 0 18px 32px rgba(0, 0, 0, 0.72), 0 0 18px rgba(0, 229, 255, 0.12);
 }
 
 .manifesto-line.muted {

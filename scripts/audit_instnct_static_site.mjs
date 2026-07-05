@@ -502,6 +502,8 @@ for (const required of [
   "proof-pack-bg.jpg",
   "#grounding::after",
   "release-claim-bg.jpg",
+  "constraints-founder-bg.jpg",
+  "fabric-result-bg.jpg",
   ".release-snapshot-pill",
   ".button-icon",
   ".card-icon",
