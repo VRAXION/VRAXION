@@ -15,6 +15,8 @@ Validate manifests before review:
 
 ```powershell
 node scripts\validate_public_release_manifests.mjs
+node scripts\validate_public_release_state.mjs
+node scripts\audit_public_secrets.mjs
 ```
 
 Do not include:

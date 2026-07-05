@@ -45,6 +45,8 @@ const REQUIRED_EXCLUSIONS = [
 const REQUIRED_COMMANDS = [
   "node scripts\\sync_public_release_links.mjs --check",
   "node scripts\\validate_public_release_manifests.mjs",
+  "node scripts\\validate_public_release_state.mjs",
+  "node scripts\\audit_public_secrets.mjs",
   "python scripts\\audit_public_surface.py",
   "powershell -ExecutionPolicy Bypass -File scripts\\check_public_export.ps1",
 ];

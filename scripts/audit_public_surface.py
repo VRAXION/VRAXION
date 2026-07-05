@@ -468,6 +468,15 @@ def main() -> int:
         for command in commands
     ):
         failures.append("release manifest example must include the release manifest validator command")
+    if not isinstance(commands, list) or not any(
+        "scripts\\validate_public_release_state.mjs" in command
+        for command in commands
+    ):
+        failures.append("release manifest example must include the release state validator command")
+    if not isinstance(commands, list) or not any(
+        "scripts\\audit_public_secrets.mjs" in command for command in commands
+    ):
+        failures.append("release manifest example must include the public secret scan command")
 
     index_html = read_text(ROOT / "docs" / "index.html")
     expected_release_url = "https://github.com/VRAXION/VRAXION/releases/tag/" + str(
