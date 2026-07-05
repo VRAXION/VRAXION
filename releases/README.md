@@ -11,6 +11,12 @@ verification commands, and explicit exclusions.
 The manifest is intentionally public-safe. It should describe only reviewed
 public files, public URLs, public checks, and public artifact metadata.
 
+Validate manifests before review:
+
+```powershell
+node scripts\validate_public_release_manifests.mjs
+```
+
 Do not include:
 
 - private engine source

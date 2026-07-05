@@ -22,6 +22,8 @@
   Worker, and crate review.
 - Added a public release manifest schema and example under `releases/` for
   future artifact/checksum/signature intake.
+- Added a public release manifest validator and CI gate for future release
+  artifact intake.
 
 ## 2026-06-29
 
