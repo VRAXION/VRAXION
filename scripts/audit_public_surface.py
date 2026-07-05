@@ -27,9 +27,15 @@ FORBIDDEN_PATH_PARTS = [
     marker("vraxion-", "runtime"),
     marker("docs/", "research"),
     marker("tools/", "private_data_adapters"),
+    marker("docs/", "van", "guard"),
     marker("docs/", "vn", "gard"),
     marker("red", "b"),
 ]
+
+REQUIRED_FORBIDDEN_PATH_PARTS = {
+    marker("docs/", "van", "guard"),
+    marker("tools/", "private_data_adapters"),
+}
 
 FORBIDDEN_TEXT = [
     marker("Fine", "Web"),
@@ -75,11 +81,13 @@ FORBIDDEN_PUBLIC_COPY = [
     marker("public source ", "archive"),
     marker("boundary ", "snapshot"),
     marker("boundary ", "archive"),
+    marker("SDK ", "bound", "ary"),
     marker("P11 ", "SDK ", "bound", "ary"),
     marker("P11 ", "delivery decision"),
     marker("zero-state ", "SDK"),
     marker("docs/", "vn", "gard"),
     marker("docs\\", "vn", "gard"),
+    marker("van", "guard"),
     "local reasoning runtime",
     "runtime project",
     "governed runtime frame",
@@ -93,6 +101,21 @@ FORBIDDEN_PUBLIC_COPY = [
     "make local intelligence",
     "production backend target",
 ]
+
+REQUIRED_FORBIDDEN_PUBLIC_COPY_MARKERS = {
+    marker("source", "-available"),
+    marker("source ", "available"),
+    marker("source ", "archive"),
+    marker("public source ", "archive"),
+    marker("boundary ", "archive"),
+    marker("boundary ", "snapshot"),
+    marker("SDK ", "bound", "ary"),
+    marker("van", "guard"),
+    "hosted api / saas later",
+    "hosted api/saas later",
+    "preview live",
+    "signed offline verification",
+}
 
 EXPECTED_CRATES = {"alphasync-core", "alphasync-runtime"}
 
@@ -346,6 +369,17 @@ def main() -> int:
     warnings: list[str] = []
     files = tracked_files()
     file_set = {relative.replace("\\", "/") for relative in files}
+    forbidden_public_copy_markers = {
+        marker_text.lower() for marker_text in FORBIDDEN_PUBLIC_COPY
+    }
+    forbidden_path_parts = {path_part.lower() for path_part in FORBIDDEN_PATH_PARTS}
+
+    for required in sorted(REQUIRED_FORBIDDEN_PATH_PARTS):
+        if required.lower() not in forbidden_path_parts:
+            failures.append(f"forbidden path marker is not guarded: {required}")
+    for required in sorted(REQUIRED_FORBIDDEN_PUBLIC_COPY_MARKERS):
+        if required.lower() not in forbidden_public_copy_markers:
+            failures.append(f"forbidden public copy marker is not guarded: {required}")
 
     for required in sorted(REQUIRED_TRACKED_FILES):
         if required not in file_set:
@@ -575,6 +609,8 @@ def main() -> int:
 
     print("PUBLIC_SURFACE_AUDIT")
     print(f"tracked_files={len(files)}")
+    print(f"forbidden_path_markers={len(FORBIDDEN_PATH_PARTS)}")
+    print(f"forbidden_public_copy_markers={len(FORBIDDEN_PUBLIC_COPY)}")
     print(f"failure_count={len(failures)}")
     print(f"warning_count={len(warnings)}")
     for failure in failures:
