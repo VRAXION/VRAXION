@@ -62,7 +62,7 @@ The public surface is documented in `PUBLIC_BOUNDARY.md` and
 `PACKAGE_BOUNDARY.md`. The public delivery direction is documented in
 `PUBLIC_DELIVERY_MODEL.md`, with license and mark boundaries in
 `LICENSE_BOUNDARY.md` and `TRADEMARK_POLICY.md`. Release intake rules are in
-`PUBLIC_RELEASE_CHECKLIST.md`.
+`PUBLIC_RELEASE_CHECKLIST.md`, and public support routing is in `SUPPORT.md`.
 
 Current status is tracked by the latest public GitHub release:
 [`public-sdk-p11-20260629`](https://github.com/VRAXION/VRAXION/releases/tag/public-sdk-p11-20260629).

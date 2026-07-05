@@ -97,6 +97,7 @@ REQUIRED_TRACKED_FILES = {
     "PUBLIC_DELIVERY_MODEL.md",
     "PUBLIC_RELEASE_CHECKLIST.md",
     "LICENSE_BOUNDARY.md",
+    "SUPPORT.md",
 }
 
 REQUIRED_PR_TEMPLATE_MARKERS = {
@@ -120,6 +121,16 @@ REQUIRED_ISSUE_CONFIG_MARKERS = {
     "PUBLIC_RELEASE_CHECKLIST.md",
     "blank_issues_enabled: false",
     "security/policy",
+}
+
+REQUIRED_SUPPORT_MARKERS = {
+    "## Do Not Include",
+    "## Use Public Issues For",
+    "PUBLIC_RELEASE_CHECKLIST.md",
+    "SECURITY.md",
+    "non-public training data",
+    "public files and public releases",
+    "raw operator output",
 }
 
 REQUIRED_GITATTRIBUTES_ENTRIES = {
@@ -212,6 +223,11 @@ def main() -> int:
     for required in sorted(REQUIRED_ISSUE_CONFIG_MARKERS):
         if required not in issue_config:
             failures.append(f"issue template config missing intake marker: {required}")
+
+    support_doc = read_text(ROOT / "SUPPORT.md")
+    for required in sorted(REQUIRED_SUPPORT_MARKERS):
+        if required not in support_doc:
+            failures.append(f"support doc missing public-support marker: {required}")
 
     gitattributes_path = ROOT / ".gitattributes"
     gitattributes_entries = {
