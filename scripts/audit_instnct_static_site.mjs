@@ -366,6 +366,44 @@ for (const forbiddenCopy of [
 if (!html.includes("connect-src 'none'")) fail("CSP must keep connect-src 'none'");
 if (!html.includes("form-action 'none'")) fail("CSP must keep form-action 'none'");
 
+const homeCspTag = home.match(/<meta\s+[^>]*http-equiv="Content-Security-Policy"[^>]*>/i)?.[0] || "";
+const homeCsp = attr(homeCspTag, "content");
+if (!homeCsp) fail("homepage missing Content-Security-Policy meta");
+const homeCspDirectives = parseCsp(homeCsp);
+const homeStyleMatch = home.match(/<style>([\s\S]*?)<\/style>/i);
+if (!homeStyleMatch) {
+  fail("homepage inline style block is missing");
+} else {
+  const homeStyleHash = createHash("sha256").update(homeStyleMatch[1].replace(/\r\n/g, "\n")).digest("base64");
+  if (!homeCsp.includes(`'sha256-${homeStyleHash}'`)) {
+    fail(`homepage CSP style hash mismatch: expected 'sha256-${homeStyleHash}'`);
+  }
+}
+for (const [name, expected] of [
+  ["default-src", ["'self'"]],
+  ["script-src", ["'none'"]],
+  ["img-src", ["'self'", "data:"]],
+  ["connect-src", ["'none'"]],
+  ["object-src", ["'none'"]],
+  ["base-uri", ["'none'"]],
+  ["form-action", ["'none'"]],
+]) {
+  const actual = homeCspDirectives.get(name) || [];
+  if (actual.join(" ") !== expected.join(" ")) {
+    fail(`homepage CSP ${name} mismatch: ${actual.join(" ") || "missing"}`);
+  }
+}
+const homeStyleSrc = homeCspDirectives.get("style-src") || [];
+if (homeStyleSrc.length !== 2 || homeStyleSrc[0] !== "'self'" || !/^'sha256-[^']+'$/.test(homeStyleSrc[1])) {
+  fail(`homepage CSP style-src mismatch: ${homeStyleSrc.join(" ") || "missing"}`);
+}
+if (!homeCspDirectives.has("upgrade-insecure-requests")) {
+  fail("homepage CSP missing upgrade-insecure-requests");
+}
+if (homeCsp.includes("'unsafe-inline'") || homeCsp.includes("'unsafe-eval'")) {
+  fail("homepage CSP must not allow unsafe inline/eval");
+}
+
 const cspTag = html.match(/<meta\s+[^>]*http-equiv="Content-Security-Policy"[^>]*>/i)?.[0] || "";
 const csp = attr(cspTag, "content");
 if (!csp) fail("missing Content-Security-Policy meta");
