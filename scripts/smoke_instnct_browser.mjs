@@ -45,6 +45,10 @@ const unsafePublicCopyPatternSource = [
   "No probabilities",
   "T1 is coming",
   "local runnable",
+  "model note / T1",
+  "terms pending",
+  "final release terms",
+  "What are the public release terms?",
   token("source", "-available"),
   token("source ", "available"),
   token("open ", "source"),
@@ -1040,6 +1044,50 @@ async function probeResponsiveViewports(browser, origin) {
       });
       if (fixedControls.overlap) {
         fail(`INSTNCT ${label} fixed controls overlap after scroll: ${JSON.stringify(fixedControls)}`);
+      }
+
+      if (viewport.width <= 760) {
+        await page.locator("#t1-reflex-class .boundary-band").scrollIntoViewIfNeeded();
+        await page.waitForTimeout(260);
+        const t1FixedOverlap = await page.evaluate(() => {
+          const readout = document.querySelector(".mobile-section-readout");
+          const top = document.querySelector(".back-to-top");
+          const visible = (el) => {
+            if (!el) return false;
+            const style = getComputedStyle(el);
+            return (
+              style.display !== "none" &&
+              style.visibility !== "hidden" &&
+              Number(style.opacity || 1) > 0.25 &&
+              !el.classList.contains("is-hidden")
+            );
+          };
+          const intersects = (a, b) => !(a.right <= b.left || a.left >= b.right || a.bottom <= b.top || a.top >= b.bottom);
+          const controls = [
+            ["readout", readout],
+            ["top", top],
+          ].filter(([, el]) => visible(el));
+          const targets = [...document.querySelectorAll("#t1-reflex-class .boundary-band h3, #t1-reflex-class .boundary-band p, #t1-reflex-class .boundary-band .button")]
+            .filter(visible);
+          const overlaps = [];
+          for (const [controlName, control] of controls) {
+            const controlRect = control.getBoundingClientRect();
+            for (const target of targets) {
+              const targetRect = target.getBoundingClientRect();
+              if (intersects(controlRect, targetRect)) {
+                overlaps.push({
+                  control: controlName,
+                  target: target.tagName.toLowerCase(),
+                  text: target.textContent.trim().replace(/\s+/g, " ").slice(0, 80),
+                });
+              }
+            }
+          }
+          return { overlaps };
+        });
+        if (t1FixedOverlap.overlaps.length) {
+          fail(`INSTNCT ${label} T1 fixed readout overlaps scope card content: ${JSON.stringify(t1FixedOverlap)}`);
+        }
       }
     }
 
