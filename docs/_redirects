@@ -1,0 +1,3 @@
+/vngard /404.html 404
+/vngard/ /404.html 404
+/vngard/* /404.html 404

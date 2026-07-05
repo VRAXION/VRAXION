@@ -9,6 +9,8 @@ const htmlPath = path.join(root, "docs", "instnct", "index.html");
 const anchorcellPath = path.join(root, "docs", "anchorcell", "index.html");
 const hiddenSurfaceSlug = ["vn", "gard"].join("");
 const publishedHiddenSurfacePath = path.join(root, "docs", hiddenSurfaceSlug);
+const notFoundPath = path.join(root, "docs", "404.html");
+const redirectsPath = path.join(root, "docs", "_redirects");
 const jsPath = path.join(root, "docs", "instnct", "instnct.js");
 const cssPath = path.join(root, "docs", "instnct", "styles.css");
 const anchorcellJsPath = path.join(root, "docs", "anchorcell", "anchorcell.js");
@@ -33,6 +35,8 @@ const anchorcellJs = fs.readFileSync(anchorcellJsPath, "utf8");
 const anchorcellCss = fs.readFileSync(anchorcellCssPath, "utf8");
 const anchorcellSchemaText = fs.readFileSync(anchorcellSchemaPath, "utf8");
 const anchorcellExampleText = fs.readFileSync(anchorcellExamplePath, "utf8");
+const notFound = fs.readFileSync(notFoundPath, "utf8");
+const redirects = fs.readFileSync(redirectsPath, "utf8");
 const browserSmoke = fs.readFileSync(browserSmokePath, "utf8");
 const currentCapabilities = fs.readFileSync(currentCapabilitiesPath, "utf8");
 const benchmarkNotes = fs.readFileSync(benchmarkNotesPath, "utf8");
@@ -498,6 +502,8 @@ for (const required of [
   "proof-pack-bg.jpg",
   "#grounding::after",
   "release-claim-bg.jpg",
+  "constraints-founder-bg.jpg",
+  "fabric-result-bg.jpg",
   ".release-snapshot-pill",
   ".button-icon",
   ".card-icon",
@@ -613,6 +619,21 @@ for (const forbidden of [
 }
 if (fs.existsSync(publishedHiddenSurfacePath)) {
   fail("hidden roadmap surface must not exist under docs/ because GitHub Pages publishes that path");
+}
+for (const required of [
+  `/${hiddenSurfaceSlug} /404.html 404`,
+  `/${hiddenSurfaceSlug}/ /404.html 404`,
+  `/${hiddenSurfaceSlug}/* /404.html 404`,
+]) {
+  if (!redirects.includes(required)) fail(`Cloudflare hidden-route redirect is missing: ${required}`);
+}
+for (const required of [
+  "Page not found.",
+  "This public site only exposes the current VRAXION, INSTNCT, and AnchorCell surfaces.",
+  "default-src 'none'",
+  "noindex,nofollow",
+]) {
+  if (!notFound.includes(required)) fail(`404 page is missing public-safe marker: ${required}`);
 }
 
 if (latestRelease && !html.includes(latestRelease)) {
