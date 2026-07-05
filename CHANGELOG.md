@@ -26,6 +26,7 @@
   artifact intake.
 - Added a public release state validator and CI gate to keep the public version
   record, GitHub release pointer, status docs, and Pages copy aligned.
+- Added a public secret scan guard for tracked files before release intake.
 
 ## 2026-06-29
 
