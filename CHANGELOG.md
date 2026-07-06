@@ -12,6 +12,7 @@
   and audit markers for workflow drift.
 - Added a public security.txt endpoint and audit coverage for vulnerability disclosure routing.
 - Added live security.txt smoke coverage for the public Pages disclosure endpoint.
+- Replaced internal runtime wording in the public crate with operator-side wording.
 - Re-verified the public export guard, live Pages state, public link smoke, and
   main GitHub Actions after each public hardening merge.
 

@@ -161,9 +161,9 @@ impl RuntimeArtifactSnapshot {
 
 /// Atomic process-crash runtime artifact writer.
 ///
-/// This writer is deliberately small. It mirrors the private Python frontier
-/// artifact rule: write a full temp file, flush it, replace the target, and
-/// expose a checksum record. The v0.1 guarantee is coherent visibility after
+/// This writer is deliberately small. It follows the crate's public artifact
+/// rule: write a full temp file, flush it, replace the target, and expose a
+/// checksum record. The v0.1 guarantee is coherent visibility after
 /// ordinary process crashes; sudden OS or power loss directory-entry durability
 /// is explicitly outside the public claim on platforms that do not expose a
 /// portable fallible directory sync through stable Rust.

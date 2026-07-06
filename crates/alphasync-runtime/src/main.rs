@@ -1,8 +1,8 @@
 //! Canonical local `α-Sync` runtime CLI.
 //!
-//! This binary is the stable entrypoint for private runtime smoke/scene
-//! artifact generation. It does not read datasets, perform training, publish
-//! results, or call the network.
+//! This binary is the stable entrypoint for local runtime smoke/scene artifact
+//! generation. It does not read datasets, perform training, publish results, or
+//! call the network.
 
 #![forbid(unsafe_code)]
 #![deny(rust_2018_idioms)]
