@@ -177,6 +177,7 @@ REQUIRED_CHANGELOG_MARKERS = {
     "live Pages state",
     "main GitHub Actions",
     "security.txt endpoint",
+    "live security.txt smoke coverage",
     "vulnerability disclosure routing",
 }
 
@@ -349,6 +350,14 @@ REQUIRED_RELEASE_LINK_SYNC_MARKERS = {
     "docs/CURRENT_CAPABILITIES.md",
     "current-state release link file is not scanned",
     "public_release_link_files",
+}
+
+REQUIRED_PUBLIC_PAGES_SMOKE_MARKERS = {
+    "securityTxtUrl",
+    "validateSecurityTxt",
+    "Contact: https://github.com/VRAXION/VRAXION/security/policy",
+    "security.txt Expires timestamp must stay within one year",
+    "`${baseUrl}/.well-known/security.txt`",
 }
 
 REQUIRED_RELEASE_MANIFEST_EXCLUSIONS = {
@@ -662,6 +671,11 @@ def main() -> int:
     for required in sorted(REQUIRED_RELEASE_LINK_SYNC_MARKERS):
         if required not in release_link_sync:
             failures.append(f"release link sync missing coverage marker: {required}")
+
+    public_pages_smoke = read_text(ROOT / "scripts" / "smoke_public_pages_links.mjs")
+    for required in sorted(REQUIRED_PUBLIC_PAGES_SMOKE_MARKERS):
+        if required not in public_pages_smoke:
+            failures.append(f"public Pages smoke missing security.txt marker: {required}")
 
     gitattributes_path = ROOT / ".gitattributes"
     gitattributes_entries = {
