@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { execFileSync } from "node:child_process";
+import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -177,6 +178,30 @@ function assertTrackedRepoPath(file, label, value) {
   }
 }
 
+function trackedRepoPathOrNull(value) {
+  if (isHttpUrl(value) || hasLocalPathMarker(value) || !isRepoRelativePath(value)) {
+    return null;
+  }
+  return trackedFiles.has(value) ? value : null;
+}
+
+function sha256ForTrackedFile(relativePath) {
+  return crypto
+    .createHash("sha256")
+    .update(fs.readFileSync(path.join(ROOT, relativePath)))
+    .digest("hex");
+}
+
+function assertRepoRelativeArtifactSha256(file, label, relativePath, expectedSha256) {
+  const actualSha256 = sha256ForTrackedFile(relativePath);
+  if (actualSha256 !== expectedSha256) {
+    fail(
+      file,
+      `${label} does not match repo-relative artifact ${relativePath}: manifest has ${expectedSha256}, expected ${actualSha256}`,
+    );
+  }
+}
+
 function assertDate(file, releaseDate, releaseSlug) {
   if (typeof releaseDate !== "string" || !RELEASE_DATE_RE.test(releaseDate)) {
     fail(file, `release_date is invalid: ${releaseDate}`);
@@ -314,12 +339,14 @@ function validateArtifact(file, artifact, index) {
     fail(file, `artifacts[${index}].status is invalid: ${artifact.status}`);
   }
 
+  let localArtifactPath = null;
   if (typeof artifact.path_or_url !== "string" || artifact.path_or_url.trim() === "") {
     fail(file, `artifacts[${index}].path_or_url must be a non-empty string`);
   } else if (hasLocalPathMarker(artifact.path_or_url)) {
     fail(file, `artifacts[${index}].path_or_url contains a local or parent path`);
   } else if (!isHttpUrl(artifact.path_or_url)) {
     assertTrackedRepoPath(file, `artifacts[${index}].path_or_url`, artifact.path_or_url);
+    localArtifactPath = trackedRepoPathOrNull(artifact.path_or_url);
   }
 
   if (artifact.sha256 !== null && (typeof artifact.sha256 !== "string" || !SHA256_RE.test(artifact.sha256))) {
@@ -352,6 +379,15 @@ function validateArtifact(file, artifact, index) {
         artifact.signature_path_or_url,
       );
     }
+  }
+
+  if (localArtifactPath !== null && artifact.sha256 !== null) {
+    assertRepoRelativeArtifactSha256(
+      file,
+      `artifacts[${index}].sha256`,
+      localArtifactPath,
+      artifact.sha256,
+    );
   }
 
   if (typeof artifact.notes !== "string" || artifact.notes.length > 500) {
@@ -597,6 +633,40 @@ function runPolicySelfTests(schema, baseManifest) {
       runManifestNegativeSelfTest(
         "published_proof_pack_without_signature",
         "is published and must include signature_path_or_url",
+        () => validateManifest(`releases/${slug}.manifest.json`, manifest),
+      );
+    },
+    () => {
+      const slug = "public-selftest-local-sha-20990101";
+      const manifest = selfTestReleaseManifest(baseManifest, slug, "artifact_release");
+      manifest.artifacts = [
+        selfTestArtifact(slug, "other", {
+          name: "README.md",
+          path_or_url: "README.md",
+          sha256: sha256ForTrackedFile("README.md"),
+          signature_path_or_url: null,
+          notes: "In-memory validator self-test for repo-relative artifact checksums.",
+        }),
+      ];
+      runManifestPositiveSelfTest("local_artifact_checksum_matches", () => {
+        validateManifest(`releases/${slug}.manifest.json`, manifest);
+      });
+    },
+    () => {
+      const slug = "public-selftest-local-sha-mismatch-20990101";
+      const manifest = selfTestReleaseManifest(baseManifest, slug, "artifact_release");
+      manifest.artifacts = [
+        selfTestArtifact(slug, "other", {
+          name: "README.md",
+          path_or_url: "README.md",
+          sha256: "0".repeat(64),
+          signature_path_or_url: null,
+          notes: "In-memory validator self-test for repo-relative artifact checksum mismatch.",
+        }),
+      ];
+      runManifestNegativeSelfTest(
+        "local_artifact_checksum_mismatch",
+        "does not match repo-relative artifact README.md",
         () => validateManifest(`releases/${slug}.manifest.json`, manifest),
       );
     },

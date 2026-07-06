@@ -21,6 +21,8 @@ Artifact-bearing releases have stricter gates:
   artifact.
 - Every published non-documentation artifact must include a lowercase SHA-256
   checksum.
+- repo-relative artifact paths are verified against the actual tracked file
+  contents, so local artifact checksums cannot drift from the manifest.
 - Published `proof_pack` and `binary` artifacts must also include
   `signature_path_or_url`.
 
@@ -28,7 +30,8 @@ Artifact-bearing releases have stricter gates:
 schema contract, so these artifact gates must stay encoded in
 `public-release-manifest.schema.json`. It also runs in-memory policy self-tests
 that must reject representative bad `artifact_release`, `proof_pack`, checksum,
-signature, and schema-drift cases before reporting `policy_self_tests`.
+repo-relative checksum mismatch, signature, and schema-drift cases before
+reporting `policy_self_tests`.
 
 Validate manifests before review:
 
