@@ -155,6 +155,7 @@ REQUIRED_TRACKED_FILES = {
     "releases/public-sdk-p11-20260629.manifest.json",
     "releases/public-release-manifest.example.json",
     "releases/public-release-manifest.schema.json",
+    "scripts/audit_public_links.mjs",
     "scripts/audit_public_secrets.mjs",
     "scripts/audit_public_github_state.mjs",
     "scripts/validate_public_release_manifests.mjs",
@@ -188,6 +189,8 @@ REQUIRED_CHANGELOG_MARKERS = {
     "live security.txt smoke coverage",
     "internal runtime wording",
     "operator-side wording",
+    "public link audit",
+    "Pages-local documentation links",
     "vulnerability disclosure routing",
 }
 
@@ -220,6 +223,7 @@ REQUIRED_PR_TEMPLATE_MARKERS = {
     "releases/public-release-manifest.schema.json",
     "node scripts\\validate_public_release_manifests.mjs",
     "node scripts\\validate_public_release_state.mjs",
+    "node scripts\\audit_public_links.mjs",
     "node scripts\\audit_public_secrets.mjs",
     "workers/instnct-notify/wrangler.jsonc",
     "powershell -ExecutionPolicy Bypass -File scripts\\check_public_export.ps1",
@@ -232,6 +236,7 @@ REQUIRED_CONTRIBUTING_MARKERS = {
     "node scripts\\sync_public_release_links.mjs --check",
     "node scripts\\validate_public_release_manifests.mjs",
     "node scripts\\validate_public_release_state.mjs",
+    "node scripts\\audit_public_links.mjs",
     "node scripts\\audit_public_secrets.mjs",
     "node scripts\\audit_instnct_static_site.mjs",
     "node scripts\\audit_instnct_notify_worker.mjs",
@@ -272,6 +277,7 @@ REQUIRED_DEPLOYMENT_MARKERS = {
     "node scripts\\sync_public_release_links.mjs --check",
     "node scripts\\validate_public_release_manifests.mjs",
     "node scripts\\validate_public_release_state.mjs",
+    "node scripts\\audit_public_links.mjs",
     "node scripts\\audit_public_secrets.mjs",
     "node scripts\\audit_instnct_static_site.mjs",
     "python scripts\\audit_public_surface.py",
@@ -350,6 +356,7 @@ REQUIRED_RELEASE_MANIFEST_README_MARKERS = {
     "private engine source",
     "non-public training data",
     "raw operator output",
+    "node scripts\\audit_public_links.mjs",
 }
 
 REQUIRED_RELEASE_LINK_SYNC_MARKERS = {
@@ -368,6 +375,15 @@ REQUIRED_PUBLIC_PAGES_SMOKE_MARKERS = {
     "Contact: https://github.com/VRAXION/VRAXION/security/policy",
     "security.txt Expires timestamp must stay within one year",
     "`${baseUrl}/.well-known/security.txt`",
+}
+
+REQUIRED_PUBLIC_LINK_AUDIT_MARKERS = {
+    "PUBLIC_LINK_AUDIT",
+    "githubBlobPrefix",
+    "pagesBaseUrl",
+    "collectMarkdownLinks",
+    "collectHtmlLinks",
+    "local link target is missing",
 }
 
 REQUIRED_RELEASE_MANIFEST_EXCLUSIONS = {
@@ -446,6 +462,8 @@ REQUIRED_PUBLIC_SURFACE_AUDIT_WORKFLOW_MARKERS = {
     "Validate public release state",
     "Sync public release links",
     "node scripts/sync_public_release_links.mjs --check",
+    "Audit public links",
+    "node scripts/audit_public_links.mjs",
     "Audit public secrets",
     "Audit public surface",
 }
@@ -682,6 +700,11 @@ def main() -> int:
         if required not in release_link_sync:
             failures.append(f"release link sync missing coverage marker: {required}")
 
+    public_link_audit = read_text(ROOT / "scripts" / "audit_public_links.mjs")
+    for required in sorted(REQUIRED_PUBLIC_LINK_AUDIT_MARKERS):
+        if required not in public_link_audit:
+            failures.append(f"public link audit missing marker: {required}")
+
     public_pages_smoke = read_text(ROOT / "scripts" / "smoke_public_pages_links.mjs")
     for required in sorted(REQUIRED_PUBLIC_PAGES_SMOKE_MARKERS):
         if required not in public_pages_smoke:
@@ -832,6 +855,10 @@ def main() -> int:
         "scripts\\audit_public_secrets.mjs" in command for command in commands
     ):
         failures.append("release manifest example must include the public secret scan command")
+    if not isinstance(commands, list) or not any(
+        "scripts\\audit_public_links.mjs" in command for command in commands
+    ):
+        failures.append("release manifest example must include the public link audit command")
     if not isinstance(commands, list) or not any(
         "scripts\\smoke_public_pages_links.mjs" in command for command in commands
     ):

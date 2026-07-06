@@ -20,6 +20,7 @@
 - [ ] `node scripts\validate_public_release_manifests.mjs`
 - [ ] `node scripts\validate_public_release_state.mjs`
 - [ ] `node scripts\audit_public_github_state.mjs` was run before opening this release PR, or this PR does not change public release state.
+- [ ] `node scripts\audit_public_links.mjs`
 - [ ] `node scripts\audit_public_secrets.mjs`
 - [ ] `node scripts\audit_instnct_static_site.mjs`
 - [ ] `node scripts\audit_instnct_notify_worker.mjs`
