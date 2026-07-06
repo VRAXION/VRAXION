@@ -38,6 +38,21 @@ npx wrangler deploy
 
 Keep `EMAIL_HASH_PEPPER` out of source control. Use a long random value and rotate it only with a planned duplicate-handling migration.
 
+## Local config hygiene
+
+`wrangler.jsonc` is generated operator config, not public repo state. Do not
+commit local config or operator output: `wrangler.jsonc`, `.wrangler/`,
+`.dev.vars`, real D1 database ids, Worker secret values, API tokens, or
+operator export/delete output.
+
+Before opening a PR that touches Worker deploy docs or config, run these from
+the repo root:
+
+```powershell
+node scripts\audit_public_secrets.mjs
+node scripts\audit_instnct_notify_worker.mjs
+```
+
 ## Required config
 
 - `ALLOWED_ORIGIN`: comma-separated browser origins allowed to call the API. Default target: `https://vraxion.github.io`.
