@@ -350,6 +350,34 @@ REQUIRED_WORKFLOW_PERMISSION_MARKERS = {
     ".github/workflows/public-surface-audit.yml": "permissions:\n  contents: read",
 }
 
+REQUIRED_WORKFLOW_OPERATIONAL_MARKERS = {
+    ".github/workflows/ci.yml": {
+        "concurrency:",
+        "group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}",
+        "cancel-in-progress: true",
+        "timeout-minutes: 20",
+        "timeout-minutes: 45",
+    },
+    ".github/workflows/public-surface-audit.yml": {
+        "concurrency:",
+        "group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}",
+        "cancel-in-progress: true",
+        "timeout-minutes: 10",
+    },
+    ".github/workflows/public-pages-smoke.yml": {
+        "concurrency:",
+        "group: public-pages-smoke-${{ github.ref }}",
+        "cancel-in-progress: true",
+        "timeout-minutes: 10",
+    },
+    ".github/workflows/deploy-instnct-notify.yml": {
+        "concurrency:",
+        "group: deploy-instnct-notify-production",
+        "cancel-in-progress: false",
+        "timeout-minutes: 20",
+    },
+}
+
 REQUIRED_PUBLIC_SURFACE_AUDIT_WORKFLOW_MARKERS = {
     "Validate public release manifests",
     "Validate public release state",
@@ -549,6 +577,14 @@ def main() -> int:
             if forbidden in workflow_lower:
                 failures.append(
                     f"workflow contains forbidden write permission {forbidden!r}: {relative_path}"
+                )
+
+    for relative_path, markers in sorted(REQUIRED_WORKFLOW_OPERATIONAL_MARKERS.items()):
+        workflow_text = read_text(ROOT / relative_path)
+        for required in sorted(markers):
+            if required not in workflow_text:
+                failures.append(
+                    f"workflow missing operational hygiene marker {required!r}: {relative_path}"
                 )
 
     public_surface_workflow = read_text(
