@@ -21,6 +21,7 @@ const browserSmokePath = path.join(root, "scripts", "smoke_instnct_browser.mjs")
 const versionPath = path.join(root, "docs", "VERSION.json");
 const robotsPath = path.join(root, "docs", "robots.txt");
 const sitemapPath = path.join(root, "docs", "sitemap.xml");
+const securityTxtPath = path.join(root, "docs", ".well-known", "security.txt");
 const currentCapabilitiesPath = path.join(root, "docs", "CURRENT_CAPABILITIES.md");
 const benchmarkNotesPath = path.join(root, "docs", "INSTNCT_BENCHMARK_NOTES.md");
 const docsRoot = path.join(root, "docs");
@@ -109,6 +110,34 @@ function escapeRegExp(value) {
 
 function sitemapHasDatedUrl(sitemap, url, date) {
   return new RegExp(`<loc>${escapeRegExp(url)}</loc>\\s*<lastmod>${escapeRegExp(date)}</lastmod>`).test(sitemap);
+}
+
+function validateSecurityTxt(securityTxt) {
+  for (const required of [
+    "Contact: https://github.com/VRAXION/VRAXION/security/policy",
+    "Policy: https://github.com/VRAXION/VRAXION/security/policy",
+    "Preferred-Languages: en, hu",
+    "Canonical: https://vraxion.github.io/VRAXION/.well-known/security.txt",
+  ]) {
+    if (!securityTxt.includes(required)) fail(`security.txt missing required field: ${required}`);
+  }
+
+  const expiresMatch = securityTxt.match(/^Expires:\s*(\S+)\s*$/m);
+  if (!expiresMatch) {
+    fail("security.txt must include an Expires timestamp");
+    return;
+  }
+
+  const expiresAt = Date.parse(expiresMatch[1]);
+  if (!Number.isFinite(expiresAt)) {
+    fail(`security.txt Expires timestamp is invalid: ${expiresMatch[1]}`);
+    return;
+  }
+
+  const now = Date.now();
+  const oneYearMs = 366 * 24 * 60 * 60 * 1000;
+  if (expiresAt <= now) fail("security.txt Expires timestamp must stay in the future");
+  if (expiresAt > now + oneYearMs) fail("security.txt Expires timestamp must stay within one year");
 }
 
 function parseCsp(content) {
@@ -1269,6 +1298,11 @@ else {
   if (!robots.includes("Sitemap: https://vraxion.github.io/VRAXION/sitemap.xml")) {
     fail("robots.txt must point at the VRAXION sitemap");
   }
+}
+
+if (!fs.existsSync(securityTxtPath)) fail("docs/.well-known/security.txt is missing");
+else {
+  validateSecurityTxt(fs.readFileSync(securityTxtPath, "utf8"));
 }
 
 if (!fs.existsSync(sitemapPath)) fail("docs/sitemap.xml is missing");

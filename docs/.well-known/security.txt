@@ -1,0 +1,5 @@
+Contact: https://github.com/VRAXION/VRAXION/security/policy
+Policy: https://github.com/VRAXION/VRAXION/security/policy
+Preferred-Languages: en, hu
+Expires: 2027-01-06T00:00:00Z
+Canonical: https://vraxion.github.io/VRAXION/.well-known/security.txt
