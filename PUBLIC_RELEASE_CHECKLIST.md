@@ -52,8 +52,8 @@ The release PR must not include:
 - absolute local or UNC machine paths
 - secrets, tokens, keys, or filled production config
 - private data adapters
-- skill persistence stores
-- diagnostic parity tools
+- non-public persistence services
+- non-public diagnostics
 - unreleased draft pages under `docs/`
 
 Generated local config such as `workers/instnct-notify/wrangler.jsonc` must stay

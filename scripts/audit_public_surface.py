@@ -108,6 +108,14 @@ FORBIDDEN_PUBLIC_COPY = [
     "skill libraries",
     "make local intelligence",
     "production backend target",
+    "runtime GUI code",
+    "frontier traces",
+    "frontier experiment outputs",
+    "golden-engine",
+    "golden-backed",
+    "skill registry",
+    "skill persistence",
+    "diagnostic parity",
 ]
 
 REQUIRED_FORBIDDEN_PUBLIC_COPY_MARKERS = {
@@ -123,6 +131,12 @@ REQUIRED_FORBIDDEN_PUBLIC_COPY_MARKERS = {
     "hosted api/saas later",
     "preview live",
     "signed offline verification",
+    "runtime GUI code",
+    "golden-engine",
+    "golden-backed",
+    "skill registry",
+    "skill persistence",
+    "diagnostic parity",
 }
 
 EXPECTED_CRATES = {"alphasync-core", "alphasync-runtime"}
@@ -191,7 +205,22 @@ REQUIRED_CHANGELOG_MARKERS = {
     "operator-side wording",
     "public link audit",
     "Pages-local documentation links",
+    "README public gate list",
     "vulnerability disclosure routing",
+}
+
+REQUIRED_README_MARKERS = {
+    "Current Public State",
+    "Release Intake",
+    "node scripts/audit_public_github_state.mjs",
+    "node scripts/audit_public_links.mjs",
+    "node scripts/audit_instnct_static_site.mjs",
+    "node scripts/audit_instnct_notify_worker.mjs",
+    "node scripts/smoke_public_pages_links.mjs",
+    "python scripts/audit_public_surface.py",
+    "powershell -ExecutionPolicy Bypass -File scripts/check_public_export.ps1",
+    "non-public diagnostics",
+    "persistence services",
 }
 
 REQUIRED_SECURITY_TXT_MARKERS = {
@@ -601,6 +630,11 @@ def main() -> int:
     for required in sorted(REQUIRED_CHANGELOG_MARKERS):
         if required not in changelog:
             failures.append(f"changelog missing public hardening marker: {required}")
+
+    readme = read_text(ROOT / "README.md")
+    for required in sorted(REQUIRED_README_MARKERS):
+        if required not in readme:
+            failures.append(f"README missing public gate marker: {required}")
 
     citation = read_text(ROOT / "CITATION.cff")
     for required in sorted(REQUIRED_CITATION_MARKERS):

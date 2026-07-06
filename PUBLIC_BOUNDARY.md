@@ -15,8 +15,8 @@ This repository excludes:
 - internal engine source
 - private run infrastructure
 - private data adapters
-- skill persistence
-- diagnostic tooling
+- non-public persistence services
+- non-public diagnostics
 - old public research pages
 - private engine binaries or internals
 

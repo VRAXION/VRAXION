@@ -4,7 +4,7 @@
 anonymous observation matrices, Prismion rules, proposal patches, consensus
 gates, evaluation admission, and progress gates.
 
-The crate is intentionally small and does not include private data, runtime GUI
-code, frontier experiment outputs, or skill persistence.
+The crate is intentionally small and does not include non-public data, operator
+interfaces, experiment outputs, persistence services, or training workflows.
 
 See the workspace `LICENSE` notice copied into this package.

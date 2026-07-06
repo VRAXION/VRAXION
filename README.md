@@ -28,8 +28,8 @@ promise.
 - `scripts/`
 
 The private engine implementation, non-public training data, operational run
-logs, diagnostic tooling, skill persistence, and unreleased research workspace
-are not published here.
+logs, non-public diagnostics, persistence services, and unreleased research
+workspaces are not published here.
 
 ## Release Intake
 
@@ -61,8 +61,13 @@ cargo doc --workspace --no-deps
 node scripts/validate_public_release_manifests.mjs
 node scripts/validate_public_release_state.mjs
 node scripts/sync_public_release_links.mjs --check
+node scripts/audit_public_github_state.mjs
+node scripts/audit_public_links.mjs
 node scripts/audit_public_secrets.mjs
+node scripts/audit_instnct_static_site.mjs
+node scripts/audit_instnct_notify_worker.mjs
 python scripts/audit_public_surface.py
+node scripts/smoke_public_pages_links.mjs
 powershell -ExecutionPolicy Bypass -File scripts/check_public_export.ps1
 ```
 

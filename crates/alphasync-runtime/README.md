@@ -4,13 +4,13 @@
 synthetic runtime examples built on top of `alphasync-core`.
 
 The crate is limited to local smoke/runtime behavior. It intentionally excludes
-non-public operator interfaces, frontier traces, raw datasets, persistence
-services, golden-engine internals, training, mutation, skill registry,
-artifact writer internals, and diagnostic parity binaries.
+non-public operator interfaces, experiment traces, raw datasets, persistence
+services, training workflows, mutation systems, artifact-writer internals, and
+non-public diagnostic binaries.
 
 This crate remains a compatibility public-candidate source crate. Any future
-golden-backed binary, API, SaaS, or wrapper path requires separate release
+signed binary, API, SaaS, or wrapper path requires separate release
 review before it becomes public availability language. This crate is not the
-private engine source.
+non-public engine implementation.
 
 See the workspace `LICENSE` notice copied into this package.
