@@ -3,7 +3,7 @@
 //! These helpers are the canonical local smoke/scene producers used by the
 //! CLI and examples. They do not read datasets, infer semantic truth, or call
 //! external services. Each function writes the same safe artifact set expected
-//! by the private runtime GUI.
+//! by local operator tooling.
 
 use std::path::{Path, PathBuf};
 use std::time::Duration;

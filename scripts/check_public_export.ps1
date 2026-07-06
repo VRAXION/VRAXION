@@ -305,7 +305,15 @@ $privateTextLiteralFragments = @(
     ("Fineweb" + " edu"),
     ("OPENAI_" + "API_KEY"),
     ("ANTHROPIC_" + "API_KEY"),
-    ("GITHUB_" + "TOKEN")
+    ("GITHUB_" + "TOKEN"),
+    ("private runtime " + "GUI"),
+    ("private Python " + "frontier"),
+    ("private " + "GUI"),
+    ("private monitor " + "tree"),
+    ("private runtime smoke" + "/scene"),
+    ("private frontier " + "traces"),
+    ("private skillstore " + "persistence"),
+    ("private golden " + "engine")
 )
 $privateTextRegexFragments = @(
     ("BEGIN " + ".*PRIVATE" + " KEY"),

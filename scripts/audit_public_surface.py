@@ -50,6 +50,14 @@ FORBIDDEN_TEXT = [
     marker("private ", "dataset"),
     marker("S:", "\\"),
     marker("C:", "\\"),
+    marker("private runtime ", "GUI"),
+    marker("private Python ", "frontier"),
+    marker("private ", "GUI"),
+    marker("private monitor ", "tree"),
+    marker("private runtime smoke", "/scene"),
+    marker("private frontier ", "traces"),
+    marker("private skillstore ", "persistence"),
+    marker("private golden ", "engine"),
 ]
 
 FORBIDDEN_TEXT_REGEX = [
@@ -178,6 +186,8 @@ REQUIRED_CHANGELOG_MARKERS = {
     "main GitHub Actions",
     "security.txt endpoint",
     "live security.txt smoke coverage",
+    "internal runtime wording",
+    "operator-side wording",
     "vulnerability disclosure routing",
 }
 

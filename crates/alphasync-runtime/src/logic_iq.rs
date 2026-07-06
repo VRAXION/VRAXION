@@ -45,8 +45,8 @@ pub const DEFAULT_LOGIC_IQ_CONSENSUS_SCENE_WRITE_EVERY: usize = 1;
 
 /// Default self-contained output directory for Logic-IQ runtime artifacts.
 ///
-/// The private GUI may monitor this folder, but the public runner must not have
-/// a default path that points into the private monitor tree.
+/// Operator tooling may monitor this folder, but the public runner keeps a
+/// self-contained default path instead of pointing into an operator workspace.
 pub const DEFAULT_LOGIC_IQ_RUN_DIR: &str = "runtime_runs/logic_iq_current";
 
 const TASK_CELL: CellAddress = CellAddress::new(0, 0, 0);
