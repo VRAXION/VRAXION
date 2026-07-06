@@ -156,6 +156,7 @@ REQUIRED_TRACKED_FILES = {
     "SECURITY.md",
     "SUPPORT.md",
     "TRADEMARK_POLICY.md",
+    "docs/.well-known/security.txt",
 }
 
 REQUIRED_CHANGELOG_MARKERS = {
@@ -175,6 +176,16 @@ REQUIRED_CHANGELOG_MARKERS = {
     "public export guard",
     "live Pages state",
     "main GitHub Actions",
+    "security.txt endpoint",
+    "vulnerability disclosure routing",
+}
+
+REQUIRED_SECURITY_TXT_MARKERS = {
+    "Contact: https://github.com/VRAXION/VRAXION/security/policy",
+    "Policy: https://github.com/VRAXION/VRAXION/security/policy",
+    "Preferred-Languages: en, hu",
+    "Expires: 2027-01-06T00:00:00Z",
+    "Canonical: https://vraxion.github.io/VRAXION/.well-known/security.txt",
 }
 
 REQUIRED_CITATION_MARKERS = {
@@ -573,6 +584,11 @@ def main() -> int:
     for required in sorted(REQUIRED_SECURITY_MARKERS):
         if required not in security_doc:
             failures.append(f"security doc missing public-security marker: {required}")
+
+    security_txt = read_text(ROOT / "docs" / ".well-known" / "security.txt")
+    for required in sorted(REQUIRED_SECURITY_TXT_MARKERS):
+        if required not in security_txt:
+            failures.append(f"security.txt missing public disclosure marker: {required}")
 
     deployment_doc = read_text(ROOT / "DEPLOYMENT.md")
     for required in sorted(REQUIRED_DEPLOYMENT_MARKERS):

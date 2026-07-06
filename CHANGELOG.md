@@ -10,6 +10,7 @@
   operator config and export/delete output stay out of the public repo.
 - Hardened public workflow hygiene with CI concurrency controls, job timeouts,
   and audit markers for workflow drift.
+- Added a public security.txt endpoint and audit coverage for vulnerability disclosure routing.
 - Re-verified the public export guard, live Pages state, public link smoke, and
   main GitHub Actions after each public hardening merge.
 
