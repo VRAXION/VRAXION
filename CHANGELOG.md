@@ -1,5 +1,18 @@
 # Changelog
 
+## 2026-07-06
+
+- Guarded release-link sync coverage, contributor gates, security policy, and
+  deployment runbook markers in the public surface audit.
+- Added explicit public deployment guidance for generated Wrangler config,
+  `.dev.vars`, real D1 ids, Worker secrets, API tokens, and operator output.
+- Added Worker local config hygiene notes and audit coverage so generated
+  operator config and export/delete output stay out of the public repo.
+- Hardened public workflow hygiene with CI concurrency controls, job timeouts,
+  and audit markers for workflow drift.
+- Re-verified the public export guard, live Pages state, public link smoke, and
+  main GitHub Actions after each public hardening merge.
+
 ## 2026-07-05
 
 - Polished the public Pages surface and 404 fallback while keeping unreleased

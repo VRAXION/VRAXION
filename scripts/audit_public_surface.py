@@ -129,10 +129,14 @@ REQUIRED_TRACKED_FILES = {
     ".github/workflows/deploy-instnct-notify.yml",
     ".github/workflows/public-pages-smoke.yml",
     ".github/workflows/public-surface-audit.yml",
+    "CHANGELOG.md",
+    "CITATION.cff",
+    "CODE_OF_CONDUCT.md",
     "CONTRIBUTING.md",
     "DEPLOYMENT.md",
     ".gitattributes",
     ".gitignore",
+    "LICENSE",
     "README.md",
     "PUBLIC_BOUNDARY.md",
     "PACKAGE_BOUNDARY.md",
@@ -151,6 +155,35 @@ REQUIRED_TRACKED_FILES = {
     "LICENSE_BOUNDARY.md",
     "SECURITY.md",
     "SUPPORT.md",
+    "TRADEMARK_POLICY.md",
+}
+
+REQUIRED_CHANGELOG_MARKERS = {
+    "## 2026-07-06",
+    "release-link sync coverage",
+    "contributor gates",
+    "security policy",
+    "deployment runbook",
+    "generated Wrangler config",
+    ".dev.vars",
+    "Worker secrets",
+    "Worker local config hygiene",
+    "operator config and export/delete output",
+    "workflow hygiene",
+    "CI concurrency controls",
+    "job timeouts",
+    "public export guard",
+    "live Pages state",
+    "main GitHub Actions",
+}
+
+REQUIRED_CITATION_MARKERS = {
+    "cff-version: 1.2.0",
+    "If you use this public SDK/docs release, cite VRAXION.",
+    'title: "VRAXION Public SDK"',
+    'repository-code: "https://github.com/VRAXION/VRAXION"',
+    'license: "LicenseRef-VRAXION-Community-Source-1.0"',
+    'date-released: "2026-06-28"',
 }
 
 REQUIRED_PR_TEMPLATE_MARKERS = {
@@ -515,6 +548,16 @@ def main() -> int:
     for required in sorted(REQUIRED_TRACKED_FILES):
         if required not in file_set:
             failures.append(f"required public repo file is missing: {required}")
+
+    changelog = read_text(ROOT / "CHANGELOG.md")
+    for required in sorted(REQUIRED_CHANGELOG_MARKERS):
+        if required not in changelog:
+            failures.append(f"changelog missing public hardening marker: {required}")
+
+    citation = read_text(ROOT / "CITATION.cff")
+    for required in sorted(REQUIRED_CITATION_MARKERS):
+        if required not in citation:
+            failures.append(f"citation metadata missing marker: {required}")
 
     pr_template = read_text(ROOT / ".github" / "pull_request_template.md")
     for required in sorted(REQUIRED_PR_TEMPLATE_MARKERS):
