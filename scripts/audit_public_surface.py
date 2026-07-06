@@ -130,6 +130,7 @@ REQUIRED_TRACKED_FILES = {
     ".github/workflows/public-pages-smoke.yml",
     ".github/workflows/public-surface-audit.yml",
     "CONTRIBUTING.md",
+    "DEPLOYMENT.md",
     ".gitattributes",
     ".gitignore",
     "README.md",
@@ -207,6 +208,34 @@ REQUIRED_SECURITY_MARKERS = {
     "node scripts\\audit_public_github_state.mjs",
     "before opening the final PR and",
     "again after merge",
+}
+
+REQUIRED_DEPLOYMENT_MARKERS = {
+    "Public deployment runbook",
+    "docs/index.html",
+    "docs/instnct/",
+    "node scripts\\sync_public_release_links.mjs --check",
+    "node scripts\\validate_public_release_manifests.mjs",
+    "node scripts\\validate_public_release_state.mjs",
+    "node scripts\\audit_public_secrets.mjs",
+    "node scripts\\audit_instnct_static_site.mjs",
+    "python scripts\\audit_public_surface.py",
+    "node scripts\\smoke_instnct_browser.mjs",
+    "node scripts\\smoke_public_pages_links.mjs",
+    "powershell -ExecutionPolicy Bypass -File scripts\\check_public_export.ps1",
+    "Deploy INSTNCT Notify Worker",
+    "workers/instnct-notify/wrangler.example.jsonc",
+    "workers/instnct-notify/wrangler.jsonc",
+    ".dev.vars",
+    "CLOUDFLARE_API_TOKEN",
+    "INSTNCT_NOTIFY_D1_DATABASE_ID",
+    "INSTNCT_NOTIFY_EMAIL_HASH_PEPPER",
+    "INSTNCT_NOTIFY_ADMIN_TOKEN",
+    "scripts\\smoke_instnct_notify_live.mjs",
+    "node scripts\\audit_public_github_state.mjs",
+    "Do not add an active email form",
+    "connect-src 'none'; form-action 'none'",
+    "link-only release tracking block",
 }
 
 REQUIRED_DEPENDABOT_MARKERS = {
@@ -473,6 +502,11 @@ def main() -> int:
     for required in sorted(REQUIRED_SECURITY_MARKERS):
         if required not in security_doc:
             failures.append(f"security doc missing public-security marker: {required}")
+
+    deployment_doc = read_text(ROOT / "DEPLOYMENT.md")
+    for required in sorted(REQUIRED_DEPLOYMENT_MARKERS):
+        if required not in deployment_doc:
+            failures.append(f"deployment doc missing public-deployment marker: {required}")
 
     dependabot_config = read_text(ROOT / ".github" / "dependabot.yml")
     for required in sorted(REQUIRED_DEPENDABOT_MARKERS):

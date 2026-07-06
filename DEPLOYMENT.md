@@ -23,10 +23,13 @@ Required local gates before pushing public site changes:
 
 ```powershell
 node scripts\sync_public_release_links.mjs --check
+node scripts\validate_public_release_manifests.mjs
+node scripts\validate_public_release_state.mjs
+node scripts\audit_public_secrets.mjs
 node scripts\audit_instnct_static_site.mjs
 python scripts\audit_public_surface.py
 node scripts\smoke_instnct_browser.mjs
-.\scripts\check_public_export.ps1
+powershell -ExecutionPolicy Bypass -File scripts\check_public_export.ps1
 ```
 
 Required live gate after Pages deploy:
@@ -56,6 +59,9 @@ Required GitHub secrets:
 - `INSTNCT_NOTIFY_ADMIN_TOKEN`
 - `INSTNCT_NOTIFY_API_BASE`
 
+Do not commit `workers/instnct-notify/wrangler.jsonc`, `.dev.vars`, real D1
+database ids, Worker secret values, API tokens, or operator export data.
+
 Manual Cloudflare setup:
 
 ```powershell
@@ -82,6 +88,8 @@ Automated deploy:
 1. Open the `Deploy INSTNCT Notify Worker` workflow.
 2. Run it manually from `main`.
 3. Confirm the workflow ran migrations, deployed the Worker with the scheduled rate-limit cleanup trigger, and passed live smoke.
+4. Confirm no generated `wrangler.jsonc`, `.wrangler/`, `.dev.vars`, or Worker
+   secret material was committed.
 
 Post-deploy live smoke:
 
@@ -121,5 +129,7 @@ Do not add an active email form to `docs/instnct/index.html` until all of these 
 - Write-mode smoke has been run once intentionally.
 - The INSTNCT CSP has been changed from `connect-src 'none'; form-action 'none'` to the exact Worker origin.
 - `scripts/audit_instnct_static_site.mjs` has been updated from forbidding the form to requiring the safe configured form.
+- `node scripts\audit_public_github_state.mjs` passes after the public page and
+  Worker deployment state are intentionally updated.
 
 Until then, the public page must keep the link-only release tracking block so users do not submit into a dead endpoint.
