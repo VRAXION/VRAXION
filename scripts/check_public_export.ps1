@@ -422,6 +422,7 @@ try {
         "scripts\audit_instnct_notify_worker.mjs",
         "scripts\audit_instnct_static_site.mjs",
         "scripts\audit_public_github_state.mjs",
+        "scripts\audit_public_links.mjs",
         "scripts\audit_public_secrets.mjs",
         "scripts\audit_public_surface.py",
         "scripts\check_public_export.ps1",
@@ -539,6 +540,7 @@ try {
         "scripts/audit_instnct_notify_worker.mjs",
         "scripts/audit_instnct_static_site.mjs",
         "scripts/audit_public_github_state.mjs",
+        "scripts/audit_public_links.mjs",
         "scripts/audit_public_secrets.mjs",
         "scripts/audit_public_surface.py",
         "scripts/check_public_export.ps1",
@@ -631,6 +633,7 @@ try {
     Invoke-NativeChecked "node check audit_instnct_static_site" "node" @("--check", "scripts/audit_instnct_static_site.mjs")
     Invoke-NativeChecked "node check audit_instnct_notify_worker" "node" @("--check", "scripts/audit_instnct_notify_worker.mjs")
     Invoke-NativeChecked "node check audit_public_github_state" "node" @("--check", "scripts/audit_public_github_state.mjs")
+    Invoke-NativeChecked "node check audit_public_links" "node" @("--check", "scripts/audit_public_links.mjs")
     Invoke-NativeChecked "node check audit_public_secrets" "node" @("--check", "scripts/audit_public_secrets.mjs")
     Invoke-NativeChecked "node check sync_public_release_links" "node" @("--check", "scripts/sync_public_release_links.mjs")
     Invoke-NativeChecked "node check validate_public_release_manifests" "node" @("--check", "scripts/validate_public_release_manifests.mjs")
@@ -642,6 +645,7 @@ try {
     Invoke-NativeChecked "sync public release links" "node" @("scripts/sync_public_release_links.mjs", "--check")
     Invoke-NativeChecked "validate public release manifests" "node" @("scripts/validate_public_release_manifests.mjs")
     Invoke-NativeChecked "validate public release state" "node" @("scripts/validate_public_release_state.mjs")
+    Invoke-NativeChecked "public link audit" "node" @("scripts/audit_public_links.mjs")
     Invoke-NativeChecked "public secret scan" "node" @("scripts/audit_public_secrets.mjs")
     Invoke-NativeChecked "INSTNCT static audit" "node" @("scripts/audit_instnct_static_site.mjs")
     Invoke-NativeChecked "INSTNCT notify Worker audit" "node" @("scripts/audit_instnct_notify_worker.mjs")

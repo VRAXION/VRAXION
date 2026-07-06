@@ -32,6 +32,8 @@ jobs:
         run: node scripts/validate_public_release_state.mjs
       - name: Sync public release links
         run: node scripts/sync_public_release_links.mjs --check
+      - name: Audit public links
+        run: node scripts/audit_public_links.mjs
       - name: Audit public secrets
         run: node scripts/audit_public_secrets.mjs
       - name: Audit public surface

@@ -47,6 +47,7 @@ const REQUIRED_COMMANDS = [
   "node scripts\\sync_public_release_links.mjs --check",
   "node scripts\\validate_public_release_manifests.mjs",
   "node scripts\\validate_public_release_state.mjs",
+  "node scripts\\audit_public_links.mjs",
   "node scripts\\audit_public_secrets.mjs",
   "python scripts\\audit_public_surface.py",
   "node scripts\\smoke_public_pages_links.mjs",
