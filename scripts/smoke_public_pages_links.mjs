@@ -135,6 +135,34 @@ function sitemapHasDatedUrl(sitemap, url, date) {
   return new RegExp(`<loc>${escapeRegExp(url)}</loc>\\s*<lastmod>${escapeRegExp(date)}</lastmod>`).test(sitemap);
 }
 
+function validateSecurityTxt(securityTxt) {
+  for (const required of [
+    "Contact: https://github.com/VRAXION/VRAXION/security/policy",
+    "Policy: https://github.com/VRAXION/VRAXION/security/policy",
+    "Preferred-Languages: en, hu",
+    `Canonical: ${canonicalBaseUrl}/.well-known/security.txt`,
+  ]) {
+    if (!securityTxt.includes(required)) fail(`security.txt missing required field: ${required}`);
+  }
+
+  const expiresMatch = securityTxt.match(/^Expires:\s*(\S+)\s*$/m);
+  if (!expiresMatch) {
+    fail("security.txt must include an Expires timestamp");
+    return;
+  }
+
+  const expiresAt = Date.parse(expiresMatch[1]);
+  if (!Number.isFinite(expiresAt)) {
+    fail(`security.txt Expires timestamp is invalid: ${expiresMatch[1]}`);
+    return;
+  }
+
+  const now = Date.now();
+  const oneYearMs = 366 * 24 * 60 * 60 * 1000;
+  if (expiresAt <= now) fail("security.txt Expires timestamp must stay in the future");
+  if (expiresAt > now + oneYearMs) fail("security.txt Expires timestamp must stay within one year");
+}
+
 function attr(tag, name) {
   const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   const pattern = new RegExp(`\\s${escaped}=(["'])(.*?)\\1`, "i");
@@ -167,6 +195,7 @@ const anchorcellUrl = `${baseUrl}/anchorcell/`;
 const hiddenSurfaceUrl = `${baseUrl}/${hiddenSurfaceSlug}/`;
 const robotsUrl = `${baseUrl}/robots.txt`;
 const sitemapUrl = `${baseUrl}/sitemap.xml`;
+const securityTxtUrl = `${baseUrl}/.well-known/security.txt`;
 const versionUrl = `${baseUrl}/VERSION.json`;
 
 const home = await fetchText(homeUrl, "home");
@@ -174,6 +203,7 @@ const instnct = await fetchText(instnctUrl, "INSTNCT");
 const anchorcell = await fetchText(anchorcellUrl, "AnchorCell");
 const robots = await fetchText(robotsUrl, "robots.txt");
 const sitemap = await fetchText(sitemapUrl, "sitemap.xml");
+const securityTxt = await fetchText(securityTxtUrl, "security.txt");
 const versionText = await fetchText(versionUrl, "VERSION.json");
 let latestRelease = "";
 let versionDate = "";
@@ -313,6 +343,7 @@ if (instnct && new RegExp(`href=["'][^"']*${hiddenSurfaceSlug}/|hidden roadmap`,
 }
 if (hiddenSurfaceStatus !== 404) fail(`hidden roadmap surface URL must be absent from Pages, got HTTP ${hiddenSurfaceStatus}`);
 if (robots && !robots.includes(`${canonicalBaseUrl}/sitemap.xml`)) fail("robots.txt does not point at the live sitemap");
+if (securityTxt) validateSecurityTxt(securityTxt);
 for (const url of [`${canonicalBaseUrl}/`, `${canonicalBaseUrl}/instnct/`, `${canonicalBaseUrl}/anchorcell/`]) {
   if (sitemap && !sitemap.includes(`<loc>${url}</loc>`)) fail(`sitemap.xml does not include ${url}`);
   if (sitemap && versionDate && !sitemapHasDatedUrl(sitemap, url, versionDate)) {
@@ -327,6 +358,7 @@ const urls = new Set([
   ...collectUrls(anchorcell, anchorcellUrl),
   `${baseUrl}/robots.txt`,
   `${baseUrl}/sitemap.xml`,
+  `${baseUrl}/.well-known/security.txt`,
   ...(latestRelease
     ? [
         `https://github.com/VRAXION/VRAXION/releases/tag/${latestRelease}`,
