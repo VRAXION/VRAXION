@@ -157,7 +157,20 @@ function assertSourceGuards() {
   ]) {
     assert.equal(deployWorkflow.includes(token), true, `deploy workflow missing ${token}`);
   }
-  for (const token of ["npx wrangler secret put ADMIN_TOKEN", "GET /admin/notify/export", "cleanup-rate-limits", "scheduled cleanup trigger"]) {
+  for (const token of [
+    "npx wrangler secret put ADMIN_TOKEN",
+    "GET /admin/notify/export",
+    "cleanup-rate-limits",
+    "scheduled cleanup trigger",
+    "Local config hygiene",
+    "Do not\ncommit local config or operator output",
+    "`wrangler.jsonc`",
+    ".dev.vars",
+    "real D1 database ids",
+    "operator export/delete output",
+    "node scripts\\audit_public_secrets.mjs",
+    "node scripts\\audit_instnct_notify_worker.mjs",
+  ]) {
     assert.equal(readme.includes(token), true, `worker README missing ${token}`);
   }
 }
