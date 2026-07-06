@@ -14,6 +14,7 @@
 - Added live security.txt smoke coverage for the public Pages disclosure endpoint.
 - Replaced internal runtime wording in the public crate with operator-side wording.
 - Added a public link audit for repo-local and Pages-local documentation links.
+- Synced the README public gate list and scrubbed remaining internal crate wording.
 - Re-verified the public export guard, live Pages state, public link smoke, and
   main GitHub Actions after each public hardening merge.
 

@@ -14,8 +14,8 @@ Excluded surfaces:
 - internal engine source
 - private data adapters
 - operational run outputs
-- skill persistence
-- diagnostic tools
+- non-public persistence services
+- non-public diagnostics
 - old research pages
 - hosted product code
 - private engine binaries or internals

@@ -15,8 +15,8 @@ Not allowed:
 - private data adapters
 - private workspace path families
 - operational run outputs
-- skill persistence
-- diagnostic tools
+- non-public persistence services
+- non-public diagnostics
 - generated local caches or virtual environments
 - stale research status pages
 - private engine binary internals

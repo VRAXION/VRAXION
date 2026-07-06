@@ -33,7 +33,7 @@ Pages status docs
 private engine source
 private binary internals
 production training service
-skill persistence store
+non-public persistence services
 hosted SaaS availability
 medical or clinical claims
 ```
