@@ -206,6 +206,7 @@ REQUIRED_CHANGELOG_MARKERS = {
     "public link audit",
     "Pages-local documentation links",
     "README public gate list",
+    "repo-relative artifact checksum verification",
     "vulnerability disclosure routing",
 }
 
@@ -380,12 +381,22 @@ REQUIRED_RELEASE_MANIFEST_README_MARKERS = {
     "published non-documentation artifact",
     "policy_self_tests",
     "policy self-tests",
+    "repo-relative artifact paths",
+    "repo-relative checksum mismatch",
     "signature_path_or_url",
     "schema contract",
     "private engine source",
     "non-public training data",
     "raw operator output",
     "node scripts\\audit_public_links.mjs",
+}
+
+REQUIRED_RELEASE_MANIFEST_VALIDATOR_MARKERS = {
+    "assertRepoRelativeArtifactSha256",
+    "sha256ForTrackedFile",
+    "does not match repo-relative artifact",
+    "local_artifact_checksum_matches",
+    "local_artifact_checksum_mismatch",
 }
 
 REQUIRED_RELEASE_LINK_SYNC_MARKERS = {
@@ -728,6 +739,11 @@ def main() -> int:
     for required in sorted(REQUIRED_RELEASE_MANIFEST_README_MARKERS):
         if required not in release_manifest_readme:
             failures.append(f"release manifest readme missing marker: {required}")
+
+    release_manifest_validator = read_text(ROOT / "scripts" / "validate_public_release_manifests.mjs")
+    for required in sorted(REQUIRED_RELEASE_MANIFEST_VALIDATOR_MARKERS):
+        if required not in release_manifest_validator:
+            failures.append(f"release manifest validator missing checksum marker: {required}")
 
     release_link_sync = read_text(ROOT / "scripts" / "sync_public_release_links.mjs")
     for required in sorted(REQUIRED_RELEASE_LINK_SYNC_MARKERS):
