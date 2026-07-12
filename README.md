@@ -91,3 +91,17 @@ review. The private engine implementation is not published here.
 ## License
 
 See `LICENSE`, `LICENSE_BOUNDARY.md`, and `TRADEMARK_POLICY.md`.
+
+## Ownership
+
+Copyright in public VRAXION source, documentation, diagrams, and releases
+follows the repository license, file notices, contributor history, and written
+agreements.
+
+VRAXION™, the VRAXION logo, AlphaSync™, and INSTNCT™ are currently claimed as
+unregistered marks of Daniel Kenessy, acting in an individual capacity. No
+trademark rights are granted by the source license or repository access.
+
+No rights have been assigned to a company. Any future company transfer
+requires a separate signed assignment and must preserve contributor and
+third-party rights. See `NOTICE`, `OWNERSHIP.md`, and `TRADEMARK_POLICY.md`.
