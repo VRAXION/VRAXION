@@ -1,0 +1,59 @@
+{
+  "date": "2026-05-26",
+  "purpose": "Catch-up package for the VRAXION night marathon around pocket routing, DNA/genome search, equality, and noise isolation.",
+  "repo_root": "S:/Git/VRAXION",
+  "experimental_runner": {
+    "path": "instnct-core/examples/raven_pocket_smoke.rs",
+    "git_status_at_dump_time": "untracked",
+    "note": "Add this file to the GitHub package if reproducibility is required."
+  },
+  "primary_reports": [
+    "target/codex_smoke/night_dna_iter_20260526/overnight_iterative_findings_20260526.md",
+    "target/codex_smoke/night_dna_iter_20260526/overnight_iterative_findings_20260526_v2.md",
+    "target/codex_smoke/night_dna_iter_20260526/overnight_iterative_findings_20260526_v3.md",
+    "target/codex_smoke/night_dna_iter_20260526/overnight_iterative_findings_20260526_v4.md"
+  ],
+  "strong_positive_control": {
+    "name": "pocket_id_only_direct_evo_9181",
+    "task_mode": "pocket_id_only",
+    "command_summary": "direct VRAXION mutation, seed 9181, train 4000, test 1440, steps 140, candidates 64",
+    "train_accuracy": 1.0,
+    "test_accuracy": 1.0,
+    "random_baseline_accuracy": 0.1111111111111111,
+    "artifact_root": "target/codex_smoke/night_dna_iter_20260526/pocket_id_only_direct_evo_9181",
+    "important_files": [
+      "summary.json",
+      "progress.jsonl",
+      "row_level_predictions.jsonl",
+      "checkpoint_final.ckpt"
+    ]
+  },
+  "incomplete_control": {
+    "name": "symbol_match_only_direct_evo_9182",
+    "task_mode": "symbol_match_only",
+    "status": "aborted_by_user_shutdown_request",
+    "last_known_step": 13,
+    "last_known_test_accuracy": 0.3875,
+    "last_known_train_accuracy": 0.39075,
+    "artifact_root": "target/codex_smoke/night_dna_iter_20260526/symbol_match_only_direct_evo_9182",
+    "warning": "Do not treat this as final evidence."
+  },
+  "main_findings": [
+    "Clean wanted-pocket to output-pocket selection is learnable by direct VRAXION mutation.",
+    "Current DNS/genome/GA methods did not recover that selector reliably and plateaued around 52-56 percent on long controls.",
+    "Symbol equality remains weak or at least not yet proven under direct mutation.",
+    "Extra grid/pocket/noise lamps break clean routing in smoke runs.",
+    "Do not jump back to full Raven until selector, equality, and noise/gating are isolated."
+  ],
+  "recommended_next_run": {
+    "name": "symbol_match_only_direct_evo_FULL",
+    "task_mode": "symbol_match_only",
+    "seed": 9182,
+    "train_rows": 4000,
+    "test_rows": 1440,
+    "steps": 140,
+    "candidates": 64,
+    "heartbeat_sec": 20
+  }
+}
+

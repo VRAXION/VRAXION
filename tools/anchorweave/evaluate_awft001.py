@@ -30,6 +30,7 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Evaluate AWFT-001 predictions.")
     parser.add_argument("--labels", required=True, type=Path, help="Path to eval_labels.jsonl.")
     parser.add_argument("--predictions", required=True, type=Path, help="Path to predictions JSONL.")
+    parser.add_argument("--out", type=Path, default=None, help="Optional metrics JSON output path.")
     return parser.parse_args(argv)
 
 
@@ -48,6 +49,11 @@ def read_jsonl(path: Path) -> list[dict[str, Any]]:
                 raise ValueError(f"{path}:{line_no}: row must be a JSON object")
             rows.append(row)
     return rows
+
+
+def write_json(path: Path, value: Any) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(value, ensure_ascii=True, indent=2, sort_keys=True), encoding="utf-8")
 
 
 def index_rows(rows: list[dict[str, Any]], label: str) -> tuple[dict[str, dict[str, Any]], list[str]]:
@@ -196,6 +202,9 @@ def main(argv: list[str] | None = None) -> int:
             print(f"warning: missing predictions: {', '.join(missing_ids)}", file=sys.stderr)
         if extra_ids:
             print(f"warning: extra predictions ignored: {', '.join(extra_ids)}", file=sys.stderr)
+
+        if args.out is not None:
+            write_json(args.out, results)
 
         print(json.dumps(results, ensure_ascii=True, indent=2, sort_keys=True))
         print("AWFT-001 evaluation summary")

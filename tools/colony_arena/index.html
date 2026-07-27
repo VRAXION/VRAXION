@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>VRAXION Colony Arena</title>
+    <link rel="icon" href="data:,">
+    <link rel="stylesheet" href="./styles.css">
+  </head>
+  <body>
+    <main class="shell">
+      <section class="stage">
+        <canvas id="arena" width="960" height="600" aria-label="Colony arena"></canvas>
+      </section>
+      <aside class="panel">
+        <div class="brand">
+          <span class="mark"></span>
+          <div>
+            <h1>Colony Arena</h1>
+            <p>D51 rule-table controller</p>
+          </div>
+        </div>
+        <div class="metrics">
+          <div><span>generation</span><strong id="gen">0</strong></div>
+          <div><span>best score</span><strong id="best">0.00</strong></div>
+          <div><span>test success</span><strong id="success">0%</strong></div>
+          <div><span>caught</span><strong id="caught">0%</strong></div>
+          <div><span>goals</span><strong id="goals">0.00</strong></div>
+          <div><span>walls</span><strong id="walls">0.00</strong></div>
+          <div><span>brain action</span><strong id="brain">DECIDE</strong></div>
+          <div><span>info cost</span><strong id="info-cost">0.00</strong></div>
+        </div>
+        <div class="controls">
+          <button id="pause-btn" type="button">Pause</button>
+          <button id="train-btn" type="button">Train 1</button>
+          <button id="burst-btn" type="button">Train 25</button>
+          <button id="reset-btn" type="button">Reset</button>
+        </div>
+        <label class="speed">
+          <span>speed</span>
+          <input id="speed" type="range" min="1" max="8" value="3">
+        </label>
+        <canvas id="chart" width="320" height="112" aria-label="Training chart"></canvas>
+        <pre id="state-text"></pre>
+      </aside>
+    </main>
+    <script type="module" src="./src/app.js"></script>
+  </body>
+</html>

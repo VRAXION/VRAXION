@@ -1,0 +1,12 @@
+{
+  "name": "vraxion-colony-arena",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "smoke": "node scripts/smoke_train.js",
+    "smoke:fast": "node scripts/smoke_train.js --generations 18 --population 32",
+    "smoke:adversarial": "node scripts/smoke_train.js --generations 42 --population 56",
+    "serve": "python -m http.server 5173"
+  }
+}
