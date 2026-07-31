@@ -1,5 +1,31 @@
 # Changelog
 
+## 2026-07-31
+
+- Fixed a latent CI break: added `NOTICE` and `OWNERSHIP.md` to the public
+  export allowlist in `scripts/check_public_export.ps1`. Both files were added
+  in the early-July ownership commits but the allowlist was not updated at the
+  same time, so `Public SDK CI` on `main` had been failing on every push and
+  pull request since 2026-07-12 with `unexpected public export file: NOTICE`.
+- Documented VRAXION founder mark ownership, ownership notice, and future
+  assignment boundary in `README.md` and `TRADEMARK_POLICY.md`.
+- Preserved every local research branch tip as `archive/branches/2026-07-30/*`
+  annotated tags on origin (48 tags pushed). Kept `frontier/e136t-private` and
+  `archive/pre-consolidation-20260519-main-snapshot` tags local-only per the
+  existing publication policy (no matching tags previously existed on origin).
+- Reduced local branch inventory from 50 to 7 (`main` plus 6 research branches
+  still attached to active worktrees with on-disk experiment state); every
+  deleted branch tip is recoverable from an annotated archive tag.
+- Removed two empty worktrees (`VRAXION-main-publish`,
+  `VRAXION_public_cleanup_001`) and left the six worktrees holding active
+  local research state untouched.
+- Fast-forwarded local `main` to `origin/main` (was 268 commits behind).
+- Captured a full-repo `git bundle --all` backup before any deletion.
+- No changes to the public SDK crates, Pages surface, GitHub Actions
+  workflows, release manifests, or `docs/VERSION.json`; this entry records a
+  repository consolidation pass plus one export-guard fix, not a new public
+  delivery.
+
 ## 2026-07-06
 
 - Guarded release-link sync coverage, contributor gates, security policy, and

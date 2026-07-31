@@ -477,6 +477,8 @@ try {
         "DEPLOYMENT.md",
         "LICENSE",
         "LICENSE_BOUNDARY.md",
+        "NOTICE",
+        "OWNERSHIP.md",
         "PACKAGE_BOUNDARY.md",
         "PUBLIC_DELIVERY_MODEL.md",
         "PUBLIC_GITHUB_STATE.md",
