@@ -33,3 +33,12 @@ venv/
 *.db-*
 workers/instnct-notify/wrangler.jsonc
 workers/instnct-notify/wrangler.toml
+
+# Local research artifacts and training outputs (must stay untracked to keep
+# the public repository boundary clean; see PUBLIC_BOUNDARY.md).
+output/
+results/
+data/
+instnct-core/
+tools/
+docs/research/
