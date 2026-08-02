@@ -42,3 +42,7 @@ data/
 instnct-core/
 tools/
 docs/research/
+
+# Local Claude Code agent state (settings, worktrees, hive, research scratch).
+# Personal-per-user and never part of the public SDK surface.
+.claude/
