@@ -1,5 +1,26 @@
 # Changelog
 
+## 2026-08-02
+
+- Added `.claude/` to `.gitignore`. This directory holds per-user Claude Code
+  agent state (settings, worktrees, hive scratch, research swarm logs, and the
+  `scheduled_tasks.lock` file) and was the last untracked directory not
+  covered by `.gitignore` after the 2026-07-31 consolidation pass. Working
+  trees with an active Claude Code session now report zero untracked entries
+  under `git status --ignored`.
+- Deleted the empty local branch `cleanup/e75-doc-align-20260613`. Its tip
+  `092233a6` was already reachable from `main`, and the branch was never
+  pushed to origin. Preserved for audit-trail symmetry as annotated tag
+  `archive/branches/2026-08-02/cleanup-e75-doc-align-20260613`.
+- Verified archive-tag safety: every local-only `archive/*` tag either points
+  to a commit already present on `origin/main` or duplicates a commit that is
+  backed up under a different annotated tag on origin. The three
+  `frontier-e136t-private` tags remain local-only by the existing publication
+  policy.
+- No changes to the public SDK crates, Pages surface, GitHub Actions
+  workflows, release manifests, or `docs/VERSION.json`; this entry records a
+  repository hygiene pass, not a new public delivery.
+
 ## 2026-07-31
 
 - Fixed a latent CI break: added `NOTICE` and `OWNERSHIP.md` to the public
