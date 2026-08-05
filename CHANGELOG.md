@@ -1,5 +1,42 @@
 # Changelog
 
+## 2026-08-05
+
+- Recorded Dependabot bumps that landed on `origin/main` on 2026-08-03 for
+  audit-trail continuity: `serde` 1.0.228 → 1.0.229 and `serde_json` 1.0.150 →
+  1.0.151 in the `rust-public-dependencies` group (patch), and
+  `actions/setup-node` v6 → v7 and `actions/setup-python` v6 → v7 in the
+  `public-github-actions` group (major GHA runner action bumps, no workflow
+  behavior change beyond the newer runner defaults).
+- Ran the full public verification suite from a clean detached-HEAD worktree
+  against `origin/main` (`213f8f68`) and confirmed all guards pass:
+  `validate_public_release_manifests`, `validate_public_release_state`,
+  `sync_public_release_links --check`, `audit_public_github_state`,
+  `audit_public_links`, `audit_public_secrets`, `audit_public_surface`,
+  `audit_instnct_static_site`, `audit_instnct_notify_worker`,
+  `smoke_public_pages_links`, `cargo fmt --check`, `cargo test --workspace`
+  (22 passed), `cargo clippy --workspace --all-targets --all-features -D
+  warnings`, and `check_public_export.ps1` (clean worktree).
+- Verified the zero-untracked invariant established on 2026-08-02 still holds
+  (`git status --porcelain` returns empty; ignored directories are the ten
+  local research surfaces already documented in `.gitignore`).
+- Fast-forwarded the `VRAXION_anchorwiki` sibling worktree's `main` from
+  `9065c41d` to `213f8f68` (was 4 commits behind `origin/main`, tree clean).
+- Reviewed the public GitHub wiki at `VRAXION/VRAXION.wiki.git`: current state
+  is the intentional four-page boundary-stub set (`Home`, `Public-Boundary`,
+  `Archive-Notice`, `_Sidebar`, 43 lines total) last reset on
+  `Reset public wiki to boundary stubs`; no wiki changes required.
+- Cross-checked version records: `docs/VERSION.json`,
+  `releases/public-sdk-p11-20260629.manifest.json`, `README.md`,
+  `PUBLIC_GITHUB_STATE.md`, `docs/CURRENT_STATUS.md`, and
+  `docs/CURRENT_CAPABILITIES.md` all agree on `public-sdk-p11-20260629` as
+  the current public release.
+- No changes to the public SDK crates, Pages surface, GitHub Actions
+  workflows, release manifests, `docs/VERSION.json`, or any boundary or
+  policy document; this entry records a repository hygiene pass and a full
+  verification cycle, not a new public delivery. No release tag or version
+  bump is warranted because no public-surface change occurred.
+
 ## 2026-08-02
 
 - Added `.claude/` to `.gitignore`. This directory holds per-user Claude Code
