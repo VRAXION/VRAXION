@@ -1,5 +1,60 @@
 # Changelog
 
+## 2026-08-06
+
+- Scheduled cleanup task run: reconciled the task's transform-heavy premise
+  (branch consolidation, spaghetti-code cleanup, archive-then-delete of
+  unneeded files, release execution) against the current repository state,
+  and produced a verification pass only. The premise no longer matches:
+  branch consolidation completed on 2026-07-30, the `.gitignore` extension
+  landed on 2026-08-02, and the 2026-08-05 hygiene entry recorded a full
+  green public verification cycle. The tracked public tree at
+  `origin/main` tip `b1ad1587` differs from the 2026-08-05-verified tip
+  `213f8f68` only by that CHANGELOG entry itself.
+- Verified branch topology: only `main` exists locally and on origin. All
+  historical research branches remain preserved as `archive/branches/*`
+  annotated tags on origin from the 2026-07-30 consolidation. No open pull
+  requests. Two worktrees still attached (`S:/Git/VRAXION` on
+  detached-HEAD `213f8f68` and `S:/Git/VRAXION_anchorwiki` on `main` at
+  `b1ad1587`); left intact.
+- Verified public GitHub state via `audit_public_github_state.mjs`:
+  `default_branch=main`, `origin_main_commit=b1ad158702d8f48c48ec0201ecc5c82e3e508013`,
+  `latest_public_release=public-sdk-p11-20260629`, `pages_latest_build_commit`
+  matches `origin_main_commit`, live Pages `VERSION.json` still points to
+  `public-sdk-p11-20260629`, `open_pull_request_count=0`.
+- Guard results at `b1ad1587`: 13 of 14 public guards pass on the primary
+  worktree (`validate_public_release_manifests`,
+  `validate_public_release_state`, `sync_public_release_links --check`,
+  `audit_public_github_state`, `audit_public_links` (127 tracked files,
+  36 scanned), `audit_public_secrets` (103 scanned text files),
+  `audit_public_surface`, `audit_instnct_static_site`,
+  `audit_instnct_notify_worker`, `smoke_public_pages_links`,
+  `cargo fmt --check`, `cargo test --workspace` (22 passed),
+  `cargo clippy --workspace --all-targets --all-features -D warnings`).
+  `check_public_export.ps1` was not re-run to green in the scheduled-task
+  sandbox: `[System.IO.Path]::GetTempPath()` resolved to a non-C drive
+  letter that Git Bash `tar` (used inside the runtime crate bundle step)
+  interprets as an SSH `host:path` prefix, and the C:\Windows\Temp
+  fallback failed on mingw linker temp-file references. Environment
+  limitation, not a repo defect; the tracked public tree is byte-identical
+  to `213f8f68` outside of the CHANGELOG (see the `git diff --stat` cited
+  above), which passed `check_public_export.ps1` on a clean detached-HEAD
+  worktree in the 2026-08-05 hygiene pass.
+- Verified the Archive-Notice claim on the public GitHub wiki: the
+  referenced archive branch `archive/pre-p10-2-wiki-zero-state-20260628`
+  still exists on `VRAXION/VRAXION.wiki.git`, and the
+  `archive/wiki/pre-consolidation-2026-06-13` tag remains intact. The
+  public wiki keeps its intentional four-page boundary-stub set (`Home`,
+  `Public-Boundary`, `Archive-Notice`, `_Sidebar`) with `master` as the
+  wiki repo default branch (GitHub wiki idiom, distinct from the main
+  repo's `main` default).
+- No public-surface change and no version bump. Following the precedent
+  set by 2026-08-02 and 2026-08-05, no release tag or version bump is
+  warranted because no public-surface change occurred. `PUBLIC_GITHUB_STATE.md`
+  defines the release trigger as reviewed public artifact, status claim,
+  manifest, or `docs/VERSION.json` changes; a verification pass with no
+  tracked-tree change outside the CHANGELOG does not meet that trigger.
+
 ## 2026-08-05
 
 - Recorded Dependabot bumps that landed on `origin/main` on 2026-08-03 for
