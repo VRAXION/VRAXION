@@ -14,9 +14,8 @@
 - Verified branch topology: only `main` exists locally and on origin. All
   historical research branches remain preserved as `archive/branches/*`
   annotated tags on origin from the 2026-07-30 consolidation. No open pull
-  requests. Two worktrees still attached (`S:/Git/VRAXION` on
-  detached-HEAD `213f8f68` and `S:/Git/VRAXION_anchorwiki` on `main` at
-  `b1ad1587`); left intact.
+  requests. Two local worktrees are still attached (one on detached-HEAD
+  `213f8f68`, one on `main` at `b1ad1587`); left intact.
 - Verified public GitHub state via `audit_public_github_state.mjs`:
   `default_branch=main`, `origin_main_commit=b1ad158702d8f48c48ec0201ecc5c82e3e508013`,
   `latest_public_release=public-sdk-p11-20260629`, `pages_latest_build_commit`
@@ -32,10 +31,10 @@
   `cargo fmt --check`, `cargo test --workspace` (22 passed),
   `cargo clippy --workspace --all-targets --all-features -D warnings`).
   `check_public_export.ps1` was not re-run to green in the scheduled-task
-  sandbox: `[System.IO.Path]::GetTempPath()` resolved to a non-C drive
+  sandbox: `[System.IO.Path]::GetTempPath()` resolved to a Windows drive
   letter that Git Bash `tar` (used inside the runtime crate bundle step)
-  interprets as an SSH `host:path` prefix, and the C:\Windows\Temp
-  fallback failed on mingw linker temp-file references. Environment
+  interprets as an SSH `host:path` prefix, and a fallback Windows temp
+  location failed on mingw linker temp-file references. Environment
   limitation, not a repo defect; the tracked public tree is byte-identical
   to `213f8f68` outside of the CHANGELOG (see the `git diff --stat` cited
   above), which passed `check_public_export.ps1` on a clean detached-HEAD
