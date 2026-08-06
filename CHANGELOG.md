@@ -53,6 +53,22 @@
   defines the release trigger as reviewed public artifact, status claim,
   manifest, or `docs/VERSION.json` changes; a verification pass with no
   tracked-tree change outside the CHANGELOG does not meet that trigger.
+- The first commit of this hygiene entry (`7aa4d5da`) itself tripped
+  `audit_public_secrets` on GitHub CI because the entry's earlier draft
+  cited two local worktree paths and a Windows temp fallback path verbatim.
+  Commit `74798214` scrubbed those absolute-drive references while
+  preserving the same facts (worktree count, TEMP-drive constraint).
+  Both `Public SDK CI` and `Public Surface Audit` are green on `74798214`,
+  which crucially includes `check_public_export.ps1` passing on a Windows
+  runner — closing the local G14 environment gap noted above with a
+  stronger, hosted-runner verification. Live `audit_public_github_state.mjs`
+  on `74798214` reports `failure_count=0`,
+  `pages_latest_build_commit=74798214b4a8a4bcd86d22911fa1db2617ad5517`,
+  fully aligned with `origin/main`. Process lesson: guards existed
+  locally and would have caught the leak in under a second; the sequence
+  that broke CI was edit → commit → push → discover, and a
+  re-run of `audit_public_secrets` before the first push would have
+  averted the round-trip.
 
 ## 2026-08-05
 
