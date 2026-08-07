@@ -1,5 +1,60 @@
 # Changelog
 
+## 2026-08-07
+
+- Scheduled cleanup task run: repeated the verification-only pattern
+  established on 2026-08-05 and 2026-08-06. The task premise (branch
+  consolidation, spaghetti-code cleanup, archive-then-delete of unneeded
+  files, release execution) still does not match repository state; branch
+  topology, tracked-tree contents, wiki state, and release records are all
+  unchanged since the 2026-08-06 verification cycle. Only `main` exists
+  locally and on origin, `main` at `2ec1a0aa`. Two local worktrees remain
+  attached (one on detached-HEAD `213f8f68` still holding a generated
+  Cargo `target/` from prior local Cargo runs, one on `main` at
+  `2ec1a0aa`); left intact.
+- Verified public GitHub state via `audit_public_github_state.mjs`:
+  `default_branch=main`, `origin_main_commit=2ec1a0aa9e926ceb289953e255eed2a081bc492a`,
+  `latest_public_release=public-sdk-p11-20260629`, `pages_status=built`,
+  `pages_latest_build_commit` matches `origin_main_commit`, live Pages
+  `VERSION.json` still points to `public-sdk-p11-20260629`,
+  `open_pull_request_count=0`, `remote_branch_count=2`, `failure_count=0`,
+  `warning_count=0`.
+- Guard results at `2ec1a0aa`: 14 of 14 public guards pass. On the
+  primary `main` worktree the JS/Python/Cargo subset ran green
+  (`validate_public_release_manifests` (2 manifests, 9 policy tests),
+  `validate_public_release_state`, `sync_public_release_links --check`
+  (20 link files), `audit_public_github_state`,
+  `audit_public_links` (127 tracked files, 36 scanned),
+  `audit_public_secrets` (127 tracked / 103 scanned text files),
+  `audit_public_surface` (127 tracked / 12 forbidden markers / 36 copy
+  markers), `audit_instnct_static_site`, `audit_instnct_notify_worker`,
+  `smoke_public_pages_links`, `cargo fmt --check`, `cargo test --workspace`
+  (22 passed / 0 failed), `cargo clippy --workspace --all-targets --all-features
+  -- -D warnings`). `check_public_export.ps1` ran green on a fresh clean
+  detached-HEAD scratchpad worktree at `2ec1a0aa` (all 41 stages, including
+  the copied-public-export and unpacked-crate-archive rebuilds), closing
+  the local G14 gap noted in the 2026-08-06 entry with a fully local
+  Windows verification alongside the CI-verified `74798214` state.
+- Verified the Archive-Notice claim on the public GitHub wiki via a fresh
+  shallow clone: `master` remains the default branch, the four-page
+  boundary-stub set (`Home`, `Public-Boundary`, `Archive-Notice`,
+  `_Sidebar`) is intact at 43 lines total, and `git ls-remote` confirms
+  the `archive/pre-p10-2-wiki-zero-state-20260628` branch and the
+  `archive/wiki/pre-consolidation-2026-06-13` tag both still exist on
+  `VRAXION/VRAXION.wiki.git`.
+- Cross-checked version records: `docs/VERSION.json`,
+  `releases/public-sdk-p11-20260629.manifest.json`, `README.md`, and
+  `PUBLIC_GITHUB_STATE.md` all still agree on `public-sdk-p11-20260629`
+  as the latest public release. No `docs/VERSION.json` update, no
+  public artifact change, no manifest change.
+- No changes to the public SDK crates, Pages surface, GitHub Actions
+  workflows, release manifests, or `docs/VERSION.json`; this entry
+  records a repository hygiene pass and a full verification cycle, not
+  a new public delivery. No release tag or version bump is warranted
+  because no public-surface change occurred (per the release trigger
+  defined in `PUBLIC_GITHUB_STATE.md`: reviewed public artifact, status
+  claim, manifest, or `docs/VERSION.json` changes).
+
 ## 2026-08-06
 
 - Scheduled cleanup task run: reconciled the task's transform-heavy premise
