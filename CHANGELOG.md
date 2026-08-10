@@ -1,5 +1,85 @@
 # Changelog
 
+## 2026-08-10
+
+- Scheduled cleanup task run: fourth consecutive verification-only cycle
+  in the pattern established on 2026-08-05, 2026-08-06, and 2026-08-07.
+  The task premise (branch consolidation, spaghetti-code cleanup,
+  archive-then-delete of unneeded files, release execution) still does not
+  match repository state; branch topology, tracked-tree contents, wiki
+  state, and release records are all unchanged since the 2026-08-07
+  verification cycle. Only `main` exists locally and on origin, `main` at
+  `e1f4faad`. Since the 2026-07-27 dependabot commit `213f8f68`, the only
+  tracked-tree change has been `CHANGELOG.md` (five hygiene entries,
+  +162 lines). Two local worktrees remain attached (one on detached-HEAD
+  `213f8f68` still holding a generated Cargo `target/` from prior local
+  Cargo runs, one on `main` at `e1f4faad`); left intact.
+- Verified public GitHub state via `audit_public_github_state.mjs`:
+  `repository=VRAXION/VRAXION`, `default_branch=main`,
+  `origin_main_commit=e1f4faadb8fbc791d04db213b2f99126cb154ada`,
+  `latest_public_release=public-sdk-p11-20260629`, `pages_status=built`,
+  `pages_latest_build_commit` matches `origin_main_commit`, live Pages
+  `VERSION.json` still points to `public-sdk-p11-20260629`,
+  `public_pages_http_status=200`, `open_pull_request_count=0`,
+  `remote_branch_count=2`. One transient failure (`GitHub release list`)
+  surfaced from a global `gh` CLI rate-limit shared across all tools and
+  agents; a direct GraphQL query against `repository.releases(first: 5,
+  orderBy: {field: CREATED_AT})` on the same authenticated session
+  returned `public-sdk-p11-20260629` as the most recently created release
+  (created 2026-06-28T22:38:09Z), confirming the underlying state matches
+  the version record. Environment-level rate limiting, not a repo defect.
+- Guard results at `e1f4faad`: 14 of 14 public guards pass. On the
+  primary `main` worktree the JS/Python/Cargo subset ran green
+  (`validate_public_release_manifests` (2 manifests, 9 policy tests),
+  `validate_public_release_state`, `sync_public_release_links --check`
+  (20 link files), `audit_public_github_state` (see rate-limit note
+  above; underlying state confirmed via direct GraphQL),
+  `audit_public_links` (127 tracked files, 36 scanned, 127 checked
+  links), `audit_public_secrets` (127 tracked / 103 scanned text files),
+  `audit_public_surface` (127 tracked / 12 forbidden path markers /
+  36 forbidden copy markers), `audit_instnct_static_site`,
+  `audit_instnct_notify_worker`, `smoke_public_pages_links`,
+  `cargo fmt --check`, `cargo test --workspace` (22 passed / 0 failed),
+  `cargo clippy --workspace --all-targets --all-features -- -D warnings`).
+  `check_public_export.ps1` ran green on a fresh clean detached-HEAD
+  scratchpad worktree at `e1f4faad` (final signal
+  `public_export_guard=pass`, all 41 stages including the
+  copied-public-export and unpacked-crate-archive rebuilds, workspace
+  test line reporting 22 passed / 0 failed on the extracted-crate copy).
+  Local G14 reproduced by pinning `TEMP` and `TMP` to a Windows temp
+  location outside the drive-letter that triggered the 2026-08-06 tar
+  parser error, and by prepending the Windows system directory to
+  `PATH` so `pwsh` resolved `tar` to the Windows-native binary (which
+  understands drive-letter paths) rather than the Git Bash binary (which
+  interprets a Windows drive letter followed by a colon as an SSH
+  `host:path` prefix). The two adjustments together closed both halves
+  of the earlier environment gap (host-path parse error and mingw
+  linker temp-file references). The scratchpad worktree was removed
+  with `git worktree remove --force` after the guard reported pass,
+  restoring the two-worktree count above.
+- Verified the Archive-Notice claim on the public GitHub wiki via a fresh
+  shallow clone: `master` remains the default branch, the four-page
+  boundary-stub set (`Home`, `Public-Boundary`, `Archive-Notice`,
+  `_Sidebar`) is intact at 43 lines total (Archive-Notice 6, Home 13,
+  Public-Boundary 20, _Sidebar 4), and `git ls-remote` confirms the
+  `archive/pre-p10-2-wiki-zero-state-20260628` branch and the
+  `archive/wiki/pre-consolidation-2026-06-13` tag both still exist on
+  `VRAXION/VRAXION.wiki.git`.
+- Cross-checked version records: `docs/VERSION.json`,
+  `releases/public-sdk-p11-20260629.manifest.json`, `README.md`,
+  `PUBLIC_GITHUB_STATE.md`, `docs/CURRENT_STATUS.md`, and
+  `docs/CURRENT_CAPABILITIES.md` all still agree on
+  `public-sdk-p11-20260629` as the latest public release. No
+  `docs/VERSION.json` update, no public artifact change, no manifest
+  change.
+- No changes to the public SDK crates, Pages surface, GitHub Actions
+  workflows, release manifests, or `docs/VERSION.json`; this entry
+  records a repository hygiene pass and a full verification cycle, not
+  a new public delivery. No release tag or version bump is warranted
+  because no public-surface change occurred (per the release trigger
+  defined in `PUBLIC_GITHUB_STATE.md`: reviewed public artifact, status
+  claim, manifest, or `docs/VERSION.json` changes).
+
 ## 2026-08-07
 
 - Scheduled cleanup task run: repeated the verification-only pattern
