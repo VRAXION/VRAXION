@@ -1,12 +1,7 @@
 name: Public Surface Audit
 
 on:
-  pull_request:
-  push:
-    branches:
-      - main
   workflow_dispatch:
-
 permissions:
   contents: read
 
